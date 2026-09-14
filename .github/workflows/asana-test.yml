@@ -1,0 +1,42 @@
+name: Asana-test (end-to-end)
+
+# Verstuurt twee testaanvragen naar de live edge function en controleert in Asana of de taken
+# kloppen: naam, kolom, assignee, custom fields, subtaken en beschrijving. Test daarna de
+# planning-flow (webhook) en ruimt de testtaken weer op.
+# Vereist secrets ASANA_PAT en SUPABASE_PROJECT_ID.
+
+on:
+  workflow_dispatch:
+    inputs:
+      planning:
+        description: 'Ook de planning-flow testen (In planning → vervaldatum → werkplanning)'
+        type: boolean
+        required: false
+        default: true
+      behoud:
+        description: 'Testtaken laten staan in plaats van opruimen'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      ASANA_PAT: ${{ secrets.ASANA_PAT }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Secrets aanwezig?
+        run: |
+          [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
+          [ -n "$SUPABASE_PROJECT_ID" ] || { echo "::error::Secret SUPABASE_PROJECT_ID ontbreekt"; exit 1; }
+      - name: Test draaien
+        run: |
+          opties=""
+          [ "${{ inputs.planning }}" = "true" ] || opties="$opties --geen-planning"
+          [ "${{ inputs.behoud }}" = "true" ] && opties="$opties --behoud"
+          node --experimental-strip-types --no-warnings scripts/asana-test.mjs $opties
