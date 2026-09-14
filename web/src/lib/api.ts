@@ -1,0 +1,51 @@
+import type { SubmitPayload, SubmitResult } from '../../../shared/aanvraag-schema'
+
+const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1` : null
+const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
+
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+/**
+ * Verstuurt de aanvraag naar de edge function. Zonder geconfigureerde backend (lokale ontwikkeling,
+ * of zolang M2 nog niet live is) simuleert dit een geslaagde verzending.
+ */
+export async function submitAanvraag(payload: SubmitPayload): Promise<SubmitResult> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    await new Promise((r) => setTimeout(r, 900))
+    console.info('[mock submit]', payload)
+    return { aanvraag_id: payload.client_request_id, asana_task_url: null, brand_dispatched: false }
+  }
+
+  const res = await fetch(`${FUNCTIONS_URL}/submit-aanvraag`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: PUBLISHABLE_KEY },
+    body: JSON.stringify(payload),
+  })
+  const body = (await res.json().catch(() => null)) as (SubmitResult & { error?: string }) | null
+  if (!res.ok || !body) {
+    throw new ApiError(res.status, body?.error ?? `Verzenden mislukt (${res.status})`)
+  }
+  return body
+}
+
+export async function fetchCollegas(fallback: string[]): Promise<string[]> {
+  const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  if (!base || !PUBLISHABLE_KEY) return fallback
+  try {
+    const res = await fetch(`${base}/rest/v1/collegas_public?select=naam&order=volgorde,naam`, {
+      headers: { apikey: PUBLISHABLE_KEY },
+    })
+    if (!res.ok) return fallback
+    const rows = (await res.json()) as { naam: string }[]
+    const names = rows.map((r) => r.naam).filter(Boolean)
+    return names.length ? names : fallback
+  } catch {
+    return fallback
+  }
+}

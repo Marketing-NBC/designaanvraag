@@ -1,0 +1,21 @@
+{
+  "name": "designaanvraag",
+  "private": true,
+  "version": "0.1.0",
+  "description": "NBC designaanvraag-tool: Typeform-achtig formulier → Asana-taak voor de designer, met automatische huisstijl-extractie.",
+  "workspaces": [
+    "shared",
+    "web",
+    "worker"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "test": "npm run test -w web",
+    "e2e": "npm run e2e -w web",
+    "lint": "npm run lint -w web"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

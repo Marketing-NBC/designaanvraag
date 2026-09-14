@@ -1,0 +1,9 @@
+{
+  "name": "@nbc/worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Huisstijl-extractie: draait in een Claude Code Routine (zie worker/ROUTINE.md).",
+  "scripts": {},
+  "dependencies": {}
+}

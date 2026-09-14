@@ -1,0 +1,11 @@
+node_modules
+dist
+*.log
+.env
+.env.*
+!.env.example
+worker/out
+web/test-results
+web/playwright-report
+.DS_Store
+web/e2e/screenshots

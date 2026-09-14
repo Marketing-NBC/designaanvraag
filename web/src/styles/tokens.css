@@ -1,0 +1,125 @@
+/* ──────────────────────────────────────────────────────────────────
+   NBC Design System — Foundations (subset voor de designaanvraag-tool)
+   Bron: NBC_Design_System/colors_and_type.css. Alleen de gebruikte
+   font-weights zijn meegenomen; paden wijzen naar src/assets/fonts.
+   ────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Pockota';
+  src: url('../assets/fonts/Pockota-Light.otf') format('opentype');
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Pockota';
+  src: url('../assets/fonts/Pockota-Regular.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Pockota';
+  src: url('../assets/fonts/Pockota-Medium.otf') format('opentype');
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Area Normal';
+  src: url('../assets/fonts/AreaNormal-Regular.otf') format('opentype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Area Normal';
+  src: url('../assets/fonts/AreaNormal-Semibold.otf') format('opentype');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Area Normal';
+  src: url('../assets/fonts/AreaNormal-Extrabold.otf') format('opentype');
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* Brand */
+  --nbc-blue:        #229d96;
+  --nbc-blue-dark:   #0e0e0e;
+  --nbc-blue-deep:   #165e5a;
+  --nbc-blue-tint:   #d3ebea;
+  --nbc-blue-soft:   #e9f5f4;
+  --nbc-blue-mid:    #a8d8d5;
+  --nbc-gold:        #f6a304;
+  --nbc-gold-soft:   #ffc266;
+  --nbc-cream:       #f2e6da;
+  --nbc-cream-soft:  #f1f1ef;
+
+  /* Neutrals */
+  --nbc-white:       #ffffff;
+  --nbc-paper:       #fafafa;
+  --nbc-stone-50:    #f1f1f1;
+  --nbc-stone-100:   #eaebec;
+  --nbc-stone-200:   #d9e0e2;
+  --nbc-stone-300:   #c8c5c1;
+  --nbc-stone-400:   #acb0b2;
+  --nbc-stone-500:   #828b8d;
+  --nbc-stone-600:   #596165;
+  --nbc-stone-700:   #2f3a3e;
+  --nbc-stone-800:   #21282b;
+  --nbc-stone-900:   #121618;
+  --nbc-ink:         #0e0e0e;
+  --nbc-black:       #050606;
+
+  /* Status */
+  --nbc-success:     #3d865f;
+  --nbc-success-bg:  #dbeee4;
+  --nbc-warning:     #f6a304;
+  --nbc-warning-bg:  #fff3dc;
+  --nbc-error:       #c0392b;
+  --nbc-error-bg:    #f9e3e0;
+
+  /* Roles */
+  --fg-primary:      var(--nbc-stone-800);
+  --fg-secondary:    var(--nbc-stone-600);
+  --fg-muted:        var(--nbc-stone-400);
+  --fg-on-dark:      var(--nbc-paper);
+  --fg-accent:       var(--nbc-blue-dark);
+  --bg-page:         var(--nbc-cream-soft);
+  --bg-surface:      var(--nbc-paper);
+  --bg-elev:         var(--nbc-white);
+  --bg-dark:         var(--nbc-black);
+  --bg-brand:        var(--nbc-blue);
+  --border-subtle:   var(--nbc-stone-200);
+  --border-default:  var(--nbc-stone-300);
+  --border-strong:   var(--nbc-stone-800);
+
+  /* Radii */
+  --r-xs: 4px; --r-sm: 8px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(47,58,62,0.06);
+  --shadow-md: 0 8px 24px -10px rgba(47,58,62,0.12), 0 2px 6px rgba(47,58,62,0.04);
+  --shadow-lg: 0 20px 40px -8px rgba(47,58,62,0.10), 0 20px 40px -8px rgba(47,58,62,0.05);
+
+  /* Spacing (8-pt) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px;
+  --s-7: 32px; --s-8: 40px; --s-9: 48px; --s-10: 64px; --s-11: 80px; --s-12: 112px;
+
+  /* Type */
+  --font-display: 'Pockota', 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'Area Normal', 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  --t-display-md: 400 clamp(48px, 5vw, 96px)/1.0 var(--font-display);
+  --t-display-sm: 400 clamp(36px, 3.5vw, 64px)/1.05 var(--font-display);
+  --t-title-sm:   400 clamp(28px, 3vw, 38px)/1.15 var(--font-display);
+  --t-title-xs:   400 28px/1.2 var(--font-display);
+  --t-headline:   800 28px/1.45 var(--font-body);
+  --t-subhead:    800 21px/1.45 var(--font-body);
+  --t-paragraph-lg: 400 21px/1.45 var(--font-body);
+  --t-paragraph:    400 18px/1.55 var(--font-body);
+  --t-paragraph-sm: 400 16px/1.55 var(--font-body);
+  --t-label:      800 16px/1.45 var(--font-body);
+  --t-label-sm:   800 14px/1.45 var(--font-body);
+  --t-overline:   800 15.76px/1.45 var(--font-body);
+  --t-btn-md:     800 18px/1.45 var(--font-body);
+  --t-btn-sm:     800 14px/1.45 var(--font-body);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 200ms;
+  --dur-base: 400ms;
+}
