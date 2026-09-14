@@ -7,6 +7,10 @@ export interface AanvraagRow {
   asana_task_gid: string | null
   asana_task_url: string | null
   asana_error: string | null
+  /** Minder dan 10 werkdagen tot het event, bepaald bij het indienen. */
+  spoed: boolean
+  /** Werkdagen tussen de aanvraag en het event; negatief kan niet, het formulier blokkeert dat. */
+  werkdagen_tot_event: number | null
   brand_status: 'pending' | 'running' | 'done' | 'failed'
   brand_error: string | null
   brand_session_url: string | null
@@ -15,6 +19,8 @@ export interface AanvraagRow {
 export interface NewAanvraag extends Aanvraag {
   client_request_id: string
   ip_hash: string | null
+  spoed: boolean
+  werkdagen_tot_event: number | null
 }
 
 export interface Db {
@@ -25,7 +31,7 @@ export interface Db {
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
 }
 
-const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, brand_status, brand_error, brand_session_url'
+const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url'
 
 export function createDb(url: string, secretKey: string): Db {
   const sb = createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } })

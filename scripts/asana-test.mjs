@@ -4,7 +4,7 @@
  *
  *   ASANA_PAT=... node --experimental-strip-types scripts/asana-test.mjs --base https://<ref>.supabase.co
  *
- * Wat hij doet: twee testaanvragen versturen naar de live function (precies zoals het formulier),
+ * Wat hij doet: drie testaanvragen versturen naar de live function (precies zoals het formulier),
  * de aangemaakte taken terugleden uit Asana en controleren op titel, sectie, assignee, custom fields,
  * subtaken en beschrijving. Daarna de planning-flow: taak naar "In planning" (verwacht: comment met
  * de vraag om een vervaldatum), vervaldatum zetten (verwacht: taak ook in het planningsproject).
@@ -19,6 +19,7 @@
  */
 import fields from '../shared/asana-fields.json' with { type: 'json' }
 import { subtaskTitles, taskTitle } from '../shared/asana-title.ts'
+import { isSpoed, vandaagInNl } from '../shared/spoed.ts'
 
 const API = process.env.ASANA_API ?? 'https://app.asana.com/api/1.0'
 const WACHT_MS = 120_000
@@ -121,6 +122,21 @@ const scenarios = [
       omschrijving: '',
     },
   },
+  {
+    label: 'C. spoedje (event binnen 10 werkdagen)',
+    aanvraag: {
+      naam: 'Testaanvraag (automatisch)',
+      event: 'TEST spoedaanvraag',
+      event_datum: datum(5),
+      deadline: datum(3),
+      website: 'https://www.nbccongrescentrum.nl/',
+      schijf_locatie: '',
+      aanvraag_types: ['koffiescherm'],
+      anders_tekst: '',
+      design_modus: 'standaard',
+      omschrijving: 'Automatische test: dit hoort een spoedje te zijn.',
+    },
+  },
 ]
 
 /** Verstuurt een aanvraag zoals het formulier dat doet. */
@@ -181,6 +197,17 @@ for (const s of scenarios) {
   )
   check(veld('modus')?.enum_value?.gid === f.modus?.options?.[s.aanvraag.design_modus], 'veld Design', veld('modus')?.enum_value?.name ?? 'leeg')
 
+  const spoedVerwacht = isSpoed(s.aanvraag.event_datum, vandaagInNl())
+  if (!f.spoed) {
+    check(false, 'veld Spoed', 'ontbreekt in asana-fields.json — draai eerst de workflow "Asana-project aanmaken"')
+  } else {
+    check(
+      veld('spoed')?.enum_value?.gid === f.spoed.options?.[spoedVerwacht ? 'ja' : 'nee'],
+      `veld Spoed (${spoedVerwacht ? 'ja' : 'nee'} verwacht)`,
+      veld('spoed')?.enum_value?.name ?? 'leeg',
+    )
+  }
+
   if (s.aanvraag.schijf_locatie) {
     check(veld('schijf')?.text_value === s.aanvraag.schijf_locatie, 'veld Schijf', veld('schijf')?.text_value ?? 'leeg')
   }
@@ -195,6 +222,7 @@ for (const s of scenarios) {
     website: s.aanvraag.website,
     type: s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean),
     modus: f.modus?.options?.[s.aanvraag.design_modus],
+    ...(f.spoed ? { spoed: f.spoed.options?.[spoedVerwacht ? 'ja' : 'nee'] } : {}),
     ...(s.aanvraag.schijf_locatie ? { schijf: s.aanvraag.schijf_locatie } : {}),
   }
   for (const [sleutel, waarde] of Object.entries(verwachteVelden)) {

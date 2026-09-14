@@ -61,8 +61,12 @@ export interface AsanaTaskClient {
   addComment(taskGid: string, htmlText: string): Promise<void>
 }
 
-/** Bouwt de custom_fields-map op basis van shared/asana-fields.json. Onbekende velden/opties worden overgeslagen. */
-export function buildCustomFields(a: Aanvraag, cfg: AsanaFieldsConfig = asanaFields): Record<string, unknown> {
+/**
+ * Bouwt de custom_fields-map op basis van shared/asana-fields.json. Onbekende velden/opties worden
+ * overgeslagen. `opties.spoed` komt uit de handler, die hem één keer berekent met de Nederlandse
+ * datum van dat moment.
+ */
+export function buildCustomFields(a: Aanvraag, cfg: AsanaFieldsConfig = asanaFields, opties: { spoed?: boolean } = {}): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const f = cfg.fields ?? {}
 
@@ -105,6 +109,17 @@ export function buildCustomFields(a: Aanvraag, cfg: AsanaFieldsConfig = asanaFie
 
   const schijf = f['schijf']
   if (schijf?.type === 'text' && a.schijf_locatie) out[schijf.gid] = a.schijf_locatie
+
+  const spoedVeld = f['spoed']
+  if (spoedVeld && opties.spoed !== undefined) {
+    const sleutel = opties.spoed ? 'ja' : 'nee'
+    if (spoedVeld.type === 'enum') {
+      const gid = spoedVeld.options?.[sleutel]
+      if (gid) out[spoedVeld.gid] = gid
+    } else if (spoedVeld.type === 'text') {
+      out[spoedVeld.gid] = opties.spoed ? 'Ja' : 'Nee'
+    }
+  }
 
   return out
 }

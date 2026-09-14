@@ -7,6 +7,7 @@
   "modus": "Design",
   "website": "Website",
   "schijf": "Schijf",
+  "spoed": "Spoed",
   "sections": {
     "nieuwe_aanvragen": "Nieuwe aanvragen",
     "in_planning": "In planning",
@@ -14,6 +15,12 @@
     "klaar": "Klaar"
   },
   "option_aliases": {
+    "ja": [
+      "Ja"
+    ],
+    "nee": [
+      "Nee"
+    ],
     "custom": [
       "Volledig custom",
       "Custom"

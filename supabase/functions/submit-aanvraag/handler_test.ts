@@ -285,3 +285,33 @@ Deno.test('gedeeltelijk gelukte taak: aanvraag slaagt, reden in asana_error', as
   // De huisstijl-extractie hoort gewoon te starten; de taak bestaat immers.
   assertEquals(row.brand_status, 'running')
 })
+
+Deno.test('buildCustomFields zet het spoedveld op de juiste optie', () => {
+  const cfg = {
+    project: { gid: '1' },
+    assignee: null,
+    fields: { spoed: { gid: 'f9', name: 'Spoed', type: 'enum', options: { ja: 'oJa', nee: 'oNee' } } },
+  }
+  // deno-lint-ignore no-explicit-any
+  const a = validAanvraag as any
+  assertEquals(buildCustomFields(a, cfg, { spoed: true }), { f9: 'oJa' })
+  assertEquals(buildCustomFields(a, cfg, { spoed: false }), { f9: 'oNee' })
+  // Zonder uitspraak over spoed blijft het veld leeg in plaats van dat we "nee" gokken.
+  assertEquals(buildCustomFields(a, cfg), {})
+})
+
+Deno.test('spoed wordt bij het indienen bepaald en opgeslagen', async () => {
+  // Maandag 14 september 2026; het event is op 20 november, dus ruim op tijd.
+  const rustig = setup({ now: () => new Date('2026-09-14T10:00:00Z') })
+  await rustig.handler(post(payload({ started_at: '2026-09-14T09:59:00Z' })))
+  const rij = [...rustig.db.rows.values()][0]
+  assertEquals(rij.spoed, false)
+  assertEquals(rij.werkdagen_tot_event, 49)
+
+  // Zelfde aanvraag, maar ingediend acht werkdagen voor het event.
+  const krap = setup({ now: () => new Date('2026-11-10T10:00:00Z') })
+  await krap.handler(post(payload({ started_at: '2026-11-10T09:59:00Z' })))
+  const spoedRij = [...krap.db.rows.values()][0]
+  assertEquals(spoedRij.spoed, true)
+  assertEquals(spoedRij.werkdagen_tot_event, 8)
+})

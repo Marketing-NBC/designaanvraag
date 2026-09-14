@@ -7,6 +7,7 @@ import { renderNotes } from '../_shared/notes.ts'
 import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
+import { isSpoed, vandaagInNl, werkdagenTotEvent } from '../_shared/shared/spoed.ts'
 
 export interface Deps {
   env: Env
@@ -86,8 +87,20 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const g = await db.bumpRateLimit('global', '1 day')
     if (g > env.rateLimitGlobalPerDay) return json({ error: 'Het dagelijkse maximum aan aanvragen is bereikt. Probeer het morgen opnieuw of bel Marketing.' }, 429, cors)
 
-    const row = await db.insert({ ...aanvraag, client_request_id, ip_hash: ipHash })
-    log('info', 'aanvraag opgeslagen', { id: row.id, event: aanvraag.event })
+    // Spoed: minder dan 10 werkdagen tot het event, gemeten op het moment van indienen. Daarna
+    // verandert de waarde niet meer, ook niet als de eventdatum later verschuift.
+    const vandaag = vandaagInNl(now())
+    const werkdagen = werkdagenTotEvent(aanvraag.event_datum, vandaag)
+    const spoed = isSpoed(aanvraag.event_datum, vandaag)
+
+    const row = await db.insert({
+      ...aanvraag,
+      client_request_id,
+      ip_hash: ipHash,
+      spoed,
+      werkdagen_tot_event: Number.isFinite(werkdagen) ? werkdagen : null,
+    })
+    log('info', 'aanvraag opgeslagen', { id: row.id, event: aanvraag.event, spoed, werkdagen })
 
     // Asana-taak (fase 3). Zonder configuratie slaan we dit over; de aanvraag blijft bewaard.
     let asanaUrl: string | null = null
@@ -103,7 +116,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           projectGid,
           sectionGid: asanaFields.sections?.nieuwe_aanvragen?.gid ?? null,
           assigneeGid: env.asanaAssigneeGid ?? asanaFields.assignee?.gid ?? null,
-          customFields: buildCustomFields(aanvraag),
+          customFields: buildCustomFields(aanvraag, undefined, { spoed }),
           subtasks: subtaskTitles(aanvraag),
         })
         asanaGid = task.gid

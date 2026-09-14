@@ -42,7 +42,7 @@ jobs:
         id: setup
         run: |
           [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
-          node scripts/asana-setup.mjs --name "$NAME_INPUT" --like "$LIKE_INPUT" --assignee "$ASSIGNEE_INPUT"
+          node scripts/asana-setup.mjs --name "$NAME_INPUT" --like "$LIKE_INPUT" --assignee "$ASSIGNEE_INPUT" --planning "${PLANNING_INPUT:-$LIKE_INPUT}"
       - name: Velden uitlezen
         run: |
           node scripts/asana-fields.mjs --project "${{ steps.setup.outputs.project_gid }}" --assignee "$ASSIGNEE_INPUT" --planning "${PLANNING_INPUT:-$LIKE_INPUT}" | tee -a "$GITHUB_STEP_SUMMARY"

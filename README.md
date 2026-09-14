@@ -102,9 +102,27 @@ alle gegevens in de beschrijving.
   een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
+- **Spoed:** zit er minder dan 10 werkdagen tussen de aanvraag en de eventdatum, dan zet de function
+  het veld **Spoed** op "Ja". Dat gebeurt één keer bij het indienen; verschuift de eventdatum later,
+  dan blijft de registratie staan. De regel staat in `shared/spoed.ts`.
 - **Webhook koppelen** gebeurt automatisch aan het eind van de Supabase-deploy (`scripts/asana-webhook.mjs`).
   De webhook-URL bevat een token afgeleid van `ASANA_PAT`; Asana ondertekent elke levering (HMAC).
   Controleren: Supabase → Edge Functions → `asana-webhook` → Logs.
+
+## Spoedjes terugzien
+
+Het veld **Spoed** wordt automatisch gevuld; de weergave zet je één keer zelf aan, want de Asana-API
+kan geen grafieken of weergave-instellingen maken.
+
+- **Tellen:** project "Designaanvragen" → tab **Dashboard** → grafiek toevoegen → "Aantal taken",
+  groeperen op **Spoed**. Voor een verloop over de tijd: X-as "Aanmaakdatum" per maand, kleuren op
+  **Spoed**.
+- **Zien in je planning:** project "4. Werkplanning" → **Kalender** → **Kleur** → **Spoed**.
+  Spoedjes worden rood, de rest grijs. Dit werkt omdat `scripts/asana-setup.mjs` het Spoed-veld ook
+  aan het planningsproject koppelt; andere velden blijven daar buiten.
+
+In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
+rekenen.
 
 ## Routine instellen (huisstijl-extractie)
 

@@ -6,7 +6,7 @@
  *
  * Gebruik:
  *   ASANA_PAT=... node scripts/asana-setup.mjs --like <link of gid van een bestaand project> \
- *     [--name "Designaanvragen"] [--assignee "Abel"] [--team <gid>]
+ *     [--name "Designaanvragen"] [--assignee "Abel"] [--team <gid>] [--planning <link of gid>]
  *
  * --like bepaalt workspace, team en leden (die worden overgenomen). Daarna:
  *   node scripts/asana-fields.mjs --project <nieuwe gid> --assignee "Abel"
@@ -69,6 +69,19 @@ const FIELD_SPECS = [
   },
   { key: 'website', type: 'text', description: 'Website van de opdrachtgever of het event (bron voor de huisstijl).' },
   { key: 'schijf', type: 'text', description: 'Locatie op de G-schijf met meer informatie of bestaande designs.' },
+  {
+    key: 'spoed',
+    type: 'enum',
+    description: 'Minder dan 10 werkdagen tussen de aanvraag en het event. Wordt automatisch gezet bij het indienen.',
+    // De optiekleuren bepalen ook de kleur bij "kleuren op veld" in de kalender van de werkplanning:
+    // spoedjes rood, de rest neutraal grijs zodat alleen spoed opvalt.
+    options: [
+      ['ja', 'red'],
+      ['nee', 'cool-gray'],
+    ],
+    /** Dit veld hoort ook in het planningsproject, anders kun je daar niet op kleuren. */
+    ookInPlanning: true,
+  },
 ]
 
 const SECTIONS = Object.values(map.sections ?? { a: 'Nieuwe aanvragen', b: 'In planning', c: 'Mee bezig', d: 'Klaar' })
@@ -154,6 +167,26 @@ try {
   warnings.push(`Kon de veldenbibliotheek niet lezen (${e.message}); velden worden zo nodig nieuw aangemaakt.`)
 }
 
+// Sommige velden horen ook in het planningsproject ("4. Werkplanning"): alleen velden die daar aan
+// het project hangen kun je in de kalender als kleur gebruiken.
+const planningGid = args.planning && args.planning !== 'true' ? extractGid(args.planning) : null
+let planningVelden = null
+async function koppelAanPlanning(field) {
+  if (!planningGid) return
+  try {
+    if (!planningVelden) {
+      const s = await asana(`/projects/${planningGid}/custom_field_settings?limit=100&opt_fields=custom_field.gid`)
+      planningVelden = new Set(s.map((x) => x.custom_field?.gid).filter(Boolean))
+    }
+    if (planningVelden.has(field.gid)) return
+    await asana(`/projects/${planningGid}/addCustomFieldSetting`, { method: 'POST', body: { data: { custom_field: field.gid, is_important: false } } })
+    planningVelden.add(field.gid)
+    summary.push(`Veld "${field.name}" ook aan het planningsproject gekoppeld (voor de kleur in de kalender)`)
+  } catch (e) {
+    warnings.push(`Veld "${field.name}" kon niet aan het planningsproject gekoppeld worden: ${e.message}`)
+  }
+}
+
 let premiumBlocked = false
 for (const spec of FIELD_SPECS) {
   if (premiumBlocked) break
@@ -189,6 +222,7 @@ for (const spec of FIELD_SPECS) {
       onProject.push(field)
       if (status === 'bestond al') status = 'aan project gekoppeld'
     }
+    if (spec.ookInPlanning) await koppelAanPlanning({ gid: field.gid, name })
     summary.push(`Veld "${name}" (${spec.type}): ${status}`)
   } catch (e) {
     if (e.status === 402 || /premium|paid|upgrade|starter/i.test(e.message)) {
