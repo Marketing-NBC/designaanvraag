@@ -34,6 +34,20 @@ export async function submitAanvraag(payload: SubmitPayload): Promise<SubmitResu
   return body
 }
 
+export type BrandStatus = 'pending' | 'running' | 'done' | 'failed'
+
+/** Status van de huisstijl-extractie; null als er geen backend is of de aanvraag onbekend is. */
+export async function fetchStatus(aanvraagId: string): Promise<{ brand_status: BrandStatus; asana_task_url: string | null } | null> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) return null
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/aanvraag-status?id=${encodeURIComponent(aanvraagId)}`, { headers: { apikey: PUBLISHABLE_KEY } })
+    if (!res.ok) return null
+    return (await res.json()) as { brand_status: BrandStatus; asana_task_url: string | null }
+  } catch {
+    return null
+  }
+}
+
 export async function fetchCollegas(fallback: string[]): Promise<string[]> {
   const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
   if (!base || !PUBLISHABLE_KEY) return fallback

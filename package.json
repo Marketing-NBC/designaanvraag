@@ -15,7 +15,7 @@
     "e2e": "npm run e2e -w web",
     "lint": "npm run lint -w web",
     "sync-shared": "node scripts/sync-shared.mjs",
-    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none submit-aanvraag/"
+    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none submit-aanvraag/ aanvraag-status/"
   },
   "engines": {
     "node": ">=22"

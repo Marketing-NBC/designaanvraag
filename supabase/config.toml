@@ -14,3 +14,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/submit-aanvraag/index.ts"
+
+[functions.aanvraag-status]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/aanvraag-status/index.ts"

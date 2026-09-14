@@ -31,8 +31,8 @@ jobs:
       - name: deno check + test
         working-directory: supabase/functions
         run: |
-          deno check submit-aanvraag/index.ts
-          deno test --allow-env --allow-net=none submit-aanvraag/
+          deno check submit-aanvraag/index.ts aanvraag-status/index.ts
+          deno test --allow-env --allow-net=none submit-aanvraag/ aanvraag-status/
 
   deploy:
     name: Migraties, functions en secrets
@@ -62,7 +62,7 @@ jobs:
       - name: Migraties toepassen
         run: supabase db push --linked --password "$SUPABASE_DB_PASSWORD" --yes
       - name: Edge functions deployen
-        run: supabase functions deploy submit-aanvraag --project-ref "$PROJECT_ID" --use-api
+        run: supabase functions deploy --project-ref "$PROJECT_ID" --use-api
       - name: Function-secrets zetten (alleen ingevulde)
         env:
           ASANA_PAT: ${{ secrets.ASANA_PAT }}
@@ -86,6 +86,6 @@ jobs:
           {
             echo "### Supabase deploy gelukt"
             echo
-            echo "- Function: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`"
+            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\` en \`…/aanvraag-status\`"
             echo "- Migraties: \`$(ls supabase/migrations | tr '\n' ' ')\`"
           } >> "$GITHUB_STEP_SUMMARY"
