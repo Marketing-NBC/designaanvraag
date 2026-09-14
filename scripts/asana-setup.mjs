@@ -42,7 +42,16 @@ const summary = []
 const FIELD_SPECS = [
   { key: 'eventdatum', type: 'date', description: 'Datum van het event.' },
   { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },
-  { key: 'aanvrager', type: 'text', description: 'Collega die de aanvraag heeft ingediend.' },
+  {
+    key: 'aanvrager',
+    type: 'enum',
+    description: 'Collega die de aanvraag heeft ingediend. Een keuzelijst, zodat het dashboard erop kan groeperen.',
+    // Geen vaste opties: de edge function maakt de optie aan zodra iemand voor het eerst een
+    // aanvraag doet. Zo staan er geen namen van collega's in deze (publieke) repo.
+    optiesViaFunction: true,
+    // Dit veld was eerder een tekstveld; Asana kan het type niet wijzigen, dus vervangen.
+    vervangBijAnderType: true,
+  },
   {
     key: 'type',
     type: 'multi_enum',
@@ -200,13 +209,27 @@ for (const spec of FIELD_SPECS) {
     let field = onProject.find((f) => norm(f.name) === norm(name)) ?? library?.find((f) => norm(f.name) === norm(name)) ?? null
     let status = 'bestond al'
     if (field && field.resource_subtype !== spec.type) {
-      warnings.push(`Veld "${name}" bestaat al als ${field.resource_subtype}, verwacht ${spec.type}; de function past zich aan, maar check het veld.`)
+      if (spec.vervangBijAnderType) {
+        // Asana kan het type van een bestaand veld niet wijzigen, dus het oude veld gaat weg en er
+        // komt een nieuw veld met dezelfde naam voor in de plaats.
+        await asana(`/custom_fields/${field.gid}`, { method: 'DELETE' })
+        const weg = onProject.findIndex((f) => f.gid === field.gid)
+        if (weg >= 0) onProject.splice(weg, 1)
+        summary.push(`Veld "${name}" bestond als ${field.resource_subtype} en is verwijderd om het als ${spec.type} opnieuw aan te maken`)
+        field = null
+        status = 'vervangen'
+      } else {
+        warnings.push(`Veld "${name}" bestaat al als ${field.resource_subtype}, verwacht ${spec.type}; de function past zich aan, maar check het veld.`)
+      }
     }
     if (!field) {
       const data = { workspace: workspaceGid, name, resource_subtype: spec.type, description: spec.description }
       if (spec.options) data.enum_options = spec.options.map(([key, color]) => ({ name: optionLabel(key), color, enabled: true }))
+      // Een enum-veld moet bij het aanmaken minstens één optie hebben; die van de aanvragers vult
+      // de function later aan met de echte namen.
+      if (spec.optiesViaFunction) data.enum_options = [{ name: 'Onbekend', color: 'none', enabled: true }]
       field = await asana('/custom_fields', { method: 'POST', body: { data } })
-      status = 'aangemaakt'
+      if (status !== 'vervangen') status = 'aangemaakt'
     } else if (spec.options) {
       // Ontbrekende opties aanvullen op een bestaand enum-veld.
       const enabled = (field.enum_options ?? []).filter((o) => o.enabled !== false)

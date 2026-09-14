@@ -29,6 +29,8 @@ export interface Db {
   update(id: string, patch: Partial<AanvraagRow>): Promise<void>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
+  /** Staat deze naam in de lijst met collega's? Voorkomt dat willekeurige invoer opties aanmaakt. */
+  isCollega(naam: string): Promise<boolean>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url'
@@ -54,6 +56,11 @@ export function createDb(url: string, secretKey: string): Db {
       const { data, error } = await sb.rpc('bump_rate_limit', { p_key: key, p_window: window })
       if (error) throw new Error(`db rate limit: ${error.message}`)
       return Number(data)
+    },
+    async isCollega(naam) {
+      const { data, error } = await sb.from('collegas').select('naam').ilike('naam', naam.trim()).eq('actief', true).limit(1)
+      if (error) throw new Error(`db collegas: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length > 0
     },
   }
 }

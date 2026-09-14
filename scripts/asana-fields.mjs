@@ -63,8 +63,11 @@ for (const [key, wanted] of Object.entries(map)) {
     entry.options = {}
     const enabled = (f.enum_options ?? []).filter((o) => o.enabled !== false)
     if (key === 'aanvrager') {
-      // Namen van collega's: één op één op label.
-      for (const o of enabled) entry.options[o.name] = o.gid
+      // Bewust géén opties opslaan: dit bestand staat in een publieke repo en namen van collega's
+      // horen daar niet in. De edge function zoekt de optie bij het indienen op via de API en maakt
+      // hem zo nodig aan.
+      entry.opties_via_function = true
+      delete entry.options
     } else {
       for (const [ourKey, aliases] of Object.entries(map.option_aliases ?? {})) {
         const hit = enabled.find((o) => aliases.some((a) => norm(a) === norm(o.name)))

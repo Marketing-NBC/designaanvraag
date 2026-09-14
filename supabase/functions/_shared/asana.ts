@@ -40,6 +40,8 @@ export interface TaskInput {
 export interface AsanaClient {
   /** `warnings` bevat wat Asana geweigerd heeft; de taak bestaat dan wel. Leeg = alles gelukt. */
   createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number; warnings: string[] }>
+  /** Gid van de enum-optie met deze naam; maakt hem aan als hij nog niet bestaat. */
+  enumOptie(fieldGid: string, naam: string): Promise<string>
 }
 
 export interface AsanaTask {
@@ -66,7 +68,11 @@ export interface AsanaTaskClient {
  * overgeslagen. `opties.spoed` komt uit de handler, die hem één keer berekent met de Nederlandse
  * datum van dat moment.
  */
-export function buildCustomFields(a: Aanvraag, cfg: AsanaFieldsConfig = asanaFields, opties: { spoed?: boolean } = {}): Record<string, unknown> {
+export function buildCustomFields(
+  a: Aanvraag,
+  cfg: AsanaFieldsConfig = asanaFields,
+  opties: { spoed?: boolean; aanvragerOptieGid?: string | null } = {},
+): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const f = cfg.fields ?? {}
 
@@ -79,7 +85,9 @@ export function buildCustomFields(a: Aanvraag, cfg: AsanaFieldsConfig = asanaFie
 
   const aanvrager = f['aanvrager']
   if (aanvrager?.type === 'enum') {
-    const gid = aanvrager.options?.[a.naam]
+    // De optie-gids staan niet in asana-fields.json: dat bestand zit in een publieke repo en namen
+    // van collega's horen daar niet in. De handler zoekt de optie bij het indienen op via de API.
+    const gid = opties.aanvragerOptieGid ?? aanvrager.options?.[a.naam]
     if (gid) out[aanvrager.gid] = gid
   } else if (aanvrager?.type === 'text') {
     out[aanvrager.gid] = a.naam
@@ -209,6 +217,27 @@ export function createAsanaClient(pat: string): AsanaClient {
       }
 
       return { gid, url, subtasks: await createSubtasks(pat, gid, input), warnings }
+    },
+
+    async enumOptie(fieldGid, naam) {
+      const gezocht = naam.trim().toLowerCase()
+      const huidig = await asanaFetch(pat, `/custom_fields/${fieldGid}?opt_fields=enum_options.gid,enum_options.name,enum_options.enabled`, { method: 'GET' })
+      if (!ok(huidig.status)) throw new Error(`Opties ophalen mislukt (${huidig.status}: ${errorText(huidig.body)})`)
+      const opties = (huidig.body.data?.enum_options ?? []) as { gid: string; name?: string; enabled?: boolean }[]
+      const bestaand = opties.find((o) => o.name?.trim().toLowerCase() === gezocht)
+      if (bestaand) {
+        // Ooit uitgezet in Asana? Weer aanzetten, anders kan de waarde niet gebruikt worden.
+        if (bestaand.enabled === false) {
+          await asanaFetch(pat, `/enum_options/${bestaand.gid}`, { method: 'PUT', body: JSON.stringify({ data: { enabled: true } }) })
+        }
+        return bestaand.gid
+      }
+      const nieuw = await asanaFetch(pat, `/custom_fields/${fieldGid}/enum_options`, {
+        method: 'POST',
+        body: JSON.stringify({ data: { name: naam.trim(), enabled: true } }),
+      })
+      if (!ok(nieuw.status) || !nieuw.body.data?.gid) throw new Error(`Optie "${naam}" aanmaken mislukt (${nieuw.status}: ${errorText(nieuw.body)})`)
+      return String(nieuw.body.data.gid)
     },
   }
 }

@@ -1,6 +1,6 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { Env } from '../_shared/env.ts'
-import type { AsanaClient } from '../_shared/asana.ts'
+import type { AsanaClient, AsanaFieldsConfig } from '../_shared/asana.ts'
 import { asanaFields, buildCustomFields } from '../_shared/asana.ts'
 import type { Db } from '../_shared/db.ts'
 import { renderNotes } from '../_shared/notes.ts'
@@ -14,6 +14,8 @@ export interface Deps {
   db: Db
   asana: AsanaClient | null
   routine: RoutineClient | null
+  /** Veldmapping; standaard shared/asana-fields.json. Alleen tests geven hier iets anders mee. */
+  fields?: AsanaFieldsConfig
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
@@ -39,6 +41,7 @@ function resultOf(row: { id: string; asana_task_url: string | null; brand_status
 
 export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const { env, db } = deps
+  const cfg = deps.fields ?? asanaFields
   const now = deps.now ?? (() => new Date())
   const log = deps.log ?? ((level, msg, extra) => console[level === 'info' ? 'log' : level](msg, extra ?? ''))
 
@@ -105,25 +108,44 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Asana-taak (fase 3). Zonder configuratie slaan we dit over; de aanvraag blijft bewaard.
     let asanaUrl: string | null = null
     let asanaGid: string | null = null
-    const projectGid = env.asanaProjectGid ?? asanaFields.project?.gid ?? null
+    const extraWaarschuwingen: string[] = []
+    const projectGid = env.asanaProjectGid ?? cfg.project?.gid ?? null
     if (deps.asana && projectGid) {
       try {
+        // Aanvrager is een keuzelijst zodat het dashboard erop kan groeperen. De optie-gids staan
+        // niet in de repo (die is publiek), dus zoeken we de optie hier op naam op en maken hem zo
+        // nodig aan. Alleen voor namen die echt in de lijst met collega's staan.
+        const aanvragerVeld = cfg.fields?.aanvrager
+        let aanvragerOptieGid: string | null = null
+        if (aanvragerVeld?.type === 'enum') {
+          try {
+            if (await db.isCollega(aanvraag.naam)) {
+              aanvragerOptieGid = await deps.asana.enumOptie(aanvragerVeld.gid, aanvraag.naam)
+            } else {
+              extraWaarschuwingen.push(`aanvrager "${aanvraag.naam}" staat niet in de lijst met collega's; veld Aanvrager leeg gelaten`)
+            }
+          } catch (e) {
+            extraWaarschuwingen.push(`veld Aanvrager niet gezet: ${e instanceof Error ? e.message : String(e)}`)
+          }
+        }
+
         const notes = renderNotes(aanvraag, { aanvraagId: row.id })
         const task = await deps.asana.createTask({
           name: taskTitle(aanvraag),
           htmlNotes: notes.html,
           plainNotes: notes.plain,
           projectGid,
-          sectionGid: asanaFields.sections?.nieuwe_aanvragen?.gid ?? null,
-          assigneeGid: env.asanaAssigneeGid ?? asanaFields.assignee?.gid ?? null,
-          customFields: buildCustomFields(aanvraag, undefined, { spoed }),
+          sectionGid: cfg.sections?.nieuwe_aanvragen?.gid ?? null,
+          assigneeGid: env.asanaAssigneeGid ?? cfg.assignee?.gid ?? null,
+          customFields: buildCustomFields(aanvraag, cfg, { spoed, aanvragerOptieGid }),
           subtasks: subtaskTitles(aanvraag),
         })
         asanaGid = task.gid
         asanaUrl = task.url
         // Onderdelen die Asana weigerde (een veld, de kolom, de opmaak) blijven zichtbaar in
         // `asana_error`; de taak zelf bestaat, dus de aanvraag slaagt.
-        const gedeeltelijk = task.warnings.length ? task.warnings.join('; ') : null
+        const alleWaarschuwingen = [...extraWaarschuwingen, ...task.warnings]
+        const gedeeltelijk = alleWaarschuwingen.length ? alleWaarschuwingen.join('; ') : null
         await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url, asana_error: gedeeltelijk })
         if (gedeeltelijk) log('warn', 'asana-taak onvolledig', { id: row.id, gid: task.gid, warnings: gedeeltelijk })
         else log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid, subtasks: task.subtasks })

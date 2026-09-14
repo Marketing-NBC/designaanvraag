@@ -102,6 +102,11 @@ alle gegevens in de beschrijving.
   een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
+- **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
+  function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
+  Alleen namen die in de Supabase-tabel `collegas` staan krijgen een optie; bij een onbekende naam
+  blijft het veld leeg en staat de reden in `asana_error`. Je hoeft de lijst dus nergens dubbel bij
+  te houden.
 - **Spoed:** zit er minder dan 10 werkdagen tussen de aanvraag en de eventdatum, dan zet de function
   het veld **Spoed** op "Ja". Dat gebeurt één keer bij het indienen; verschuift de eventdatum later,
   dan blijft de registratie staan. De regel staat in `shared/spoed.ts`.
@@ -117,6 +122,9 @@ kan geen grafieken of weergave-instellingen maken.
 - **Tellen:** project "Designaanvragen" → tab **Dashboard** → grafiek toevoegen → "Aantal taken",
   groeperen op **Spoed**. Voor een verloop over de tijd: X-as "Aanmaakdatum" per maand, kleuren op
   **Spoed**.
+- **Wie vraagt de meeste spoedjes aan:** dezelfde grafiek, maar groeperen op **Aanvrager** en
+  filteren op **Spoed = Ja**. Dat kan omdat Aanvrager een keuzelijst is; op een tekstveld kan Asana
+  niet groeperen.
 - **Zien in je planning:** project "4. Werkplanning" → **Kalender** → **Kleur** → **Spoed**.
   Spoedjes worden rood, de rest grijs. Dit werkt omdat `scripts/asana-setup.mjs` het Spoed-veld ook
   aan het planningsproject koppelt; andere velden blijven daar buiten.

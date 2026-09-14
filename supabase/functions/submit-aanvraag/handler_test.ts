@@ -47,14 +47,24 @@ function fakeDb() {
       counters.set(key, n)
       return n
     },
+    async isCollega(naam) {
+      return naam !== 'Onbekende Indringer'
+    },
   }
   return db
 }
 
-function fakeAsana(opts: { fail?: boolean; warnings?: string[] } = {}) {
+function fakeAsana(opts: { fail?: boolean; warnings?: string[]; optieFail?: boolean } = {}) {
   const calls: TaskInput[] = []
+  const opties: { fieldGid: string; naam: string }[] = []
   return {
     calls,
+    opties,
+    async enumOptie(fieldGid: string, naam: string) {
+      if (opts.optieFail) throw new Error('403: Not Authorized')
+      opties.push({ fieldGid, naam })
+      return `optie-${naam}`
+    },
     async createTask(input: TaskInput) {
       calls.push(input)
       if (opts.fail) throw new Error('Asana-taak aanmaken mislukt (401: Not Authorized)')
@@ -314,4 +324,44 @@ Deno.test('spoed wordt bij het indienen bepaald en opgeslagen', async () => {
   const spoedRij = [...krap.db.rows.values()][0]
   assertEquals(spoedRij.spoed, true)
   assertEquals(spoedRij.werkdagen_tot_event, 8)
+})
+
+/** Veldmapping zoals na de workflow: Aanvrager is een keuzelijst zonder opties in de repo. */
+const velden = {
+  project: { gid: '111' },
+  assignee: { gid: '222' },
+  fields: { aanvrager: { gid: 'fA', name: 'Aanvrager', type: 'enum' } },
+  sections: {},
+} as unknown as Parameters<typeof createHandler>[0]['fields']
+
+Deno.test('aanvrager-optie wordt opgezocht en op de taak gezet', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  await handler(post(payload()))
+  assertEquals(asana.opties, [{ fieldGid: 'fA', naam: 'Noa' }])
+  assertEquals(asana.calls[0].customFields, { fA: 'optie-Noa' })
+  assertEquals([...db.rows.values()][0].asana_error, null)
+})
+
+Deno.test('naam buiten de collegalijst krijgt geen optie', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Onbekende Indringer' } })))
+  // Geen nieuwe optie in Asana, veld leeg, en de reden staat in de rij.
+  assertEquals(asana.opties, [])
+  assertEquals(asana.calls[0].customFields, {})
+  assertMatch([...db.rows.values()][0].asana_error ?? '', /staat niet in de lijst met collega's/)
+})
+
+Deno.test('mislukte optie-lookup blokkeert de aanvraag niet', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana({ optieFail: true })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  const res = await handler(post(payload()))
+  assertEquals(res.status, 200)
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.asana_task_gid, '999')
+  assertMatch(rij.asana_error ?? '', /veld Aanvrager niet gezet: 403/)
 })

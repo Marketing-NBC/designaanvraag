@@ -185,7 +185,13 @@ for (const s of scenarios) {
 
   check(veld('eventdatum')?.date_value?.date === s.aanvraag.event_datum, 'veld Eventdatum', veld('eventdatum')?.date_value?.date ?? 'leeg')
   check(veld('deadline')?.date_value?.date === s.aanvraag.deadline, 'veld Deadline', veld('deadline')?.date_value?.date ?? 'leeg')
-  check(veld('aanvrager')?.text_value === s.aanvraag.naam, 'veld Aanvrager', veld('aanvrager')?.text_value ?? 'leeg')
+  if (f.aanvrager?.type === 'enum') {
+    // De testnaam staat niet in de collegalijst, dus hier hoort géén optie te komen: dat is precies
+    // de bescherming tegen willekeurige invoer. Bij een echte aanvraag vult de function het veld wel.
+    check(!veld('aanvrager')?.enum_value, 'veld Aanvrager leeg bij onbekende naam (bescherming werkt)', veld('aanvrager')?.enum_value?.name ?? 'leeg')
+  } else {
+    check(veld('aanvrager')?.text_value === s.aanvraag.naam, 'veld Aanvrager', veld('aanvrager')?.text_value ?? 'leeg')
+  }
   check(veld('website')?.text_value === s.aanvraag.website, 'veld Website', veld('website')?.text_value ?? 'leeg')
 
   const verwachteTypes = s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean).sort()
@@ -218,7 +224,7 @@ for (const s of scenarios) {
   const verwachteVelden = {
     eventdatum: { date: s.aanvraag.event_datum },
     deadline: { date: s.aanvraag.deadline },
-    aanvrager: s.aanvraag.naam,
+    ...(f.aanvrager?.type === 'enum' ? {} : { aanvrager: s.aanvraag.naam }),
     website: s.aanvraag.website,
     type: s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean),
     modus: f.modus?.options?.[s.aanvraag.design_modus],
