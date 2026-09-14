@@ -1,6 +1,6 @@
 # Plan: NBC Designaanvraag-tool
 
-## Status (14 september 2026, 16:30)
+## Status (14 september 2026, 17:00)
 
 | Milestone | Status |
 |---|---|
@@ -10,7 +10,7 @@
 | M4 Huisstijl-Routine | Code klaar en lokaal getest. Nog nodig: Routine + environment aanmaken (README) en `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN` als secrets, daarna Supabase deploy |
 | M5 Afwerking | Live (status-endpoint, live status op succes-scherm) |
 
-Testaanvragen (mogen weg): Asana-taak 1218451961755486 in "4. Werkplanning" en taak 1218459840984419 in "Designaanvragen".
+Testaanvragen (mogen weg): Asana-taak 1218451961755486 in "4. Werkplanning"; taken 1218459840984419 en 1218462447960121 in "Designaanvragen" (de laatste is geschikt om de planning-flow te testen).
 
 ## Context
 
