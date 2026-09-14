@@ -92,11 +92,16 @@ if (out.assignee) console.log(`Assignee: ${out.assignee.name} (${out.assignee.gi
 for (const w of warnings) console.warn(`Let op: ${w}`)
 
 function extractGid(s) {
-  const m = String(s).match(/(\d{6,})/g)
-  if (!m) return null
-  // In een projectlink (…/0/<project>/<task>) is de projectgid het eerste lange getal na /0/.
-  const url = String(s).match(/\/0\/(\d{6,})/)
-  return url ? url[1] : m[0]
+  const str = String(s).trim()
+  // Nieuw formaat: https://app.asana.com/1/<workspace>/project/<project>/…
+  const nieuw = str.match(/\/project\/(\d{6,})/)
+  if (nieuw) return nieuw[1]
+  // Oud formaat: https://app.asana.com/0/<project>/<task>
+  const oud = str.match(/\/0\/(\d{6,})/)
+  if (oud) return oud[1]
+  // Kale gid
+  const m = str.match(/(\d{6,})/)
+  return m ? m[1] : null
 }
 
 function fail(msg) {
