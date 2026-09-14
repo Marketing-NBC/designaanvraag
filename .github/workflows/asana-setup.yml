@@ -1,0 +1,56 @@
+name: Asana-project aanmaken
+
+# Maakt (eenmalig) een Asana-project voor designaanvragen met secties en custom fields, en zet
+# daarna shared/asana-fields.json op dat project. Veilig om opnieuw te draaien. Vereist secret ASANA_PAT.
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Naam van het nieuwe project'
+        required: true
+        default: 'Designaanvragen'
+      like:
+        description: 'Link naar een bestaand project in hetzelfde team (bepaalt workspace, team en leden)'
+        required: true
+      assignee:
+        description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
+        required: false
+        default: 'Abel'
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      ASANA_PAT: ${{ secrets.ASANA_PAT }}
+      NAME_INPUT: ${{ inputs.name }}
+      LIKE_INPUT: ${{ inputs.like }}
+      ASSIGNEE_INPUT: ${{ inputs.assignee }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Project en velden aanmaken
+        id: setup
+        run: |
+          [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
+          node scripts/asana-setup.mjs --name "$NAME_INPUT" --like "$LIKE_INPUT" --assignee "$ASSIGNEE_INPUT"
+      - name: Velden uitlezen
+        run: |
+          node scripts/asana-fields.mjs --project "${{ steps.setup.outputs.project_gid }}" --assignee "$ASSIGNEE_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/sync-shared.mjs
+      - name: Committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shared/asana-fields.json supabase/functions/_shared/shared/asana-fields.json
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen."
+          else
+            git commit -m "Asana-project gekoppeld via workflow"
+            git push
+          fi

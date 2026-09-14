@@ -19,7 +19,7 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
 | `supabase/` | Migraties en de edge function `submit-aanvraag` |
 | `worker/` | Huisstijl-extractie; draait in een Claude Code Routine volgens `worker/ROUTINE.md` |
-| `scripts/` | `asana-fields.mjs` (Asana-velden uitlezen), `sync-shared.mjs` (schema's kopiëren naar de function) |
+| `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
 ## Lokaal draaien
 
@@ -73,14 +73,21 @@ mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
 ## Asana koppelen
 
 1. Zet `ASANA_PAT` als secret.
-2. Actions → **Asana-velden vernieuwen** → Run workflow, met de link naar het Asana-project en de
-   naam van de designer (assignee). De workflow leest project-gid, assignee en custom fields uit en commit
-   `shared/asana-fields.json`.
+2. Kies één van twee:
+   - **Nieuw project laten aanmaken:** Actions → **Asana-project aanmaken** → Run workflow, met de
+     naam van het project en de link naar een bestaand project in hetzelfde team. De workflow maakt
+     het project (bordweergave, secties "Nieuwe aanvragen" → "Mee bezig" → "Klaar"), neemt de leden
+     over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
+     `shared/asana-fields.json`. Opnieuw draaien is veilig: bestaande onderdelen worden hergebruikt.
+   - **Bestaand project gebruiken:** Actions → **Asana-velden vernieuwen** → Run workflow, met de link
+     naar het project en de naam van de designer (assignee). Leest project-gid, assignee en custom
+     fields uit en commit `shared/asana-fields.json`.
 3. Kloppen de veldnamen niet? Pas `scripts/asana-field-map.json` aan (links onze sleutel,
-   rechts de naam in Asana) en draai de workflow opnieuw.
+   rechts de naam in Asana) en draai "Asana-velden vernieuwen" opnieuw.
 4. Push naar `main` (of Supabase deploy handmatig) zodat de function de nieuwe mapping krijgt.
 
-Zonder mapping maakt de function nog steeds taken, alleen zonder custom fields.
+Custom fields vereisen Asana Starter of hoger; zonder velden maakt de function nog steeds taken, met
+alle gegevens in de beschrijving en de deadline als due date.
 
 ## Routine instellen (huisstijl-extractie)
 
