@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { aanvraagSchema, normalizeUrl, submitPayloadSchema } from './aanvraag-schema'
-import { describeRequestTypes } from './request-types'
+import { aanvraagSchema, normalizeUrl, submitPayloadSchema } from './aanvraag-schema.ts'
+import { describeRequestTypes } from './request-types.ts'
 
 const valid = {
   naam: 'Naomi',

@@ -1,0 +1,16 @@
+# Supabase CLI-config. Alleen de instellingen die voor dit project afwijken van de defaults.
+# De rest (lokale poorten, auth, studio) is niet in gebruik: we deployen alleen naar het gelinkte project.
+project_id = "designaanvraag"
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+deno_version = 2
+
+# Het formulier stuurt de publishable key in de `apikey`-header; er is geen ingelogde gebruiker,
+# dus JWT-verificatie staat uit. De function valideert zelf (schema, honeypot, rate-limit).
+[functions.submit-aanvraag]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/submit-aanvraag/index.ts"

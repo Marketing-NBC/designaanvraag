@@ -1,0 +1,47 @@
+name: Asana-velden vernieuwen
+
+# Leest Abels project uit (custom fields, opties, assignee) en commit shared/asana-fields.json.
+# Draai dit na het aanmaken/hernoemen van velden in Asana. Vereist secret ASANA_PAT.
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: 'Link of GID van Abels Asana-project'
+        required: true
+      assignee:
+        description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
+        required: false
+        default: 'Abel'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      ASANA_PAT: ${{ secrets.ASANA_PAT }}
+      PROJECT_INPUT: ${{ inputs.project }}
+      ASSIGNEE_INPUT: ${{ inputs.assignee }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Velden uitlezen
+        run: |
+          [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
+          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --assignee "$ASSIGNEE_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/sync-shared.mjs
+      - name: Committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add shared/asana-fields.json supabase/functions/_shared/shared/asana-fields.json
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen."
+          else
+            git commit -m "Asana-velden vernieuwd via workflow"
+            git push
+          fi

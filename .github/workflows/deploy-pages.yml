@@ -23,6 +23,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_SUPABASE: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_ID != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,14 +34,28 @@ jobs:
       - run: npm ci
       - name: Unit tests
         run: npm test
+      - name: Supabase-keys ophalen
+        # Haalt de publieke URL + publishable key uit het project, zodat je die niet apart hoeft in te stellen.
+        if: env.HAS_SUPABASE == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          npx --yes supabase@latest projects api-keys --project-ref "$PROJECT_ID" -o json > keys.json
+          key=$(node -e '
+            const ks = JSON.parse(require("fs").readFileSync("keys.json","utf8"));
+            const pub = ks.find(k => String(k.api_key||"").startsWith("sb_publishable_")) || ks.find(k => k.name === "anon") || ks.find(k => /publishable|anon/i.test(k.name||""));
+            process.stdout.write(pub ? pub.api_key : "");
+          ')
+          rm -f keys.json
+          [ -n "$key" ] || { echo "::error::Geen publishable/anon key gevonden"; exit 1; }
+          echo "VITE_SUPABASE_URL=https://${PROJECT_ID}.supabase.co" >> "$GITHUB_ENV"
+          echo "VITE_SUPABASE_PUBLISHABLE_KEY=${key}" >> "$GITHUB_ENV"
       - name: Build
         run: npm run build
         env:
           # Site staat onder https://<org>.github.io/designaanvraag/
           VITE_BASE_PATH: /designaanvraag/
-          # Repository variables (Settings → Secrets and variables → Actions → Variables). Leeg = mock-modus.
-          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
       - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
