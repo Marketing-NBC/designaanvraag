@@ -1,4 +1,5 @@
 import type { SubmitPayload, SubmitResult } from '../../../shared/aanvraag-schema'
+import { COLLEGAS_MOCK } from '../data/collegas.fallback'
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1` : null
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -48,9 +49,10 @@ export async function fetchStatus(aanvraagId: string): Promise<{ brand_status: B
   }
 }
 
+/** Namenlijst uit Supabase; zonder backend (mock-modus) verzonnen namen, bij een storing de fallback. */
 export async function fetchCollegas(fallback: string[]): Promise<string[]> {
   const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
-  if (!base || !PUBLISHABLE_KEY) return fallback
+  if (!base || !PUBLISHABLE_KEY) return COLLEGAS_MOCK
   try {
     const res = await fetch(`${base}/rest/v1/collegas_public?select=naam&order=volgorde,naam`, {
       headers: { apikey: PUBLISHABLE_KEY },

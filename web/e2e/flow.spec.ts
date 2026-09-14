@@ -20,10 +20,10 @@ test.describe('designaanvraag-flow', () => {
     // 1. Naam: doorgaan zonder keuze geeft een fout
     await page.keyboard.press('Enter')
     await expect(page.getByRole('alert')).toContainText('Kies je naam')
-    await page.getByPlaceholder('Typ of kies je naam').fill('na')
+    await page.getByPlaceholder('Typ of kies je naam').fill('noa')
     await shot(page, '01-naam', p)
-    await page.getByRole('option', { name: 'Naomi' }).click()
-    await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Naomi')
+    await page.getByRole('option', { name: 'Noa Demo' }).click()
+    await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Noa Demo')
     await page.keyboard.press('Enter')
 
     // 2. Event
@@ -88,7 +88,7 @@ test.describe('designaanvraag-flow', () => {
 
     // 10. Overzicht
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
-    await expect(page.locator('.review__value').nth(0)).toHaveText('Naomi')
+    await expect(page.locator('.review__value').nth(0)).toHaveText('Noa Demo')
     await expect(page.locator('.review__value').nth(6)).toHaveText('LED-kolom, Vlaggen, Roll-up banner')
     await shot(page, '10-overzicht', p)
 
@@ -114,8 +114,8 @@ test.describe('designaanvraag-flow', () => {
   test('concept wordt bewaard en kan worden hervat', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Start' }).click()
-    await page.getByPlaceholder('Typ of kies je naam').fill('Fle')
-    await page.getByRole('option', { name: 'Fleur' }).click()
+    await page.getByPlaceholder('Typ of kies je naam').fill('fen')
+    await page.getByRole('option', { name: 'Fenna Demo' }).click()
     await page.keyboard.press('Enter')
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
     await page.keyboard.type('Kerstborrel')
@@ -126,6 +126,6 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
     await expect(page.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026')).toHaveValue('Kerstborrel')
     await page.getByRole('button', { name: 'Vorige vraag' }).click()
-    await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Fleur')
+    await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Fenna Demo')
   })
 })
