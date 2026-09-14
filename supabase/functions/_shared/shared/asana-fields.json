@@ -1,15 +1,65 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-09-14T12:27:11.430Z",
+  "generated_at": "2026-09-14T14:19:54.682Z",
   "project": {
-    "gid": "1206998483284471",
-    "name": "4. Werkplanning",
-    "url": "https://app.asana.com/1/1205781972079586/project/1206998483284471",
+    "gid": "1218459975593983",
+    "name": "Designaanvragen",
+    "url": "https://app.asana.com/1/1205781972079586/project/1218459975593983",
     "workspace_gid": "1205781972079586"
   },
   "assignee": {
     "gid": "1213080601733351",
     "name": "Abel van Dijk"
   },
-  "fields": {}
+  "fields": {
+    "eventdatum": {
+      "gid": "1218459646511854",
+      "name": "Eventdatum",
+      "type": "date"
+    },
+    "deadline": {
+      "gid": "1218459647359585",
+      "name": "Deadline",
+      "type": "date"
+    },
+    "aanvrager": {
+      "gid": "1218459785021215",
+      "name": "Aanvrager",
+      "type": "text"
+    },
+    "type": {
+      "gid": "1218459975892326",
+      "name": "Type aanvraag",
+      "type": "multi_enum",
+      "options": {
+        "led_kolom": "1218459975892327",
+        "torenscherm": "1218459975892328",
+        "koffiescherm": "1218459975892329",
+        "overige_schermen": "1218459975892330",
+        "menukaart_print": "1218459975892331",
+        "menu_scherm": "1218459975892332",
+        "vlaggen": "1218459975892333",
+        "anders": "1218459975892334"
+      }
+    },
+    "modus": {
+      "gid": "1218459645748045",
+      "name": "Design",
+      "type": "enum",
+      "options": {
+        "custom": "1218459645748046",
+        "standaard": "1218459645748047"
+      }
+    },
+    "website": {
+      "gid": "1218459915157961",
+      "name": "Website",
+      "type": "text"
+    },
+    "schijf": {
+      "gid": "1218459975443305",
+      "name": "Schijf",
+      "type": "text"
+    }
+  }
 }
