@@ -4,6 +4,16 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Huisstijl-extractie: draait in een Claude Code Routine (zie worker/ROUTINE.md).",
-  "scripts": {},
-  "dependencies": {}
+  "scripts": {
+    "extract": "node extract.mjs",
+    "validate": "node validate.mjs",
+    "publish": "node publish.mjs",
+    "fail": "node fail.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "playwright": "^1.63.0",
+    "sharp": "^0.35.4",
+    "zod": "^4.5.0"
+  }
 }

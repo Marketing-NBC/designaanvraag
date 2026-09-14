@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <title>Zorgcongres 2026 – Het congres voor de zorg van morgen</title>
+  <meta name="description" content="Testsite voor de huisstijl-extractie van de designaanvraag-tool.">
+  <meta name="theme-color" content="#0b3d91">
+  <meta property="og:image" content="/og.png">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/touch.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Open+Sans:wght@400;600&display=swap">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Zorgcongres","logo":"http://127.0.0.1:8765/logo.svg"}</script>
+  <style>
+    :root { --color-primary: #0b3d91; --color-accent: #ff7a00; --brand-secondary: rgb(0, 168, 150); --text-color: #1f2933; --bg: #f7f9fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Open Sans', Arial, sans-serif; color: var(--text-color); background: var(--bg); }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 18px 48px; background: #fff; border-bottom: 1px solid #e3e8ef; }
+    header a.brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; }
+    header a.brand img { height: 44px; }
+    nav a { margin-left: 24px; color: var(--color-primary); font-weight: 600; text-decoration: none; }
+    .hero { background: linear-gradient(135deg, var(--color-primary), #0a2a63); color: #fff; padding: 120px 48px; }
+    h1, h2, h3 { font-family: 'Montserrat', Arial, sans-serif; font-weight: 800; }
+    h1 { font-size: 64px; margin: 0 0 16px; }
+    .hero p { font-size: 22px; max-width: 640px; }
+    .btn { display: inline-block; background: var(--color-accent); color: #fff; padding: 16px 32px; border-radius: 999px; font-weight: 700; text-decoration: none; margin-top: 24px; }
+    .btn--ghost { background: transparent; border: 2px solid #fff; margin-left: 12px; }
+    section { padding: 80px 48px; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .card { background: #fff; border: 1px solid #e3e8ef; border-radius: 16px; padding: 32px; }
+    .card h3 { color: var(--color-primary); margin-top: 0; }
+    .tag { display: inline-block; background: var(--brand-secondary); color: #fff; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+    footer { background: #0a2a63; color: #c9d6ea; padding: 48px; font-size: 14px; }
+    #cookie-banner { position: fixed; inset: auto 0 0 0; background: #111; color: #fff; padding: 24px 48px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; }
+    #cookie-banner button { background: #fff; color: #111; border: 0; padding: 12px 24px; border-radius: 6px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="/" aria-label="Zorgcongres home"><img src="/logo.svg" alt="Zorgcongres logo"></a>
+    <nav><a href="#programma">Programma</a><a href="#sprekers">Sprekers</a><a href="#tickets">Tickets</a></nav>
+  </header>
+  <div class="hero">
+    <span class="tag">12 november 2026</span>
+    <h1>De zorg van morgen begint hier</h1>
+    <p>Twee dagen vol inspiratie, kennis en ontmoeting voor iedereen die de zorg beter wil maken.</p>
+    <a class="btn" href="#tickets">Koop tickets</a><a class="btn btn--ghost" href="#programma">Bekijk programma</a>
+  </div>
+  <section>
+    <h2>Waarom Zorgcongres</h2>
+    <div class="cards">
+      <div class="card"><h3>60+ sprekers</h3><p>Van bestuurders tot verpleegkundigen: de mensen die het verschil maken.</p></div>
+      <div class="card"><h3>3 zalen</h3><p>Parallelle sessies over innovatie, personeel en patiëntbeleving.</p></div>
+      <div class="card"><h3>1200 bezoekers</h3><p>Het grootste zorgevent van Midden-Nederland.</p></div>
+    </div>
+  </section>
+  <section id="programma"><h2>Programma</h2><p>Het volledige programma volgt in oktober. Schrijf je in voor de nieuwsbrief en mis niets.</p><a class="btn" href="#">Inschrijven</a></section>
+  <footer>© 2026 Zorgcongres · Een productie van Stichting Zorg Vooruit</footer>
+  <div id="cookie-banner"><span>Wij gebruiken cookies om de site te verbeteren.</span><button id="accept-cookies" onclick="document.getElementById('cookie-banner').remove()">Accepteren</button></div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Huisstijl-kaart</title>
+<!--FONT_LINK-->
+<style>
+  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Regular.otf') format('opentype'); font-weight: 400; }
+  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Light.otf') format('opentype'); font-weight: 300; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Regular.otf') format('opentype'); font-weight: 400; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Extrabold.otf') format('opentype'); font-weight: 800; }
+  :root { --ink: #0e0e0e; --paper: #fafafa; --cream: #f1f1ef; --teal: #229d96; --stone-300: #c8c5c1; --stone-600: #596165; --stone-800: #21282b; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1600px; height: 1000px; background: var(--cream); color: var(--stone-800); font-family: 'Area Normal', Inter, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  .kaart { display: grid; grid-template-columns: 560px 1fr; height: 1000px; }
+  .links { background: var(--logo-bg, #ffffff); display: flex; flex-direction: column; justify-content: space-between; padding: 56px; border-right: 1px solid var(--stone-300); }
+  .logo-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+  .logo-wrap img { width: 100%; max-width: 440px; max-height: 300px; object-fit: contain; }
+  .logo-wrap .geen { font: 400 22px/1.4 'Area Normal', sans-serif; color: var(--stone-600); text-align: center; }
+  .eyebrow { font: 800 14px/1.4 'Area Normal', sans-serif; letter-spacing: .08em; text-transform: lowercase; color: var(--stone-600); display: inline-flex; align-items: center; gap: 12px; }
+  .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; }
+  .eyebrow.light, .eyebrow.light::before { color: rgba(255,255,255,.7); }
+  .links .meta { font: 400 15px/1.5 'Area Normal', sans-serif; color: var(--logo-fg, var(--stone-600)); }
+  .rechts { padding: 56px 64px; display: grid; grid-template-rows: auto 1fr auto; gap: 28px; }
+  h1 { font: 300 64px/1 'Pockota', Georgia, serif; margin: 6px 0 0; color: #121618; letter-spacing: -0.01em; }
+  h1 small { display: block; font: 400 18px/1.4 'Area Normal', sans-serif; color: var(--stone-600); margin-top: 10px; letter-spacing: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 40px; align-content: start; }
+  .blok h2 { font: 800 13px/1.4 'Area Normal', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--stone-600); margin: 0 0 12px; }
+  .swatches { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .sw { display: flex; align-items: center; gap: 12px; background: var(--paper); border: 1px solid var(--stone-300); border-radius: 12px; padding: 8px 12px 8px 8px; }
+  .sw i { width: 44px; height: 44px; border-radius: 8px; flex: none; border: 1px solid rgba(0,0,0,.08); }
+  .sw b { display: block; font: 800 15px/1.2 'Area Normal', sans-serif; letter-spacing: .02em; }
+  .sw span { display: block; font: 400 13px/1.3 'Area Normal', sans-serif; color: var(--stone-600); }
+  .fonts .f { background: var(--paper); border: 1px solid var(--stone-300); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+  .fonts .f .sample { font-size: 30px; line-height: 1.1; color: #121618; margin-bottom: 6px; }
+  .fonts .f .sample.body { font-size: 20px; }
+  .fonts .f .desc { font: 400 13px/1.4 'Area Normal', sans-serif; color: var(--stone-600); }
+  .notes { grid-column: 1 / -1; }
+  .notes ul { margin: 0; padding-left: 18px; font: 400 16px/1.5 'Area Normal', sans-serif; columns: 2; column-gap: 40px; }
+  .notes li { break-inside: avoid; margin-bottom: 6px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; font: 400 13px/1.4 'Area Normal', sans-serif; color: var(--stone-600); border-top: 1px solid var(--stone-300); padding-top: 16px; }
+  .foot .conf { font: 400 26px/1 'Pockota', serif; color: var(--teal); }
+  .foot .conf small { font: 800 12px/1 'Area Normal', sans-serif; color: var(--stone-600); letter-spacing: .06em; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="kaart" style="--logo-bg: {{LOGO_BG}}; --logo-fg: {{LOGO_FG}}">
+  <aside class="links">
+    <span class="eyebrow {{EYEBROW_CLASS}}">logo</span>
+    <div class="logo-wrap">{{LOGO_HTML}}</div>
+    <div class="meta">{{LOGO_META}}</div>
+  </aside>
+  <main class="rechts">
+    <header>
+      <span class="eyebrow">huisstijl-kaart</span>
+      <h1>{{BRAND_NAME}}<small>{{HOST}} · opgehaald op {{DATE}}</small></h1>
+    </header>
+    <div class="grid">
+      <section class="blok">
+        <h2>Kleuren</h2>
+        <div class="swatches">{{SWATCHES}}</div>
+      </section>
+      <section class="blok fonts">
+        <h2>Typografie</h2>
+        <div class="f"><div class="sample" style="font-family: {{HEADING_FAMILY_CSS}}; font-weight: {{HEADING_WEIGHT}}">{{HEADING_SAMPLE}}</div><div class="desc">Koppen: {{HEADING_DESC}}</div></div>
+        <div class="f"><div class="sample body" style="font-family: {{BODY_FAMILY_CSS}}; font-weight: {{BODY_WEIGHT}}">{{BODY_SAMPLE}}</div><div class="desc">Lopende tekst: {{BODY_DESC}}</div></div>
+      </section>
+      <section class="blok notes">
+        <h2>Stijl</h2>
+        <ul>{{NOTES}}</ul>
+      </section>
+    </div>
+    <footer class="foot">
+      <span>{{WARNINGS}}</span>
+      <span class="conf">{{CONFIDENCE}}%<small>ZEKERHEID</small></span>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
