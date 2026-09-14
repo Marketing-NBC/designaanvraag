@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Markeert de extractie als mislukt en laat het Abel weten in Asana.
+ * Markeert de extractie als mislukt en laat het Marketing weten in Asana.
  *   node worker/fail.mjs --aanvraag-id <uuid> --reason "site blokkeert headless browsers"
  */
 import { addComment } from './lib/asana.mjs'

@@ -11,7 +11,7 @@ export function Start({ onStart, stepCount }: { onStart: () => void; stepCount: 
         <img className="start__logo" src={logoWhite} alt="NBC" />
         <span className="eyebrow eyebrow--light">voor het marketingteam</span>
         <h1 className="start__title swash">Designaanvraag</h1>
-        <p className="start__lead">Vertel ons wat je nodig hebt. Abel gaat ermee aan de slag, met de juiste huisstijl erbij.</p>
+        <p className="start__lead">Vertel ons wat je nodig hebt. Het marketingteam gaat ermee aan de slag, met de juiste huisstijl erbij.</p>
         <button type="button" className="btn btn--light" onClick={onStart} autoFocus data-primary-action>
           Start
           <Icon name="arrow-right" className="arrow" />

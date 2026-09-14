@@ -30,7 +30,7 @@ const signals = JSON.parse(readFileSync(join(dir, 'signals.json'), 'utf8'))
 const meta = existsSync(join(dir, 'meta.json')) ? JSON.parse(readFileSync(join(dir, 'meta.json'), 'utf8')) : {}
 const website = signals.url
 
-// Logo kiezen: origineel (svg/png) voor Abel; voor de kaart de view-versie als het origineel geen svg/png is.
+// Logo kiezen: origineel (svg/png) voor het marketingteam; voor de kaart de view-versie als het origineel geen svg/png is.
 const cand = brief.logo.candidate_index === null ? null : signals.logos.find((l) => l.index === brief.logo.candidate_index)
 const logoOriginal = cand?.files?.original ?? cand?.files?.shot ?? null
 const logoForKaart = cand ? (/\.(svg|png)$/i.test(cand.files?.original ?? '') ? cand.files.original : cand.files?.shot ?? cand.files?.view ?? null) : null

@@ -48,7 +48,7 @@ export function Success({ result, website, naam, onRestart }: { result: SubmitRe
     status === 'done' ? (
       <>Logo, kleuren en fonts van {host} staan bij de aanvraag in Asana.</>
     ) : status === 'failed' ? (
-      <>De huisstijl van {host} kon niet automatisch worden opgehaald. Abel kijkt zelf even mee.</>
+      <>De huisstijl van {host} kon niet automatisch worden opgehaald. Het marketingteam kijkt zelf even mee.</>
     ) : (
       <>We halen nu automatisch logo, kleuren en fonts op van {host}. Binnen ongeveer vijf minuten staat dat bij de aanvraag in Asana.</>
     )
@@ -59,7 +59,7 @@ export function Success({ result, website, naam, onRestart }: { result: SubmitRe
         <span className="eyebrow">aanvraag verstuurd</span>
         <h1 className="success__title swash">Gelukt.</h1>
         <p className="success__lead">
-          Dankjewel {first}. Je aanvraag staat {asanaUrl ? 'in Asana' : 'klaar'} voor Abel. Hij ziet hem direct in zijn lijst.
+          Dankjewel {first}. Je aanvraag staat {asanaUrl ? 'in Asana' : 'klaar'} voor het marketingteam. Ze zien hem direct in hun lijst.
         </p>
         <div className={`success__status success__status--${status}`} aria-live="polite">
           {status === 'running' || status === 'pending' ? <span className="spinner spinner--dark" aria-hidden="true" /> : <Icon name={status === 'done' ? 'check' : 'alert'} />}

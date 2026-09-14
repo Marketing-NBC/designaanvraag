@@ -83,7 +83,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel aanvragen achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
     }
     const g = await db.bumpRateLimit('global', '1 day')
-    if (g > env.rateLimitGlobalPerDay) return json({ error: 'Het dagelijkse maximum aan aanvragen is bereikt. Probeer het morgen opnieuw of bel Abel.' }, 429, cors)
+    if (g > env.rateLimitGlobalPerDay) return json({ error: 'Het dagelijkse maximum aan aanvragen is bereikt. Probeer het morgen opnieuw of bel Marketing.' }, 429, cors)
 
     const row = await db.insert({ ...aanvraag, client_request_id, ip_hash: ipHash })
     log('info', 'aanvraag opgeslagen', { id: row.id, event: aanvraag.event })

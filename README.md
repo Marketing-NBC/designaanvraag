@@ -1,13 +1,13 @@
 # NBC Designaanvraag
 
-Interne tool waarmee NBC-collega's designwerk aanvragen bij Abel. Eén vraag per scherm, in de
-NBC-huisstijl. Elke aanvraag wordt een Asana-taak; de huisstijl van de klant (logo, kleuren,
+Interne tool waarmee NBC-collega's designwerk aanvragen bij het marketingteam. Eén vraag per scherm, in de
+NBC-huisstijl. Elke aanvraag wordt een Asana-taak; de huisstijl van de opdrachtgever (logo, kleuren,
 fonts, stijl) wordt automatisch opgehaald en bij de taak gezet.
 
 Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 
 ```
-Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Abel
+Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Marketing
                                                   └→ Claude Code Routine → huisstijl bij de taak
 ```
 
@@ -73,8 +73,8 @@ mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
 ## Asana koppelen
 
 1. Zet `ASANA_PAT` als secret.
-2. Actions → **Asana-velden vernieuwen** → Run workflow, met de link naar Abels project en zijn
-   naam. De workflow leest project-gid, assignee en custom fields uit en commit
+2. Actions → **Asana-velden vernieuwen** → Run workflow, met de link naar het Asana-project en de
+   naam van de designer (assignee). De workflow leest project-gid, assignee en custom fields uit en commit
    `shared/asana-fields.json`.
 3. Kloppen de veldnamen niet? Pas `scripts/asana-field-map.json` aan (links onze sleutel,
    rechts de naam in Asana) en draai de workflow opnieuw.
@@ -88,7 +88,7 @@ De extractie draait als Claude Code Routine op je eigen abonnement; er is geen A
 Eenmalig, op claude.ai/code/routines:
 
 1. **Environment** (Settings → Environments → New): naam `designaanvraag-worker`,
-   **Network access: Full** (klantensites zijn niet te allowlisten), setup script:
+   **Network access: Full** (sites van opdrachtgevers zijn niet te allowlisten), setup script:
    ```bash
    cd worker && npm ci --no-audit --no-fund
    ```

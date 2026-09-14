@@ -3,7 +3,7 @@
 Dit draaiboek wordt uitgevoerd door de Claude Code Routine **"Huisstijl ophalen"**. Volg de stappen
 in deze volgorde. Het doel: de huisstijl (logo, kleuren, fonts, stijl) van de website uit de
 aanvraag vastleggen in `brand-brief.json`, en die als bijlagen plus tekst bij de Asana-taak van
-Abel zetten.
+Marketing zetten.
 
 ## Grondregels
 
@@ -13,7 +13,7 @@ Abel zetten.
 - **Commit en push niets.** `worker/out/` staat in `.gitignore`; alle output blijft lokaal in de sessie.
 - **Verzin geen hex-codes.** Kleuren komen uit `signals.json` (merkkleuren, CTA-kleuren,
   CSS custom properties, theme-color, screenshot-palet) of zijn duidelijk zichtbaar in de screenshots.
-- **Faalt iets wat je niet kunt oplossen, dan altijd stap 6 (fail).** Abel moet het weten; een stille
+- **Faalt iets wat je niet kunt oplossen, dan altijd stap 6 (fail).** Marketing moet het weten; een stille
   fout is het slechtste resultaat.
 - Werk in het Nederlands in de brief (namen van kleuren, stijlnotities).
 
@@ -82,11 +82,11 @@ Richtlijnen:
 - **Fonts:** de families uit `fonts.by_role` (h1/h2 → heading, body → body). Generieke fonts
   (Arial, Helvetica, system-ui) benoem je als `source: "system"`. Google Fonts herken je aan
   `google_fonts`; Adobe Fonts aan `adobe_fonts: true` → `source: "adobe"`.
-- **Stijlnotities:** wat Abel moet weten om in deze stijl te ontwerpen: toon (zakelijk, speels),
+- **Stijlnotities:** wat het marketingteam moet weten om in deze stijl te ontwerpen: toon (zakelijk, speels),
   vormen (afronding, pillen), fotografie of illustratie, ruimtegebruik, do's en don'ts.
 - **Confidence:** 0.9 bij duidelijke site met logo, custom properties en webfonts; 0.6 bij twijfel
   over het logo of alleen generieke fonts; ≤ 0.4 bij fallback zonder screenshots.
-- **Warnings:** alles wat Abel moet checken ("logo alleen als PNG met witte achtergrond gevonden").
+- **Warnings:** alles wat Marketing moet checken ("logo alleen als PNG met witte achtergrond gevonden").
 
 ## Stap 4: valideren
 
@@ -114,7 +114,7 @@ Alleen als een stap definitief niet lukt:
 node worker/fail.mjs --aanvraag-id <uuid> --reason "korte reden in gewoon Nederlands"
 ```
 
-Dit zet de status op `failed` en laat Abel in Asana weten dat hij zelf moet kijken. Meld daarna
+Dit zet de status op `failed` en laat Marketing in Asana weten dat het team zelf moet kijken. Meld daarna
 in je eindsamenvatting wat er misging.
 
 ## Handmatig testen (zonder aanvraag)

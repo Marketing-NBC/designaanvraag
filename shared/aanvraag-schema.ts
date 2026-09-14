@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { REQUEST_TYPE_KEYS } from './request-types.ts'
 
-/** Werkdagen die Abel normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
+/** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
 export const MIN_LEAD_BUSINESS_DAYS = 5
 
 const isoDate = z

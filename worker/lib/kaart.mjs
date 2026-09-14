@@ -51,7 +51,7 @@ export async function renderKaart({ brief, signals, outDir, logoFile }) {
     : ''
 
   const dark = brief.logo.prefers_dark_bg
-  let logoHtml = '<div class="geen">Geen bruikbaar logo gevonden op de site.<br>Vraag het logo op bij de klant.</div>'
+  let logoHtml = '<div class="geen">Geen bruikbaar logo gevonden op de site.<br>Vraag het logo op bij de opdrachtgever.</div>'
   if (logoFile) {
     const buf = readFileSync(join(outDir, logoFile))
     logoHtml = `<img src="data:${mimeOf(logoFile)};base64,${buf.toString('base64')}" alt="">`

@@ -33,7 +33,7 @@ export const DESIGN_MODES = [
   {
     key: 'custom',
     label: 'Volledig custom',
-    description: 'Een nieuw ontwerp in de huisstijl van de klant of het event.',
+    description: 'Een nieuw ontwerp in de huisstijl van de opdrachtgever of het event.',
   },
   {
     key: 'standaard',

@@ -1,5 +1,5 @@
 {
-  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in Abels Asana-project. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig).",
+  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig).",
   "eventdatum": "Eventdatum",
   "deadline": "Deadline",
   "aanvrager": "Aanvrager",

@@ -14,10 +14,10 @@ Testaanvraag: `c9d4ea56-c563-4fdb-a7a8-d1012a3ea4cc`, Asana-taak 121845196175548
 
 ## Context
 
-NBC-collega's vragen designwerk aan bij designer Abel. Dat gaat nu ad hoc. We bouwen een interne
+NBC-collega's vragen designwerk aan bij het marketingteam. Dat gaat nu ad hoc. We bouwen een interne
 webpagina (Typeform-achtig, één vraag per scherm) waarmee een aanvraag in ~2 minuten is ingevuld.
-Elke aanvraag wordt automatisch een Asana-taak voor Abel, inclusief een automatisch opgehaalde
-huisstijl (logo, kleuren, fonts, stijlnotities) van de opgegeven klant-/eventwebsite. Stap 3
+Elke aanvraag wordt automatisch een Asana-taak voor Marketing, inclusief een automatisch opgehaalde
+huisstijl (logo, kleuren, fonts, stijlnotities) van de opgegeven opdrachtgever-/eventwebsite. Stap 3
 (menukaarten automatisch opmaken in Claude Design) is een latere fase; dit plan legt alleen de
 haakjes daarvoor.
 
@@ -30,11 +30,11 @@ Branch: `claude/serene-johnson-ob9w7m`.
 |---|---|
 | Stijl | NBC Design System-export (`NBC_Design_System.zip`, aangeleverd door Devi; tokens, fonts en logo's staan in `web/src/`) |
 | Hosting | GitHub Pages op de privé repo, geen login. Lukt Pages daar niet, dan repo naar `digitaldedication` |
-| Opslag | Supabase (aanvragen + collega's), Asana als output voor Abel |
+| Opslag | Supabase (aanvragen + collega's), Asana als output voor Marketing |
 | Huisstijl-extractie | **Claude Code Routine** met API-trigger, op jouw abonnement. Geen Anthropic API-key |
-| Asana | Bestaand project met custom fields; ik lees project, Abel en velden zelf uit met jouw PAT |
+| Asana | Bestaand project met custom fields; ik lees project, assignee en velden zelf uit met jouw PAT |
 | Collega's | 20 voornamen (Wendy … Dominique), seed in Supabase, beheer daarna in de Supabase-UI |
-| Doorlooptijd Abel | 5 werkdagen; zachte waarschuwing als de deadline dichterbij ligt |
+| Doorlooptijd Marketing | 5 werkdagen; zachte waarschuwing als de deadline dichterbij ligt |
 
 ## Architectuur
 
@@ -48,7 +48,7 @@ Browser (GitHub Pages, Vite/React)
 Supabase Edge Function  submit-aanvraag
    ├─ valideert (zod), honeypot, rate-limit, idempotency
    ├─ INSERT aanvragen (secret key, bypasst RLS)
-   ├─ Asana: POST /tasks  → taak voor Abel (custom fields, html_notes, due_on)
+   ├─ Asana: POST /tasks  → taak voor Marketing (custom fields, html_notes, due_on)
    ├─ Routine: POST …/routines/{id}/fire  {"text":"aanvraag_id=<uuid>"}  → session_url
    └─ → { aanvraag_id, asana_task_url, brand_dispatched }
                        │
@@ -126,7 +126,7 @@ CSS-variable-gebaseerd), `framer-motion` (stap-transities), `zod`, `react-day-pi
   `#d3ebea` + ink-border) met letterbadge `A`…`H` links (Typeform-patroon).
 - Primaire knop: pill, ink `#0e0e0e`, wit, `Volgende →`, met hint "druk op Enter ↵".
 - Start-scherm: donker `#050606` met `hero-event` foto + gradient, display-kop "Designaanvraag",
-  subkop "Vertel ons wat je nodig hebt. Abel gaat ermee aan de slag.", knop "Start →".
+  subkop "Vertel ons wat je nodig hebt. Het marketingteam gaat ermee aan de slag.", knop "Start →".
 - Succes-scherm: teal-gradient (`#a8d8d5 → #e9f5f4`), "Gelukt." in Pockota display.
 - Easing `cubic-bezier(.22,1,.36,1)`, 400ms; `prefers-reduced-motion` respecteren.
 - Geen emoji, je/jouw, sentence case (DS-regels). Favicon = `nbc-logo-mark.svg`.
@@ -142,7 +142,7 @@ Dribbble (icoon + progressline boven de vraag).
 | 1 | Hoe heet je? | Combobox met zoeken (collega's uit Supabase) | verplicht, uit lijst |
 | 2 | Voor welk event is het? | kort tekstveld | 2–120 tekens |
 | 3 | Wanneer is het event? | kalender, huidige maand, ← → | ≥ vandaag |
-| 4 | Wanneer heb je het uiterlijk nodig? | kalender | ≥ vandaag, ≤ eventdatum; zachte waarschuwing bij < 5 werkdagen: "Abel heeft normaal 5 werkdagen nodig. Overleg even met hem als het sneller moet." |
+| 4 | Wanneer heb je het uiterlijk nodig? | kalender | ≥ vandaag, ≤ eventdatum; zachte waarschuwing bij < 5 werkdagen: "Marketing heeft normaal 5 werkdagen nodig. Overleg even met het team als het sneller moet." |
 | 5 | Wat is de website van het bedrijf of het event? | URL-veld, auto `https://` | geldige URL met TLD |
 | 6 | Waar op de schijf vind ik meer informatie of bestaande designs? | tekstveld, placeholder `G:\Events\2026\…` | optioneel |
 | 7 | Wat wil je aanvragen? | multi-select A–H, H = "Anders, namelijk…" met inline invoer | ≥ 1; bij H tekst verplicht |
@@ -190,7 +190,7 @@ GitHub dat op de privé repo (org op Free-plan), dan de repo overzetten naar `di
 4. Insert rij (status `pending`).
 5. Asana `POST /tasks`:
    - `name`: `Aanvraag <types, komma-gescheiden> – <event>` (bv. `Aanvraag LED-kolom, Vlaggen – Congres Zorg 2026`)
-   - `projects: [ASANA_PROJECT_GID]`, `assignee: ASANA_ASSIGNEE_GID` (Abel), `due_on: deadline`
+   - `projects: [ASANA_PROJECT_GID]`, `assignee: ASANA_ASSIGNEE_GID` (designer), `due_on: deadline`
      (één due date per taak; eventdatum gaat alleen in het custom field)
    - `custom_fields`: gids uit `shared/asana-fields.json` (gegenereerd door `scripts/asana-fields.ts`
      via `GET /projects/{gid}/custom_field_settings`; hernoemde velden = workflow opnieuw draaien).
@@ -217,7 +217,7 @@ GitHub dat op de privé repo (org op Free-plan), dan de repo overzetten naar `di
 
 **Routine "Huisstijl ophalen" (in jouw account, claude.ai/code/routines):**
 - Repo: `Marketing-NBC/designaanvraag` (default branch). Model: Opus.
-- Environment `designaanvraag-worker`: **Network access: Full** (klantensites zijn niet te
+- Environment `designaanvraag-worker`: **Network access: Full** (sites van opdrachtgevers zijn niet te
   allowlisten), setup-script `cd worker && npm ci`, credentials/variabelen `SUPABASE_URL`,
   `SUPABASE_SECRET_KEY`, `ASANA_PAT`. Playwright + Chromium zijn in cloud-environments al aanwezig.
 - Triggers: **API** (URL + token → Supabase-secrets). Optioneel later een uurlijks schema dat
@@ -238,7 +238,7 @@ GitHub dat op de privé repo (org op Free-plan), dan de repo overzetten naar `di
      `picture`, CSS-background), zichtbaar, top ≤ 200px, breedte 40–600px, bonus voor
      "logo"/merknaam in `alt/class/src/id`; JSON-LD `Organization.logo`; `apple-touch-icon`,
      SVG-`icon`, `og:image` (laag), `favicon.ico` (laatst). Per kandidaat het **origineel**
-     (SVG heeft Abels voorkeur) **én** een element-screenshot 2× met transparante achtergrond
+     (SVG heeft de voorkeur van Marketing) **én** een element-screenshot 2× met transparante achtergrond
      (universele fallback voor sprites, inline SVG, webp/avif, CSS-backgrounds); avif → PNG via `sharp`.
    - Kleuren: computed `color/background-color/border-color` van body, h1–h3, p, a, buttons,
      header/nav/footer + 200 grootste zichtbare elementen, gewogen op oppervlak, geclusterd;
@@ -263,7 +263,7 @@ GitHub dat op de privé repo (org op Free-plan), dan de repo overzetten naar `di
      `<h2>Huisstijl</h2>` vervangen (of sectie achteraan toevoegen) met kleuren als `<ul>`
      (hex + rol), fonts, notities, `<img data-asana-gid="…">` van de kaart, confidence +
      waarschuwingen; `PUT` de volledige notes. Comment via `POST /tasks/{gid}/stories`
-     (`html_text`, alleen tekst + `<a>`) zodat Abel een notificatie krijgt.
+     (`html_text`, alleen tekst + `<a>`) zodat Marketing een notificatie krijgt.
    - Supabase `brand_status='done'`, `brand_result`, assets naar Storage `brand-assets/<id>/`.
 6. Elke fout die niet te herstellen is → `node worker/fail.mjs --aanvraag-id <id> --reason "…"`
    (`brand_status='failed'` + Asana-comment "Huisstijl kon niet automatisch worden opgehaald:
@@ -281,11 +281,11 @@ conditionele stappen zodat "Plak de menu-inhoud" later één regel is.
 
 ## Wat ik van jou nodig heb (concreet)
 
-1. **Asana (2 dingen):** een Personal Access Token en de link naar Abels project.
+1. **Asana (2 dingen):** een Personal Access Token en de link naar het Asana-project van Marketing.
    Token maken: app.asana.com/0/my-apps → "Personal access tokens" → "Create new token".
    Zet hem als GitHub-secret `ASANA_PAT` (repo → Settings → Secrets and variables → Actions);
    dan draait `asana-fields.yml` het script en hoef je hem niet in de chat te plakken. Met de
-   token zoek ik project-GID, Abel en de custom fields zelf op.
+   token zoek ik project-GID, assignee en de custom fields zelf op.
 2. **Supabase:** uitnodigen hoeft niet. Maak een gratis project op supabase.com (organisatie
    naar keuze), maak een access token (Account → Access Tokens) en zet als GitHub-secrets:
    `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID` (de project-ref uit de URL), `SUPABASE_DB_PASSWORD`.
@@ -332,7 +332,7 @@ conditionele stappen zodat "Plak de menu-inhoud" later één regel is.
 2. **M2 Backend** — migraties (incl. seed collega's), `submit-aanvraag` (insert + rate-limit +
    idempotency), frontend aan echte endpoint, `supabase-deploy.yml`. Nodig: Supabase-secrets.
 3. **M3 Asana** — `asana-fields.yml` + script, taak aanmaken met custom fields + notes →
-   **v1 live** (aanvragen komen bij Abel). Nodig: `ASANA_PAT` + projectlink.
+   **v1 live** (aanvragen komen bij Marketing). Nodig: `ASANA_PAT` + projectlink.
 4. **M4 Huisstijl-Routine** — `worker/` scripts, `ROUTINE.md`, kaart-template, README-klikstappen;
    Routine aanmaken en koppelen; fire vanuit de Edge Function. Nodig: Routine-URL + token.
 5. **M5 Afwerking** — `aanvraag-status` endpoint + live status op succes-scherm, logging,

@@ -1,13 +1,13 @@
 name: Asana-velden vernieuwen
 
-# Leest Abels project uit (custom fields, opties, assignee) en commit shared/asana-fields.json.
+# Leest het Asana-project van Marketing uit (custom fields, opties, assignee) en commit shared/asana-fields.json.
 # Draai dit na het aanmaken/hernoemen van velden in Asana. Vereist secret ASANA_PAT.
 
 on:
   workflow_dispatch:
     inputs:
       project:
-        description: 'Link of GID van Abels Asana-project'
+        description: 'Link of GID van het Asana-project van Marketing'
         required: true
       assignee:
         description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'

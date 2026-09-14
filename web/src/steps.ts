@@ -20,14 +20,14 @@ export const STEPS: StepDef[] = [
     id: 'naam',
     kind: 'naam',
     title: 'Hoe heet je?',
-    help: 'Kies je naam uit de lijst, dan weet Abel wie hij kan bellen.',
+    help: 'Kies je naam uit de lijst, dan weet Marketing wie ze kunnen bellen.',
     validate: (d) => (d.naam ? null : 'Kies je naam uit de lijst.'),
   },
   {
     id: 'event',
     kind: 'text',
     title: 'Voor welk event is het?',
-    help: 'De naam zoals de klant hem gebruikt.',
+    help: 'De naam zoals de opdrachtgever hem gebruikt.',
     validate: (d) => {
       const v = d.event.trim()
       if (v.length < 2) return 'Vul de naam van het event in.'
@@ -61,7 +61,7 @@ export const STEPS: StepDef[] = [
       if (!d.deadline) return null
       const days = businessDaysUntil(d.deadline)
       if (days < MIN_LEAD_BUSINESS_DAYS) {
-        return `Abel heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; dit zijn er ${Math.max(0, days)}. Overleg even met hem als het sneller moet.`
+        return `Marketing heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; dit zijn er ${Math.max(0, days)}. Overleg even met het team als het sneller moet.`
       }
       return null
     },
@@ -101,7 +101,7 @@ export const STEPS: StepDef[] = [
     id: 'omschrijving',
     kind: 'textarea',
     title: 'Omschrijf je wensen of bijzonderheden',
-    help: 'Teksten, sfeer, voorbeelden, formaten, dingen die Abel moet weten. Mag leeg blijven.',
+    help: 'Teksten, sfeer, voorbeelden, formaten, dingen die Marketing moet weten. Mag leeg blijven.',
     validate: (d) => (d.omschrijving.length > 3000 ? 'Houd het bij maximaal 3000 tekens.' : null),
   },
 ]
