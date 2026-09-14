@@ -1,5 +1,15 @@
 # Plan: NBC Designaanvraag-tool
 
+## Status (14 september 2026)
+
+| Milestone | Status |
+|---|---|
+| M1 Formulier | Klaar. Op de branch; live zodra Pages aan staat en `main` is bijgewerkt |
+| M2 Backend | Klaar en gedeployed naar het Supabase-project (migraties, `submit-aanvraag`, `aanvraag-status`) |
+| M3 Asana | Code klaar. Nog nodig: workflow "Asana-velden vernieuwen" draaien met de projectlink |
+| M4 Huisstijl-Routine | Code klaar en lokaal getest. Nog nodig: Routine + environment aanmaken (README) en `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN` zetten |
+| M5 Afwerking | Klaar (status-endpoint, live status op succes-scherm) |
+
 ## Context
 
 NBC-collega's vragen designwerk aan bij designer Abel. Dat gaat nu ad hoc. We bouwen een interne
