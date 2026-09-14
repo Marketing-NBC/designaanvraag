@@ -13,6 +13,10 @@ on:
         description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
         required: false
         default: 'Abel'
+      planning:
+        description: 'Link of GID van het planningsproject (taken komen daar ook in zodra er een vervaldatum staat)'
+        required: false
+        default: 'https://app.asana.com/1/1205781972079586/project/1206998483284471'
 
 permissions:
   contents: write
@@ -24,6 +28,7 @@ jobs:
       ASANA_PAT: ${{ secrets.ASANA_PAT }}
       PROJECT_INPUT: ${{ inputs.project }}
       ASSIGNEE_INPUT: ${{ inputs.assignee }}
+      PLANNING_INPUT: ${{ inputs.planning }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,7 +37,7 @@ jobs:
       - name: Velden uitlezen
         run: |
           [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
-          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --assignee "$ASSIGNEE_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
           node scripts/sync-shared.mjs
       - name: Committen
         run: |

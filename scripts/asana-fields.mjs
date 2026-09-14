@@ -5,7 +5,7 @@
  * gekoppeld aan onze veldsleutels via scripts/asana-field-map.json.
  *
  * Gebruik:
- *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--assignee "Abel"]
+ *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--assignee "Abel"] [--planning <gid of url>]
  *
  * Draait ook in de workflow .github/workflows/asana-fields.yml.
  */
@@ -48,11 +48,11 @@ const settings = await asana(
 const asanaFields = settings.map((s) => s.custom_field)
 const norm = (s) => String(s ?? '').trim().toLowerCase()
 
-const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {} }
+const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {}, sections: {}, planning_project: null }
 const warnings = []
 
 for (const [key, wanted] of Object.entries(map)) {
-  if (key.startsWith('_') || key === 'option_aliases') continue
+  if (key.startsWith('_') || key === 'option_aliases' || key === 'sections') continue
   const f = asanaFields.find((x) => norm(x.name) === norm(wanted))
   if (!f) {
     warnings.push(`Veld "${wanted}" (${key}) niet gevonden in het project. Beschikbaar: ${asanaFields.map((x) => x.name).join(', ') || 'geen'}`)
@@ -77,7 +77,25 @@ for (const [key, wanted] of Object.entries(map)) {
   out.fields[key] = entry
 }
 
-if (args.assignee) {
+// Bord-kolommen (sleutel → gid), op naam uit asana-field-map.json.
+const sections = await asana(`/projects/${projectGid}/sections?opt_fields=name`)
+for (const [key, name] of Object.entries(map.sections ?? {})) {
+  const s = sections.find((x) => norm(x.name) === norm(name))
+  if (s) out.sections[key] = { gid: s.gid, name: s.name }
+  else warnings.push(`Sectie "${name}" (${key}) niet gevonden. Aanwezig: ${sections.map((x) => x.name).join(', ') || 'geen'}`)
+}
+
+// Planningsproject: daar komen taken ook in zodra Marketing een vervaldatum kiest.
+if (args.planning && args.planning !== 'true') {
+  const pg = extractGid(args.planning)
+  if (!pg) warnings.push(`Kan geen project-gid halen uit "${args.planning}".`)
+  else {
+    const p = await asana(`/projects/${pg}?opt_fields=name,gid,permalink_url`)
+    out.planning_project = { gid: p.gid, name: p.name, url: p.permalink_url }
+  }
+}
+
+if (args.assignee && args.assignee !== 'true') {
   const member = (project.members ?? []).find((m) => norm(m.name).includes(norm(args.assignee)))
   if (member) out.assignee = { gid: member.gid, name: member.name }
   else warnings.push(`Geen projectlid gevonden met "${args.assignee}". Leden: ${(project.members ?? []).map((m) => m.name).join(', ')}`)
@@ -88,7 +106,9 @@ writeFileSync(target, JSON.stringify({ _comment: 'Gegenereerd door scripts/asana
 console.log(`Geschreven: ${target}`)
 console.log(`Project: ${project.name} (${project.gid})`)
 console.log(`Velden gekoppeld: ${Object.keys(out.fields).join(', ') || 'geen'}`)
-if (out.assignee) console.log(`Assignee: ${out.assignee.name} (${out.assignee.gid})`)
+if (out.assignee) console.log(`Assignee gevonden (${out.assignee.gid})`)
+console.log(`Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`)
+if (out.planning_project) console.log(`Planningsproject: ${out.planning_project.name} (${out.planning_project.gid})`)
 for (const w of warnings) console.warn(`Let op: ${w}`)
 
 function extractGid(s) {

@@ -1,5 +1,5 @@
 {
-  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig).",
+  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig). Onder sections staan de bord-kolommen (sleutel → naam in Asana).",
   "eventdatum": "Eventdatum",
   "deadline": "Deadline",
   "aanvrager": "Aanvrager",
@@ -7,16 +7,52 @@
   "modus": "Design",
   "website": "Website",
   "schijf": "Schijf",
+  "sections": {
+    "nieuwe_aanvragen": "Nieuwe aanvragen",
+    "in_planning": "In planning",
+    "mee_bezig": "Mee bezig",
+    "klaar": "Klaar"
+  },
   "option_aliases": {
-    "custom": ["Volledig custom", "Custom"],
-    "standaard": ["Standaard designs", "Standaard"],
-    "led_kolom": ["LED-kolom", "LED kolom", "LED-kolommen"],
-    "torenscherm": ["Torenscherm"],
-    "koffiescherm": ["Koffiescherm"],
-    "overige_schermen": ["Overige schermen", "Overig scherm"],
-    "menukaart_print": ["Menukaart print", "Menukaart"],
-    "menu_scherm": ["Menu scherm", "Menuscherm"],
-    "vlaggen": ["Vlaggen", "Vlag"],
-    "anders": ["Anders", "Anders, namelijk", "Overig"]
+    "custom": [
+      "Volledig custom",
+      "Custom"
+    ],
+    "standaard": [
+      "Standaard designs",
+      "Standaard"
+    ],
+    "led_kolom": [
+      "LED-kolom",
+      "LED kolom",
+      "LED-kolommen"
+    ],
+    "torenscherm": [
+      "Torenscherm"
+    ],
+    "koffiescherm": [
+      "Koffiescherm"
+    ],
+    "overige_schermen": [
+      "Overige schermen",
+      "Overig scherm"
+    ],
+    "menukaart_print": [
+      "Menukaart print",
+      "Menukaart"
+    ],
+    "menu_scherm": [
+      "Menu scherm",
+      "Menuscherm"
+    ],
+    "vlaggen": [
+      "Vlaggen",
+      "Vlag"
+    ],
+    "anders": [
+      "Anders",
+      "Anders, namelijk",
+      "Overig"
+    ]
   }
 }

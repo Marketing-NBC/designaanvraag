@@ -1,7 +1,8 @@
 import { assertEquals, assertMatch } from 'jsr:@std/assert@1'
 import type { Env } from '../_shared/env.ts'
 import type { AanvraagRow, Db, NewAanvraag } from '../_shared/db.ts'
-import { HUISSTIJL_MARKER, renderNotes, taskName } from '../_shared/notes.ts'
+import { HUISSTIJL_MARKER, renderNotes } from '../_shared/notes.ts'
+import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import { buildCustomFields } from '../_shared/asana.ts'
 import type { TaskInput } from '../_shared/asana.ts'
 import { createHandler, type Deps } from './handler.ts'
@@ -16,6 +17,7 @@ const env: Env = {
   asanaPat: 'pat',
   asanaProjectGid: '111',
   asanaAssigneeGid: '222',
+  asanaPlanningProjectGid: null,
   routineFireUrl: 'https://routine',
   routineToken: 'tok',
 }
@@ -56,7 +58,7 @@ function fakeAsana(opts: { fail?: boolean } = {}) {
     async createTask(input: TaskInput) {
       calls.push(input)
       if (opts.fail) throw new Error('Asana-taak aanmaken mislukt (401: Not Authorized)')
-      return { gid: '999', url: 'https://app.asana.com/0/111/999' }
+      return { gid: '999', url: 'https://app.asana.com/0/111/999', subtasks: input.subtasks.length }
     },
   }
 }
@@ -74,7 +76,7 @@ function fakeRoutine(opts: { fail?: boolean } = {}) {
 }
 
 const validAanvraag = {
-  naam: 'Naomi',
+  naam: 'Noa',
   event: 'Zorgcongres 2026',
   event_datum: '2026-11-20',
   deadline: '2026-11-10',
@@ -168,8 +170,8 @@ Deno.test('gelukte aanvraag: rij, Asana-taak en Routine', async () => {
   assertEquals(row.brand_session_url, 'https://claude.ai/code/session_x')
   assertEquals(row.website, 'https://www.zorgcongres.nl/')
   assertEquals(routine.texts, [`aanvraag_id=${row.id}`])
-  assertEquals(asana.calls[0].name, 'Aanvraag LED-kolom, Vlaggen, Roll-up – Zorgcongres 2026')
-  assertEquals(asana.calls[0].dueOn, '2026-11-10')
+  assertEquals(asana.calls[0].name, 'Meerdere designs Zorgcongres 2026 - 20 november 2026 - Noa')
+  assertEquals(asana.calls[0].subtasks, ['LED-kolom Zorgcongres 2026', 'Vlaggen Zorgcongres 2026', 'Roll-up Zorgcongres 2026'])
   assertEquals(asana.calls[0].assigneeGid, '222')
   assertMatch(asana.calls[0].htmlNotes, /^<body>.*<\/body>$/s)
   assertMatch(asana.calls[0].htmlNotes, /&lt;groot&gt; &amp; duidelijk/)
@@ -230,10 +232,15 @@ Deno.test('zonder Asana-configuratie → aanvraag bewaard, geen taak', async () 
   assertEquals(db.rows.size, 1)
 })
 
-Deno.test('taskName en notes', () => {
+Deno.test('taskTitle, subtaskTitles en notes', () => {
   const a = { ...validAanvraag, website: 'https://www.zorgcongres.nl/', aanvraag_types: ['menu_scherm'] as const, anders_tekst: '' }
   // deno-lint-ignore no-explicit-any
-  assertEquals(taskName(a as any), 'Aanvraag Menu scherm – Zorgcongres 2026')
+  assertEquals(taskTitle(a as any), 'Menu scherm Zorgcongres 2026 - 20 november 2026 - Noa')
+  // deno-lint-ignore no-explicit-any
+  assertEquals(subtaskTitles(a as any), [])
+  // Eén type "anders" → de vrije tekst als wat.
+  // deno-lint-ignore no-explicit-any
+  assertEquals(taskTitle({ ...a, aanvraag_types: ['anders'], anders_tekst: 'Roll-up banner' } as any), 'Roll-up banner Zorgcongres 2026 - 20 november 2026 - Noa')
   // deno-lint-ignore no-explicit-any
   const notes = renderNotes(a as any, { aanvraagId: 'abc' })
   assertMatch(notes.html, /<strong>Eventdatum:<\/strong> vrijdag 20 november 2026/)

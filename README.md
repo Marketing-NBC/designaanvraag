@@ -17,9 +17,9 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge function `submit-aanvraag` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status` en `asana-webhook` |
 | `worker/` | Huisstijl-extractie; draait in een Claude Code Routine volgens `worker/ROUTINE.md` |
-| `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `sync-shared.mjs` (schema's kopiëren naar de function) |
+| `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
 ## Lokaal draaien
 
@@ -54,6 +54,7 @@ Supabase; niets hoeft in de Supabase-UI.
 | `ASANA_PAT` | Taken aanmaken en bijwerken | app.asana.com/0/my-apps → Personal access tokens |
 | `ASANA_PROJECT_GID` | Optioneel; standaard uit `shared/asana-fields.json` | uit de projectlink |
 | `ASANA_ASSIGNEE_GID` | Optioneel; standaard uit `shared/asana-fields.json` | via de workflow "Asana-velden vernieuwen" |
+| `ASANA_PLANNING_PROJECT_GID` | Optioneel; standaard uit `shared/asana-fields.json` (planningsproject) | uit de projectlink |
 | `ROUTINE_FIRE_URL`, `ROUTINE_TOKEN` | Huisstijl-extractie starten | zie "Routine instellen" |
 | `RATE_SALT` | Optioneel; zout voor de IP-hash | willekeurige tekst |
 
@@ -76,8 +77,8 @@ mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
 2. Kies één van twee:
    - **Nieuw project laten aanmaken:** Actions → **Asana-project aanmaken** → Run workflow, met de
      naam van het project en de link naar een bestaand project in hetzelfde team. De workflow maakt
-     het project (bordweergave, secties "Nieuwe aanvragen" → "Mee bezig" → "Klaar"), neemt de leden
-     over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
+     het project (bordweergave, secties "Nieuwe aanvragen" → "In planning" → "Mee bezig" → "Klaar"),
+     neemt de leden over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
      `shared/asana-fields.json`. Opnieuw draaien is veilig: bestaande onderdelen worden hergebruikt.
    - **Bestaand project gebruiken:** Actions → **Asana-velden vernieuwen** → Run workflow, met de link
      naar het project en de naam van de designer (assignee). Leest project-gid, assignee en custom
@@ -87,7 +88,23 @@ mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
 4. Push naar `main` (of Supabase deploy handmatig) zodat de function de nieuwe mapping krijgt.
 
 Custom fields vereisen Asana Starter of hoger; zonder velden maakt de function nog steeds taken, met
-alle gegevens in de beschrijving en de deadline als due date.
+alle gegevens in de beschrijving.
+
+### Wat er in Asana gebeurt
+
+- **Taaknaam:** `<wat> <event> - <eventdatum> - <aanvrager>`, bijvoorbeeld
+  `Torenscherm Deloitte - 20 oktober 2026 - Wendy`. Bij meer dan één type altijd
+  `Meerdere designs Deloitte - …`, met per type een subtaak (`Torenscherm Deloitte`).
+- **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
+  vervaldatum kiest Marketing zelf bij het inplannen.
+- **Planning-flow (webhook):** sleept Marketing een taak naar **In planning** zonder vervaldatum, dan
+  plaatst de function `asana-webhook` één comment met een mention: kies een vervaldatum. Zodra er
+  een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
+  planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
+  van de taak, dus in beide projecten gelijk.
+- **Webhook koppelen** gebeurt automatisch aan het eind van de Supabase-deploy (`scripts/asana-webhook.mjs`).
+  De webhook-URL bevat een token afgeleid van `ASANA_PAT`; Asana ondertekent elke levering (HMAC).
+  Controleren: Supabase → Edge Functions → `asana-webhook` → Logs.
 
 ## Routine instellen (huisstijl-extractie)
 

@@ -12,6 +12,7 @@ const env: Env = {
   asanaPat: null,
   asanaProjectGid: null,
   asanaAssigneeGid: null,
+  asanaPlanningProjectGid: null,
   routineFireUrl: null,
   routineToken: null,
 }

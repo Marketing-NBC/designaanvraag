@@ -13,6 +13,9 @@ on:
       like:
         description: 'Link naar een bestaand project in hetzelfde team (bepaalt workspace, team en leden)'
         required: true
+      planning:
+        description: 'Link naar het planningsproject; leeg = hetzelfde als hierboven'
+        required: false
       assignee:
         description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
         required: false
@@ -29,6 +32,7 @@ jobs:
       NAME_INPUT: ${{ inputs.name }}
       LIKE_INPUT: ${{ inputs.like }}
       ASSIGNEE_INPUT: ${{ inputs.assignee }}
+      PLANNING_INPUT: ${{ inputs.planning }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +45,7 @@ jobs:
           node scripts/asana-setup.mjs --name "$NAME_INPUT" --like "$LIKE_INPUT" --assignee "$ASSIGNEE_INPUT"
       - name: Velden uitlezen
         run: |
-          node scripts/asana-fields.mjs --project "${{ steps.setup.outputs.project_gid }}" --assignee "$ASSIGNEE_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/asana-fields.mjs --project "${{ steps.setup.outputs.project_gid }}" --assignee "$ASSIGNEE_INPUT" --planning "${PLANNING_INPUT:-$LIKE_INPUT}" | tee -a "$GITHUB_STEP_SUMMARY"
           node scripts/sync-shared.mjs
       - name: Committen
         run: |

@@ -28,10 +28,6 @@ export function hostOf(url: string): string {
   }
 }
 
-export function taskName(a: Aanvraag): string {
-  return `Aanvraag ${describeRequestTypes(a.aanvraag_types, a.anders_tekst)} – ${a.event}`.slice(0, 250)
-}
-
 function modusLabel(a: Aanvraag): string {
   return DESIGN_MODES.find((m) => m.key === a.design_modus)?.label ?? a.design_modus
 }

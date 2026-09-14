@@ -6,7 +6,7 @@
 |---|---|
 | M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ (deploy vanaf de branch; `main` volgt bij merge) |
 | M2 Backend | Live: migraties 1–3, `submit-aanvraag`, `aanvraag-status`, collega's uit Supabase |
-| M3 Asana | Live: eigen project "Designaanvragen" (bord, secties Nieuwe aanvragen → Mee bezig → Klaar, 7 custom fields), aangemaakt via de workflow "Asana-project aanmaken". Testtaak met velden aangemaakt voor Abel van Dijk |
+| M3 Asana | Live: eigen project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 7 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook`: datum vragen bij "In planning", bij datum automatisch ook in "4. Werkplanning" |
 | M4 Huisstijl-Routine | Code klaar en lokaal getest. Nog nodig: Routine + environment aanmaken (README) en `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN` als secrets, daarna Supabase deploy |
 | M5 Afwerking | Live (status-endpoint, live status op succes-scherm) |
 

@@ -3,7 +3,8 @@ import type { Env } from '../_shared/env.ts'
 import type { AsanaClient } from '../_shared/asana.ts'
 import { asanaFields, buildCustomFields } from '../_shared/asana.ts'
 import type { Db } from '../_shared/db.ts'
-import { renderNotes, taskName } from '../_shared/notes.ts'
+import { renderNotes } from '../_shared/notes.ts'
+import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
 
@@ -96,18 +97,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       try {
         const notes = renderNotes(aanvraag, { aanvraagId: row.id })
         const task = await deps.asana.createTask({
-          name: taskName(aanvraag),
+          name: taskTitle(aanvraag),
           htmlNotes: notes.html,
           plainNotes: notes.plain,
           projectGid,
+          sectionGid: asanaFields.sections?.nieuwe_aanvragen?.gid ?? null,
           assigneeGid: env.asanaAssigneeGid ?? asanaFields.assignee?.gid ?? null,
-          dueOn: aanvraag.deadline,
           customFields: buildCustomFields(aanvraag),
+          subtasks: subtaskTitles(aanvraag),
         })
         asanaGid = task.gid
         asanaUrl = task.url
         await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url })
-        log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid })
+        log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid, subtasks: task.subtasks })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         log('error', 'asana mislukt', { id: row.id, error: msg })

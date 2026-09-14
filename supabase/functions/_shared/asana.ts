@@ -12,9 +12,13 @@ export interface AsanaField {
 }
 
 export interface AsanaFieldsConfig {
-  project: { gid: string; name?: string; url?: string } | null
+  project: { gid: string; name?: string; url?: string; workspace_gid?: string } | null
   assignee: { gid: string; name?: string } | null
   fields: Record<string, AsanaField>
+  /** Secties van het bord (nieuwe_aanvragen, in_planning, mee_bezig, klaar). */
+  sections?: Record<string, { gid: string; name?: string }>
+  /** Project waar ingeplande taken ook in komen ("4. Werkplanning"). */
+  planning_project?: { gid: string; name?: string; url?: string } | null
 }
 
 export const asanaFields = fieldsJson as unknown as AsanaFieldsConfig
@@ -24,13 +28,36 @@ export interface TaskInput {
   htmlNotes: string
   plainNotes: string
   projectGid: string
+  /** Sectie waarin de taak landt (bord-kolom "Nieuwe aanvragen"); null = standaardsectie. */
+  sectionGid: string | null
   assigneeGid: string | null
-  dueOn: string
+  /** Geen vervaldatum: die kiest Marketing zelf bij het inplannen. */
   customFields: Record<string, unknown>
+  /** Eén subtaak per aangevraagd type (alleen bij meer dan één type). */
+  subtasks: string[]
 }
 
 export interface AsanaClient {
-  createTask(input: TaskInput): Promise<{ gid: string; url: string }>
+  createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number }>
+}
+
+export interface AsanaTask {
+  gid: string
+  name: string
+  dueOn: string | null
+  completed: boolean
+  assignee: string | null
+  projects: string[]
+  memberships: { project: string; section: string | null }[]
+}
+
+/** Leesbewerkingen en kleine mutaties op één taak, voor de webhook-function. */
+export interface AsanaTaskClient {
+  getTask(gid: string): Promise<AsanaTask>
+  addToProject(taskGid: string, projectGid: string): Promise<void>
+  /** Teksten van bestaande comments (om dubbele vragen te voorkomen). */
+  listComments(taskGid: string): Promise<string[]>
+  addComment(taskGid: string, htmlText: string): Promise<void>
 }
 
 /** Bouwt de custom_fields-map op basis van shared/asana-fields.json. Onbekende velden/opties worden overgeslagen. */
@@ -107,18 +134,18 @@ function errorText(body: { errors?: AsanaError[] }): string {
 export function createAsanaClient(pat: string): AsanaClient {
   return {
     async createTask(input) {
-      const base: Record<string, unknown> = {
-        name: input.name,
-        projects: [input.projectGid],
-        due_on: input.dueOn,
-      }
+      // In de juiste bord-kolom zetten als we die kennen; anders in de standaardsectie van het project.
+      const placement: Record<string, unknown> = input.sectionGid
+        ? { memberships: [{ project: input.projectGid, section: input.sectionGid }] }
+        : { projects: [input.projectGid] }
+      const base: Record<string, unknown> = { name: input.name, ...placement }
       if (input.assigneeGid) base.assignee = input.assigneeGid
 
       const attempts: { label: string; data: Record<string, unknown> }[] = [
         { label: 'volledig', data: { ...base, html_notes: input.htmlNotes, custom_fields: input.customFields } },
         { label: 'zonder custom fields', data: { ...base, html_notes: input.htmlNotes } },
         { label: 'platte notes', data: { ...base, notes: input.plainNotes } },
-        { label: 'zonder assignee', data: { name: input.name, projects: [input.projectGid], due_on: input.dueOn, notes: input.plainNotes } },
+        { label: 'zonder assignee', data: { name: input.name, projects: [input.projectGid], notes: input.plainNotes } },
       ]
 
       let lastError = 'onbekende fout'
@@ -127,13 +154,73 @@ export function createAsanaClient(pat: string): AsanaClient {
         const { status, body } = await asanaFetch(pat, '/tasks', { method: 'POST', body: JSON.stringify({ data: attempt.data }) })
         if (status >= 200 && status < 300 && body.data?.gid) {
           if (attempt.label !== 'volledig') console.warn(`[asana] taak aangemaakt met fallback "${attempt.label}": ${lastError}`)
-          return { gid: String(body.data.gid), url: String(body.data.permalink_url ?? `https://app.asana.com/0/${input.projectGid}/${body.data.gid}`) }
+          const gid = String(body.data.gid)
+          const url = String(body.data.permalink_url ?? `https://app.asana.com/0/${input.projectGid}/${gid}`)
+          return { gid, url, subtasks: await createSubtasks(pat, gid, input) }
         }
         lastError = `${status}: ${errorText(body)}`
         // Alleen bij 400 (ongeldige invoer) is een simpelere variant zinvol; 401/403/404/5xx niet.
         if (status !== 400) break
       }
       throw new Error(`Asana-taak aanmaken mislukt (${lastError})`)
+    },
+  }
+}
+
+/** Subtaken zijn een extra; een fout hier mag de aanvraag niet laten falen. */
+async function createSubtasks(pat: string, parentGid: string, input: TaskInput): Promise<number> {
+  let made = 0
+  for (const name of input.subtasks) {
+    const data: Record<string, unknown> = { name, parent: parentGid }
+    if (input.assigneeGid) data.assignee = input.assigneeGid
+    const { status, body } = await asanaFetch(pat, '/tasks', { method: 'POST', body: JSON.stringify({ data }) })
+    if (status >= 200 && status < 300) made++
+    else console.warn(`[asana] subtaak "${name}" mislukt: ${status}: ${errorText(body)}`)
+  }
+  return made
+}
+
+export function createAsanaTaskClient(pat: string): AsanaTaskClient {
+  const ok = (status: number) => status >= 200 && status < 300
+  return {
+    async getTask(gid) {
+      const { status, body } = await asanaFetch(
+        pat,
+        `/tasks/${gid}?opt_fields=name,due_on,completed,assignee.gid,projects.gid,memberships.project.gid,memberships.section.gid`,
+        { method: 'GET' },
+      )
+      if (!ok(status) || !body.data) throw new Error(`Asana-taak ${gid} ophalen mislukt (${status}: ${errorText(body)})`)
+      const d = body.data as {
+        name?: string
+        due_on?: string | null
+        completed?: boolean
+        assignee?: { gid: string } | null
+        projects?: { gid: string }[]
+        memberships?: { project?: { gid: string }; section?: { gid: string } | null }[]
+      }
+      return {
+        gid,
+        name: String(d.name ?? ''),
+        dueOn: d.due_on ?? null,
+        completed: Boolean(d.completed),
+        assignee: d.assignee?.gid ?? null,
+        projects: (d.projects ?? []).map((p) => p.gid),
+        memberships: (d.memberships ?? []).filter((m) => m.project?.gid).map((m) => ({ project: m.project!.gid, section: m.section?.gid ?? null })),
+      }
+    },
+    async addToProject(taskGid, projectGid) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}/addProject`, { method: 'POST', body: JSON.stringify({ data: { project: projectGid } }) })
+      if (!ok(status)) throw new Error(`Taak aan project toevoegen mislukt (${status}: ${errorText(body)})`)
+    },
+    async listComments(taskGid) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}/stories?limit=100&opt_fields=text,resource_subtype`, { method: 'GET' })
+      if (!ok(status)) throw new Error(`Comments ophalen mislukt (${status}: ${errorText(body)})`)
+      const rows = (body.data as unknown as { text?: string; resource_subtype?: string }[] | undefined) ?? []
+      return rows.filter((r) => r.resource_subtype === 'comment_added').map((r) => String(r.text ?? ''))
+    },
+    async addComment(taskGid, htmlText) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}/stories`, { method: 'POST', body: JSON.stringify({ data: { html_text: htmlText } }) })
+      if (!ok(status)) throw new Error(`Comment plaatsen mislukt (${status}: ${errorText(body)})`)
     },
   }
 }

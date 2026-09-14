@@ -20,3 +20,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/aanvraag-status/index.ts"
+
+# Asana roept deze aan (webhook); auth via token in de URL plus HMAC-handtekening van Asana.
+[functions.asana-webhook]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/asana-webhook/index.ts"

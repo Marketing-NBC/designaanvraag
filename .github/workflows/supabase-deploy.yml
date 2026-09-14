@@ -31,8 +31,8 @@ jobs:
       - name: deno check + test
         working-directory: supabase/functions
         run: |
-          deno check submit-aanvraag/index.ts aanvraag-status/index.ts
-          deno test --allow-env --allow-net=none submit-aanvraag/ aanvraag-status/
+          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts
+          deno test --allow-env --allow-net=none submit-aanvraag/ aanvraag-status/ asana-webhook/
 
   deploy:
     name: Migraties, functions en secrets
@@ -44,6 +44,9 @@ jobs:
       PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Secrets aanwezig?
         run: |
           missing=()
@@ -68,24 +71,31 @@ jobs:
           ASANA_PAT: ${{ secrets.ASANA_PAT }}
           ASANA_PROJECT_GID: ${{ secrets.ASANA_PROJECT_GID }}
           ASANA_ASSIGNEE_GID: ${{ secrets.ASANA_ASSIGNEE_GID }}
+          ASANA_PLANNING_PROJECT_GID: ${{ secrets.ASANA_PLANNING_PROJECT_GID }}
           ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
           ROUTINE_TOKEN: ${{ secrets.ROUTINE_TOKEN }}
           ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
           RATE_SALT: ${{ secrets.RATE_SALT }}
         run: |
           args=()
-          for k in ASANA_PAT ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ROUTINE_FIRE_URL ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
+          for k in ASANA_PAT ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
             v="${!k}"
             if [ -n "$v" ]; then args+=("$k=$v"); echo "  zet $k"; else echo "  overslaan $k (leeg)"; fi
           done
           if [ ${#args[@]} -gt 0 ]; then
             supabase secrets set --project-ref "$PROJECT_ID" "${args[@]}"
           fi
+      - name: Asana-webhook koppelen (planning-flow)
+        env:
+          ASANA_PAT: ${{ secrets.ASANA_PAT }}
+        run: |
+          if [ -z "$ASANA_PAT" ]; then echo "ASANA_PAT leeg; webhook overgeslagen"; exit 0; fi
+          node scripts/asana-webhook.mjs --target "https://${PROJECT_ID}.supabase.co/functions/v1/asana-webhook" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Samenvatting
         run: |
           {
             echo "### Supabase deploy gelukt"
             echo
-            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\` en \`…/aanvraag-status\`"
+            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`, \`…/aanvraag-status\` en \`…/asana-webhook\`"
             echo "- Migraties: \`$(ls supabase/migrations | tr '\n' ' ')\`"
           } >> "$GITHUB_STEP_SUMMARY"

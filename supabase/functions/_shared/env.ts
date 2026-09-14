@@ -9,6 +9,8 @@ export interface Env {
   asanaPat: string | null
   asanaProjectGid: string | null
   asanaAssigneeGid: string | null
+  /** Project waar ingeplande taken ook in komen; standaard uit asana-fields.json. */
+  asanaPlanningProjectGid: string | null
   routineFireUrl: string | null
   routineToken: string | null
 }
@@ -39,7 +41,17 @@ export function readEnv(): Env {
     asanaPat: opt('ASANA_PAT'),
     asanaProjectGid: opt('ASANA_PROJECT_GID'),
     asanaAssigneeGid: opt('ASANA_ASSIGNEE_GID'),
+    asanaPlanningProjectGid: opt('ASANA_PLANNING_PROJECT_GID'),
     routineFireUrl: opt('ROUTINE_FIRE_URL'),
     routineToken: opt('ROUTINE_TOKEN'),
   }
+}
+
+/**
+ * Token in de URL van de Asana-webhook, afgeleid van ASANA_PAT zodat scripts/asana-webhook.mjs
+ * dezelfde waarde kan berekenen zonder extra secret. Niet omkeerbaar naar de PAT.
+ */
+export async function webhookToken(pat: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`asana-webhook:${pat}`))
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32)
 }

@@ -41,7 +41,7 @@ const summary = []
 // Velden zoals de edge function ze invult (zie supabase/functions/_shared/asana.ts → buildCustomFields).
 const FIELD_SPECS = [
   { key: 'eventdatum', type: 'date', description: 'Datum van het event.' },
-  { key: 'deadline', type: 'date', description: 'Wanneer het design uiterlijk klaar moet zijn (staat ook als due date op de taak).' },
+  { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },
   { key: 'aanvrager', type: 'text', description: 'Collega die de aanvraag heeft ingediend.' },
   {
     key: 'type',
@@ -71,7 +71,7 @@ const FIELD_SPECS = [
   { key: 'schijf', type: 'text', description: 'Locatie op de G-schijf met meer informatie of bestaande designs.' },
 ]
 
-const SECTIONS = ['Nieuwe aanvragen', 'Mee bezig', 'Klaar']
+const SECTIONS = Object.values(map.sections ?? { a: 'Nieuwe aanvragen', b: 'In planning', c: 'Mee bezig', d: 'Klaar' })
 
 // 1. Workspace, team en leden van het voorbeeldproject
 const like = await asana(
@@ -111,7 +111,7 @@ const current = new Set((project.members ?? []).map((m) => m.gid))
 const toAdd = (like.members ?? []).filter((m) => !current.has(m.gid))
 if (toAdd.length) {
   await asana(`/projects/${project.gid}/addMembers`, { method: 'POST', body: { data: { members: toAdd.map((m) => m.gid).join(',') } } })
-  summary.push(`Leden toegevoegd: ${toAdd.map((m) => m.name).join(', ')}`)
+  summary.push(`Leden toegevoegd: ${toAdd.length}`)
 }
 if (assigneeName && ![...(like.members ?? []), ...(project.members ?? [])].some((m) => norm(m.name).includes(norm(assigneeName)))) {
   warnings.push(`Geen lid gevonden met "${assigneeName}"; de assignee moet lid zijn van het project.`)
@@ -130,7 +130,17 @@ for (const name of SECTIONS) {
   const s = await asana(`/projects/${project.gid}/sections`, { method: 'POST', body: { data: { name } } })
   sections.push(s)
 }
-summary.push(`Secties: ${sections.map((s) => s.name).join(' → ')}`)
+// Volgorde van het bord gelijk aan SECTIONS (nieuwe secties komen achteraan te staan).
+const wanted = SECTIONS.map((n) => have(n))
+const actual = sections.filter((s) => wanted.includes(s))
+if (actual.some((s, i) => s !== wanted[i])) {
+  for (let i = 1; i < wanted.length; i++) {
+    await asana(`/projects/${project.gid}/sections/insert`, { method: 'POST', body: { data: { section: wanted[i].gid, after_section: wanted[i - 1].gid } } })
+  }
+  summary.push(`Secties herschikt: ${SECTIONS.join(' → ')}`)
+} else {
+  summary.push(`Secties: ${SECTIONS.join(' → ')}`)
+}
 
 // 5. Custom fields (Asana Starter of hoger)
 const settings = await asana(

@@ -51,3 +51,24 @@ export function createDb(url: string, secretKey: string): Db {
     },
   }
 }
+
+export interface WebhookStore {
+  getSecrets(resource: string): Promise<string[]>
+  saveSecret(resource: string, secret: string): Promise<void>
+}
+
+/** Secrets van Asana-webhooks (tabel asana_webhooks). */
+export function createWebhookStore(url: string, secretKey: string): WebhookStore {
+  const sb = createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } })
+  return {
+    async getSecrets(resource) {
+      const { data, error } = await sb.from('asana_webhooks').select('secret').eq('resource_gid', resource).order('created_at', { ascending: false }).limit(5)
+      if (error) throw new Error(`db webhooks: ${error.message}`)
+      return ((data as { secret: string }[] | null) ?? []).map((r) => r.secret)
+    },
+    async saveSecret(resource, secret) {
+      const { error } = await sb.from('asana_webhooks').upsert({ resource_gid: resource, secret }, { onConflict: 'resource_gid,secret' })
+      if (error) throw new Error(`db webhooks: ${error.message}`)
+    },
+  }
+}
