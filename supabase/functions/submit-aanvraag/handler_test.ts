@@ -51,14 +51,14 @@ function fakeDb() {
   return db
 }
 
-function fakeAsana(opts: { fail?: boolean } = {}) {
+function fakeAsana(opts: { fail?: boolean; warnings?: string[] } = {}) {
   const calls: TaskInput[] = []
   return {
     calls,
     async createTask(input: TaskInput) {
       calls.push(input)
       if (opts.fail) throw new Error('Asana-taak aanmaken mislukt (401: Not Authorized)')
-      return { gid: '999', url: 'https://app.asana.com/0/111/999', subtasks: input.subtasks.length }
+      return { gid: '999', url: 'https://app.asana.com/0/111/999', subtasks: input.subtasks.length, warnings: opts.warnings ?? [] }
     },
   }
 }
@@ -264,4 +264,24 @@ Deno.test('buildCustomFields gebruikt alleen gemapte velden', () => {
   // deno-lint-ignore no-explicit-any
   const out = buildCustomFields({ ...validAanvraag, website: 'https://x.nl/' } as any, cfg)
   assertEquals(out, { f1: { date: '2026-11-20' }, f2: { date: '2026-11-10' }, f3: ['o1', 'o2'], f4: 'o3', f6: 'https://x.nl/' })
+})
+
+Deno.test('taak zonder waarschuwingen laat asana_error leeg', async () => {
+  const { handler, db } = setup()
+  await handler(post(payload()))
+  assertEquals([...db.rows.values()][0].asana_error, null)
+})
+
+Deno.test('gedeeltelijk gelukte taak: aanvraag slaagt, reden in asana_error', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana({ warnings: ['velden niet gezet: deadline (400: Invalid field)'] })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), log: () => {} })
+  const res = await handler(post(payload()))
+  assertEquals(res.status, 200)
+  const body = await res.json()
+  assertEquals(body.asana_task_url, 'https://app.asana.com/0/111/999')
+  const row = [...db.rows.values()][0]
+  assertEquals(row.asana_error, 'velden niet gezet: deadline (400: Invalid field)')
+  // De huisstijl-extractie hoort gewoon te starten; de taak bestaat immers.
+  assertEquals(row.brand_status, 'running')
 })

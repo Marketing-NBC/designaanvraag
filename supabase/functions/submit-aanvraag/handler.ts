@@ -108,8 +108,12 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         })
         asanaGid = task.gid
         asanaUrl = task.url
-        await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url })
-        log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid, subtasks: task.subtasks })
+        // Onderdelen die Asana weigerde (een veld, de kolom, de opmaak) blijven zichtbaar in
+        // `asana_error`; de taak zelf bestaat, dus de aanvraag slaagt.
+        const gedeeltelijk = task.warnings.length ? task.warnings.join('; ') : null
+        await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url, asana_error: gedeeltelijk })
+        if (gedeeltelijk) log('warn', 'asana-taak onvolledig', { id: row.id, gid: task.gid, warnings: gedeeltelijk })
+        else log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid, subtasks: task.subtasks })
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         log('error', 'asana mislukt', { id: row.id, error: msg })

@@ -38,7 +38,8 @@ export interface TaskInput {
 }
 
 export interface AsanaClient {
-  createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number }>
+  /** `warnings` bevat wat Asana geweigerd heeft; de taak bestaat dan wel. Leeg = alles gelukt. */
+  createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number; warnings: string[] }>
 }
 
 export interface AsanaTask {
@@ -127,44 +128,80 @@ function errorText(body: { errors?: AsanaError[] }): string {
   return body.errors?.map((e) => e.message).filter(Boolean).join('; ') ?? 'onbekende fout'
 }
 
+const ok = (status: number) => status >= 200 && status < 300
+
 /**
- * Maakt de taak aan. Bij een 400 op custom fields of html_notes valt hij terug op een simpelere taak,
- * zodat een verkeerd gemapt veld nooit de aanvraag blokkeert.
+ * Maakt de taak aan in stappen: eerst de taak zelf, daarna de bord-kolom, de custom fields en de
+ * subtaken. Elk onderdeel is een eigen call, zodat één onderdeel dat Asana weigert de rest niet
+ * meesleept — eerder zat alles in één POST en leverde een geweigerd veld een taak zónder velden op.
+ * Wat niet lukte komt in `warnings` te staan (en dus in de kolom `asana_error`).
  */
 export function createAsanaClient(pat: string): AsanaClient {
   return {
     async createTask(input) {
-      // In de juiste bord-kolom zetten als we die kennen; anders in de standaardsectie van het project.
-      const placement: Record<string, unknown> = input.sectionGid
-        ? { memberships: [{ project: input.projectGid, section: input.sectionGid }] }
-        : { projects: [input.projectGid] }
-      const base: Record<string, unknown> = { name: input.name, ...placement }
-      if (input.assigneeGid) base.assignee = input.assigneeGid
+      const warnings: string[] = []
 
+      // 1. De taak zelf: naam, project, assignee en beschrijving.
+      const base: Record<string, unknown> = { name: input.name, projects: [input.projectGid] }
+      if (input.assigneeGid) base.assignee = input.assigneeGid
       const attempts: { label: string; data: Record<string, unknown> }[] = [
-        { label: 'volledig', data: { ...base, html_notes: input.htmlNotes, custom_fields: input.customFields } },
-        { label: 'zonder custom fields', data: { ...base, html_notes: input.htmlNotes } },
-        { label: 'platte notes', data: { ...base, notes: input.plainNotes } },
+        { label: 'met opmaak', data: { ...base, html_notes: input.htmlNotes } },
+        { label: 'platte beschrijving', data: { ...base, notes: input.plainNotes } },
         { label: 'zonder assignee', data: { name: input.name, projects: [input.projectGid], notes: input.plainNotes } },
       ]
 
+      let created: Record<string, unknown> | null = null
       let lastError = 'onbekende fout'
       for (const attempt of attempts) {
-        if (attempt.label === 'zonder custom fields' && Object.keys(input.customFields).length === 0) continue
         const { status, body } = await asanaFetch(pat, '/tasks', { method: 'POST', body: JSON.stringify({ data: attempt.data }) })
-        if (status >= 200 && status < 300 && body.data?.gid) {
-          if (attempt.label !== 'volledig') console.warn(`[asana] taak aangemaakt met fallback "${attempt.label}": ${lastError}`)
-          const gid = String(body.data.gid)
-          const url = String(body.data.permalink_url ?? `https://app.asana.com/0/${input.projectGid}/${gid}`)
-          return { gid, url, subtasks: await createSubtasks(pat, gid, input) }
+        if (ok(status) && body.data?.gid) {
+          if (attempt.label !== 'met opmaak') warnings.push(`taak aangemaakt als "${attempt.label}" (${lastError})`)
+          created = body.data
+          break
         }
         lastError = `${status}: ${errorText(body)}`
         // Alleen bij 400 (ongeldige invoer) is een simpelere variant zinvol; 401/403/404/5xx niet.
         if (status !== 400) break
       }
-      throw new Error(`Asana-taak aanmaken mislukt (${lastError})`)
+      if (!created) throw new Error(`Asana-taak aanmaken mislukt (${lastError})`)
+
+      const gid = String(created.gid)
+      const url = String(created.permalink_url ?? `https://app.asana.com/0/${input.projectGid}/${gid}`)
+
+      // 2. In de juiste bord-kolom. Een aparte call is betrouwbaarder dan `memberships` bij aanmaken.
+      if (input.sectionGid) {
+        const { status, body } = await asanaFetch(pat, `/sections/${input.sectionGid}/addTask`, { method: 'POST', body: JSON.stringify({ data: { task: gid } }) })
+        if (!ok(status)) warnings.push(`kolom zetten mislukt (${status}: ${errorText(body)})`)
+      }
+
+      // 3. Custom fields. Lukt de hele set niet, dan veld voor veld: één verkeerd gemapt veld hoort
+      //    de andere niet mee te nemen, en zo staat precies in de log welk veld het is.
+      const veldGids = Object.keys(input.customFields)
+      if (veldGids.length) {
+        const heel = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: input.customFields } }) })
+        if (!ok(heel.status)) {
+          const geweigerd: string[] = []
+          for (const veld of veldGids) {
+            const los = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: { [veld]: input.customFields[veld] } } }) })
+            if (!ok(los.status)) geweigerd.push(`${veldNaam(veld)} (${los.status}: ${errorText(los.body)})`)
+          }
+          warnings.push(
+            geweigerd.length
+              ? `velden niet gezet: ${geweigerd.join(', ')}`
+              : `velden pas los gezet (samen: ${heel.status}: ${errorText(heel.body)})`,
+          )
+        }
+      }
+
+      return { gid, url, subtasks: await createSubtasks(pat, gid, input), warnings }
     },
   }
+}
+
+/** Onze sleutel bij een veld-gid, zodat een waarschuwing leesbaar is ("deadline" i.p.v. een getal). */
+function veldNaam(gid: string, cfg: AsanaFieldsConfig = asanaFields): string {
+  const hit = Object.entries(cfg.fields ?? {}).find(([, f]) => f.gid === gid)
+  return hit ? `${hit[0]} (${hit[1].name ?? gid})` : gid
 }
 
 /** Subtaken zijn een extra; een fout hier mag de aanvraag niet laten falen. */
@@ -181,7 +218,6 @@ async function createSubtasks(pat: string, parentGid: string, input: TaskInput):
 }
 
 export function createAsanaTaskClient(pat: string): AsanaTaskClient {
-  const ok = (status: number) => status >= 200 && status < 300
   return {
     async getTask(gid) {
       const { status, body } = await asanaFetch(

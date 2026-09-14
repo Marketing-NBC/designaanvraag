@@ -1,0 +1,53 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@deno/installer-shell-setup@*": "0.3.4"
+  },
+  "jsr": {
+    "@deno/installer-shell-setup@0.3.4": {
+      "integrity": "48665d1a737d487cce6874bc97bba70a5aeffa7053aca3f60df93c6fab8963b4"
+    }
+  },
+  "workspace": {
+    "members": {
+      "shared": {
+        "packageJson": {
+          "dependencies": [
+            "npm:zod@^4.6.5"
+          ]
+        }
+      },
+      "web": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@headlessui/react@^2.2.10",
+            "npm:@playwright/test@^1.63.0",
+            "npm:@types/node@^24.13.3",
+            "npm:@types/react-dom@^19.2.7",
+            "npm:@types/react@^19.2.18",
+            "npm:@vitejs/plugin-react@^6.1.1",
+            "npm:date-fns@^4.4.0",
+            "npm:motion@^13.2.0",
+            "npm:oxlint@^1.81.0",
+            "npm:react-dom@^19.2.8",
+            "npm:react@^19.2.8",
+            "npm:typescript@~6.0.2",
+            "npm:vite@^8.3.0",
+            "npm:vitest@5",
+            "npm:zod@^4.6.5"
+          ]
+        }
+      },
+      "worker": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@supabase/supabase-js@^2.58.0",
+            "npm:playwright@^1.63.0",
+            "npm:sharp@~0.35.4",
+            "npm:zod@^4.5.0"
+          ]
+        }
+      }
+    }
+  }
+}

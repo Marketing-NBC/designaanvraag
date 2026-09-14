@@ -185,6 +185,31 @@ for (const s of scenarios) {
     check(veld('schijf')?.text_value === s.aanvraag.schijf_locatie, 'veld Schijf', veld('schijf')?.text_value ?? 'leeg')
   }
 
+  // Bleef een veld leeg, dan proberen we het hier zelf te zetten met dezelfde waarde als de
+  // function. Asana's eigen foutmelding komt dan in het verslag: zonder die regel weet je alleen
+  // dát het misging, niet waarom.
+  const verwachteVelden = {
+    eventdatum: { date: s.aanvraag.event_datum },
+    deadline: { date: s.aanvraag.deadline },
+    aanvrager: s.aanvraag.naam,
+    website: s.aanvraag.website,
+    type: s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean),
+    modus: f.modus?.options?.[s.aanvraag.design_modus],
+    ...(s.aanvraag.schijf_locatie ? { schijf: s.aanvraag.schijf_locatie } : {}),
+  }
+  for (const [sleutel, waarde] of Object.entries(verwachteVelden)) {
+    const veldGid = f[sleutel]?.gid
+    const c = veldGid ? perGid[veldGid] : null
+    const leeg = !c || (!c.date_value && !c.text_value && !c.enum_value && !(c.multi_enum_values ?? []).length)
+    if (!leeg) continue
+    try {
+      await asana(`/tasks/${gid}`, { method: 'PUT', body: { data: { custom_fields: { [veldGid]: waarde } } } })
+      info(`veld "${sleutel}" was leeg, maar los zetten lukt wél — de function kreeg de waarde niet doorgezet`)
+    } catch (e) {
+      info(`Asana weigert veld "${sleutel}": ${e.message}`)
+    }
+  }
+
   const verwachteSubtaken = subtaskTitles(s.aanvraag)
   const subtaken = (await asana(`/tasks/${gid}/subtasks?opt_fields=name`)) ?? []
   check(
