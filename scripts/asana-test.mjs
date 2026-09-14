@@ -262,7 +262,7 @@ if (args['geen-planning'] !== 'true' && gemaakt.length) {
   const { gid, aanvraag } = gemaakt[0]
   const inPlanning = fields.sections?.in_planning?.gid
   const planningGid = fields.planning_project?.gid
-  regels.push('\n**C. planning-flow (webhook)**')
+  regels.push('\n**D. planning-flow (webhook)**')
 
   if (!inPlanning || !planningGid) {
     check(false, 'secties en planningsproject staan in asana-fields.json')
