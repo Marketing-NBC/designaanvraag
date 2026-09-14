@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-09-14T14:52:52.866Z",
+  "generated_at": "2026-09-14T17:28:59.100Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -60,6 +60,15 @@
       "gid": "1218459975443305",
       "name": "Schijf",
       "type": "text"
+    },
+    "spoed": {
+      "gid": "1218470779252851",
+      "name": "Spoed",
+      "type": "enum",
+      "options": {
+        "ja": "1218470779252852",
+        "nee": "1218470779252853"
+      }
     }
   },
   "sections": {
