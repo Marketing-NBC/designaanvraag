@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-09-14T14:19:54.682Z",
+  "generated_at": "2026-09-14T14:52:52.866Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -61,5 +61,28 @@
       "name": "Schijf",
       "type": "text"
     }
+  },
+  "sections": {
+    "nieuwe_aanvragen": {
+      "gid": "1218459522936729",
+      "name": "Nieuwe aanvragen"
+    },
+    "in_planning": {
+      "gid": "1218462168784126",
+      "name": "In planning"
+    },
+    "mee_bezig": {
+      "gid": "1218459840125012",
+      "name": "Mee bezig"
+    },
+    "klaar": {
+      "gid": "1218459914834826",
+      "name": "Klaar"
+    }
+  },
+  "planning_project": {
+    "gid": "1206998483284471",
+    "name": "4. Werkplanning",
+    "url": "https://app.asana.com/1/1205781972079586/project/1206998483284471"
   }
 }
