@@ -93,7 +93,7 @@ if (existing) {
   const data = {
     workspace: workspaceGid,
     name: projectName,
-    color: 'aqua',
+    color: 'dark-teal',
     default_view: 'board',
     notes:
       'Aanvragen uit het designaanvraag-formulier (https://marketing-nbc.github.io/designaanvraag/). ' +
