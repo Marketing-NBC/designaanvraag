@@ -111,13 +111,17 @@ alle gegevens in de beschrijving.
 De extractie draait als Claude Code Routine op je eigen abonnement; er is geen API-key nodig.
 Eenmalig, op claude.ai/code/routines:
 
-1. **Environment** (Settings → Environments → New): naam `designaanvraag-worker`,
-   **Network access: Full** (sites van opdrachtgevers zijn niet te allowlisten), setup script:
+1. **Environment.** Er is geen aparte instellingenpagina: op claude.ai/code klik je op het
+   wolk-icoon met de naam van de huidige environment (in de rij boven het berichtvak) →
+   **Add cloud environment**. Hetzelfde icoon staat in het routine-formulier onder "Select a trigger".
+   Naam `designaanvraag-worker`, **Network access: Full** (sites van opdrachtgevers zijn niet te
+   allowlisten), setup script:
    ```bash
    cd worker && npm ci --no-audit --no-fund
    ```
-   Environment variables of API credentials: `SUPABASE_URL` (`https://<project-id>.supabase.co`),
+   Environment variables: `SUPABASE_URL` (`https://<project-id>.supabase.co`),
    `SUPABASE_SECRET_KEY` (Project Settings → API Keys → secret key) en `ASANA_PAT`.
+   Later aanpassen: over de environment in de lijst zweven → tandwiel → "Update cloud environment".
 2. **New routine**: naam `Huisstijl ophalen`, repository `Marketing-NBC/designaanvraag`,
    environment `designaanvraag-worker`, model Opus, connectors: geen. Prompt:
    > Open `worker/ROUTINE.md` in de gekloonde repo en voer het draaiboek exact uit. Het
