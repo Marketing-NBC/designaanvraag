@@ -1,16 +1,16 @@
 # Plan: NBC Designaanvraag-tool
 
-## Status (14 september 2026, 14:40)
+## Status (14 september 2026, 16:30)
 
 | Milestone | Status |
 |---|---|
 | M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ (deploy vanaf de branch; `main` volgt bij merge) |
 | M2 Backend | Live: migraties 1–3, `submit-aanvraag`, `aanvraag-status`, collega's uit Supabase |
-| M3 Asana | Live en end-to-end getest: testtaak aangemaakt in "4. Werkplanning" voor Abel van Dijk. Project heeft geen custom fields; alles staat in de beschrijving plus due date |
+| M3 Asana | Live: eigen project "Designaanvragen" (bord, secties Nieuwe aanvragen → Mee bezig → Klaar, 7 custom fields), aangemaakt via de workflow "Asana-project aanmaken". Testtaak met velden aangemaakt voor Abel van Dijk |
 | M4 Huisstijl-Routine | Code klaar en lokaal getest. Nog nodig: Routine + environment aanmaken (README) en `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN` als secrets, daarna Supabase deploy |
 | M5 Afwerking | Live (status-endpoint, live status op succes-scherm) |
 
-Testaanvraag: `c9d4ea56-c563-4fdb-a7a8-d1012a3ea4cc`, Asana-taak 1218451961755486 ("TEST designaanvraag (mag weg)").
+Testaanvragen (mogen weg): Asana-taak 1218451961755486 in "4. Werkplanning" en taak 1218459840984419 in "Designaanvragen".
 
 ## Context
 
