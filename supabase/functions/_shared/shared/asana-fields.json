@@ -1,6 +1,15 @@
 {
-  "_comment": "Gegenereerd door scripts/asana-fields.mjs (workflow 'Asana-velden vernieuwen'). Niet met de hand bewerken. Leeg = taken zonder custom fields.",
-  "generated_at": null,
-  "project": null,
+  "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
+  "generated_at": "2026-09-14T12:27:11.430Z",
+  "project": {
+    "gid": "1206998483284471",
+    "name": "4. Werkplanning",
+    "url": "https://app.asana.com/1/1205781972079586/project/1206998483284471",
+    "workspace_gid": "1205781972079586"
+  },
+  "assignee": {
+    "gid": "1213080601733351",
+    "name": "Abel van Dijk"
+  },
   "fields": {}
 }
