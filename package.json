@@ -11,11 +11,12 @@
   "scripts": {
     "dev": "npm run dev -w web",
     "build": "npm run build -w web",
-    "test": "npm run test -w web",
+    "test": "npm run test -w web && npm run test:worker",
     "e2e": "npm run e2e -w web",
     "lint": "npm run lint -w web",
     "sync-shared": "node scripts/sync-shared.mjs",
-    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none submit-aanvraag/ aanvraag-status/"
+    "test:worker": "node --test --experimental-strip-types --no-warnings worker/test/*.test.mjs",
+    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/"
   },
   "engines": {
     "node": ">=22"

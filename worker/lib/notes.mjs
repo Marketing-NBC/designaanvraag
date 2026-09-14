@@ -57,7 +57,8 @@ export function renderHuisstijlSection({ brief, website, attachmentNames, kaartG
   lines.push('<ul>')
   for (const n of brief.style_notes) lines.push(`<li>${escapeXml(n)}</li>`)
   lines.push('</ul>')
-  if (kaartGid) lines.push(`<img data-asana-gid="${escapeXml(kaartGid)}">`)
+  // Zelfsluitend: Asana leest html_notes als strikte XML en weigert een losse <img>.
+  if (kaartGid) lines.push(`<img data-asana-gid="${escapeXml(kaartGid)}"/>`)
   const pct = Math.round(brief.confidence * 100)
   const meta = [`Automatisch opgehaald van <a href="${escapeXml(website)}">${escapeXml(hostOf(website))}</a>`, `zekerheid ${pct}%`]
   if (brief.warnings.length) meta.push(`let op: ${brief.warnings.map(escapeXml).join('; ')}`)
