@@ -16,7 +16,7 @@
     "lint": "npm run lint -w web",
     "sync-shared": "node scripts/sync-shared.mjs",
     "test:worker": "node --test --experimental-strip-types --no-warnings worker/test/*.test.mjs",
-    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/"
+    "test:functions": "cd supabase/functions && deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/"
   },
   "engines": {
     "node": ">=22"

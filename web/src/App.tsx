@@ -15,9 +15,16 @@ import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
+import { Aanvulling } from './Aanvulling'
 import { STEPS } from './steps'
 
-type Screen = { kind: 'start' } | { kind: 'step'; index: number } | { kind: 'review' } | { kind: 'success'; result: SubmitResult; draft: Draft }
+type Screen =
+  | { kind: 'start' }
+  | { kind: 'step'; index: number }
+  | { kind: 'review' }
+  | { kind: 'success'; result: SubmitResult; draft: Draft }
+  /** De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. */
+  | { kind: 'aanvulling' }
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
@@ -182,12 +189,16 @@ export default function App() {
       const typing = isTypingTarget(target)
 
       if (screen.kind === 'start') {
-        if (e.key === 'Enter' && !typing) {
+        // Staat de focus op de aanvullen-link, dan hoort Enter díe te volgen, niet het formulier te starten.
+        if (e.key === 'Enter' && !typing && !(target instanceof HTMLElement && target.closest('.link'))) {
           e.preventDefault()
           go({ kind: 'step', index: 0 }, 1)
         }
         return
       }
+
+      // De aanvulling-flow luistert zelf; hier niets doen.
+      if (screen.kind === 'aanvulling') return
 
       if (screen.kind === 'review') {
         if (e.key === 'Enter' && !typing && !(target instanceof HTMLAnchorElement)) {
@@ -283,9 +294,13 @@ export default function App() {
             </span>
           </div>
         ) : null}
-        <Start onStart={() => go({ kind: 'step', index: 0 }, 1)} stepCount={STEPS.length} />
+        <Start onStart={() => go({ kind: 'step', index: 0 }, 1)} onAanvullen={() => go({ kind: 'aanvulling' }, 1)} stepCount={STEPS.length} />
       </>
     )
+  }
+
+  if (screen.kind === 'aanvulling') {
+    return <Aanvulling collegas={collegas} onSluit={() => go({ kind: 'start' }, -1)} />
   }
 
   if (screen.kind === 'success') {

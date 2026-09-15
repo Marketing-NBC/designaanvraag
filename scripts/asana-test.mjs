@@ -285,12 +285,85 @@ for (const s of scenarios) {
   if (stBody.brand_status === 'failed') info(`huisstijl-extractie staat op "failed": ${stBody.brand_error ?? 'geen reden'}`)
 }
 
+// Aanvulling-flow: zoeken op de eventnaam en er iets bij vragen. Op de eerste testtaak.
+if (gemaakt.length) {
+  const eerste = gemaakt[0]
+  regels.push('\n**D. aanvulling op een bestaande aanvraag**')
+
+  const zoekTerm = eerste.aanvraag.event.slice(0, 12)
+  const zoekRes = await fetch(`${base}/functions/v1/aanvraag-zoeken?q=${encodeURIComponent(zoekTerm)}`, {
+    headers: { Origin: 'https://marketing-nbc.github.io' },
+    signal: AbortSignal.timeout(20_000),
+  })
+  const zoekBody = await zoekRes.json().catch(() => ({}))
+  const gevonden = (zoekBody.resultaten ?? []).find((r) => r.id === eerste.aanvraagId)
+  check(zoekRes.status === 200 && Boolean(gevonden), 'aanvraag is terug te vinden op eventnaam', `HTTP ${zoekRes.status}, ${(zoekBody.resultaten ?? []).length} treffer(s)`)
+
+  const kort = await fetch(`${base}/functions/v1/aanvraag-zoeken?q=ab`, { headers: { Origin: 'https://marketing-nbc.github.io' }, signal: AbortSignal.timeout(20_000) })
+  const kortBody = await kort.json().catch(() => ({}))
+  check(kort.status === 200 && (kortBody.resultaten ?? []).length === 0, 'twee letters leveren niets op')
+
+  // Een type dat nog niet op de taak staat, zodat de unie aantoonbaar is.
+  const erbij = ['vlaggen', 'menukaart_print', 'koffiescherm'].find((k) => !eerste.aanvraag.aanvraag_types.includes(k))
+  const typeVeldGid = fields.fields?.type?.gid
+  const voor = await asana(`/tasks/${eerste.gid}?opt_fields=custom_fields`)
+  const voorGids = (voor.custom_fields ?? []).find((c) => c.gid === typeVeldGid)?.multi_enum_values?.map((o) => o.gid) ?? []
+
+  const aanvullingPayload = {
+    aanvulling: {
+      aanvraag_id: eerste.aanvraagId,
+      naam: eerste.aanvraag.naam,
+      toelichting: 'TEST — aanvulling via de end-to-end test. Er komt een extra type bij.',
+      extra_types: erbij ? [erbij] : [],
+      link: 'wetransfer.com/test-aanvulling',
+    },
+    client_request_id: crypto.randomUUID(),
+    started_at: new Date(Date.now() - 60_000).toISOString(),
+    website_confirm: '',
+  }
+  const aRes = await fetch(`${base}/functions/v1/aanvulling-toevoegen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
+    body: JSON.stringify(aanvullingPayload),
+    signal: AbortSignal.timeout(30_000),
+  })
+  const aBody = await aRes.json().catch(() => ({}))
+  check(aRes.status === 200 && Boolean(aBody.aanvulling_id), 'aanvulling geaccepteerd', `HTTP ${aRes.status}${aBody.error ? `: ${aBody.error}` : ''}`)
+
+  if (aRes.status === 200) {
+    const stories = (await asana(`/tasks/${eerste.gid}/stories?limit=100&opt_fields=text,resource_subtype`)) ?? []
+    const comment = stories.find((st) => st.resource_subtype === 'comment_added' && String(st.text ?? '').includes('Aanvulling van'))
+    check(Boolean(comment), 'reactie staat onder de bestaande taak', comment ? String(comment.text).slice(0, 80) : 'geen reactie gevonden')
+    check(stories.filter((st) => st.resource_subtype === 'comment_added' && String(st.text ?? '').includes('Aanvulling van')).length === 1, 'precies één reactie, geen tweede taak')
+
+    if (erbij && typeVeldGid) {
+      const na = await asana(`/tasks/${eerste.gid}?opt_fields=custom_fields`)
+      const naGids = (na.custom_fields ?? []).find((c) => c.gid === typeVeldGid)?.multi_enum_values?.map((o) => o.gid) ?? []
+      const erbijGid = fields.fields?.type?.options?.[erbij]
+      check(voorGids.every((g) => naGids.includes(g)), 'bestaande types zijn blijven staan', `voor ${voorGids.length}, na ${naGids.length}`)
+      check(naGids.includes(erbijGid), `"${erbij}" is erbij gekomen`, naGids.join(', '))
+      check((aBody.bijgewerkt ?? []).length > 0, 'de function meldt welk veld is bijgewerkt', (aBody.bijgewerkt ?? []).join(', ') || 'niets')
+    }
+
+    // Nog een keer versturen met dezelfde client_request_id levert geen tweede reactie op.
+    const nogmaals = await fetch(`${base}/functions/v1/aanvulling-toevoegen`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
+      body: JSON.stringify(aanvullingPayload),
+      signal: AbortSignal.timeout(30_000),
+    })
+    const naHerhaling = (await asana(`/tasks/${eerste.gid}/stories?limit=100&opt_fields=text,resource_subtype`)) ?? []
+    const aantal = naHerhaling.filter((st) => st.resource_subtype === 'comment_added' && String(st.text ?? '').includes('Aanvulling van')).length
+    check(nogmaals.status === 200 && aantal === 1, 'herhaald versturen plaatst geen tweede reactie', `${aantal} reactie(s)`)
+  }
+}
+
 // Planning-flow: alleen op de eerste testtaak.
 if (args['geen-planning'] !== 'true' && gemaakt.length) {
   const { gid, aanvraag } = gemaakt[0]
   const inPlanning = fields.sections?.in_planning?.gid
   const planningGid = fields.planning_project?.gid
-  regels.push('\n**D. planning-flow (webhook)**')
+  regels.push('\n**E. planning-flow (webhook)**')
 
   if (!inPlanning || !planningGid) {
     check(false, 'secties en planningsproject staan in asana-fields.json')

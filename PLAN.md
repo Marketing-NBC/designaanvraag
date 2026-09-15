@@ -7,13 +7,19 @@ Alle vijf de milestones zijn live en end-to-end getest met een echte aanvraag.
 | Milestone | Status |
 |---|---|
 | M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ |
-| M2 Backend | Live op het Supabase-project van de Marketing-organisatie (`ommujhlzffxalltlgzti`): migraties, `submit-aanvraag`, `aanvraag-status`, `asana-webhook`, collega's uit Supabase |
+| M2 Backend | Live op het Supabase-project van de Marketing-organisatie (`ommujhlzffxalltlgzti`): migraties, `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `asana-webhook`, collega's uit Supabase |
 | M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
 | M4 Huisstijl-Routine | **Live.** Routine "Huisstijl ophalen" draait op een cloud-environment, wordt door de function gestart en levert logo, huisstijl-kaart, screenshot en tekst bij de Asana-taak. Bewezen op rijksmuseum.nl, inclusief de juiste logokeuze tussen sponsorlogo's |
 | M5 Afwerking | Live (status-endpoint met reden bij mislukking, live status op het succes-scherm) |
 
 Daarbovenop gebouwd: registratie van **spoedaanvragen** en **Aanvrager als keuzelijst**, zodat het
 Asana-dashboard erop kan tellen en de planning erop kan kleuren. Zie "Spoed en aanvrager" hieronder.
+
+Daarnaast een tweede, korte flow: **aanvullingen op een lopende aanvraag**. Een collega zoekt op de
+eventnaam, kiest zijn aanvraag en stuurt na wat er is veranderd. Dat komt als reactie onder de
+bestaande Asana-taak, plus een terughoudende update van Type aanvraag (alleen aanvullen),
+Eventdatum, Deadline en Schijf (alleen als dat veld nog leeg is). Spoed en de vervaldatum blijven
+met rust. Zie README → "Aanvullingen op een lopende aanvraag".
 
 ### Nog te doen
 
@@ -344,6 +350,15 @@ doorheen ging.
 - **Sommige sites weren serververkeer.** greenvillage.nl gaf vanuit de cloud-environment 502/503
   terwijl hij in de browser gewoon werkt. De worker meldt dat netjes, maar levert dan geen huisstijl.
 - **Fase 4** (menukaarten in Claude Design) staat nog open; de haakjes liggen er.
+- **Bijlages bij een aanvulling** kunnen nog niet. Bewust uitgesteld: dat vraagt een uploadveld,
+  tijdelijke upload-links naar Storage, multipart doorzetten naar Asana en een eigen set limieten.
+  Voor nu is er een veld voor een link (WeTransfer, SharePoint) en het schijf-pad. De opzet is er
+  klaar voor: de aanvulling heeft een eigen tabel en een eigen comment-opbouw.
+- **Het zoekendpoint is open.** Wie de publishable key uit de pagina plukt, kan op eventnaam zoeken
+  in de aanvragen van de afgelopen 120 dagen (drie letters minimum, tien treffers, uurlimiet per IP).
+  Bewuste afweging: een toegangscode of eerst-je-naam-kiezen kost de collega's elke keer werk voor
+  gegevens die weinig gevoelig zijn. Verandert dat oordeel, dan is het één extra check in
+  `aanvraag-zoeken`.
 
 ## Risico's en keuzes
 

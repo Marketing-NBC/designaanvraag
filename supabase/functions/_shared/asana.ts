@@ -44,6 +44,14 @@ export interface AsanaClient {
   enumOptie(fieldGid: string, naam: string): Promise<string>
 }
 
+/** Wat er nu in een custom field staat, uitgepakt naar de drie soorten die wij gebruiken. */
+export interface AsanaVeldWaarde {
+  /** Gekozen enum- of multi_enum-opties. */
+  optieGids: string[]
+  datum: string | null
+  tekst: string | null
+}
+
 export interface AsanaTask {
   gid: string
   name: string
@@ -52,6 +60,8 @@ export interface AsanaTask {
   assignee: string | null
   projects: string[]
   memberships: { project: string; section: string | null }[]
+  /** Per veld-gid de huidige waarde. Nodig om bij te werken zonder iets te overschrijven. */
+  customFields: Record<string, AsanaVeldWaarde>
 }
 
 /** Leesbewerkingen en kleine mutaties op één taak, voor de webhook-function. */
@@ -61,6 +71,8 @@ export interface AsanaTaskClient {
   /** Teksten van bestaande comments (om dubbele vragen te voorkomen). */
   listComments(taskGid: string): Promise<string[]>
   addComment(taskGid: string, htmlText: string): Promise<void>
+  /** Zet velden op een bestaande taak. Geeft terug wat Asana weigerde; leeg = alles gelukt. */
+  updateCustomFields(taskGid: string, fields: Record<string, unknown>): Promise<string[]>
 }
 
 /**
@@ -197,24 +209,8 @@ export function createAsanaClient(pat: string): AsanaClient {
         if (!ok(status)) warnings.push(`kolom zetten mislukt (${status}: ${errorText(body)})`)
       }
 
-      // 3. Custom fields. Lukt de hele set niet, dan veld voor veld: één verkeerd gemapt veld hoort
-      //    de andere niet mee te nemen, en zo staat precies in de log welk veld het is.
-      const veldGids = Object.keys(input.customFields)
-      if (veldGids.length) {
-        const heel = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: input.customFields } }) })
-        if (!ok(heel.status)) {
-          const geweigerd: string[] = []
-          for (const veld of veldGids) {
-            const los = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: { [veld]: input.customFields[veld] } } }) })
-            if (!ok(los.status)) geweigerd.push(`${veldNaam(veld)} (${los.status}: ${errorText(los.body)})`)
-          }
-          warnings.push(
-            geweigerd.length
-              ? `velden niet gezet: ${geweigerd.join(', ')}`
-              : `velden pas los gezet (samen: ${heel.status}: ${errorText(heel.body)})`,
-          )
-        }
-      }
+      // 3. Custom fields.
+      warnings.push(...(await putCustomFields(pat, gid, input.customFields)))
 
       return { gid, url, subtasks: await createSubtasks(pat, gid, input), warnings }
     },
@@ -242,6 +238,30 @@ export function createAsanaClient(pat: string): AsanaClient {
   }
 }
 
+/**
+ * Zet custom fields op een taak. Lukt de hele set niet, dan veld voor veld: één verkeerd gemapt veld
+ * hoort de andere niet mee te nemen, en zo staat precies in de waarschuwing welk veld het is.
+ * Gedeeld door het aanmaken van een taak en het bijwerken vanuit een aanvulling.
+ */
+async function putCustomFields(pat: string, gid: string, fields: Record<string, unknown>): Promise<string[]> {
+  const veldGids = Object.keys(fields)
+  if (!veldGids.length) return []
+
+  const heel = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: fields } }) })
+  if (ok(heel.status)) return []
+
+  const geweigerd: string[] = []
+  for (const veld of veldGids) {
+    const los = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { custom_fields: { [veld]: fields[veld] } } }) })
+    if (!ok(los.status)) geweigerd.push(`${veldNaam(veld)} (${los.status}: ${errorText(los.body)})`)
+  }
+  return [
+    geweigerd.length
+      ? `velden niet gezet: ${geweigerd.join(', ')}`
+      : `velden pas los gezet (samen: ${heel.status}: ${errorText(heel.body)})`,
+  ]
+}
+
 /** Onze sleutel bij een veld-gid, zodat een waarschuwing leesbaar is ("deadline" i.p.v. een getal). */
 function veldNaam(gid: string, cfg: AsanaFieldsConfig = asanaFields): string {
   const hit = Object.entries(cfg.fields ?? {}).find(([, f]) => f.gid === gid)
@@ -266,7 +286,7 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
     async getTask(gid) {
       const { status, body } = await asanaFetch(
         pat,
-        `/tasks/${gid}?opt_fields=name,due_on,completed,assignee.gid,projects.gid,memberships.project.gid,memberships.section.gid`,
+        `/tasks/${gid}?opt_fields=name,due_on,completed,assignee.gid,projects.gid,memberships.project.gid,memberships.section.gid,custom_fields.gid,custom_fields.enum_value.gid,custom_fields.multi_enum_values.gid,custom_fields.date_value.date,custom_fields.text_value`,
         { method: 'GET' },
       )
       if (!ok(status) || !body.data) throw new Error(`Asana-taak ${gid} ophalen mislukt (${status}: ${errorText(body)})`)
@@ -277,6 +297,19 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
         assignee?: { gid: string } | null
         projects?: { gid: string }[]
         memberships?: { project?: { gid: string }; section?: { gid: string } | null }[]
+        custom_fields?: {
+          gid?: string
+          enum_value?: { gid: string } | null
+          multi_enum_values?: { gid: string }[] | null
+          date_value?: { date?: string | null } | null
+          text_value?: string | null
+        }[]
+      }
+      const customFields: Record<string, AsanaVeldWaarde> = {}
+      for (const veld of d.custom_fields ?? []) {
+        if (!veld.gid) continue
+        const optieGids = veld.multi_enum_values?.map((o) => o.gid) ?? (veld.enum_value ? [veld.enum_value.gid] : [])
+        customFields[veld.gid] = { optieGids, datum: veld.date_value?.date ?? null, tekst: veld.text_value ?? null }
       }
       return {
         gid,
@@ -286,6 +319,7 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
         assignee: d.assignee?.gid ?? null,
         projects: (d.projects ?? []).map((p) => p.gid),
         memberships: (d.memberships ?? []).filter((m) => m.project?.gid).map((m) => ({ project: m.project!.gid, section: m.section?.gid ?? null })),
+        customFields,
       }
     },
     async addToProject(taskGid, projectGid) {
@@ -301,6 +335,9 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
     async addComment(taskGid, htmlText) {
       const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}/stories`, { method: 'POST', body: JSON.stringify({ data: { html_text: htmlText } }) })
       if (!ok(status)) throw new Error(`Comment plaatsen mislukt (${status}: ${errorText(body)})`)
+    },
+    updateCustomFields(taskGid, fields) {
+      return putCustomFields(pat, taskGid, fields)
     },
   }
 }

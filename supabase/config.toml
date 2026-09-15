@@ -27,3 +27,17 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/asana-webhook/index.ts"
+
+# Zoeken op eventnaam om een eerdere aanvraag terug te vinden. Alleen lezen, eigen uurlimiet.
+[functions.aanvraag-zoeken]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/aanvraag-zoeken/index.ts"
+
+# Aanvulling op een bestaande aanvraag: reactie onder de Asana-taak plus een paar velden bijwerken.
+[functions.aanvulling-toevoegen]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/aanvulling-toevoegen/index.ts"

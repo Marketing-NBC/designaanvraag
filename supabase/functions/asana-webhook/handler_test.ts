@@ -39,7 +39,7 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async getTask(gid) {
       const t = tasks[gid]
       if (!t) throw new Error(`Asana-taak ${gid} ophalen mislukt (404: Not Found)`)
-      return { gid, name: 'x', dueOn: null, completed: false, assignee: 'abel', projects: ['proj1'], memberships: [{ project: 'proj1', section: 'sec-nieuw' }], ...t }
+      return { gid, name: 'x', dueOn: null, completed: false, assignee: 'abel', projects: ['proj1'], memberships: [{ project: 'proj1', section: 'sec-nieuw' }], customFields: {}, ...t }
     },
     async addToProject(taskGid, projectGid) {
       added.push([taskGid, projectGid])
@@ -51,6 +51,8 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async addComment(taskGid, html) {
       posted.push([taskGid, html])
     },
+    // De planning-flow raakt geen velden aan; dit is er om aan `AsanaTaskClient` te voldoen.
+    updateCustomFields: () => Promise.resolve([]),
   }
   return { client, added, posted }
 }

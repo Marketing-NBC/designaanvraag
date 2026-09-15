@@ -50,6 +50,12 @@ function fakeDb() {
     async isCollega(naam) {
       return naam !== 'Onbekende Indringer'
     },
+    // Alleen de aanvulling-function gebruikt deze; hier zijn ze er om aan `Db` te voldoen.
+    findById: () => Promise.resolve(null),
+    zoekOpEvent: () => Promise.resolve([]),
+    findAanvullingByClientRequestId: () => Promise.resolve(null),
+    insertAanvulling: () => Promise.reject(new Error('niet gebruikt')),
+    updateAanvulling: () => Promise.resolve(),
   }
   return db
 }

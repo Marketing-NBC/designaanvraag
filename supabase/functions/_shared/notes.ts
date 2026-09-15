@@ -82,3 +82,37 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: 
 
   return { html: `<body>${htmlLines.join('\n')}</body>`, plain: plainLines.join('\n') }
 }
+
+/**
+ * Reactie onder de bestaande taak bij een aanvulling. Comments zijn strenger dan de beschrijving:
+ * alleen tekst, strong/em, a en ul/li — geen koppen, geen img, geen blockquote. Vandaar de kale
+ * opbouw met gewone regeleinden.
+ */
+export function renderAanvullingComment(v: {
+  naam: string
+  toelichting: string
+  /** Velden die daadwerkelijk zijn aangepast; leeg betekent dat alleen deze tekst binnenkomt. */
+  bijgewerkt: string[]
+  link: string
+  /** Pad dat niet is overgenomen omdat het veld Schijf al gevuld was. */
+  schijfNietOvergenomen: string
+}): string {
+  const lines: string[] = [`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '']
+
+  if (v.bijgewerkt.length) {
+    lines.push(`<strong>Bijgewerkt in deze taak:</strong> ${escapeXml(v.bijgewerkt.join(', '))}`)
+  }
+  if (v.link) {
+    lines.push(`<strong>Materiaal:</strong> <a href="${escapeXml(v.link)}">${escapeXml(hostOf(v.link))}</a>`)
+  }
+  if (v.schijfNietOvergenomen) {
+    lines.push(
+      `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
+    )
+  }
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen) {
+    lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
+  }
+
+  return `<body>${lines.join('\n')}</body>`
+}

@@ -17,7 +17,7 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status` en `asana-webhook` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen` en `asana-webhook` |
 | `worker/` | Huisstijl-extractie; draait in een Claude Code Routine volgens `worker/ROUTINE.md` |
 | `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
@@ -121,6 +121,36 @@ alle gegevens in de beschrijving.
 - **Webhook koppelen** gebeurt automatisch aan het eind van de Supabase-deploy (`scripts/asana-webhook.mjs`).
   De webhook-URL bevat een token afgeleid van `ASANA_PAT`; Asana ondertekent elke levering (HMAC).
   Controleren: Supabase → Edge Functions → `asana-webhook` → Logs.
+
+## Aanvullingen op een lopende aanvraag
+
+Er verandert bijna altijd nog iets nadat een aanvraag binnen is: er komt een type bij, er komt
+materiaal achteraan, of er is feedback op het concept. Daar hoort geen tweede taak bij.
+
+Op het startscherm staat daarom **"Iets aanvullen of wijzigen"**. De collega zoekt op de **eventnaam**
+(niet op zijn eigen naam — bij een event zijn vaak meer mensen betrokken), kiest de juiste aanvraag
+en typt wat er moet gebeuren. Dat komt als **reactie onder de bestaande Asana-taak**, zodat je er een
+melding van krijgt en alles bij elkaar blijft.
+
+Een aanvulling werkt daarnaast een paar velden bij, met opzet terughoudend:
+
+| Veld | Wat er gebeurt |
+| --- | --- |
+| Type aanvraag | Alleen aanvullen. De unie van wat er in Asana staat en wat erbij gevraagd wordt, dus ook wat jij zelf hebt bijgezet blijft staan. |
+| Eventdatum, Deadline | Alleen als de datum echt anders is dan wat er staat. |
+| Schijf | Alleen als het veld nog leeg is. Stond er al iets, dan komt het nieuwe pad in de reactie. |
+| Spoed | Verandert niet. Die waarde meet het aanvraaggedrag bij het indienen; met terugwerkende kracht herrekenen maakt de cijfers waardeloos. |
+| Vervaldatum | Verandert niet. Dat is de planning van Marketing. |
+
+Het zoeken is bewust karig: vanaf drie letters, alleen aanvragen van de afgelopen 120 dagen (zie
+`ZOEK_DAGEN` in `shared/aanvulling-schema.ts`), maximaal tien treffers en een eigen uurlimiet per IP.
+De pagina staat immers op het open internet.
+
+Elke aanvulling blijft in de Supabase-tabel `aanvullingen` staan, met daarin ook welke velden
+daadwerkelijk zijn bijgewerkt — handig als je ooit wilt weten hoe vaak er wordt nagestuurd.
+
+Bijlages meesturen kan (nog) niet; daarvoor is er een veld voor een link naar WeTransfer of
+SharePoint, en het veld voor de locatie op de schijf.
 
 ## Spoedjes terugzien
 

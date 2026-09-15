@@ -4,7 +4,8 @@ import { REQUEST_TYPE_KEYS } from './request-types.ts'
 /** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
 export const MIN_LEAD_BUSINESS_DAYS = 5
 
-const isoDate = z
+/** Kale datum zonder tijd, zoals het formulier en Postgres hem gebruiken. */
+export const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ongeldige datum')
   .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)), 'Ongeldige datum')

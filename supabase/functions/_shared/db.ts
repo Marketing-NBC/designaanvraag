@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
+import type { Aanvulling, GevondenAanvraag } from './shared/aanvulling-schema.ts'
+import { ZOEK_DAGEN, ZOEK_MAX_RESULTATEN } from './shared/aanvulling-schema.ts'
+import type { RequestTypeKey } from './shared/request-types.ts'
 
 export interface AanvraagRow {
   id: string
@@ -14,6 +17,32 @@ export interface AanvraagRow {
   brand_status: 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
   brand_error: string | null
   brand_session_url: string | null
+}
+
+/**
+ * De aanvraag zoals een aanvulling hem nodig heeft: niet alleen de Asana-koppeling maar ook wat er
+ * ooit is ingevuld, zodat de function kan zien wat er werkelijk verandert.
+ */
+export interface AanvraagDetail extends AanvraagRow {
+  event: string
+  event_datum: string
+  deadline: string
+  aanvraag_types: RequestTypeKey[]
+  anders_tekst: string
+  schijf_locatie: string
+}
+
+export interface AanvullingRow {
+  id: string
+  aanvraag_id: string
+  client_request_id: string
+  bijgewerkt: string[]
+  asana_error: string | null
+}
+
+export interface NewAanvulling extends Aanvulling {
+  client_request_id: string
+  ip_hash: string | null
 }
 
 export interface NewAanvraag extends Aanvraag {
@@ -31,9 +60,24 @@ export interface Db {
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
   /** Staat deze naam in de lijst met collega's? Voorkomt dat willekeurige invoer opties aanmaakt. */
   isCollega(naam: string): Promise<boolean>
+  /** De volledige aanvraag, voor het bijwerken vanuit een aanvulling. */
+  findById(id: string): Promise<AanvraagDetail | null>
+  /** Recente aanvragen waarvan de eventnaam op `q` lijkt, nieuwste eerst. */
+  zoekOpEvent(q: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  findAanvullingByClientRequestId(id: string): Promise<AanvullingRow | null>
+  insertAanvulling(row: NewAanvulling): Promise<AanvullingRow>
+  updateAanvulling(id: string, patch: Partial<AanvullingRow>): Promise<void>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url'
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
+const ZOEK_COLUMNS = 'id, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, asana_task_url'
+const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
+
+/** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
+function veiligeZoekterm(q: string): string {
+  return q.replace(/[%_,()\\*]/g, ' ').trim()
+}
 
 export function createDb(url: string, secretKey: string): Db {
   const sb = createClient(url, secretKey, { auth: { persistSession: false, autoRefreshToken: false } })
@@ -61,6 +105,41 @@ export function createDb(url: string, secretKey: string): Db {
       const { data, error } = await sb.from('collegas').select('naam').ilike('naam', naam.trim()).eq('actief', true).limit(1)
       if (error) throw new Error(`db collegas: ${error.message}`)
       return ((data as unknown[] | null) ?? []).length > 0
+    },
+    async findById(id) {
+      const { data, error } = await sb.from('aanvragen').select(DETAIL_COLUMNS).eq('id', id).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as AanvraagDetail | null) ?? null
+    },
+    async zoekOpEvent(q, vandaag) {
+      const term = veiligeZoekterm(q)
+      if (!term) return []
+      const grens = new Date(vandaag.getTime() - ZOEK_DAGEN * 86_400_000).toISOString()
+      const { data, error } = await sb
+        .from('aanvragen')
+        .select(ZOEK_COLUMNS)
+        .ilike('event', `%${term}%`)
+        .gte('created_at', grens)
+        // Zonder taak valt er niets aan te vullen; die aanvraag hoort niet in de lijst.
+        .not('asana_task_gid', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(ZOEK_MAX_RESULTATEN)
+      if (error) throw new Error(`db zoeken: ${error.message}`)
+      return ((data as GevondenAanvraag[] | null) ?? []).map((r) => ({ ...r, aanvraag_types: r.aanvraag_types ?? [] }))
+    },
+    async findAanvullingByClientRequestId(id) {
+      const { data, error } = await sb.from('aanvullingen').select(AANVULLING_COLUMNS).eq('client_request_id', id).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as AanvullingRow | null) ?? null
+    },
+    async insertAanvulling(row) {
+      const { data, error } = await sb.from('aanvullingen').insert(row).select(AANVULLING_COLUMNS).single()
+      if (error) throw new Error(`db insert: ${error.message}`)
+      return data as AanvullingRow
+    },
+    async updateAanvulling(id, patch) {
+      const { error } = await sb.from('aanvullingen').update(patch).eq('id', id)
+      if (error) throw new Error(`db update: ${error.message}`)
     },
   }
 }
