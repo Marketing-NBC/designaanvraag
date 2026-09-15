@@ -8,7 +8,7 @@ const sb = createClient(env.supabaseUrl, env.supabaseSecretKey, { auth: { persis
 const handler = createStatusHandler({
   env,
   async find(id) {
-    const { data, error } = await sb.from('aanvragen').select('id, brand_status, asana_task_url').eq('id', id).maybeSingle()
+    const { data, error } = await sb.from('aanvragen').select('id, brand_status, asana_task_url, brand_error').eq('id', id).maybeSingle()
     if (error) throw new Error(`db select: ${error.message}`)
     return (data as StatusRow | null) ?? null
   },

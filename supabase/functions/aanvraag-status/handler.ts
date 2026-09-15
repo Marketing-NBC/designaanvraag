@@ -5,6 +5,8 @@ export interface StatusRow {
   id: string
   brand_status: 'pending' | 'running' | 'done' | 'failed'
   asana_task_url: string | null
+  /** Reden waarom de huisstijl niet lukte; alleen zichtbaar voor wie het aanvraag-id kent. */
+  brand_error: string | null
 }
 
 export interface StatusDeps {
@@ -24,6 +26,10 @@ export function createStatusHandler(deps: StatusDeps): (req: Request) => Promise
     if (!UUID_RE.test(id)) return json({ error: 'Ongeldig id' }, 400, cors)
     const row = await deps.find(id)
     if (!row) return json({ error: 'Niet gevonden' }, 404, cors)
-    return json({ aanvraag_id: row.id, brand_status: row.brand_status, asana_task_url: row.asana_task_url }, 200, cors)
+    return json(
+      { aanvraag_id: row.id, brand_status: row.brand_status, asana_task_url: row.asana_task_url, brand_error: row.brand_error ?? null },
+      200,
+      cors,
+    )
   }
 }

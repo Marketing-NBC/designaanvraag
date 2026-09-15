@@ -20,14 +20,14 @@ const ID = '4f1a2b3c-4d5e-4f60-8a71-829394a5b6c7'
 const handler = createStatusHandler({
   env,
   async find(id) {
-    return id === ID ? { id, brand_status: 'done', asana_task_url: 'https://app.asana.com/0/1/2' } : null
+    return id === ID ? { id, brand_status: 'done', asana_task_url: 'https://app.asana.com/0/1/2', brand_error: null } : null
   },
 })
 
 Deno.test('status van bekende aanvraag', async () => {
   const res = await handler(new Request(`http://f/aanvraag-status?id=${ID}`, { headers: { origin: 'https://marketing-nbc.github.io' } }))
   assertEquals(res.status, 200)
-  assertEquals(await res.json(), { aanvraag_id: ID, brand_status: 'done', asana_task_url: 'https://app.asana.com/0/1/2' })
+  assertEquals(await res.json(), { aanvraag_id: ID, brand_status: 'done', asana_task_url: 'https://app.asana.com/0/1/2', brand_error: null })
   assertEquals(res.headers.get('access-control-allow-origin'), 'https://marketing-nbc.github.io')
 })
 
@@ -35,4 +35,15 @@ Deno.test('ongeldig id → 400, onbekend → 404, POST → 405', async () => {
   assertEquals((await handler(new Request('http://f/aanvraag-status?id=abc'))).status, 400)
   assertEquals((await handler(new Request('http://f/aanvraag-status?id=4f1a2b3c-4d5e-4f60-8a71-000000000000'))).status, 404)
   assertEquals((await handler(new Request(`http://f/aanvraag-status?id=${ID}`, { method: 'POST' }))).status, 405)
+})
+
+Deno.test('een mislukte aanvraag geeft de reden terug', async () => {
+  const handler = createStatusHandler({
+    env,
+    async find(id) {
+      return { id, brand_status: 'failed', asana_task_url: null, brand_error: 'Website onbereikbaar (502)' }
+    },
+  })
+  const res = await handler(new Request(`http://f/aanvraag-status?id=${ID}`))
+  assertEquals(await res.json(), { aanvraag_id: ID, brand_status: 'failed', asana_task_url: null, brand_error: 'Website onbereikbaar (502)' })
 })
