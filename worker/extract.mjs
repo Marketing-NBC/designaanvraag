@@ -89,6 +89,9 @@ const fonts = summarizeFonts(dom.fonts)
 
 if (site) await site.browser.close()
 
+if (site && site.stylingOk === false) {
+  warnings.push('De pagina laadde zonder stylesheets: gemeten kleuren en fonts zijn browser-standaarden, geen merkwaarden. Gebruik ze niet.')
+}
 if (!logos.length) warnings.push('Geen logo-kandidaten gevonden.')
 if (!colors.brand.length) warnings.push('Geen uitgesproken merkkleuren gevonden (alleen neutrale tinten).')
 if (fallback) warnings.push('Geen screenshots: de browser kon de site niet laden.')

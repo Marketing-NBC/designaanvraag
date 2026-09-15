@@ -22,6 +22,20 @@ const CONSENT_SELECTORS = [
   'a:has-text("Accepteren")',
 ]
 
+/**
+ * Is er echt opmaak geladen? Zonder stylesheets valt de browser terug op zijn eigen standaard:
+ * Times New Roman en knalblauwe links. Die waarden zijn meetbaar maar zeggen niets over het merk.
+ */
+async function heeftOpmaak(page) {
+  return await page
+    .evaluate(() => {
+      if (document.styleSheets.length > 0) return true
+      const cs = getComputedStyle(document.body)
+      return !/^(Times|serif)/i.test(cs.fontFamily)
+    })
+    .catch(() => true)
+}
+
 /** Script dat in de pagina draait en alle signalen verzamelt. */
 function domExtractor() {
   const vw = innerWidth, vh = innerHeight
@@ -266,11 +280,16 @@ export async function openSite(url, { viewport = { width: 1440, height: 900 }, t
   page.setDefaultTimeout(timeoutMs)
   let response
   try {
-    response = await page.goto(url, { waitUntil: 'load', timeout: timeoutMs })
+    // Niet wachten op 'load': dat vereist dat élke afbeelding, stylesheet en iframe binnen is. Eén
+    // hangend verzoek — een trage CDN, een advertentie, een proxy die verbindingen laat vallen —
+    // kostte dan de hele extractie, waarna we terugvielen op een kale fetch zonder opmaak.
+    response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: timeoutMs })
   } catch (e) {
     await browser.close()
     throw new Error(`Pagina laden mislukt: ${e.message.split('\n')[0]}`)
   }
+  // Wél even de kans geven om af te maken, maar er niet op stuklopen.
+  await page.waitForLoadState('load', { timeout: Math.min(10_000, timeoutMs) }).catch(() => {})
   const status = response?.status() ?? null
   if (status && status >= 400) {
     await browser.close()
@@ -290,9 +309,27 @@ export async function openSite(url, { viewport = { width: 1440, height: 900 }, t
   })
   await page.waitForTimeout(800)
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
+
+  // Komt de stylesheet niet binnen — bij een wankele verbinding gebeurt dat — dan meten we de
+  // standaardstijl van de browser (Times New Roman, #0000ee) en niet de huisstijl. Dat is erger dan
+  // een mislukking, want het lijkt op echte data. Eén keer herladen helpt meestal.
+  let stylingOk = await heeftOpmaak(page)
+  if (!stylingOk) {
+    log('geen opmaak geladen, eenmalig herladen')
+    try {
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: timeoutMs })
+      await page.waitForLoadState('load', { timeout: Math.min(10_000, timeoutMs) }).catch(() => {})
+      await page.waitForTimeout(1200)
+      await page.evaluate(() => document.fonts?.ready).catch(() => {})
+      stylingOk = await heeftOpmaak(page)
+    } catch (e) {
+      log('herladen mislukt', { error: e.message.split('\n')[0] })
+    }
+  }
+
   const dom = await page.evaluate(domExtractor)
-  log('pagina geladen', { status, title: dom.title, logos: dom.logos.length, consent })
-  return { page, context, browser, dom, finalUrl: page.url(), status, consent }
+  log('pagina geladen', { status, title: dom.title, logos: dom.logos.length, consent, stylingOk })
+  return { page, context, browser, dom, finalUrl: page.url(), status, consent, stylingOk }
 }
 
 export async function screenshots(page, outDir, sharp) {
