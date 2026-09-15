@@ -39,15 +39,18 @@ const target = `${base}?resource=${projectGid}&token=${token}`
 const masked = `${base}?resource=${projectGid}&token=***`
 
 const existing = await asana(`/webhooks?workspace=${workspaceGid}&resource=${projectGid}&limit=100&opt_fields=target,active,resource.gid`)
-const mine = existing.filter((w) => String(w.target ?? '').startsWith(`${base}?`))
+// Alles wat naar een asana-webhook-function wijst is van ons, ook die van een ouder Supabase-project.
+// Zo blijven er na een verhuizing geen webhooks achter die naar een dood (of ander) project leveren.
+const mine = existing.filter((w) => /\/functions\/v1\/asana-webhook(\?|$)/.test(String(w.target ?? '')))
 const current = mine.find((w) => w.target === target && w.active !== false)
+for (const w of mine) {
+  if (w === current) continue
+  await asana(`/webhooks/${w.gid}`, { method: 'DELETE' })
+  console.log(`Oude webhook verwijderd (${w.gid})`)
+}
 if (current) {
   console.log(`Webhook bestond al (${current.gid}) → ${masked}`)
   process.exit(0)
-}
-for (const w of mine) {
-  await asana(`/webhooks/${w.gid}`, { method: 'DELETE' })
-  console.log(`Oude webhook verwijderd (${w.gid})`)
 }
 
 // De handshake kan net na een deploy nog falen (function herstart, secrets nog niet door); een paar keer proberen.
