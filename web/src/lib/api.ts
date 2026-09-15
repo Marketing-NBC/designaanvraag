@@ -35,7 +35,7 @@ export async function submitAanvraag(payload: SubmitPayload): Promise<SubmitResu
   return body
 }
 
-export type BrandStatus = 'pending' | 'running' | 'done' | 'failed'
+export type BrandStatus = 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
 
 /** Status van de huisstijl-extractie; null als er geen backend is of de aanvraag onbekend is. */
 export async function fetchStatus(aanvraagId: string): Promise<{ brand_status: BrandStatus; asana_task_url: string | null } | null> {

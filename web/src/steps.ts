@@ -70,8 +70,8 @@ export const STEPS: StepDef[] = [
     id: 'website',
     kind: 'url',
     title: 'Wat is de website van het bedrijf of het event?',
-    help: 'We halen hier automatisch het logo, de kleuren en de fonts vandaan.',
-    validate: (d) => (normalizeUrl(d.website) ? null : 'Vul een geldige website in, bijvoorbeeld www.event.nl.'),
+    help: 'We halen hier automatisch het logo, de kleuren en de fonts vandaan. Is er geen website? Laat het veld dan leeg.',
+    validate: (d) => (!d.website.trim() || normalizeUrl(d.website) ? null : 'Vul een geldige website in, bijvoorbeeld www.event.nl.'),
   },
   {
     id: 'schijf_locatie',

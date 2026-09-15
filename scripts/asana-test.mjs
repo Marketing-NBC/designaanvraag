@@ -4,7 +4,7 @@
  *
  *   ASANA_PAT=... node --experimental-strip-types scripts/asana-test.mjs --base https://<ref>.supabase.co
  *
- * Wat hij doet: drie testaanvragen versturen naar de live function (precies zoals het formulier),
+ * Wat hij doet: vier testaanvragen versturen naar de live function (precies zoals het formulier),
  * de aangemaakte taken terugleden uit Asana en controleren op titel, sectie, assignee, custom fields,
  * subtaken en beschrijving. Daarna de planning-flow: taak naar "In planning" (verwacht: comment met
  * de vraag om een vervaldatum), vervaldatum zetten (verwacht: taak ook in het planningsproject).
@@ -137,6 +137,21 @@ const scenarios = [
       omschrijving: 'Automatische test: dit hoort een spoedje te zijn.',
     },
   },
+  {
+    label: 'D. zonder website',
+    aanvraag: {
+      naam: 'Testaanvraag (automatisch)',
+      event: 'TEST zonder website',
+      event_datum: datum(70),
+      deadline: datum(40),
+      website: '',
+      schijf_locatie: '',
+      aanvraag_types: ['vlaggen'],
+      anders_tekst: '',
+      design_modus: 'standaard',
+      omschrijving: 'Automatische test: geen website, dus geen huisstijl.',
+    },
+  },
 ]
 
 /** Verstuurt een aanvraag zoals het formulier dat doet. */
@@ -192,7 +207,11 @@ for (const s of scenarios) {
   } else {
     check(veld('aanvrager')?.text_value === s.aanvraag.naam, 'veld Aanvrager', veld('aanvrager')?.text_value ?? 'leeg')
   }
-  check(veld('website')?.text_value === s.aanvraag.website, 'veld Website', veld('website')?.text_value ?? 'leeg')
+  if (s.aanvraag.website) {
+    check(veld('website')?.text_value === s.aanvraag.website, 'veld Website', veld('website')?.text_value ?? 'leeg')
+  } else {
+    check(!veld('website')?.text_value, 'veld Website leeg zonder opgegeven site', veld('website')?.text_value ?? 'leeg')
+  }
 
   const verwachteTypes = s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean).sort()
   const gezetteTypes = (veld('type')?.multi_enum_values ?? []).map((v) => v.gid).sort()
@@ -225,7 +244,7 @@ for (const s of scenarios) {
     eventdatum: { date: s.aanvraag.event_datum },
     deadline: { date: s.aanvraag.deadline },
     ...(f.aanvrager?.type === 'enum' ? {} : { aanvrager: s.aanvraag.naam }),
-    website: s.aanvraag.website,
+    ...(s.aanvraag.website ? { website: s.aanvraag.website } : {}),
     type: s.aanvraag.aanvraag_types.map((k) => f.type?.options?.[k]).filter(Boolean),
     modus: f.modus?.options?.[s.aanvraag.design_modus],
     ...(f.spoed ? { spoed: f.spoed.options?.[spoedVerwacht ? 'ja' : 'nee'] } : {}),
@@ -260,7 +279,10 @@ for (const s of scenarios) {
   const st = await fetch(`${base}/functions/v1/aanvraag-status?id=${body.aanvraag_id}`, { signal: AbortSignal.timeout(15_000) })
   const stBody = await st.json().catch(() => ({}))
   check(st.status === 200 && stBody.asana_task_url === body.asana_task_url, 'status-endpoint geeft de taak terug', `brand_status: ${stBody.brand_status ?? '?'}`)
-  if (stBody.brand_status === 'failed') info('huisstijl-extractie staat op "failed" — dat klopt zolang de Routine (M4) nog niet is gekoppeld')
+  if (!s.aanvraag.website) {
+    check(stBody.brand_status === 'overgeslagen', 'huisstijl overgeslagen zonder website', stBody.brand_status ?? '?')
+  }
+  if (stBody.brand_status === 'failed') info(`huisstijl-extractie staat op "failed": ${stBody.brand_error ?? 'geen reden'}`)
 }
 
 // Planning-flow: alleen op de eerste testtaak.

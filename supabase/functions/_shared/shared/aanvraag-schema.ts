@@ -36,10 +36,13 @@ export const aanvraagSchema = z
     event: z.string().trim().min(2, 'Vul de naam van het event in').max(120, 'Maximaal 120 tekens'),
     event_datum: isoDate,
     deadline: isoDate,
+    /** Mag leeg: niet elk event of bedrijf heeft een site. Zonder site geen huisstijl-extractie. */
     website: z
       .string()
       .trim()
+      .default('')
       .transform((s, ctx) => {
+        if (!s) return ''
         const n = normalizeUrl(s)
         if (!n) {
           ctx.addIssue({ code: 'custom', message: 'Vul een geldige website in, bijvoorbeeld www.event.nl' })

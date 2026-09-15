@@ -16,7 +16,7 @@ export function reviewRows(d: Draft): ReviewRow[] {
     { step: 1, label: 'event', value: d.event },
     { step: 2, label: 'eventdatum', value: d.event_datum ? formatLong(d.event_datum) : '' },
     { step: 3, label: 'uiterlijk nodig op', value: d.deadline ? formatLong(d.deadline) : '' },
-    { step: 4, label: 'website', value: d.website },
+    { step: 4, label: 'website', value: d.website.trim() || 'niet opgegeven' },
     { step: 5, label: 'locatie op de schijf', value: d.schijf_locatie || 'Niet ingevuld', muted: !d.schijf_locatie },
     { step: 6, label: 'aanvraag', value: describeRequestTypes(d.aanvraag_types, d.anders_tekst) },
     { step: 7, label: 'design', value: modus },

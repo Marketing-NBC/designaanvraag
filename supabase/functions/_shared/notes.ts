@@ -45,7 +45,11 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: 
 
   const htmlLines: string[] = []
   for (const [k, v] of rows) htmlLines.push(`<strong>${escapeXml(k)}:</strong> ${escapeXml(v)}`)
-  htmlLines.push(`<strong>Website:</strong> <a href="${escapeXml(a.website)}">${escapeXml(hostOf(a.website))}</a>`)
+  htmlLines.push(
+    a.website
+      ? `<strong>Website:</strong> <a href="${escapeXml(a.website)}">${escapeXml(hostOf(a.website))}</a>`
+      : `<strong>Website:</strong> <em>niet opgegeven</em>`,
+  )
   htmlLines.push(
     a.schijf_locatie
       ? `<strong>Locatie op de schijf:</strong> <code>${escapeXml(a.schijf_locatie)}</code>`
@@ -58,16 +62,23 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: 
   htmlLines.push('<hr/>')
   htmlLines.push('<h2>Huisstijl</h2>')
   htmlLines.push(
-    `${HUISSTIJL_MARKER} van <a href="${escapeXml(a.website)}">${escapeXml(hostOf(a.website))}</a>. Dit duurt ongeveer vijf minuten; logo, kleuren en fonts komen hier en als bijlage.`,
+    a.website
+      ? `${HUISSTIJL_MARKER} van <a href="${escapeXml(a.website)}">${escapeXml(hostOf(a.website))}</a>. Dit duurt ongeveer vijf minuten; logo, kleuren en fonts komen hier en als bijlage.`
+      : 'De aanvrager gaf geen website op, dus er is geen huisstijl opgehaald.',
   )
   htmlLines.push('')
   htmlLines.push(`<em>Aanvraag ${escapeXml(opts.aanvraagId)} via het designaanvraag-formulier.</em>`)
 
   const plainLines: string[] = rows.map(([k, v]) => `${k}: ${v}`)
-  plainLines.push(`Website: ${a.website}`)
+  plainLines.push(`Website: ${a.website || 'niet opgegeven'}`)
   plainLines.push(`Locatie op de schijf: ${a.schijf_locatie || 'niet opgegeven'}`)
   plainLines.push('', 'Wensen en bijzonderheden', a.omschrijving || 'Geen bijzonderheden opgegeven.', '')
-  plainLines.push('Huisstijl', `${HUISSTIJL_MARKER} van ${hostOf(a.website)}.`, '', `Aanvraag ${opts.aanvraagId} via het designaanvraag-formulier.`)
+  plainLines.push(
+    'Huisstijl',
+    a.website ? `${HUISSTIJL_MARKER} van ${hostOf(a.website)}.` : 'De aanvrager gaf geen website op, dus er is geen huisstijl opgehaald.',
+    '',
+    `Aanvraag ${opts.aanvraagId} via het designaanvraag-formulier.`,
+  )
 
   return { html: `<body>${htmlLines.join('\n')}</body>`, plain: plainLines.join('\n') }
 }

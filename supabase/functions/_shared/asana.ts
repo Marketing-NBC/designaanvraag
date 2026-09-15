@@ -113,7 +113,7 @@ export function buildCustomFields(
   }
 
   const website = f['website']
-  if (website?.type === 'text') out[website.gid] = a.website
+  if (website?.type === 'text' && a.website) out[website.gid] = a.website
 
   const schijf = f['schijf']
   if (schijf?.type === 'text' && a.schijf_locatie) out[schijf.gid] = a.schijf_locatie

@@ -81,3 +81,22 @@ describe('describeRequestTypes', () => {
     expect(describeRequestTypes(['anders'], '')).toBe('Anders')
   })
 })
+
+describe('website is optioneel', () => {
+  it('accepteert een lege website', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, website: '' })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.website).toBe('')
+  })
+
+  it('accepteert een ontbrekende website', () => {
+    const { website: _weg, ...zonder } = valid
+    const r = aanvraagSchema.safeParse(zonder)
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.website).toBe('')
+  })
+
+  it('wijst onzin nog steeds af', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, website: 'geen website' }).success).toBe(false)
+  })
+})

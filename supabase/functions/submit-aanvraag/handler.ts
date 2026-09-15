@@ -160,8 +160,14 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       return json({ aanvraag_id: row.id, asana_task_url: null, brand_dispatched: false } satisfies SubmitResult, 200, cors)
     }
 
-    // Huisstijl-extractie via de Routine (fase 4).
+    // Huisstijl-extractie via de Routine (fase 4). Zonder website valt er niets op te halen; dat is
+    // geen mislukking maar een overslag, en de Routine hoeft er geen run aan te verspillen.
     let dispatched = false
+    if (!aanvraag.website) {
+      await db.update(row.id, { brand_status: 'overgeslagen', brand_error: null })
+      log('info', 'geen website opgegeven, huisstijl overgeslagen', { id: row.id })
+      return json({ aanvraag_id: row.id, asana_task_url: asanaUrl, brand_dispatched: false } satisfies SubmitResult, 200, cors)
+    }
     if (deps.routine && asanaGid) {
       try {
         const { sessionUrl } = await deps.routine.fire(`aanvraag_id=${row.id}`)

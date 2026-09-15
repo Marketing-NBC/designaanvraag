@@ -16,7 +16,8 @@ const POLL_MAX_MS = 10 * 60_000
 
 export function Success({ result, website, naam, onRestart }: { result: SubmitResult; website: string; naam: string; onRestart: () => void }) {
   const first = naam.split(' ')[0]
-  const [status, setStatus] = useState<BrandStatus>(result.brand_dispatched ? 'running' : 'failed')
+  // Zonder website is er niets op te halen; dat is geen mislukking maar een overslag.
+  const [status, setStatus] = useState<BrandStatus>(result.brand_dispatched ? 'running' : website.trim() ? 'failed' : 'overgeslagen')
   const [asanaUrl, setAsanaUrl] = useState<string | null>(result.asana_task_url)
 
   // Zolang de huisstijl wordt opgehaald: elke paar seconden de status ophalen.
@@ -45,7 +46,9 @@ export function Success({ result, website, naam, onRestart }: { result: SubmitRe
 
   const host = <strong>{hostOf(website)}</strong>
   const statusText =
-    status === 'done' ? (
+    status === 'overgeslagen' ? (
+      <>Je gaf geen website op, dus we halen geen huisstijl op. Het marketingteam zoekt zelf uit hoe het eruit moet zien.</>
+    ) : status === 'done' ? (
       <>Logo, kleuren en fonts van {host} staan bij de aanvraag in Asana.</>
     ) : status === 'failed' ? (
       <>De huisstijl van {host} kon niet automatisch worden opgehaald. Het marketingteam kijkt zelf even mee.</>
@@ -61,8 +64,8 @@ export function Success({ result, website, naam, onRestart }: { result: SubmitRe
         <p className="success__lead">
           Dankjewel {first}. Je aanvraag staat {asanaUrl ? 'in Asana' : 'klaar'} voor het marketingteam. Ze zien hem direct in hun lijst.
         </p>
-        <div className={`success__status success__status--${status}`} aria-live="polite">
-          {status === 'running' || status === 'pending' ? <span className="spinner spinner--dark" aria-hidden="true" /> : <Icon name={status === 'done' ? 'check' : 'alert'} />}
+        <div className={`success__status success__status--${status === 'overgeslagen' ? 'done' : status}`} aria-live="polite">
+          {status === 'running' || status === 'pending' ? <span className="spinner spinner--dark" aria-hidden="true" /> : <Icon name={status === 'failed' ? 'alert' : 'check'} />}
           <span>{statusText}</span>
         </div>
         <div className="success__actions">

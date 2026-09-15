@@ -365,3 +365,20 @@ Deno.test('mislukte optie-lookup blokkeert de aanvraag niet', async () => {
   assertEquals(rij.asana_task_gid, '999')
   assertMatch(rij.asana_error ?? '', /veld Aanvrager niet gezet: 403/)
 })
+
+Deno.test('zonder website: taak wel, huisstijl overgeslagen', async () => {
+  const { handler, db, asana, routine } = setup()
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, website: '' } })))
+  assertEquals(res.status, 200)
+  const body = await res.json()
+  assertEquals(body.asana_task_url, 'https://app.asana.com/0/111/999')
+  assertEquals(body.brand_dispatched, false)
+  // De Routine wordt niet gestart: er valt niets op te halen.
+  assertEquals(routine.texts, [])
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.brand_status, 'overgeslagen')
+  assertEquals(rij.brand_error, null)
+  // De beschrijving vermeldt het, en het Website-veld blijft leeg.
+  assertMatch(asana.calls[0].plainNotes, /Website: niet opgegeven/)
+  assertMatch(asana.calls[0].htmlNotes, /geen website op/)
+})

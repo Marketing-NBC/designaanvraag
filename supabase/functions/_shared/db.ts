@@ -11,7 +11,7 @@ export interface AanvraagRow {
   spoed: boolean
   /** Werkdagen tussen de aanvraag en het event; negatief kan niet, het formulier blokkeert dat. */
   werkdagen_tot_event: number | null
-  brand_status: 'pending' | 'running' | 'done' | 'failed'
+  brand_status: 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
   brand_error: string | null
   brand_session_url: string | null
 }

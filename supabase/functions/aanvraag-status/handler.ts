@@ -3,7 +3,7 @@ import type { Env } from '../_shared/env.ts'
 
 export interface StatusRow {
   id: string
-  brand_status: 'pending' | 'running' | 'done' | 'failed'
+  brand_status: 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
   asana_task_url: string | null
   /** Reden waarom de huisstijl niet lukte; alleen zichtbaar voor wie het aanvraag-id kent. */
   brand_error: string | null
