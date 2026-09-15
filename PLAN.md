@@ -1,16 +1,28 @@
 # Plan: NBC Designaanvraag-tool
 
-## Status (14 september 2026, 17:00)
+## Status (15 september 2026)
+
+Alle vijf de milestones zijn live en end-to-end getest met een echte aanvraag.
 
 | Milestone | Status |
 |---|---|
-| M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ (deploy vanaf de branch; `main` volgt bij merge) |
-| M2 Backend | Live: migraties 1–3, `submit-aanvraag`, `aanvraag-status`, collega's uit Supabase |
-| M3 Asana | Live: eigen project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 7 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook`: datum vragen bij "In planning", bij datum automatisch ook in "4. Werkplanning" |
-| M4 Huisstijl-Routine | Code klaar en lokaal getest. Nog nodig: Routine + environment aanmaken (README) en `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN` als secrets, daarna Supabase deploy |
-| M5 Afwerking | Live (status-endpoint, live status op succes-scherm) |
+| M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ |
+| M2 Backend | Live op het Supabase-project van de Marketing-organisatie (`ommujhlzffxalltlgzti`): migraties, `submit-aanvraag`, `aanvraag-status`, `asana-webhook`, collega's uit Supabase |
+| M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
+| M4 Huisstijl-Routine | **Live.** Routine "Huisstijl ophalen" draait op een cloud-environment, wordt door de function gestart en levert logo, huisstijl-kaart, screenshot en tekst bij de Asana-taak. Bewezen op rijksmuseum.nl, inclusief de juiste logokeuze tussen sponsorlogo's |
+| M5 Afwerking | Live (status-endpoint met reden bij mislukking, live status op het succes-scherm) |
 
-Testaanvragen (mogen weg): Asana-taak 1218451961755486 in "4. Werkplanning"; taken 1218459840984419 en 1218462447960121 in "Designaanvragen" (de laatste is geschikt om de planning-flow te testen).
+Daarbovenop gebouwd: registratie van **spoedaanvragen** en **Aanvrager als keuzelijst**, zodat het
+Asana-dashboard erop kan tellen en de planning erop kan kleuren. Zie "Spoed en aanvrager" hieronder.
+
+### Nog te doen
+
+- Testtaken in Asana opruimen (alles met TEST in de naam).
+- Dashboard aanzetten: grafiek op **Spoed** (en een tweede op **Aanvrager**, gefilterd op Spoed = Ja);
+  in "4. Werkplanning" de kalender kleuren op **Spoed**. Dit kan alleen in de interface, de API kan
+  geen grafieken maken.
+- Het **oude Supabase-project** laten verwijderen door de collega op wiens account het staat. Zolang
+  het bestaat draait daar een kopie van de functions met geldige sleutels.
 
 ## Context
 
@@ -21,8 +33,10 @@ huisstijl (logo, kleuren, fonts, stijlnotities) van de opgegeven opdrachtgever-/
 (menukaarten automatisch opmaken in Claude Design) is een latere fase; dit plan legt alleen de
 haakjes daarvoor.
 
-Repo `Marketing-NBC/designaanvraag` bevat alleen `PLAN.md` en is **privé**.
-Branch: `claude/serene-johnson-ob9w7m`.
+Repo `Marketing-NBC/designaanvraag` is **publiek**. Dat heeft twee gevolgen die in de code
+terugkomen: namen van collega's staan nergens in de broncode (de namenlijst komt uit Supabase, en de
+opties van het veld Aanvrager worden bij het indienen via de API aangemaakt), en de workflow-logs zijn
+openbaar, dus daar horen geen projectgegevens in.
 
 ## Vastgelegde keuzes (uit je antwoorden)
 
@@ -83,30 +97,41 @@ web/                          Vite + React + TS (frontend), base '/designaanvraa
 shared/
   aanvraag-schema.ts          zod-schema (dependency-light; gebruikt door web, function, worker)
   request-types.ts            keys + labels
+  asana-title.ts              taaknaam en subtaaknamen
+  spoed.ts                    werkdagen tellen en bepalen of iets een spoedje is (dependency-vrij)
   brand-brief-schema.ts       zod-schema van de huisstijl-output
-  asana-fields.json           gegenereerd: custom-field gids + enum-option gids (committed)
+  asana-fields.json           gegenereerd: custom-field gids + enum-option gids (committed; zonder namen)
 scripts/
-  asana-fields.ts             genereert shared/asana-fields.json uit het Asana-project
+  asana-setup.mjs             maakt project, secties en velden; --planning hangt Spoed ook aan de werkplanning
+  asana-fields.mjs            genereert shared/asana-fields.json uit het Asana-project
+  asana-webhook.mjs           registreert de webhook en ruimt die van een ouder project op
+  asana-test.mjs              end-to-end test: drie aanvragen, alle velden, planning-flow, opruimen
+  sync-shared.mjs             kopieert shared/ naar de function (CI controleert dat met --check)
 supabase/
-  config.toml                 [functions.submit-aanvraag] verify_jwt = false
-  migrations/0001_init.sql    aanvragen, collegas (+ view), rate_limits (+ sql-functie), storage bucket, RLS
-  migrations/0002_seed_collegas.sql   de 20 voornamen
-  functions/_shared/          asana.ts, routine.ts, notes.ts (html_notes renderer), ratelimit.ts
-  functions/submit-aanvraag/index.ts
-  functions/aanvraag-status/index.ts   (GET status voor succes-scherm; M5)
+  config.toml                 verify_jwt = false voor de drie functions
+  migrations/                 aanvragen, collegas (+ view), rate_limits, asana_webhooks, spoed-kolommen,
+                              en expliciete rechten voor anon en service_role
+  functions/_shared/          asana.ts, routine.ts, notes.ts (html_notes renderer), db.ts, env.ts
+  functions/submit-aanvraag/  formulier → rij + Asana-taak + Routine starten
+  functions/aanvraag-status/  GET status (incl. reden bij mislukking) voor het succes-scherm
+  functions/asana-webhook/    planning-flow: datum vragen, taak in de werkplanning zetten
 worker/
   ROUTINE.md                  het draaiboek dat de Routine-sessie volgt (stap voor stap, met stopregels)
-  package.json                playwright, sharp, @supabase/supabase-js
+  check.mjs                   stap 1: kloppen Supabase en de Asana-token echt (exitcode 2 / 3)
   extract.mjs                 --aanvraag-id <id> | --url <site>  → out/<id>/{signals.json, hero.png, page.png, header.png, logo-*.png|svg}
   validate.mjs                valideert out/<id>/brand-brief.json tegen shared/brand-brief-schema
   publish.mjs                 kaart renderen, Asana-bijlagen, notes, comment, Supabase, Storage
   fail.mjs                    --reason "…" → brand_status=failed + Asana-comment
+  diagnose.mjs                meet wat de omgeving kan bereiken; voor onverklaarbare mislukkingen
   kaart/template.html         huisstijl-kaart in NBC-tokens, gerenderd met Playwright → PNG
+  test/notes.test.mjs         de Asana-beschrijving moet geldige XML blijven
 .github/workflows/
-  deploy-pages.yml            build web → GitHub Pages
-  supabase-deploy.yml         db push + functions deploy bij wijzigingen in supabase/
-  asana-fields.yml            workflow_dispatch: draait scripts/asana-fields.ts met ASANA_PAT-secret, commit json
-README.md                     runbook: secrets, Routine-setup, Asana-setup, collega's beheren, opnieuw draaien
+  deploy-pages.yml            tests + build web → GitHub Pages
+  supabase-deploy.yml         tests, db push, functions, function-secrets, webhook koppelen
+  asana-setup.yml             workflow_dispatch: project + velden aanmaken, commit asana-fields.json
+  asana-fields.yml            workflow_dispatch: alleen de velden uitlezen en committen
+  asana-test.yml              workflow_dispatch: de end-to-end test tegen de echte omgeving
+README.md                     runbook: secrets, Routine-setup, Asana-setup, spoedjes terugzien, collega's beheren
 ```
 
 ## Fase 1: Formulier (frontend)
@@ -279,23 +304,46 @@ Claude Design heeft geen API. Haakjes die we nu al leggen: `aanvraag_types` beva
 `menukaart_print`/`menu_scherm`, brand-brief + logo staan in Storage, en `steps.tsx` ondersteunt
 conditionele stappen zodat "Plak de menu-inhoud" later één regel is.
 
-## Wat ik van jou nodig heb (concreet)
+## Wat er onderweg misging (en hoe het is opgelost)
 
-1. **Asana (2 dingen):** een Personal Access Token en de link naar het Asana-project van Marketing.
-   Token maken: app.asana.com/0/my-apps → "Personal access tokens" → "Create new token".
-   Zet hem als GitHub-secret `ASANA_PAT` (repo → Settings → Secrets and variables → Actions);
-   dan draait `asana-fields.yml` het script en hoef je hem niet in de chat te plakken. Met de
-   token zoek ik project-GID, assignee en de custom fields zelf op.
-2. **Supabase:** uitnodigen hoeft niet. Maak een gratis project op supabase.com (organisatie
-   naar keuze), maak een access token (Account → Access Tokens) en zet als GitHub-secrets:
-   `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID` (de project-ref uit de URL), `SUPABASE_DB_PASSWORD`.
-   CI doet migraties, functions en secrets; de frontend-keys haalt CI zelf op.
-3. **Routine (na M3, ik geef exacte klikstappen in de README):** environment aanmaken met
-   Full network + de 3 credentials, Routine aanmaken met de prompt hierboven, API-trigger
-   toevoegen, URL + token als Supabase-secrets `ROUTINE_FIRE_URL`/`ROUTINE_TOKEN`.
-4. **GitHub Pages:** check onder github.com/organizations/Marketing-NBC/settings/billing of de
-   org op Team zit. Zo niet, dan zetten we de repo over naar `digitaldedication` (als die org wel
-   Team heeft) of maken we de repo public.
+Nuttig voor wie dit later onderhoudt; alle vier de fouten waren onzichtbaar tot er een echte aanvraag
+doorheen ging.
+
+- **Velden bleven leeg in Asana.** De taak werd in één POST aangemaakt — naam, kolom, assignee,
+  beschrijving én custom fields tegelijk. Weigerde Asana daar één onderdeel van, dan viel de function
+  stil terug op een simpelere taak zónder velden. Nu is elk onderdeel een eigen call en komt wat
+  Asana weigert in `asana_error` te staan.
+- **De huisstijl belandde niet in de taak.** De worker schreef `<img ...>` zonder afsluitende slash;
+  Asana leest `html_notes` als strikte XML en weigerde de hele beschrijving. Eén teken, vastgelegd in
+  `worker/test/notes.test.mjs`.
+- **Alles faalde op het nieuwe Supabase-project.** Een project dat is aangemaakt met "Automatically
+  expose new tables" uit, geeft nieuwe tabellen ook geen rechten aan `service_role` — de rol waarmee
+  de functions werken. Nu staan die rechten expliciet in een migratie, zodat het project niet afhangt
+  van een vinkje in de interface. Daarnaast zet de deploy de secret key zelf als `SB_SECRET_KEY`, in
+  plaats van te leunen op wat Supabase automatisch injecteert.
+- **De extractie leverde browser-standaarden op.** `waitUntil: 'load'` wacht tot élke afbeelding en
+  stylesheet binnen is; één hangend verzoek kostte de hele extractie. En als de stylesheet niet
+  binnenkwam, mat de worker Times New Roman en `#0000ee` alsof dat de huisstijl was. Nu wachten we op
+  `domcontentloaded`, herladen we eenmalig als er geen opmaak is, en waarschuwen we expliciet als het
+  dan nog niet goed is.
+
+## Gereedschap voor als het misgaat
+
+| Wat | Waarvoor |
+|---|---|
+| `node worker/check.mjs` | Draait als stap 1 van het draaiboek: klopt Supabase, werkt de Asana-token echt? Exitcode 2 = Supabase kapot, 3 = alleen Asana |
+| `node worker/diagnose.mjs` | Laat per netwerkverzoek zien wat aankomt en met welke fout. Voor als de extractie onverklaarbaar mislukt |
+| Actions → **Asana-test (end-to-end)** | Stuurt drie echte aanvragen door de keten, controleert alle velden inclusief Spoed, test de planning-flow en ruimt zichzelf op |
+| `aanvraag-status?id=<uuid>` | Geeft `brand_status` én `brand_error`, zodat een mislukking te zien is zonder toegang tot Supabase of Asana |
+
+## Bekende open punten
+
+- **Een sessie die halverwege sterft meldt niets.** `fail.mjs` heeft zelf Supabase nodig, dus als
+  Supabase onbereikbaar is blijft een aanvraag stil op `running` staan. Een bewaking die te lang
+  hangende aanvragen alsnog als mislukt markeert, is er nog niet.
+- **Sommige sites weren serververkeer.** greenvillage.nl gaf vanuit de cloud-environment 502/503
+  terwijl hij in de browser gewoon werkt. De worker meldt dat netjes, maar levert dan geen huisstijl.
+- **Fase 4** (menukaarten in Claude Design) staat nog open; de haakjes liggen er.
 
 ## Risico's en keuzes
 
