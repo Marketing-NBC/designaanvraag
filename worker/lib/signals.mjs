@@ -128,19 +128,34 @@ export function firstFamily(stack) {
 
 export function summarizeFonts(raw) {
   const loaded = [...new Set((raw.loaded ?? []).map((f) => f.family.replace(/["']/g, '')))]
+  // Per rol en familie: hoe prominent is die familie (weight_score = hoeveelheid tekst), en welke
+  // CSS-gewichten komen erin voor. Die twee zijn verschillende dingen en mogen niet op één hoop.
   const byRole = {}
   for (const c of raw.computed ?? []) {
     const fam = firstFamily(c.family)
     if (!fam) continue
+    const score = Number(c.weight_score) || 0
     byRole[c.role] ??= {}
-    byRole[c.role][fam] = (byRole[c.role][fam] ?? 0) + c.weight
+    const hit = (byRole[c.role][fam] ??= { score: 0, weights: new Map() })
+    hit.score += score
+    const w = Number(c.weight)
+    if (Number.isFinite(w) && w > 0) hit.weights.set(w, (hit.weights.get(w) ?? 0) + score)
   }
   const roles = {}
   for (const [role, fams] of Object.entries(byRole)) {
     roles[role] = Object.entries(fams)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => b[1].score - a[1].score)
       .slice(0, 3)
-      .map(([family, weight]) => ({ family, weight: Math.round(weight), generic: GENERIC.test(family), loaded: loaded.some((l) => l.toLowerCase() === family.toLowerCase()) }))
+      .map(([family, hit]) => {
+        const byShare = [...hit.weights.entries()].sort((a, b) => b[1] - a[1])
+        return {
+          family,
+          weight: byShare.length ? byShare[0][0] : null,
+          weights: byShare.map(([w]) => w).sort((a, b) => a - b),
+          generic: GENERIC.test(family),
+          loaded: loaded.some((l) => l.toLowerCase() === family.toLowerCase()),
+        }
+      })
   }
   return {
     loaded,

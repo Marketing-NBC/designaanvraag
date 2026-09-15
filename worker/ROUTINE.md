@@ -86,7 +86,8 @@ Richtlijnen:
 - **Kleuren:** 3 tot 8 kleuren. Rollen: `primary` (de hoofdmerkkleur), `secondary`, `accent`
   (CTA/highlights), `background`, `text`, `other`. Gebruik CSS custom properties en CTA-kleuren als
   sterk bewijs; het screenshot-palet alleen als bevestiging (foto's vervuilen het).
-- **Fonts:** de families uit `fonts.by_role` (h1/h2 → heading, body → body). Generieke fonts
+- **Fonts:** de families uit `fonts.by_role` (h1/h2 → heading, body → body). Het gewicht neem je over
+  uit `weight` (het meest gebruikte); staan er in `weights` meer, schrijf dan bv. `"400/600"`. Generieke fonts
   (Arial, Helvetica, system-ui) benoem je als `source: "system"`. Google Fonts herken je aan
   `google_fonts`; Adobe Fonts aan `adobe_fonts: true` → `source: "adobe"`.
 - **Stijlnotities:** wat het marketingteam moet weten om in deze stijl te ontwerpen: toon (zakelijk, speels),
