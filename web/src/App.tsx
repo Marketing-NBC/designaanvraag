@@ -310,6 +310,7 @@ export default function App() {
               error={error}
               errorNonce={errorNonce}
               warning={step.warn?.(draft) ?? null}
+              goed={step.goed?.(draft) ?? null}
               titleId={`q-${step.id}`}
               footer={<PrimaryAction label={screen.index === STEPS.length - 1 ? 'Naar overzicht' : 'Volgende'} onClick={next} />}
             >

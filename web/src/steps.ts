@@ -1,4 +1,5 @@
 import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
+import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import type { Draft } from './state'
 
@@ -13,6 +14,8 @@ export interface StepDef {
   validate: (d: Draft) => string | null
   /** Zachte waarschuwing, blokkeert niet. */
   warn?: (d: Draft) => string | null
+  /** Schouderklopje: hetzelfde plekje als `warn`, maar dan omdat het gôed gaat. */
+  goed?: (d: Draft) => string | null
 }
 
 export const STEPS: StepDef[] = [
@@ -44,6 +47,15 @@ export const STEPS: StepDef[] = [
       if (!d.event_datum) return 'Kies de datum van het event.'
       if (isBeforeToday(d.event_datum)) return 'Die datum is al geweest.'
       return null
+    },
+    // Alleen een compliment als het ruim op tijd is. Is het krap, dan zeggen we hier niets: dat
+    // wordt intern als spoedje geregistreerd, en een waarschuwing hier nodigt vooral uit om met
+    // datums te gaan schuiven.
+    goed: (d) => {
+      if (!d.event_datum || isBeforeToday(d.event_datum)) return null
+      const werkdagen = werkdagenTotEvent(d.event_datum)
+      if (!Number.isFinite(werkdagen) || werkdagen < SPOED_WERKDAGEN) return null
+      return `Fijn dat je er op tijd bij bent: nog ${werkdagen} werkdagen tot het event. Daar kan Marketing goed mee vooruit.`
     },
   },
   {

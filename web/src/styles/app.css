@@ -132,6 +132,12 @@ input, textarea, button { font-family: inherit; }
   padding: 12px 16px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 .msg--warn svg { color: var(--nbc-gold); }
+.msg--goed {
+  font-weight: 400; color: var(--fg-primary);
+  background: var(--nbc-success-bg); border-left: 3px solid var(--nbc-success);
+  padding: 12px 16px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.msg--goed svg { color: var(--nbc-success); }
 
 /* ── Velden ────────────────────────────────────────────────────── */
 .field {
