@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-09-14T17:28:59.100Z",
+  "generated_at": "2026-09-14T17:40:21.278Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -23,9 +23,10 @@
       "type": "date"
     },
     "aanvrager": {
-      "gid": "1218459785021215",
+      "gid": "1218471153055615",
       "name": "Aanvrager",
-      "type": "text"
+      "type": "enum",
+      "opties_via_function": true
     },
     "type": {
       "gid": "1218459975892326",
