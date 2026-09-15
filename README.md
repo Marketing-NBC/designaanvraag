@@ -51,6 +51,7 @@ Supabase; niets hoeft in de Supabase-UI.
 | `SUPABASE_ACCESS_TOKEN` | CI: migraties en functions deployen | supabase.com → avatar → Account preferences → Access Tokens. Verloopt: zie hieronder |
 | `SUPABASE_PROJECT_ID` | CI: welk project | Project Settings → General → Project ID |
 | `SUPABASE_DB_PASSWORD` | CI: migraties | wachtwoord van het project (Project Settings → Database) |
+| `SUPABASE_SECRET_KEY` | Database-toegang voor de edge functions (komt binnen als `SB_SECRET_KEY`) | Project Settings → API Keys → secret key |
 | `ASANA_PAT` | Taken aanmaken en bijwerken | app.asana.com/0/my-apps → Personal access tokens |
 | `ASANA_PROJECT_GID` | Optioneel; standaard uit `shared/asana-fields.json` | uit de projectlink |
 | `ASANA_ASSIGNEE_GID` | Optioneel; standaard uit `shared/asana-fields.json` | via de workflow "Asana-velden vernieuwen" |

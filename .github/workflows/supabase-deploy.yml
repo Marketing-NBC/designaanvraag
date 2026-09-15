@@ -69,6 +69,7 @@ jobs:
       - name: Function-secrets zetten (alleen ingevulde)
         env:
           ASANA_PAT: ${{ secrets.ASANA_PAT }}
+          SB_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           ASANA_PROJECT_GID: ${{ secrets.ASANA_PROJECT_GID }}
           ASANA_ASSIGNEE_GID: ${{ secrets.ASANA_ASSIGNEE_GID }}
           ASANA_PLANNING_PROJECT_GID: ${{ secrets.ASANA_PLANNING_PROJECT_GID }}
@@ -78,7 +79,7 @@ jobs:
           RATE_SALT: ${{ secrets.RATE_SALT }}
         run: |
           args=()
-          for k in ASANA_PAT ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
+          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
             v="${!k}"
             if [ -n "$v" ]; then args+=("$k=$v"); echo "  zet $k"; else echo "  overslaan $k (leeg)"; fi
           done

@@ -29,8 +29,12 @@ function num(name: string, fallback: number): number {
 
 export function readEnv(): Env {
   const supabaseUrl = opt('SUPABASE_URL')
-  const supabaseSecretKey = opt('SUPABASE_SECRET_KEY') ?? opt('SUPABASE_SERVICE_ROLE_KEY')
-  if (!supabaseUrl || !supabaseSecretKey) throw new Error('SUPABASE_URL en SUPABASE_SECRET_KEY (of SUPABASE_SERVICE_ROLE_KEY) zijn verplicht')
+  // SB_SECRET_KEY zetten wij zelf via de deploy; de andere twee injecteert Supabase. Die eerste gaat
+  // voor, want een nieuw project levert niet altijd een bruikbare sleutel mee: met de nieuwe
+  // sleutelsoort staan de oude JWT-sleutels standaard uit, en dan faalt elke query met 401.
+  // (Secrets mogen bij Supabase niet met SUPABASE_ beginnen, vandaar de naam SB_SECRET_KEY.)
+  const supabaseSecretKey = opt('SB_SECRET_KEY') ?? opt('SUPABASE_SECRET_KEY') ?? opt('SUPABASE_SERVICE_ROLE_KEY')
+  if (!supabaseUrl || !supabaseSecretKey) throw new Error('SUPABASE_URL en SB_SECRET_KEY (of SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY) zijn verplicht')
   return {
     supabaseUrl,
     supabaseSecretKey,
