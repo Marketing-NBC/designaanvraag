@@ -145,8 +145,15 @@ Eenmalig, op claude.ai/code/routines:
    ```bash
    cd worker && npm ci --no-audit --no-fund
    ```
-   Environment variables: `SUPABASE_URL` (`https://<project-id>.supabase.co`),
-   `SUPABASE_SECRET_KEY` (Project Settings → API Keys → secret key) en `ASANA_PAT`.
+   Environment variables, elk op een eigen regel in `KEY=value`-vorm (geen spaties rondom de `=`,
+   geen aanhalingstekens):
+   ```
+   SUPABASE_URL=https://<project-id>.supabase.co
+   SUPABASE_SECRET_KEY=sb_secret_...
+   ASANA_PAT=...
+   ```
+   De secret key staat in Supabase onder Project Settings → API Keys; de Asana-token hoeft niet
+   dezelfde te zijn als het GitHub-secret `ASANA_PAT`.
    Later aanpassen: over de environment in de lijst zweven → tandwiel → "Update cloud environment".
 2. **New routine**: naam `Huisstijl ophalen`, repository `Marketing-NBC/designaanvraag`,
    environment `designaanvraag-worker`, model Opus, connectors: geen. Prompt:
