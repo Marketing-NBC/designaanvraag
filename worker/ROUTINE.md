@@ -21,11 +21,18 @@ Marketing zetten.
 
 ```bash
 cd worker && npm ci --no-audit --no-fund && cd ..
+node worker/check.mjs
 ```
 
-Controleer dat `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (of `SUPABASE_SERVICE_ROLE_KEY`) en `ASANA_PAT`
-als omgevingsvariabelen bestaan (`env | grep -E 'SUPABASE_URL|ASANA_PAT' | cut -d= -f1`).
-Ontbreekt er een, dan kun je niet publiceren: stop en meld welke ontbreekt.
+`check.mjs` controleert of Supabase bereikbaar is en of de Asana-token echt werkt. Dat is niet
+hetzelfde als kijken óf de variabelen bestaan: een ongeldige token bestaat ook. Doe dit vóór de
+extractie, anders kom je er pas na een paar minuten achter dat je niets kunt publiceren.
+
+| Exitcode | Wat het betekent | Wat je doet |
+|---|---|---|
+| 0 | Alles in orde | Door naar stap 2 |
+| 2 | Supabase werkt niet | Stop. Je kunt de aanvraag niet eens lezen of de status bijwerken. Meld welke fout er staat; raak verder niets aan |
+| 3 | Alleen de Asana-token deugt niet | Publiceren en zelfs een foutmelding plaatsen gaat niet lukken. Draai stap 6 (`fail.mjs`) zodat de status in Supabase klopt, en meld dat `ASANA_PAT` in de omgeving van de Routine vernieuwd moet worden |
 
 ## Stap 2: extractie
 
