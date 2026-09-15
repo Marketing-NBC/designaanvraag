@@ -141,9 +141,12 @@ Eenmalig, op claude.ai/code/routines:
    wolk-icoon met de naam van de huidige environment (in de rij boven het berichtvak) →
    **Add cloud environment**. Hetzelfde icoon staat in het routine-formulier onder "Select a trigger".
    Naam `designaanvraag-worker`, **Network access: Full** (sites van opdrachtgevers zijn niet te
-   allowlisten), setup script:
+   allowlisten). **Setup script leeg laten**: op dat moment staat de repo er nog niet, dus
+   `cd worker` faalt en daarmee de hele sessie. Stap 1 van `worker/ROUTINE.md` doet de installatie
+   zelf, en die draait wél in de gekloonde repo. Wil je er toch iets in zetten, dan deze variant,
+   die nooit faalt:
    ```bash
-   cd worker && npm ci --no-audit --no-fund
+   cd worker 2>/dev/null && npm ci --no-audit --no-fund || echo "repo nog niet aanwezig; de routine installeert zelf"
    ```
    Environment variables, elk op een eigen regel in `KEY=value`-vorm (geen spaties rondom de `=`,
    geen aanhalingstekens):
