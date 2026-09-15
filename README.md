@@ -48,7 +48,7 @@ Supabase; niets hoeft in de Supabase-UI.
 
 | GitHub-secret | Waarvoor | Waar te vinden |
 |---|---|---|
-| `SUPABASE_ACCESS_TOKEN` | CI: migraties en functions deployen | supabase.com → avatar → Account preferences → Access Tokens |
+| `SUPABASE_ACCESS_TOKEN` | CI: migraties en functions deployen | supabase.com → avatar → Account preferences → Access Tokens. Verloopt: zie hieronder |
 | `SUPABASE_PROJECT_ID` | CI: welk project | Project Settings → General → Project ID |
 | `SUPABASE_DB_PASSWORD` | CI: migraties | wachtwoord van het project (Project Settings → Database) |
 | `ASANA_PAT` | Taken aanmaken en bijwerken | app.asana.com/0/my-apps → Personal access tokens |
@@ -60,6 +60,13 @@ Supabase; niets hoeft in de Supabase-UI.
 
 Repository *variable* `ALLOWED_ORIGINS` (optioneel): komma-gescheiden origins die het formulier
 mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
+
+### Als de Supabase-deploy opeens faalt op authenticatie
+
+Dan is `SUPABASE_ACCESS_TOKEN` verlopen. Er gaat niets stuk voor collega's — het formulier, de
+Asana-koppeling en de huisstijl-extractie draaien door — maar uitrollen kan niet meer. Maak een
+nieuwe token aan (Account preferences → Access Tokens, naam bijvoorbeeld
+`github-actions-designaanvraag`), vervang het secret en draai Actions → Supabase deploy opnieuw.
 
 ## Deploy
 
