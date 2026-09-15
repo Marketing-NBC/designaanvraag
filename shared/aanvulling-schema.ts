@@ -14,7 +14,11 @@ export const ZOEK_MAX_RESULTATEN = 10
 /** Ouder dan dit is het event allang geweest; die aanvragen horen niet meer in de zoeklijst. */
 export const ZOEK_DAGEN = 120
 
-/** Eén treffer in de zoeklijst: genoeg om de juiste aanvraag te herkennen, niet meer. */
+/**
+ * Eén treffer in de zoeklijst: genoeg om de juiste aanvraag te herkennen, niet meer. Bewust geen
+ * verwijzing naar het werksysteem van Marketing — collega's werken daar niet in, en dit endpoint
+ * staat open op internet.
+ */
 export interface GevondenAanvraag {
   id: string
   event: string
@@ -23,9 +27,8 @@ export interface GevondenAanvraag {
   naam: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
-  /** Al ingevuld? Dan laat het formulier zien dat een nieuw pad alleen in de reactie belandt. */
+  /** Al ingevuld? Dan laat het formulier zien dat een nieuw pad er alleen bij wordt gemeld. */
   schijf_locatie: string
-  asana_task_url: string | null
 }
 
 export const aanvullingSchema = z
@@ -83,7 +86,6 @@ export type AanvullingPayload = z.input<typeof aanvullingPayloadSchema>
 
 export interface AanvullingResult {
   aanvulling_id: string
-  asana_task_url: string | null
   /** Namen van de velden die daadwerkelijk zijn bijgewerkt; leeg = alleen een reactie geplaatst. */
   bijgewerkt: string[]
 }

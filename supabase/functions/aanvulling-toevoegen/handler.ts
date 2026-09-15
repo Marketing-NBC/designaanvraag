@@ -147,7 +147,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const tooFast = Number.isFinite(startedAt) && now().getTime() - startedAt < MIN_FILL_MS
     if ((typeof r.website_confirm === 'string' && r.website_confirm.length > 0) || tooFast) {
       log('warn', 'aanvulling geweigerd: honeypot of te snel', { tooFast })
-      return json({ aanvulling_id: String(r.client_request_id ?? crypto.randomUUID()), asana_task_url: null, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
+      return json({ aanvulling_id: String(r.client_request_id ?? crypto.randomUUID()), bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
     }
 
     const parsed = aanvullingPayloadSchema.safeParse(raw)
@@ -159,10 +159,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     // Idempotent: dubbelklik of retry plaatst geen tweede reactie.
     const bestaand = await db.findAanvullingByClientRequestId(client_request_id)
-    if (bestaand) {
-      const eerder = await db.findById(bestaand.aanvraag_id)
-      return json({ aanvulling_id: bestaand.id, asana_task_url: eerder?.asana_task_url ?? null, bijgewerkt: bestaand.bijgewerkt ?? [] } satisfies AanvullingResult, 200, cors)
-    }
+    if (bestaand) return json({ aanvulling_id: bestaand.id, bijgewerkt: bestaand.bijgewerkt ?? [] } satisfies AanvullingResult, 200, cors)
 
     const ip = clientIp(req)
     const ipHash = ip ? (await sha256(`${ip}|${env.rateSalt}`)).slice(0, 32) : null
@@ -174,7 +171,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const row = await db.findById(aanvulling.aanvraag_id)
     if (!row) return json({ error: 'We konden die aanvraag niet meer vinden. Zoek hem opnieuw op.' }, 404, cors)
     if (!row.asana_task_gid) {
-      return json({ error: 'Bij deze aanvraag hoort geen taak in Asana, dus er valt niets aan te vullen. Bel even met Marketing.' }, 409, cors)
+      return json({ error: 'Deze aanvraag is nooit bij Marketing aangekomen, dus er valt niets aan te vullen. Bel even met het marketingteam.' }, 409, cors)
     }
 
     // De ene datum kan pas tegen de andere aan als we de aanvraag erbij hebben: schuift alleen de
@@ -190,7 +187,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     if (!deps.asana) {
       await db.updateAanvulling(aanvullingRij.id, { asana_error: 'Asana niet geconfigureerd' })
-      return json({ aanvulling_id: aanvullingRij.id, asana_task_url: row.asana_task_url, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
+      return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
     }
 
     const waarschuwingen: string[] = []
@@ -221,7 +218,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const msg = e instanceof Error ? e.message : String(e)
       log('error', 'reactie plaatsen mislukt', { id: aanvullingRij.id, error: msg })
       await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: wijziging.bijgewerkt, asana_error: `reactie plaatsen mislukt: ${msg}` })
-      return json({ error: 'De aanvulling is bewaard, maar kwam niet in Asana terecht. Laat het even weten aan Marketing.' }, 502, cors)
+      return json({ error: 'De aanvulling is bewaard, maar kwam niet bij Marketing terecht. Laat het even weten aan het marketingteam.' }, 502, cors)
     }
 
     await db.updateAanvulling(aanvullingRij.id, {
@@ -238,10 +235,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (Object.keys(patch).length) await db.update(row.id, patch)
 
     log('info', 'aanvulling in asana', { id: aanvullingRij.id, gid: row.asana_task_gid, bijgewerkt: wijziging.bijgewerkt })
-    return json(
-      { aanvulling_id: aanvullingRij.id, asana_task_url: row.asana_task_url, bijgewerkt: wijziging.bijgewerkt } satisfies AanvullingResult,
-      200,
-      cors,
-    )
+    return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: wijziging.bijgewerkt } satisfies AanvullingResult, 200, cors)
   }
 }

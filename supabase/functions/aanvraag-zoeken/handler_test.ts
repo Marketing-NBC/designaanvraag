@@ -27,7 +27,6 @@ const treffer: GevondenAanvraag = {
   aanvraag_types: ['led_kolom'],
   anders_tekst: '',
   schijf_locatie: '',
-  asana_task_url: 'https://app.asana.com/0/111/999',
 }
 
 function deps(over: Partial<Deps> = {}): Deps {

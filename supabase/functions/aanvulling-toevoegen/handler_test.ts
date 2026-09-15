@@ -222,7 +222,6 @@ Deno.test('plaatst een reactie en werkt de velden bij', async () => {
   assertEquals(res.status, 200)
   const body = await res.json()
   assertEquals(body.bijgewerkt, ['Type aanvraag'])
-  assertEquals(body.asana_task_url, 'https://app.asana.com/0/111/999')
 
   assertEquals(asana.velden.length, 1)
   assertEquals(asana.velden[0]['f-type'], ['o-led', 'o-vlag'])

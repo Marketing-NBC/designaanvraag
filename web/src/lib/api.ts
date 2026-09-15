@@ -88,7 +88,7 @@ export async function verstuurAanvulling(payload: AanvullingPayload): Promise<Aa
   if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
     await new Promise((r) => setTimeout(r, 900))
     console.info('[mock aanvulling]', payload)
-    return { aanvulling_id: payload.client_request_id, asana_task_url: null, bijgewerkt: [] }
+    return { aanvulling_id: payload.client_request_id, bijgewerkt: [] }
   }
 
   const res = await fetch(`${FUNCTIONS_URL}/aanvulling-toevoegen`, {
@@ -112,7 +112,6 @@ function zoekMock(q: string): GevondenAanvraag[] {
     aanvraag_types: ['led_kolom'],
     anders_tekst: '',
     schijf_locatie: '',
-    asana_task_url: null,
   }
   return demo.event.toLowerCase().includes(q.trim().toLowerCase()) ? [demo] : []
 }

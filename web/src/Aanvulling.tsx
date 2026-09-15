@@ -162,7 +162,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   const hulp: Record<Stap, string | undefined> = {
     zoek: 'Typ een deel van de eventnaam. Je ziet de aanvragen van de afgelopen maanden.',
     naam: 'Dan weet Marketing wie deze aanvulling stuurde.',
-    toelichting: 'Extra wensen, aanvullende informatie of feedback op het concept. Dit komt als reactie onder de taak te staan.',
+    toelichting: 'Extra wensen, aanvullende informatie of feedback op het concept. Het marketingteam krijgt er meteen bericht van.',
     extra: 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
   }
 
@@ -312,7 +312,7 @@ function ExtraVelden({
   invalidAnders: boolean
 }) {
   const alAangevraagd = useMemo(() => new Set(gekozen?.aanvraag_types ?? []), [gekozen])
-  // Wat er al op de taak staat hoeft niet nog een keer gekozen te worden.
+  // Wat al is aangevraagd hoeft niet nog een keer gekozen te worden.
   const opties = REQUEST_TYPES.filter((t) => !alAangevraagd.has(t.key)).map((t) => ({ key: t.key, label: t.label }))
 
   const toggle = (key: string) => {
@@ -367,7 +367,7 @@ function ExtraVelden({
         <h2 className="extra__kop">Is er materiaal?</h2>
         <p className="extra__uitleg">
           {gekozen?.schijf_locatie
-            ? `Op de taak staat nu: ${gekozen.schijf_locatie}. Vul je iets anders in, dan komt dat in de reactie te staan zonder het bestaande te overschrijven.`
+            ? `Bij je aanvraag staat nu: ${gekozen.schijf_locatie}. Vul je iets anders in, dan geven we dat erbij door zonder het bestaande te overschrijven.`
             : 'Een map op de G:-schijf, of een link naar bestanden. Mag allebei leeg blijven.'}
         </p>
         <div className="extra__velden">
@@ -453,34 +453,27 @@ function DatumRegel({
 }
 
 function Gelukt({ result, gekozen, onSluit }: { result: AanvullingResult; gekozen: GevondenAanvraag | null; onSluit: () => void }) {
-  const url = result.asana_task_url ?? gekozen?.asana_task_url ?? null
   return (
     <section className="success">
       <div className="success__content">
         <span className="eyebrow">aanvulling doorgegeven</span>
         <h1 className="success__title swash">Genoteerd.</h1>
         <p className="success__lead">
-          Je aanvulling staat als reactie onder de taak van {gekozen?.event ?? 'de aanvraag'}. Er is geen tweede aanvraag aangemaakt, dus
-          Marketing houdt alles bij elkaar.
+          Het marketingteam heeft je aanvulling binnen{gekozen?.event ? <> bij de aanvraag voor {gekozen.event}</> : null}. Ze zien hem
+          direct bij de rest van wat je eerder doorgaf.
         </p>
         <div className={`success__status success__status--${result.bijgewerkt.length ? 'done' : 'pending'}`} aria-live="polite">
           <Icon name="check" />
           <span>
             {result.bijgewerkt.length
-              ? `Meteen bijgewerkt in de taak: ${result.bijgewerkt.join(', ')}.`
-              : 'De velden van de taak zijn niet aangepast; Marketing leest je toelichting en past aan wat nodig is.'}
+              ? `Meteen aangepast in je aanvraag: ${result.bijgewerkt.join(', ').toLowerCase()}.`
+              : 'Het marketingteam leest je toelichting en past aan wat nodig is.'}
           </span>
         </div>
         <div className="success__actions">
-          {url ? (
-            <a className="btn btn--primary" href={url} target="_blank" rel="noreferrer">
-              Bekijk in Asana
-              <Icon name="external" className="arrow" />
-            </a>
-          ) : null}
-          <button type="button" className={url ? 'link' : 'btn btn--primary'} onClick={onSluit}>
+          <button type="button" className="btn btn--primary" onClick={onSluit}>
             Terug naar het begin
-            {!url ? <Icon name="arrow-right" className="arrow" /> : null}
+            <Icon name="arrow-right" className="arrow" />
           </button>
         </div>
       </div>
