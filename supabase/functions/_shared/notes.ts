@@ -102,8 +102,25 @@ export function renderAanvullingComment(v: {
   schijfNietOvergenomen: string
   /** Namen van de bestanden die als bijlage bij deze taak zijn gezet. */
   bijlagen?: string[]
+  /**
+   * Gezet als de taak al afgerond was en nu is heropend; de waarde is de gid van degene die de taak
+   * heeft, zodat die een vermelding krijgt en het in zijn Asana-inbox belandt.
+   */
+  heropendVoor?: string | null
 }): string {
-  const lines: string[] = [`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '']
+  const lines: string[] = []
+
+  if (v.heropendVoor !== undefined) {
+    // Bovenaan, want dit is het nieuws: deze taak was al afgerond.
+    const mention = v.heropendVoor ? `<a data-asana-gid="${escapeXml(v.heropendVoor)}"/> ` : ''
+    lines.push(`${mention}<strong>Deze taak was al afgerond en is heropend — er is nieuwe feedback.</strong>`)
+    // De webhook vraagt maar één keer per taak om een vervaldatum, en dat is bij een afgeronde taak
+    // allang gebeurd. Zonder deze regel zou de planningsdatum stilzwijgend verdwijnen.
+    lines.push('De planningsdatum is eraf gehaald; kies een nieuwe zodra je weet wanneer je eraan toekomt.')
+    lines.push('')
+  }
+
+  lines.push(`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '')
 
   if (v.bijgewerkt.length) {
     lines.push(`<strong>Bijgewerkt in deze taak:</strong> ${escapeXml(v.bijgewerkt.join(', '))}`)
@@ -119,7 +136,7 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

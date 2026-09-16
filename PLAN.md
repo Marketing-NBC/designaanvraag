@@ -25,6 +25,10 @@ En daarna **bestanden meesturen**: een logo of voorbeelden gaan mee als bijlage 
 allebei de formulieren. De browser uploadt rechtstreeks naar Storage met een tijdelijke link, dus de
 bytes komen nooit door een edge function heen. Zie README → "Bestanden meesturen".
 
+En tot slot **heropenen**: komt er feedback op een taak die al op Klaar staat of afgevinkt is, dan
+gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsdatum, met een
+@-vermelding in de reactie. Zie README → "Feedback op werk dat al af is".
+
 ### Nog te doen
 
 - Testtaken in Asana opruimen (alles met TEST in de naam).

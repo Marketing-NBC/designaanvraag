@@ -304,6 +304,17 @@ if (gemaakt.length) {
   const kortBody = await kort.json().catch(() => ({}))
   check(kort.status === 200 && (kortBody.resultaten ?? []).length === 0, 'twee letters leveren niets op')
 
+  // De taak eerst afronden: naar Klaar en afvinken. Zo bewijst dit scenario meteen dat een
+  // aanvulling op afgerond werk de taak terugtrekt in beeld.
+  const klaarGid = fields.sections?.klaar?.gid
+  const feedbackGid = fields.sections?.feedback?.gid
+  if (klaarGid) {
+    await asana(`/sections/${klaarGid}/addTask`, { method: 'POST', body: { data: { task: eerste.gid } } })
+    await asana(`/tasks/${eerste.gid}`, { method: 'PUT', body: { data: { completed: true, due_on: eerste.aanvraag.deadline } } })
+  } else {
+    info('sectie "klaar" staat niet in asana-fields.json; heropenen niet getest')
+  }
+
   // Een type dat nog niet op de taak staat, zodat de unie aantoonbaar is.
   const erbij = ['vlaggen', 'menukaart_print', 'koffiescherm'].find((k) => !eerste.aanvraag.aanvraag_types.includes(k))
   const typeVeldGid = fields.fields?.type?.gid
@@ -344,6 +355,19 @@ if (gemaakt.length) {
       check(voorGids.every((g) => naGids.includes(g)), 'bestaande types zijn blijven staan', `voor ${voorGids.length}, na ${naGids.length}`)
       check(naGids.includes(erbijGid), `"${erbij}" is erbij gekomen`, naGids.join(', '))
       check((aBody.bijgewerkt ?? []).length > 0, 'de function meldt welk veld is bijgewerkt', (aBody.bijgewerkt ?? []).join(', ') || 'niets')
+    }
+
+    if (klaarGid) {
+      const na = await asana(`/tasks/${eerste.gid}?opt_fields=completed,due_on,memberships.project.gid,memberships.section.gid,memberships.section.name`)
+      const onze = (na.memberships ?? []).find((m) => m.project?.gid === projectGid)
+      check(na.completed === false, 'het vinkje is eraf', String(na.completed))
+      check(!na.due_on, 'de planningsdatum is eraf', na.due_on ?? 'leeg')
+      if (feedbackGid) {
+        check(onze?.section?.gid === feedbackGid, 'de taak staat in de kolom Feedback', onze?.section?.name ?? 'geen sectie')
+      } else {
+        info('kolom "Feedback" staat nog niet in asana-fields.json; draai eerst Asana-project aanmaken en Asana-velden ophalen')
+      }
+      check(String(comment?.text ?? '').includes('heropend'), 'de reactie meldt dat de taak heropend is')
     }
 
     // Nog een keer versturen met dezelfde client_request_id levert geen tweede reactie op.

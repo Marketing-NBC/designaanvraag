@@ -109,6 +109,8 @@ alle gegevens in de beschrijving.
   `Meerdere designs Deloitte - …`, met per type een subtaak (`Torenscherm Deloitte`).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
+- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Mee bezig → Klaar. De volgorde komt uit
+  `scripts/asana-field-map.json`; die bepaalt ook de volgorde op het bord.
 - **Planning-flow (webhook):** sleept Marketing een taak naar **In planning** zonder vervaldatum, dan
   plaatst de function `asana-webhook` één comment met een mention: kies een vervaldatum. Zodra er
   een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
@@ -158,6 +160,26 @@ proefdraaien kan met de knop **Run workflow** en "Alleen laten zien wat er zou v
 
 In Supabase staat per bestand een rij in `bijlagen`: welk bestand, bij welke aanvraag, en of het
 gelukt is.
+
+## Feedback op werk dat al af is
+
+Een taak die in **Klaar** staat, wordt niet meer bekeken. Maar juist daarna komt de feedback. Dus:
+komt er een aanvulling binnen op een taak die **in Klaar staat of afgevinkt is**, dan trekt de
+function hem terug in beeld:
+
+- de taak gaat naar de kolom **Feedback** (tweede kolom op het bord);
+- het **vinkje gaat eraf** — hij is immers niet meer af;
+- de **planningsdatum gaat eraf**, zodat er geen verlopen datum in "4. Werkplanning" blijft hangen;
+- de reactie begint met een **@-vermelding**, zodat het in je Asana-inbox landt.
+
+Zit je nog middenin het werk, dan gebeurt er niets met de plek op het bord — die taak zie je toch.
+
+De reactie vraagt meteen om een nieuwe planningsdatum. Dat moet, want de webhook vraagt daar maar
+**één keer per taak** om, en bij een afgeronde taak is dat allang gebeurd.
+
+Bestaat de kolom Feedback nog niet (de setup-workflow niet gedraaid), dan gaan het vinkje en de datum
+er wel af en blijft de taak in Klaar staan, met de reden in `asana_error`. Draai dan
+**Asana-project aanmaken** gevolgd door **Asana-velden ophalen**.
 
 ## Aanvullingen op een lopende aanvraag
 

@@ -24,7 +24,12 @@ const env: Env = {
 const cfg: AsanaFieldsConfig = {
   project: { gid: '111' },
   assignee: { gid: '222' },
-  sections: {},
+  sections: {
+    nieuwe_aanvragen: { gid: 'sec-nieuw', name: 'Nieuwe aanvragen' },
+    feedback: { gid: 'sec-feedback', name: 'Feedback' },
+    mee_bezig: { gid: 'sec-bezig', name: 'Mee bezig' },
+    klaar: { gid: 'sec-klaar', name: 'Klaar' },
+  },
   fields: {
     eventdatum: { gid: 'f-event', name: 'Eventdatum', type: 'date' },
     deadline: { gid: 'f-deadline', name: 'Deadline', type: 'date' },
@@ -103,12 +108,18 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
   return db
 }
 
-function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean; veldWaarschuwing?: string[] } = {}) {
+function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean; veldWaarschuwing?: string[]; verplaatsFail?: boolean } = {}) {
   const velden: Record<string, unknown>[] = []
   const comments: string[] = []
+  const verplaatst: string[] = []
+  let heropend = 0
   return {
     velden,
     comments,
+    verplaatst,
+    get heropend() {
+      return heropend
+    },
     getTask: (gid: string) =>
       Promise.resolve<AsanaTask>({
         gid,
@@ -117,7 +128,7 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
         completed: false,
         assignee: '222',
         projects: ['111'],
-        memberships: [],
+        memberships: [{ project: '111', section: 'sec-bezig' }],
         customFields: { 'f-type': { optieGids: ['o-led'], datum: null, tekst: null } },
         ...taak,
       }),
@@ -132,6 +143,15 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
       return opts.veldWaarschuwing ?? []
     },
     uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
+    moveToSection: (_gid: string, sectionGid: string) => {
+      if (opts.verplaatsFail) return Promise.reject(new Error('Taak verplaatsen mislukt (403: Not Authorized)'))
+      verplaatst.push(sectionGid)
+      return Promise.resolve()
+    },
+    heropen: () => {
+      heropend++
+      return Promise.resolve()
+    },
   }
 }
 
@@ -331,4 +351,81 @@ Deno.test('OPTIONS en een verkeerde methode', async () => {
   const handler = createHandler(deps())
   assertEquals((await handler(new Request('https://fn', { method: 'OPTIONS', headers: { Origin: 'https://marketing-nbc.github.io' } }))).status, 204)
   assertEquals((await handler(new Request('https://fn', { method: 'GET' }))).status, 405)
+})
+
+// ── Heropenen van afgerond werk ──────────────────────────────────────────────
+
+Deno.test('een taak in Klaar gaat terug naar Feedback en wordt heropend', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana({ memberships: [{ project: '111', section: 'sec-klaar' }], assignee: 'abel' })
+  const res = await createHandler(deps({ db, asana }))(post(payload()))
+
+  assertEquals(res.status, 200)
+  assertEquals(asana.heropend, 1)
+  assertEquals(asana.verplaatst, ['sec-feedback'])
+  // Met een vermelding, zodat het in de Asana-inbox landt.
+  assertStringIncludes(asana.comments[0], '<a data-asana-gid="abel"/>')
+  assertStringIncludes(asana.comments[0], 'was al afgerond en is heropend')
+  // En de vraag om een nieuwe datum, want de webhook stelt die maar één keer per taak.
+  assertStringIncludes(asana.comments[0], 'planningsdatum is eraf gehaald')
+})
+
+Deno.test('een afgevinkte taak telt net zo goed als afgerond', async () => {
+  // Staat in Mee bezig, maar het vinkje staat aan. Ook dan kijkt niemand er nog naar om.
+  const asana = fakeAsana({ completed: true, memberships: [{ project: '111', section: 'sec-bezig' }] })
+  await createHandler(deps({ asana }))(post(payload()))
+  assertEquals(asana.heropend, 1)
+  assertEquals(asana.verplaatst, ['sec-feedback'])
+})
+
+Deno.test('werk waar Marketing middenin zit blijft staan waar het staat', async () => {
+  const asana = fakeAsana({ completed: false, memberships: [{ project: '111', section: 'sec-bezig' }] })
+  await createHandler(deps({ asana }))(post(payload()))
+  assertEquals(asana.heropend, 0)
+  assertEquals(asana.verplaatst, [])
+  assertEquals(asana.comments[0].includes('heropend'), false)
+})
+
+Deno.test('de sectie komt uit ons eigen project, niet uit de werkplanning', async () => {
+  // In de werkplanning staat hij in een kolom die toevallig "sec-klaar" heet; dat mag niet meetellen.
+  const asana = fakeAsana({
+    memberships: [
+      { project: 'werkplanning', section: 'sec-klaar' },
+      { project: '111', section: 'sec-bezig' },
+    ],
+  })
+  await createHandler(deps({ asana }))(post(payload()))
+  assertEquals(asana.heropend, 0)
+  assertEquals(asana.verplaatst, [])
+})
+
+Deno.test('zonder kolom Feedback gaat het vinkje er alsnog af', async () => {
+  const db = fakeDb()
+  const zonderFeedback = { ...cfg, sections: { klaar: { gid: 'sec-klaar', name: 'Klaar' } } }
+  const asana = fakeAsana({ memberships: [{ project: '111', section: 'sec-klaar' }] })
+  const res = await createHandler(deps({ db, asana, fields: zonderFeedback }))(post(payload()))
+
+  assertEquals(res.status, 200)
+  assertEquals(asana.heropend, 1)
+  assertEquals(asana.verplaatst, [])
+  assertMatch(db.aanvullingen[0].asana_error ?? '', /kolom Feedback bestaat nog niet/)
+})
+
+Deno.test('mislukt het verplaatsen, dan komt de aanvulling er alsnog', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana({ memberships: [{ project: '111', section: 'sec-klaar' }] }, { verplaatsFail: true })
+  const res = await createHandler(deps({ db, asana }))(post(payload()))
+
+  assertEquals(res.status, 200)
+  assertEquals(asana.comments.length, 1)
+  assertMatch(db.aanvullingen[0].asana_error ?? '', /verplaatsen mislukt/)
+})
+
+Deno.test('lukt het ophalen van de taak niet, dan heropenen we niets', async () => {
+  // Zonder de taak weten we niet of hij afgerond was; dan maar niets aanraken.
+  const asana = fakeAsana()
+  const kapot = Object.assign(asana, { getTask: () => Promise.reject(new Error('Asana plat')) })
+  await createHandler(deps({ asana: kapot }))(post(payload()))
+  assertEquals(asana.heropend, 0)
+  assertEquals(asana.verplaatst, [])
 })

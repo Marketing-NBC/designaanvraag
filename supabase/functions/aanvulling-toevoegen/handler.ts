@@ -1,4 +1,4 @@
-import type { AsanaFieldsConfig, AsanaTaskClient } from '../_shared/asana.ts'
+import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import { asanaFields } from '../_shared/asana.ts'
 import { koppelBijlagen } from '../_shared/bijlagen-koppelen.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
@@ -130,6 +130,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const cfg = deps.fields ?? asanaFields
   const now = deps.now ?? (() => new Date())
   const log = deps.log ?? ((level, msg, extra) => console[level === 'info' ? 'log' : level](msg, extra ?? ''))
+  const projectGid = env.asanaProjectGid ?? cfg.project?.gid ?? null
 
   return async (req) => {
     const cors = corsHeaders(req, env.allowedOrigins)
@@ -203,8 +204,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       waarschuwingen.push(`${bijlage_ids.length - bijlageRijen.length} meegestuurd bestand(en) niet gevonden of al gebruikt`)
     }
     let wijziging: Wijziging = { velden: {}, bijgewerkt: [], nieuweTypes: row.aanvraag_types ?? [], schijfNietOvergenomen: aanvulling.schijf_locatie }
+    // Buiten het try-blok, want de heropen-stap hieronder heeft hem ook nodig.
+    let taak: AsanaTask | null = null
     try {
-      const taak = await deps.asana.getTask(row.asana_task_gid)
+      taak = await deps.asana.getTask(row.asana_task_gid)
       wijziging = bepaalWijziging(aanvulling, row, taak.customFields, cfg)
       waarschuwingen.push(...(await deps.asana.updateCustomFields(row.asana_task_gid, wijziging.velden)))
     } catch (e) {
@@ -212,6 +215,45 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const msg = e instanceof Error ? e.message : String(e)
       waarschuwingen.push(`velden bijwerken mislukt: ${msg}`)
       log('warn', 'velden bijwerken mislukt', { id: aanvullingRij.id, error: msg })
+    }
+
+    // Stond de taak al op Klaar of was hij afgevinkt, dan kijkt Marketing er niet meer naar om.
+    // Terugzetten in beeld: naar de kolom Feedback, vinkje eraf, planningsdatum eraf. Dat laatste
+    // omdat een oude datum in de werkplanning niets meer zegt.
+    //
+    // Alleen bij afgerond werk: een aanvulling op een taak waar Marketing middenin zit mag zijn plek
+    // op het bord niet afpakken.
+    let heropendVoor: string | null | undefined
+    if (taak) {
+      // De sectie uit ónze projectkoppeling halen: een taak zit ook in "4. Werkplanning".
+      const onzeSectie = taak.memberships.find((m) => m.project === projectGid)?.section ?? null
+      const klaarGid = cfg.sections?.klaar?.gid ?? null
+      if (taak.completed || (klaarGid && onzeSectie === klaarGid)) {
+        heropendVoor = taak.assignee
+        try {
+          await deps.asana.heropen(row.asana_task_gid)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          waarschuwingen.push(`taak heropenen mislukt: ${msg}`)
+          log('warn', 'taak heropenen mislukt', { id: aanvullingRij.id, error: msg })
+        }
+
+        const feedbackGid = cfg.sections?.feedback?.gid ?? null
+        if (!feedbackGid) {
+          // De setup-workflow heeft de kolom nog niet gemaakt. Vinkje en datum zijn er wel af, dus
+          // de taak komt alsnog terug in de lijsten; alleen de plek op het bord klopt nog niet.
+          waarschuwingen.push('kolom Feedback bestaat nog niet, taak niet verplaatst')
+        } else {
+          try {
+            await deps.asana.moveToSection(row.asana_task_gid, feedbackGid)
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e)
+            waarschuwingen.push(`taak naar Feedback verplaatsen mislukt: ${msg}`)
+            log('warn', 'taak verplaatsen mislukt', { id: aanvullingRij.id, error: msg })
+          }
+        }
+        log('info', 'afgeronde taak heropend', { id: aanvullingRij.id, gid: row.asana_task_gid })
+      }
     }
 
     let gekoppeldeBijlagen: string[] = []
@@ -239,6 +281,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           link: aanvulling.link,
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
           bijlagen: gekoppeldeBijlagen,
+          heropendVoor,
         }),
       )
     } catch (e) {

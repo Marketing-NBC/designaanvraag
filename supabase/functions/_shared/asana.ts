@@ -80,6 +80,13 @@ export interface AsanaTaskClient {
   /** Zet velden op een bestaande taak. Geeft terug wat Asana weigerde; leeg = alles gelukt. */
   updateCustomFields(taskGid: string, fields: Record<string, unknown>): Promise<string[]>
   uploadAttachment(taskGid: string, naam: string, bytes: Uint8Array<ArrayBuffer>, mime: string): Promise<AsanaBijlage>
+  /** Verplaatst de taak naar een kolom van het bord. */
+  moveToSection(taskGid: string, sectionGid: string): Promise<void>
+  /**
+   * Zet een afgeronde taak weer open: vinkje eraf en de planningsdatum eraf. Eén gebaar, dus één
+   * call — Marketing kiest zelf een nieuwe datum zodra ze weten wanneer ze eraan toekomen.
+   */
+  heropen(taskGid: string): Promise<void>
 }
 
 /**
@@ -377,6 +384,14 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
     },
     uploadAttachment(taskGid, naam, bytes, mime) {
       return asanaUpload(pat, taskGid, naam, bytes, mime)
+    },
+    async moveToSection(taskGid, sectionGid) {
+      const { status, body } = await asanaFetch(pat, `/sections/${sectionGid}/addTask`, { method: 'POST', body: JSON.stringify({ data: { task: taskGid } }) })
+      if (!ok(status)) throw new Error(`Taak verplaatsen mislukt (${status}: ${errorText(body)})`)
+    },
+    async heropen(taskGid) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}`, { method: 'PUT', body: JSON.stringify({ data: { completed: false, due_on: null } }) })
+      if (!ok(status)) throw new Error(`Taak heropenen mislukt (${status}: ${errorText(body)})`)
     },
   }
 }
