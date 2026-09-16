@@ -432,11 +432,11 @@ if (gemaakt.length) {
       const gid = url.match(/\/task\/(\d+)/)?.[1] ?? url.split('/').filter((x) => /^\d+$/.test(x)).pop()
       gemaakt.push({ gid, url, aanvraag: aanvraagMetBijlagen, aanvraagId: body.aanvraag_id })
 
-      const namen = await wachtOp(async () => {
-        const att = (await asana(`/attachments?parent=${gid}&opt_fields=name`)) ?? []
-        return att.length >= 2 ? att.map((a) => a.name) : null
-      })
-      check(Boolean(namen), 'beide bestanden staan als bijlage bij de taak', Array.isArray(namen) ? namen.join(', ') : 'niet binnen de wachttijd')
+      // wachtOp geeft alleen true of false terug, dus de namen halen we er daarna zelf bij op.
+      const gelukt = await wachtOp(async () => ((await asana(`/attachments?parent=${gid}&opt_fields=name`)) ?? []).length >= 2)
+      const namen = ((await asana(`/attachments?parent=${gid}&opt_fields=name`)) ?? []).map((a) => a.name)
+      check(gelukt, 'beide bestanden staan als bijlage bij de taak', namen.join(', ') || 'geen bijlagen binnen de wachttijd')
+      check(namen.includes('TEST-logo.png') && namen.includes('TEST-voorbeeld.pdf'), 'de bijlagen hebben de namen die de collega gaf', namen.join(', '))
 
       const taak = await asana(`/tasks/${gid}?opt_fields=notes`)
       check(String(taak.notes ?? '').includes('TEST-logo.png'), 'de beschrijving noemt de meegestuurde bestanden')
