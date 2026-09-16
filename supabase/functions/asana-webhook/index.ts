@@ -1,14 +1,17 @@
 import { asanaFields, createAsanaTaskClient } from '../_shared/asana.ts'
-import { createWebhookStore } from '../_shared/db.ts'
+import { createDb, createWebhookStore } from '../_shared/db.ts'
 import { readEnv, webhookToken } from '../_shared/env.ts'
 import { createHandler } from './handler.ts'
 
 const env = readEnv()
 if (!env.asanaPat) throw new Error('ASANA_PAT is verplicht voor asana-webhook')
 
+const db = createDb(env.supabaseUrl, env.supabaseSecretKey)
+
 const handler = createHandler({
   token: await webhookToken(env.asanaPat),
   store: createWebhookStore(env.supabaseUrl, env.supabaseSecretKey),
+  markeerVervallen: (gid, moment) => db.markeerVervallen(gid, moment),
   asana: createAsanaTaskClient(env.asanaPat),
   cfg: asanaFields,
   planningProjectGid: env.asanaPlanningProjectGid,

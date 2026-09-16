@@ -178,6 +178,11 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (!row.asana_task_gid) {
       return json({ error: 'Deze aanvraag is nooit bij Marketing aangekomen, dus er valt niets aan te vullen. Bel even met het marketingteam.' }, 409, cors)
     }
+    // Marketing heeft de aanvraag weggehaald. Hij is niet meer te vinden in het zoekscherm, maar wie
+    // het formulier al open had staan kan hier nog terechtkomen.
+    if (row.vervallen_op) {
+      return json({ error: 'Deze aanvraag staat niet meer open bij Marketing. Dien hem opnieuw in, of bel even met het marketingteam.' }, 409, cors)
+    }
 
     // De ene datum kan pas tegen de andere aan als we de aanvraag erbij hebben: schuift alleen de
     // deadline, dan is de eventdatum uit de aanvraag de grens.

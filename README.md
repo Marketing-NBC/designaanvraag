@@ -124,6 +124,8 @@ alle gegevens in de beschrijving.
 - **Spoed:** zit er minder dan 10 werkdagen tussen de aanvraag en de eventdatum, dan zet de function
   het veld **Spoed** op "Ja". Dat gebeurt één keer bij het indienen; verschuift de eventdatum later,
   dan blijft de registratie staan. De regel staat in `shared/spoed.ts`.
+- **Taak weggegooid:** haalt Marketing een taak weg (of uit het project), dan vervalt de aanvraag ook
+  in de applicatie — zie **Een aanvraag weggooien** hieronder.
 - **Webhook koppelen** gebeurt automatisch aan het eind van de Supabase-deploy (`scripts/asana-webhook.mjs`).
   De webhook-URL bevat een token afgeleid van `ASANA_PAT`; Asana ondertekent elke levering (HMAC).
   Controleren: Supabase → Edge Functions → `asana-webhook` → Logs.
@@ -208,8 +210,26 @@ De pagina staat immers op het open internet.
 Elke aanvulling blijft in de Supabase-tabel `aanvullingen` staan, met daarin ook welke velden
 daadwerkelijk zijn bijgewerkt — handig als je ooit wilt weten hoe vaak er wordt nagestuurd.
 
-Bijlages meesturen kan (nog) niet; daarvoor is er een veld voor een link naar WeTransfer of
-SharePoint, en het veld voor de locatie op de schijf.
+Bestanden meesluiten kan ook bij een aanvulling (zie **Bestanden meesturen** hierboven); voor grote
+bestanden is er het veld voor een WeTransfer- of SharePoint-link, en het veld voor de locatie op de
+schijf.
+
+### Een aanvraag weggooien
+
+Gooi je de taak in Asana weg — of haal je hem uit het project "Designaanvragen" — dan meldt Asana dat
+via dezelfde webhook en **vervalt de aanvraag**: hij is niet meer te vinden in het zoekscherm en er
+kan geen aanvulling meer op. Wie het formulier al open had staan krijgt een nette melding dat de
+aanvraag niet meer openstaat.
+
+De rij in Supabase blijft wel staan, met `vervallen_op` gevuld. Dat is met opzet: het is de enige
+administratie van wat er ooit is aangevraagd, en de spoedcijfers leunen erop.
+
+Twee dingen die dit **niet** kan:
+
+- **Het hele project weggooien.** Dan gaat de webhook met het project mee en komt er geen melding
+  binnen. De aanvragen blijven dan gewoon vindbaar.
+- **Iets in Supabase weggooien vanuit Asana.** Andersom werkt het ook niet: een rij die je met de
+  hand uit Supabase haalt, laat de Asana-taak staan.
 
 ## Spoedjes terugzien
 

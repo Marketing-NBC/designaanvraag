@@ -17,6 +17,8 @@ export interface AanvraagRow {
   brand_status: 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
   brand_error: string | null
   brand_session_url: string | null
+  /** Gezet toen de Asana-taak werd verwijderd; de aanvraag telt dan niet meer mee. */
+  vervallen_op: string | null
 }
 
 /**
@@ -91,6 +93,11 @@ export interface Db {
   findById(id: string): Promise<AanvraagDetail | null>
   /** Recente aanvragen waarvan de eventnaam op `q` lijkt, nieuwste eerst. */
   zoekOpEvent(q: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  /**
+   * Markeert de aanvraag bij deze Asana-taak als vervallen. Geeft terug of er een rij geraakt is,
+   * zodat de webhook een taak van buiten dit project kan herkennen.
+   */
+  markeerVervallen(asanaTaskGid: string, moment: Date): Promise<boolean>
   findAanvullingByClientRequestId(id: string): Promise<AanvullingRow | null>
   insertAanvulling(row: NewAanvulling): Promise<AanvullingRow>
   updateAanvulling(id: string, patch: Partial<AanvullingRow>): Promise<void>
@@ -106,7 +113,7 @@ export interface Db {
   markeerBijlage(id: string, patch: Partial<BijlageRow> & { fout?: string | null; asana_url?: string | null }): Promise<void>
 }
 
-const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url'
+const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, vervallen_op'
 const DETAIL_COLUMNS = `${ROW_COLUMNS}, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
 const ZOEK_COLUMNS = 'id, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
@@ -160,10 +167,22 @@ export function createDb(url: string, secretKey: string): Db {
         .gte('created_at', grens)
         // Zonder taak valt er niets aan te vullen; die aanvraag hoort niet in de lijst.
         .not('asana_task_gid', 'is', null)
+        // Taak verwijderd in Asana? Dan bestaat de aanvraag voor collega's niet meer.
+        .is('vervallen_op', null)
         .order('created_at', { ascending: false })
         .limit(ZOEK_MAX_RESULTATEN)
       if (error) throw new Error(`db zoeken: ${error.message}`)
       return ((data as GevondenAanvraag[] | null) ?? []).map((r) => ({ ...r, aanvraag_types: r.aanvraag_types ?? [] }))
+    },
+    async markeerVervallen(asanaTaskGid, moment) {
+      const { data, error } = await sb
+        .from('aanvragen')
+        .update({ vervallen_op: moment.toISOString() })
+        .eq('asana_task_gid', asanaTaskGid)
+        .is('vervallen_op', null)
+        .select('id')
+      if (error) throw new Error(`db vervallen: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length > 0
     },
     async findAanvullingByClientRequestId(id) {
       const { data, error } = await sb.from('aanvullingen').select(AANVULLING_COLUMNS).eq('client_request_id', id).maybeSingle()

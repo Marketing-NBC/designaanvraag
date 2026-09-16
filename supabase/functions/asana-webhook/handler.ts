@@ -7,7 +7,9 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *  - taak naar "In planning" gesleept zonder vervaldatum → één comment met mention: kies een datum;
  *  - vervaldatum gezet terwijl de taak in "In planning" of "Mee bezig" staat → taak ook in het
  *    planningsproject ("4. Werkplanning") zetten. De vervaldatum is een eigenschap van de taak,
- *    dus die is in beide projecten gelijk.
+ *    dus die is in beide projecten gelijk;
+ *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
+ *    verdwijnt en er geen aanvulling meer op kan.
  */
 
 export interface WebhookStore {
@@ -21,6 +23,12 @@ export interface Deps {
   token: string
   store: WebhookStore
   asana: AsanaTaskClient
+  /**
+   * Markeert de aanvraag bij een verwijderde taak als vervallen. Zonder dit blijft een weggegooide
+   * aanvraag in het zoekscherm staan en loopt een collega vast op een taak die niet meer bestaat.
+   */
+  markeerVervallen(asanaTaskGid: string, moment: Date): Promise<boolean>
+  now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
   planningProjectGid?: string | null
@@ -67,6 +75,7 @@ function escape(s: string): string {
 export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const { store, asana, cfg } = deps
   const log = deps.log ?? ((level, msg, extra) => console[level === 'info' ? 'log' : level](msg, extra ?? ''))
+  const now = deps.now ?? (() => new Date())
   const projectGid = cfg.project?.gid ?? null
   const sections = cfg.sections ?? {}
   const inPlanning = sections.in_planning?.gid ?? null
@@ -138,14 +147,32 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     const tasks = new Set<string>()
+    // Verwijderde taken apart: die kunnen we niet meer opvragen bij Asana, dus de planning-flow heeft
+    // er niets te zoeken. Het enige wat telt is dat de aanvraag vervalt.
+    const verwijderd = new Set<string>()
     for (const e of events) {
       const gid = e.resource?.gid
       if (!gid || e.resource?.resource_type !== 'task') continue
-      if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid === inPlanning) tasks.add(gid)
+      // `deleted` is weggegooid, `removed` is uit dit project gehaald. Voor een collega komt dat op
+      // hetzelfde neer: de taak staat niet meer op het bord van Marketing.
+      if (e.action === 'deleted') verwijderd.add(gid)
+      else if (e.action === 'removed' && e.parent?.gid === projectGid) verwijderd.add(gid)
+      else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid === inPlanning) tasks.add(gid)
       else if (e.action === 'changed') tasks.add(gid)
     }
 
     const outcomes: Record<string, string> = {}
+    for (const gid of verwijderd) {
+      // Ook uit de gewone lijst halen: één gebeurtenissenbatch kan allebei bevatten, en een taak
+      // ophalen die net weg is levert alleen een fout op.
+      tasks.delete(gid)
+      try {
+        outcomes[gid] = (await deps.markeerVervallen(gid, now())) ? 'aanvraag vervallen' : 'geen aanvraag bij deze taak'
+      } catch (e) {
+        outcomes[gid] = `fout: ${e instanceof Error ? e.message : String(e)}`
+        log('error', 'vervallen markeren mislukt', { gid, error: outcomes[gid] })
+      }
+    }
     for (const gid of tasks) {
       try {
         outcomes[gid] = await handleTask(gid)
@@ -154,7 +181,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         log('error', 'webhook-taak mislukt', { gid, error: outcomes[gid] })
       }
     }
-    if (tasks.size) log('info', 'webhook verwerkt', { outcomes })
+    if (tasks.size || verwijderd.size) log('info', 'webhook verwerkt', { outcomes })
     return json({ received: events.length, handled: outcomes }, 200)
   }
 }

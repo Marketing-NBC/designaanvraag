@@ -520,6 +520,43 @@ if (args.behoud === 'true') {
   info('de geüploade testbestanden ruimt scripts/bijlagen-opruimen.mjs vanzelf op')
 }
 
+// Gooit Marketing een taak weg, dan hoort de aanvraag te vervallen: niet meer te vinden, en er kan
+// geen aanvulling meer op. Dat kan alleen hier, na het opruimen hierboven.
+if (args.behoud !== 'true' && gemaakt.length && gemaakt[0].aanvraagId) {
+  const eerste = gemaakt[0]
+  regels.push('\n**G. verwijderde taak vervalt**')
+
+  const zoekTerm = eerste.aanvraag.event.slice(0, 12)
+  const weg = await wachtOp(async () => {
+    const res = await fetch(`${base}/functions/v1/aanvraag-zoeken?q=${encodeURIComponent(zoekTerm)}`, {
+      headers: { Origin: 'https://marketing-nbc.github.io' },
+      signal: AbortSignal.timeout(20_000),
+    })
+    const body = await res.json().catch(() => ({}))
+    return !(body.resultaten ?? []).some((r) => r.id === eerste.aanvraagId)
+  })
+  check(weg, 'de verwijderde aanvraag is niet meer te vinden in het zoekscherm')
+
+  const res = await fetch(`${base}/functions/v1/aanvulling-toevoegen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
+    body: JSON.stringify({
+      aanvulling: {
+        aanvraag_id: eerste.aanvraagId,
+        naam: eerste.aanvraag.naam,
+        toelichting: 'TEST — aanvulling op een aanvraag die net is weggegooid; hoort geweigerd te worden.',
+        extra_types: [],
+      },
+      client_request_id: crypto.randomUUID(),
+      started_at: new Date(Date.now() - 60_000).toISOString(),
+      website_confirm: '',
+    }),
+    signal: AbortSignal.timeout(30_000),
+  })
+  const body = await res.json().catch(() => ({}))
+  check(res.status === 409, 'een aanvulling op een vervallen aanvraag wordt geweigerd', `HTTP ${res.status}${body.error ? `: ${body.error}` : ''}`)
+}
+
 const kop = mislukt === 0 ? '### Asana-test geslaagd' : `### Asana-test: ${mislukt} controle(s) mislukt`
 const verslag = [kop, '', ...regels].join('\n')
 console.log(verslag)

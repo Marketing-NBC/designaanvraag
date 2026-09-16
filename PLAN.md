@@ -124,11 +124,13 @@ scripts/
 supabase/
   config.toml                 verify_jwt = false voor de drie functions
   migrations/                 aanvragen, collegas (+ view), rate_limits, asana_webhooks, spoed-kolommen,
-                              en expliciete rechten voor anon en service_role
+                              aanvullingen, bijlagen, vervallen_op, en expliciete rechten voor anon
+                              en service_role
   functions/_shared/          asana.ts, routine.ts, notes.ts (html_notes renderer), db.ts, env.ts
   functions/submit-aanvraag/  formulier → rij + Asana-taak + Routine starten
   functions/aanvraag-status/  GET status (incl. reden bij mislukking) voor het succes-scherm
-  functions/asana-webhook/    planning-flow: datum vragen, taak in de werkplanning zetten
+  functions/asana-webhook/    planning-flow: datum vragen, taak in de werkplanning zetten,
+                              verwijderde taak → aanvraag vervallen
 worker/
   ROUTINE.md                  het draaiboek dat de Routine-sessie volgt (stap voor stap, met stopregels)
   check.mjs                   stap 1: kloppen Supabase en de Asana-token echt (exitcode 2 / 3)

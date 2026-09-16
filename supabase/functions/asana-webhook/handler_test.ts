@@ -60,11 +60,26 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
   return { client, added, posted }
 }
 
-function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[] } = {}) {
+function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[] } = {}) {
   const store = fakeStore(opts.secrets)
   const asana = fakeAsana(tasks, opts.comments)
-  const handler = createHandler({ token: TOKEN, store, asana: asana.client, cfg, log: () => {} })
-  return { handler, store, asana }
+  // Welke taken een aanvraag in onze database hebben; standaard allemaal die in `tasks` staan.
+  const bekend = new Set(opts.aanvragen ?? Object.keys(tasks))
+  const vervallen: [string, string][] = []
+  const handler = createHandler({
+    token: TOKEN,
+    store,
+    asana: asana.client,
+    cfg,
+    log: () => {},
+    now: () => new Date('2026-09-16T10:00:00Z'),
+    markeerVervallen: (gid, moment) => {
+      if (!bekend.has(gid)) return Promise.resolve(false)
+      vervallen.push([gid, moment.toISOString()])
+      return Promise.resolve(true)
+    },
+  })
+  return { handler, store, asana, vervallen }
 }
 
 async function signed(events: unknown[], secret = SECRET, token = TOKEN): Promise<Request> {
@@ -78,6 +93,8 @@ async function signed(events: unknown[], secret = SECRET, token = TOKEN): Promis
 
 const movedToPlanning = (gid: string) => ({ action: 'added', resource: { gid, resource_type: 'task' }, parent: { gid: 'sec-plan', resource_type: 'section' } })
 const dueChanged = (gid: string) => ({ action: 'changed', resource: { gid, resource_type: 'task' }, change: { field: 'due_on', action: 'changed' } })
+const verwijderd = (gid: string) => ({ action: 'deleted', resource: { gid, resource_type: 'task' } })
+const uitProject = (gid: string, project = 'proj1') => ({ action: 'removed', resource: { gid, resource_type: 'task' }, parent: { gid: project, resource_type: 'project' } })
 
 Deno.test('handshake: secret bewaren en teruggeven, alleen met juiste token', async () => {
   const { handler, store } = setup({})
@@ -158,4 +175,37 @@ Deno.test('GET en ontbrekende resource', async () => {
   const { handler } = setup({})
   assertEquals((await handler(new Request(`https://x/asana-webhook?token=${TOKEN}`, { method: 'GET' }))).status, 405)
   assertEquals((await handler(new Request(`https://x/asana-webhook?token=${TOKEN}`, { method: 'POST', body: '{}' }))).status, 400)
+})
+
+Deno.test('taak weggegooid → aanvraag vervalt, taak wordt niet meer opgehaald', async () => {
+  const { handler, asana, vervallen } = setup({ t1: { memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
+  const res = await handler(await signed([verwijderd('t1')]))
+  assertEquals((await res.json()).handled, { t1: 'aanvraag vervallen' })
+  assertEquals(vervallen, [['t1', '2026-09-16T10:00:00.000Z']])
+  // Niets gevraagd of geplaatst: de taak bestaat niet meer.
+  assertEquals(asana.posted, [])
+  assertEquals(asana.added, [])
+})
+
+Deno.test('taak uit ons project gehaald → vervalt; uit een ander project → niet', async () => {
+  const { handler, vervallen } = setup({ t1: {}, t2: {} })
+  const res = await handler(await signed([uitProject('t1'), uitProject('t2', 'werk1')]))
+  const body = await res.json()
+  assertEquals(body.handled.t1, 'aanvraag vervallen')
+  assertEquals(body.handled.t2, undefined)
+  assertEquals(vervallen.map(([gid]) => gid), ['t1'])
+})
+
+Deno.test('verwijderde taak zonder aanvraag bij ons → gemeld, geen fout', async () => {
+  const { handler, vervallen } = setup({}, { aanvragen: [] })
+  const res = await handler(await signed([verwijderd('vreemd')]))
+  assertEquals((await res.json()).handled, { vreemd: 'geen aanvraag bij deze taak' })
+  assertEquals(vervallen, [])
+})
+
+Deno.test('wijziging én verwijdering in één batch → alleen vervallen, geen ophaalfout', async () => {
+  const { handler, vervallen } = setup({ t1: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
+  const res = await handler(await signed([dueChanged('t1'), verwijderd('t1')]))
+  assertEquals((await res.json()).handled, { t1: 'aanvraag vervallen' })
+  assertEquals(vervallen.length, 1)
 })

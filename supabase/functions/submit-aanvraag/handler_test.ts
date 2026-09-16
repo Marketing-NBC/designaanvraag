@@ -33,7 +33,7 @@ function fakeDb() {
       return null
     },
     async insert(row) {
-      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null }
+      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null, vervallen_op: null }
       rows.set(full.id, full)
       return full
     },
@@ -53,6 +53,7 @@ function fakeDb() {
     // Alleen de aanvulling-function gebruikt deze; hier zijn ze er om aan `Db` te voldoen.
     findById: () => Promise.resolve(null),
     zoekOpEvent: () => Promise.resolve([]),
+    markeerVervallen: () => Promise.resolve(false),
     findAanvullingByClientRequestId: () => Promise.resolve(null),
     insertAanvulling: () => Promise.reject(new Error('niet gebruikt')),
     updateAanvulling: () => Promise.resolve(),

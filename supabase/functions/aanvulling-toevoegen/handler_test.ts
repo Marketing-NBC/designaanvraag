@@ -57,6 +57,7 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     brand_status: 'done',
     brand_error: null,
     brand_session_url: null,
+    vervallen_op: null,
     event: 'Zorgcongres 2026',
     event_datum: '2026-12-01',
     deadline: '2026-11-20',
@@ -88,6 +89,7 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     isCollega: () => Promise.resolve(true),
     findById: (id) => Promise.resolve(row && row.id === id ? row : null),
     zoekOpEvent: () => Promise.resolve([]),
+    markeerVervallen: () => Promise.resolve(false),
     async findAanvullingByClientRequestId(id) {
       return aanvullingen.find((a) => a.client_request_id === id) ?? null
     },
@@ -275,6 +277,17 @@ Deno.test('een onbekende aanvraag geeft 404', async () => {
 Deno.test('een aanvraag zonder Asana-taak geeft 409', async () => {
   const res = await createHandler(deps({ db: fakeDb(aanvraag({ asana_task_gid: null })) }))(post(payload()))
   assertEquals(res.status, 409)
+})
+
+Deno.test('een vervallen aanvraag krijgt geen aanvulling meer', async () => {
+  // Het zoekscherm laat hem niet meer zien, maar een formulier dat al openstond wel.
+  const db = fakeDb(aanvraag({ vervallen_op: '2026-09-16T10:00:00.000Z' }))
+  const asana = fakeAsana()
+  const res = await createHandler(deps({ db, asana }))(post(payload()))
+  assertEquals(res.status, 409)
+  assertMatch((await res.json()).error, /niet meer open/)
+  assertEquals(db.aanvullingen, [])
+  assertEquals(asana.comments, [])
 })
 
 Deno.test('een deadline na het event wordt geweigerd, ook als alleen de deadline schuift', async () => {

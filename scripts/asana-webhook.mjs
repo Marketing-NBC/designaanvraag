@@ -66,6 +66,9 @@ for (let attempt = 1; attempt <= 4 && !created; attempt++) {
           filters: [
             { resource_type: 'task', action: 'added' },
             { resource_type: 'task', action: 'changed' },
+            // Verwijderd of uit het project gehaald: dan vervalt de aanvraag in de applicatie.
+            { resource_type: 'task', action: 'deleted' },
+            { resource_type: 'task', action: 'removed' },
           ],
         },
       },
