@@ -7,6 +7,8 @@ on:
       - 'supabase/**'
       - 'shared/**'
       - 'scripts/sync-shared.mjs'
+      # Deze workflow koppelt de webhook aan het eind; verandert dat script, dan moet hij draaien.
+      - 'scripts/asana-webhook.mjs'
       - '.github/workflows/supabase-deploy.yml'
   workflow_dispatch:
 
