@@ -1,5 +1,6 @@
 import type { SubmitPayload, SubmitResult } from '../../../shared/aanvraag-schema'
 import type { AanvullingPayload, AanvullingResult, GevondenAanvraag } from '../../../shared/aanvulling-schema'
+import type { UploadLink, UploadlinkPayload, UploadlinkResult } from '../../../shared/bijlagen'
 import { COLLEGAS_MOCK } from '../data/collegas.fallback'
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1` : null
@@ -114,4 +115,60 @@ function zoekMock(q: string): GevondenAanvraag[] {
     schijf_locatie: '',
   }
   return demo.event.toLowerCase().includes(q.trim().toLowerCase()) ? [demo] : []
+}
+
+/** Vraagt tijdelijke uploadlinks aan, één per bestand. Zonder backend verzinnen we ze. */
+export async function vraagUploadlinks(payload: UploadlinkPayload): Promise<UploadLink[]> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    await new Promise((r) => setTimeout(r, 250))
+    return payload.bestanden.map((b) => ({ bijlage_id: crypto.randomUUID(), bestandsnaam: b.naam, signed_url: 'mock://upload' }))
+  }
+
+  const res = await fetch(`${FUNCTIONS_URL}/bijlage-uploadlink`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: PUBLISHABLE_KEY },
+    body: JSON.stringify(payload),
+  })
+  const body = (await res.json().catch(() => null)) as (UploadlinkResult & { error?: string; bestand?: number | null }) | null
+  if (!res.ok || !body) throw new ApiError(res.status, body?.error ?? `Uploaden mislukt (${res.status})`)
+  return body.links
+}
+
+/**
+ * Zet het bestand rechtstreeks in de opslag. Met XMLHttpRequest en niet met fetch: alleen die kan
+ * vertellen hoe ver de upload is, en bij een bestand van tientallen megabytes wil je een balk zien.
+ */
+export function uploadBestand(link: UploadLink, file: File, onVoortgang: (deel: number) => void): Promise<void> {
+  if (link.signed_url === 'mock://upload') {
+    return new Promise((resolve) => {
+      let deel = 0
+      const timer = window.setInterval(() => {
+        deel = Math.min(1, deel + 0.25)
+        onVoortgang(deel)
+        if (deel >= 1) {
+          window.clearInterval(timer)
+          resolve()
+        }
+      }, 120)
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', link.signed_url)
+    // Het type moet mee: de opslag controleert hierop, en zonder deze kop wordt het text/plain.
+    xhr.setRequestHeader('Content-Type', file.type)
+    xhr.setRequestHeader('Cache-Control', 'max-age=3600')
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onVoortgang(e.loaded / e.total)
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve()
+      // 413 komt van de opslag zelf als het bestand alsnog te groot blijkt.
+      else reject(new ApiError(xhr.status, xhr.status === 413 ? 'Dit bestand is te groot.' : `Uploaden mislukt (${xhr.status})`))
+    }
+    xhr.onerror = () => reject(new Error('Uploaden mislukt. Controleer je verbinding.'))
+    xhr.onabort = () => reject(new Error('Uploaden afgebroken.'))
+    xhr.send(file)
+  })
 }

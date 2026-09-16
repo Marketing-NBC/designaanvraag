@@ -4,6 +4,7 @@ import type { AanvullingResult, GevondenAanvraag } from '../../shared/aanvulling
 import { ZOEK_MIN_TEKENS } from '../../shared/aanvulling-schema'
 import { REQUEST_TYPES, type RequestTypeKey, describeRequestTypes } from '../../shared/request-types'
 import { ChoiceList } from './components/ChoiceList'
+import { FileField } from './components/FileField'
 import { DateField } from './components/DateField'
 import { Icon } from './components/Icon'
 import { NameCombobox } from './components/NameCombobox'
@@ -11,6 +12,7 @@ import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
 import { ApiError, verstuurAanvulling, zoekAanvragen } from './lib/api'
+import { useBijlagen, type Uploads } from './lib/uploads'
 import { formatShort } from './lib/dates'
 
 /**
@@ -61,6 +63,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   const [errorNonce, setErrorNonce] = useState(0)
   const [busy, setBusy] = useState(false)
   const [klaar, setKlaar] = useState<AanvullingResult | null>(null)
+  const uploads = useBijlagen('aanvulling')
   const clientRequestId = useRef(crypto.randomUUID())
   const startedAt = useRef(new Date().toISOString())
 
@@ -90,6 +93,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
       return null
     }
     // Laatste stap: alles is optioneel, behalve dat wat je invult moet kloppen.
+    if (uploads.bezig) return 'Je bestanden worden nog geüpload — nog heel even.'
     if (draft.extra_types.includes('anders') && !draft.anders_tekst.trim()) return 'Vul in wat je bij "Anders" bedoelt.'
     const event = draft.nieuwe_event_datum ?? gekozen?.event_datum ?? ''
     const deadline = draft.nieuwe_deadline ?? gekozen?.deadline ?? ''
@@ -125,6 +129,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
         },
         client_request_id: clientRequestId.current,
         started_at: startedAt.current,
+        bijlage_ids: uploads.ids,
         website_confirm: '',
       })
       setKlaar(result)
@@ -224,7 +229,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
               />
             ) : null}
 
-            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} invalidAnders={Boolean(error)} /> : null}
+            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} uploads={uploads} invalidAnders={Boolean(error)} /> : null}
           </Question>
         </motion.div>
       </AnimatePresence>
@@ -311,11 +316,13 @@ function ExtraVelden({
   draft,
   patch,
   gekozen,
+  uploads,
   invalidAnders,
 }: {
   draft: Draft
   patch: (p: Partial<Draft>) => void
   gekozen: GevondenAanvraag | null
+  uploads: Uploads
   invalidAnders: boolean
 }) {
   const alAangevraagd = useMemo(() => new Set(gekozen?.aanvraag_types ?? []), [gekozen])
@@ -377,10 +384,11 @@ function ExtraVelden({
       <section className="extra__blok">
         <h2 className="extra__kop">Is er materiaal?</h2>
         <p className="extra__uitleg">
-          {gekozen?.schijf_locatie
-            ? `Bij je aanvraag staat nu: ${gekozen.schijf_locatie}. Vul je iets anders in, dan geven we dat erbij door zonder het bestaande te overschrijven.`
-            : 'Een map op de G:-schijf, of een link naar bestanden. Mag allebei leeg blijven.'}
+          Sleep bestanden hierheen, of verwijs naar een map op de G:-schijf of een link.
+          {gekozen?.schijf_locatie ? ` Bij je aanvraag staat nu: ${gekozen.schijf_locatie} — vul je iets anders in, dan geven we dat erbij door.` : ' Alles hier mag leeg blijven.'}
         </p>
+        <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
+
         <div className="extra__velden">
           <div>
             <span className="extra__label">Locatie op de schijf</span>

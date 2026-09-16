@@ -43,5 +43,5 @@ export function clearDraft(): void {
 
 /** Is er iets ingevuld dat de moeite waard is om te herstellen? */
 export function draftHasContent(d: Draft): boolean {
-  return Boolean(d.naam || d.event || d.event_datum || d.deadline || d.website || d.aanvraag_types.length || d.omschrijving)
+  return Boolean(d.naam || d.event || d.event_datum || d.deadline || d.website || d.aanvraag_types.length || d.omschrijving || d.bijlagen.length)
 }

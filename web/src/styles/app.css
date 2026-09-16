@@ -321,3 +321,42 @@ input, textarea, button { font-family: inherit; }
 .extra__velden { display: grid; gap: 16px; }
 .datumregel { display: grid; gap: 8px; align-content: start; }
 .datumregel__nu { margin: 0; font: 400 17px/1.4 var(--font-body); color: var(--fg-primary); }
+
+/* ── Bijlagen ──────────────────────────────────────────────────── */
+.bijlagen { display: grid; gap: 12px; max-width: 560px; }
+.bijlagen__zone {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  padding: 20px 22px; border: 1px dashed var(--nbc-stone-300); border-radius: var(--r-sm);
+  background: var(--bg-surface); color: var(--fg-primary);
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.bijlagen__zone:hover, .bijlagen__zone:focus-visible { border-color: var(--nbc-ink); }
+.bijlagen__zone--actief { border-color: var(--nbc-ink); border-style: solid; background: var(--nbc-blue-tint); }
+.bijlagen__clip { width: 24px; height: 24px; flex: none; color: var(--fg-secondary); }
+.bijlagen__zone-tekst { display: grid; gap: 3px; }
+.bijlagen__zone-titel { font: 600 17px/1.35 var(--font-body); }
+.bijlagen__zone-meta { font: 400 14px/1.4 var(--font-body); color: var(--fg-secondary); }
+
+.bijlagen__lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bijlage {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border-default); border-radius: var(--r-sm);
+  background: var(--bg-surface);
+}
+.bijlage--fout { border-color: var(--nbc-error); background: var(--bg-elev); }
+.bijlage__tekst { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.bijlage__naam { font: 600 16px/1.35 var(--font-body); overflow-wrap: anywhere; }
+.bijlage__meta { display: flex; align-items: center; gap: 6px; font: 400 14px/1.4 var(--font-body); color: var(--fg-secondary); }
+.bijlage--fout .bijlage__meta { color: var(--nbc-error); }
+.bijlage--klaar .bijlage__meta svg { color: var(--nbc-success); }
+.bijlage__balk { display: block; height: 3px; border-radius: 2px; background: var(--nbc-stone-200); overflow: hidden; }
+.bijlage__balk-vulling {
+  display: block; height: 100%; background: var(--nbc-ink);
+  transform-origin: left; transition: transform var(--dur-fast) linear;
+}
+.bijlage__wis {
+  flex: none; display: grid; place-items: center; width: 30px; height: 30px;
+  border: 0; border-radius: var(--r-xs); background: transparent; color: var(--fg-secondary);
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.bijlage__wis:hover { background: var(--bg-elev); color: var(--fg-primary); }

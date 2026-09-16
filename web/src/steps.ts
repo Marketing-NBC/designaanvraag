@@ -3,7 +3,7 @@ import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import type { Draft } from './state'
 
-export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea'
+export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files'
 
 export interface StepDef {
   id: string
@@ -91,6 +91,25 @@ export const STEPS: StepDef[] = [
     title: 'Waar op de schijf vind ik meer informatie of bestaande designs?',
     help: 'Plak de map op de G:\\-schijf of een link. Mag leeg blijven.',
     validate: (d) => (d.schijf_locatie.length > 500 ? 'Houd het bij maximaal 500 tekens.' : null),
+  },
+  {
+    id: 'bijlagen',
+    kind: 'files',
+    title: 'Heb je bestanden voor me?',
+    help: 'Een logo, voorbeelden, een briefing. Afbeeldingen, PDF, Word of PowerPoint. Mag leeg blijven.',
+    // Uploaden gebeurt al tijdens het kiezen; doorgaan mag pas als dat af is, anders zou de aanvraag
+    // vertrekken zonder de bestanden waar hij naar verwijst.
+    validate: (d) => (d.bijlagen.some((b) => b.status === 'wacht' || b.status === 'bezig') ? 'Je bestanden worden nog geüpload — nog heel even.' : null),
+    warn: (d) => {
+      const mislukt = d.bijlagen.filter((b) => b.status === 'fout')
+      if (!mislukt.length) return null
+      return `${mislukt.length === 1 ? 'Dit bestand gaat niet mee' : `${mislukt.length} bestanden gaan niet mee`}: ${mislukt.map((b) => b.bestandsnaam).join(', ')}. Je kunt gewoon doorgaan.`
+    },
+    goed: (d) => {
+      const klaar = d.bijlagen.filter((b) => b.status === 'klaar')
+      if (!klaar.length) return null
+      return `${klaar.length === 1 ? 'Eén bestand staat klaar' : `${klaar.length} bestanden staan klaar`} om mee te sturen.`
+    },
   },
   {
     id: 'aanvraag_types',

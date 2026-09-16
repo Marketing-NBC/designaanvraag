@@ -16,6 +16,8 @@ import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
+import { FileField } from './components/FileField'
+import { useBijlagen } from './lib/uploads'
 import { STEPS } from './steps'
 
 type Screen =
@@ -35,6 +37,14 @@ function isTypingTarget(el: EventTarget | null): el is HTMLElement {
 
 export default function App() {
   const [draft, setDraft] = useState<Draft>(emptyDraft)
+  // Op dit niveau, niet in de stap: die wordt bij elke vraag opnieuw opgebouwd en dan zou een
+  // lopende upload halverwege verdwijnen.
+  const uploads = useBijlagen('aanvraag')
+
+  // De uploads leven in hun eigen hook; hier voegen we ze samen tot het concept dat de stappen, het
+  // overzicht en het bewaarde concept lezen. Afgeleid tijdens het renderen, dus geen extra ronde.
+  const volledig: Draft = useMemo(() => ({ ...draft, bijlagen: uploads.bijlagen }), [draft, uploads.bijlagen])
+
   const [screen, setScreen] = useState<Screen>({ kind: 'start' })
   const [dir, setDir] = useState<1 | -1>(1)
   const [error, setError] = useState<string | null>(null)
@@ -56,9 +66,9 @@ export default function App() {
 
   // Autosave zolang de gebruiker in het formulier zit.
   useEffect(() => {
-    if (screen.kind === 'step') saveDraft(draft, screen.index)
-    if (screen.kind === 'review') saveDraft(draft, STEPS.length - 1)
-  }, [draft, screen])
+    if (screen.kind === 'step') saveDraft(volledig, screen.index)
+    if (screen.kind === 'review') saveDraft(volledig, STEPS.length - 1)
+  }, [volledig, screen])
 
   const patch = useCallback((p: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...p }))
@@ -79,7 +89,7 @@ export default function App() {
 
   const next = useCallback(() => {
     if (screen.kind !== 'step') return
-    const msg = STEPS[screen.index].validate(draft)
+    const msg = STEPS[screen.index].validate(volledig)
     if (msg) {
       setError(msg)
       setErrorNonce((n) => n + 1)
@@ -87,7 +97,7 @@ export default function App() {
     }
     if (screen.index + 1 < STEPS.length) go({ kind: 'step', index: screen.index + 1 }, 1)
     else go({ kind: 'review' }, 1)
-  }, [screen, draft, go])
+  }, [screen, volledig, go])
 
   const prev = useCallback(() => {
     if (screen.kind === 'step') {
@@ -126,22 +136,27 @@ export default function App() {
 
   const submit = useCallback(async () => {
     if (busy) return
+    if (uploads.bezig) {
+      setSubmitError('Je bestanden worden nog geüpload. Nog heel even.')
+      return
+    }
     setSubmitError(null)
     const parsed = submitPayloadSchema.safeParse({
       aanvraag: {
-        naam: draft.naam,
-        event: draft.event,
-        event_datum: draft.event_datum ?? '',
-        deadline: draft.deadline ?? '',
-        website: draft.website,
-        schijf_locatie: draft.schijf_locatie,
-        aanvraag_types: draft.aanvraag_types,
-        anders_tekst: draft.anders_tekst,
-        design_modus: draft.design_modus ?? undefined,
-        omschrijving: draft.omschrijving,
+        naam: volledig.naam,
+        event: volledig.event,
+        event_datum: volledig.event_datum ?? '',
+        deadline: volledig.deadline ?? '',
+        website: volledig.website,
+        schijf_locatie: volledig.schijf_locatie,
+        aanvraag_types: volledig.aanvraag_types,
+        anders_tekst: volledig.anders_tekst,
+        design_modus: volledig.design_modus ?? undefined,
+        omschrijving: volledig.omschrijving,
       },
       client_request_id: clientRequestId.current,
       started_at: startedAt.current,
+      bijlage_ids: uploads.ids,
       website_confirm: '',
     })
     if (!parsed.success) {
@@ -161,7 +176,7 @@ export default function App() {
     try {
       const result = await submitAanvraag(parsed.data)
       clearDraft()
-      const done = draft
+      const done = volledig
       setDraft(emptyDraft())
       go({ kind: 'success', result, draft: done }, 1)
     } catch (e) {
@@ -170,7 +185,7 @@ export default function App() {
     } finally {
       setBusy(false)
     }
-  }, [busy, draft, go])
+  }, [busy, volledig, go, uploads.bezig, uploads.ids])
 
   const restart = useCallback(() => {
     clientRequestId.current = crypto.randomUUID()
@@ -282,6 +297,9 @@ export default function App() {
                 className="btn btn--primary btn--sm"
                 onClick={() => {
                   setDraft(resume.draft)
+                  // De bestanden zelf zijn weg uit deze browser; wat al geüpload was staat nog in
+                  // de opslag en mag gewoon mee.
+                  uploads.herstel(resume.draft.bijlagen ?? [])
                   setResume(null)
                   go({ kind: 'step', index: Math.min(resume.step, STEPS.length - 1) }, 1)
                 }}
@@ -323,7 +341,7 @@ export default function App() {
       <AnimatePresence mode="wait" custom={dir} initial={false}>
         <motion.div key={screenKey} custom={dir} variants={variants} initial="initial" animate="animate" exit="exit">
           {screen.kind === 'review' ? (
-            <Review draft={draft} onEdit={(i) => go({ kind: 'step', index: i }, -1)} onSubmit={() => void submit()} busy={busy} error={submitError} titleId="q-review" />
+            <Review draft={volledig} onEdit={(i) => go({ kind: 'step', index: i }, -1)} onSubmit={() => void submit()} busy={busy} error={submitError} titleId="q-review" />
           ) : step ? (
             <Question
               number={screen.index + 1}
@@ -331,8 +349,8 @@ export default function App() {
               help={step.help}
               error={error}
               errorNonce={errorNonce}
-              warning={step.warn?.(draft) ?? null}
-              goed={step.goed?.(draft) ?? null}
+              warning={step.warn?.(volledig) ?? null}
+              goed={step.goed?.(volledig) ?? null}
               titleId={`q-${step.id}`}
               footer={<PrimaryAction label={screen.index === STEPS.length - 1 ? 'Naar overzicht' : 'Volgende'} onClick={next} />}
             >
@@ -344,6 +362,9 @@ export default function App() {
               ) : null}
               {step.kind === 'text' && step.id === 'schijf_locatie' ? (
                 <TextField id="f-schijf" value={draft.schijf_locatie} onChange={(v) => patch({ schijf_locatie: v })} placeholder="G:\Events\2026\Zorgcongres" maxLength={500} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
+              ) : null}
+              {step.kind === 'files' ? (
+                <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
               ) : null}
               {step.kind === 'url' ? (
                 <TextField id="f-website" type="text" inputMode="url" value={draft.website} onChange={(v) => patch({ website: v })} placeholder="www.event.nl" invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />

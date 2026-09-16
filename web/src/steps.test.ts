@@ -6,7 +6,7 @@ import type { Draft } from './state'
 const eventStap = STEPS.find((s) => s.id === 'event_datum')!
 
 function draft(event_datum: string): Draft {
-  return { naam: '', event: '', event_datum, deadline: '', website: '', schijf_locatie: '', aanvraag_types: [], anders_tekst: '', design_modus: null, omschrijving: '' } as Draft
+  return { naam: '', event: '', event_datum, deadline: '', website: '', schijf_locatie: '', bijlagen: [], aanvraag_types: [], anders_tekst: '', design_modus: null, omschrijving: '' } as Draft
 }
 
 describe('bevestiging op de eventdatum', () => {
