@@ -23,6 +23,8 @@ on:
 
 permissions:
   contents: write
+  # Om de Supabase-deploy zelf te kunnen starten; zie de laatste stap.
+  actions: write
 
 jobs:
   setup:
@@ -48,13 +50,27 @@ jobs:
           node scripts/asana-fields.mjs --project "${{ steps.setup.outputs.project_gid }}" --assignee "$ASSIGNEE_INPUT" --planning "${PLANNING_INPUT:-$LIKE_INPUT}" | tee -a "$GITHUB_STEP_SUMMARY"
           node scripts/sync-shared.mjs
       - name: Committen
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add shared/asana-fields.json supabase/functions/_shared/shared/asana-fields.json
           if git diff --cached --quiet; then
             echo "Geen wijzigingen."
+            echo "gewijzigd=false" >> "$GITHUB_OUTPUT"
           else
+            echo "gewijzigd=true" >> "$GITHUB_OUTPUT"
             git commit -m "Asana-project gekoppeld via workflow"
             git push
           fi
+      # Een push door github-actions[bot] start géén workflows — dat voorkomt eindeloze kettingen,
+      # maar het betekent ook dat de zojuist gecommitte veld-gids nooit bij de edge functions komen.
+      # Die stonden dan met een oude configuratie te draaien zonder dat iemand het merkte. Vandaar
+      # dat we de deploy hier zelf aanzwengelen.
+      - name: Supabase-deploy starten
+        if: steps.commit.outputs.gewijzigd == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run supabase-deploy.yml --ref main
+          echo "Supabase-deploy gestart met de nieuwe veldconfiguratie." >> "$GITHUB_STEP_SUMMARY"
