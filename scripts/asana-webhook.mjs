@@ -38,7 +38,26 @@ const token = createHash('sha256').update(`asana-webhook:${pat}`).digest('hex').
 const target = `${base}?resource=${projectGid}&token=${token}`
 const masked = `${base}?resource=${projectGid}&token=***`
 
-const existing = await asana(`/webhooks?workspace=${workspaceGid}&resource=${projectGid}&limit=100&opt_fields=target,active,resource.gid`)
+/**
+ * Waar Asana ons over moet bellen. Let op: filters van een bestaande webhook veranderen niet vanzelf
+ * mee als deze lijst groeit — zie hieronder.
+ */
+const FILTERS = [
+  { resource_type: 'task', action: 'added' },
+  { resource_type: 'task', action: 'changed' },
+  // Verwijderd of uit het project gehaald: dan vervalt de aanvraag in de applicatie.
+  { resource_type: 'task', action: 'deleted' },
+  { resource_type: 'task', action: 'removed' },
+]
+
+function zelfdeFilters(w) {
+  const heeft = new Set((w.filters ?? []).map((f) => `${f.resource_type}:${f.action}`))
+  return heeft.size === FILTERS.length && FILTERS.every((f) => heeft.has(`${f.resource_type}:${f.action}`))
+}
+
+const existing = await asana(
+  `/webhooks?workspace=${workspaceGid}&resource=${projectGid}&limit=100&opt_fields=target,active,resource.gid,filters.resource_type,filters.action`,
+)
 // Alles wat naar een asana-webhook-function wijst is van ons, ook die van een ouder Supabase-project.
 // Zo blijven er na een verhuizing geen webhooks achter die naar een dood (of ander) project leveren.
 const mine = existing.filter((w) => /\/functions\/v1\/asana-webhook(\?|$)/.test(String(w.target ?? '')))
@@ -49,8 +68,21 @@ for (const w of mine) {
   console.log(`Oude webhook verwijderd (${w.gid})`)
 }
 if (current) {
-  console.log(`Webhook bestond al (${current.gid}) → ${masked}`)
-  process.exit(0)
+  if (zelfdeFilters(current)) {
+    console.log(`Webhook bestond al (${current.gid}) → ${masked}`)
+    process.exit(0)
+  }
+  // Komt er een gebeurtenis bij (zoals "taak verwijderd"), dan luistert de bestaande webhook daar
+  // nog niet naar. Stilzwijgend overslaan is hier het gevaarlijkst: de code kent de gebeurtenis, de
+  // webhook levert hem nooit, en niemand merkt het.
+  try {
+    await asana(`/webhooks/${current.gid}`, { method: 'PUT', body: { data: { filters: FILTERS } } })
+    console.log(`Webhook bijgewerkt met nieuwe filters (${current.gid}) → ${masked}`)
+    process.exit(0)
+  } catch (e) {
+    console.log(`Filters bijwerken mislukt (${String(e.message).replace(token, '***')}); webhook opnieuw aanmaken`)
+    await asana(`/webhooks/${current.gid}`, { method: 'DELETE' })
+  }
 }
 
 // De handshake kan net na een deploy nog falen (function herstart, secrets nog niet door); een paar keer proberen.
@@ -63,13 +95,7 @@ for (let attempt = 1; attempt <= 4 && !created; attempt++) {
         data: {
           resource: projectGid,
           target,
-          filters: [
-            { resource_type: 'task', action: 'added' },
-            { resource_type: 'task', action: 'changed' },
-            // Verwijderd of uit het project gehaald: dan vervalt de aanvraag in de applicatie.
-            { resource_type: 'task', action: 'deleted' },
-            { resource_type: 'task', action: 'removed' },
-          ],
+          filters: FILTERS,
         },
       },
     })
