@@ -21,7 +21,7 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen` en `asana-webhook` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink` en `asana-webhook` |
 | `worker/` | Huisstijl-extractie; draait in een Claude Code Routine volgens `worker/ROUTINE.md` |
 | `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
@@ -125,6 +125,39 @@ alle gegevens in de beschrijving.
 - **Webhook koppelen** gebeurt automatisch aan het eind van de Supabase-deploy (`scripts/asana-webhook.mjs`).
   De webhook-URL bevat een token afgeleid van `ASANA_PAT`; Asana ondertekent elke levering (HMAC).
   Controleren: Supabase → Edge Functions → `asana-webhook` → Logs.
+
+## Bestanden meesturen
+
+Collega's kunnen een logo of voorbeelden meeslepen, bij een nieuwe aanvraag (vraag 7) en bij een
+aanvulling. Die komen als **bijlage bij de Asana-taak** te staan.
+
+Toegestaan: PNG, JPG, SVG, PDF, Word en PowerPoint. **Maximaal 25 MB per bestand, 5 bestanden, samen
+50 MB.** Design-bronbestanden (AI, PSD, INDD) kunnen niet — die horen op de schijf, en het linkveld
+voor WeTransfer blijft daarvoor bestaan.
+
+**Hoe het loopt.** De browser vraagt `bijlage-uploadlink` om een tijdelijke link per bestand en
+uploadt daar rechtstreeks naartoe; de bytes komen dus nooit door een edge function heen. In de
+aanvraag reizen alleen ondoorgrondelijke id's mee. Bij het versturen haalt de function de bestanden
+op en zet ze bij de taak.
+
+**Drie lagen controle**, want een uitgegeven uploadlink kun je niet meer terugnemen:
+
+| Waar | Wat |
+| --- | --- |
+| De bucket | De grens van 25 MB per bestand. Dit is de enige controle die niet te omzeilen is. |
+| `bijlage-uploadlink` | Type, extensie, aantal, totaal, en een uurlimiet per IP. |
+| Bij het doorzetten | De eerste bytes tegen het opgegeven type — `allowed_mime_types` gelooft simpelweg wat de uploader zegt. |
+
+Mislukt een bijlage, dan blijft de aanvraag gewoon staan: de reden komt in `asana_error` en de
+bestandsnamen staan sowieso in de taakbeschrijving, zodat je kunt bellen in plaats van gissen.
+
+**Opruimen** gebeurt elke nacht via de workflow **Bijlagen opruimen** (`scripts/bijlagen-opruimen.mjs`):
+30 dagen na een aanvraag, 7 dagen als het formulier nooit is afgemaakt, plus losse bestanden zonder
+administratie. De bijlage bij de taak blijft; alleen de kopie in de opslag verdwijnt. Handmatig
+proefdraaien kan met de knop **Run workflow** en "Alleen laten zien wat er zou verdwijnen".
+
+In Supabase staat per bestand een rij in `bijlagen`: welk bestand, bij welke aanvraag, en of het
+gelukt is.
 
 ## Aanvullingen op een lopende aanvraag
 
