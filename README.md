@@ -1,5 +1,9 @@
 # NBC Designaanvraag
 
+**Het formulier: https://marketing-nbc.github.io/designaanvraag/** — dit is de link die je aan collega's
+stuurt. Daar dienen ze een aanvraag in, en vullen ze via "Iets aanvullen of wijzigen" een lopende
+aanvraag aan.
+
 Interne tool waarmee NBC-collega's designwerk aanvragen bij het marketingteam. Eén vraag per scherm, in de
 NBC-huisstijl. Elke aanvraag wordt een Asana-taak; de huisstijl van de opdrachtgever (logo, kleuren,
 fonts, stijl) wordt automatisch opgehaald en bij de taak gezet.
