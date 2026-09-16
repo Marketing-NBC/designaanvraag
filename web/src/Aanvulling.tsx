@@ -144,6 +144,13 @@ export function Aanvulling({ collegas, onSluit }: Props) {
       if (el?.tagName === 'TEXTAREA') return
       // De namenlijst en de zoeklijst doen zelf iets met Enter.
       if (el?.getAttribute('role') === 'combobox' || el?.dataset.vondst) return
+      // "Anders, namelijk…": Enter bevestigt de tekst en legt de focus op de knop. Zonder dit zou
+      // Enter tijdens het typen de hele aanvulling versturen.
+      if (el?.hasAttribute('data-other-input')) {
+        e.preventDefault()
+        window.setTimeout(() => document.querySelector<HTMLButtonElement>('[data-primary-action]')?.focus({ preventScroll: true }), 30)
+        return
+      }
       e.preventDefault()
       volgende()
     }
@@ -318,6 +325,10 @@ function ExtraVelden({
   const toggle = (key: string) => {
     const k = key as RequestTypeKey
     patch({ extra_types: draft.extra_types.includes(k) ? draft.extra_types.filter((x) => x !== k) : [...draft.extra_types, k] })
+    // Net als in het hoofdformulier: kies je "Anders", dan sta je meteen in het tekstveld.
+    if (k === 'anders' && !draft.extra_types.includes(k)) {
+      window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-other-input]')?.focus({ preventScroll: true }), 30)
+    }
   }
 
   return (

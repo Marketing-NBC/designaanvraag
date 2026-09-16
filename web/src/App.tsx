@@ -216,6 +216,13 @@ export default function App() {
         if (target instanceof HTMLElement && target.getAttribute('aria-expanded') === 'true' && target.getAttribute('aria-activedescendant')) return
         // Kalender: Enter op een dag kiest alleen die dag.
         if (target instanceof HTMLElement && target.matches('.date__day')) return
+        // "Anders, namelijk…": Enter bevestigt je tekst en legt de focus op Volgende. Eerder sprong
+        // je midden in een woord naar de volgende vraag, precies als je aan het typen was.
+        if (target instanceof HTMLElement && target.hasAttribute('data-other-input')) {
+          e.preventDefault()
+          focusPrimary()
+          return
+        }
         // Textarea: Shift+Enter is een nieuwe regel, Enter gaat door.
         if (target instanceof HTMLTextAreaElement && e.shiftKey) return
         // Knoppen (behalve de primaire) doen hun eigen ding.
@@ -252,7 +259,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [screen, next, prev, go, submit, toggleType, patch])
+  }, [screen, next, prev, go, submit, toggleType, patch, focusPrimary])
 
   const variants = useMemo(
     () => ({
