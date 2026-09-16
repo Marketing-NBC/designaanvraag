@@ -155,7 +155,7 @@ const scenarios = [
 ]
 
 /** Verstuurt een aanvraag zoals het formulier dat doet. */
-async function verstuur(aanvraag) {
+async function verstuur(aanvraag, bijlageIds = []) {
   const res = await fetch(`${base}/functions/v1/submit-aanvraag`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
@@ -163,9 +163,10 @@ async function verstuur(aanvraag) {
       aanvraag,
       client_request_id: crypto.randomUUID(),
       started_at: new Date(Date.now() - 60_000).toISOString(),
+      bijlage_ids: bijlageIds,
       website_confirm: '',
     }),
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(60_000),
   })
   const body = await res.json().catch(() => ({}))
   return { status: res.status, body }
@@ -358,12 +359,101 @@ if (gemaakt.length) {
   }
 }
 
+// Bijlagen: uploadlink vragen, rechtstreeks naar Storage uploaden, en kijken of het bestand als
+// bijlage bij de taak belandt. Dit scenario bewijst het deel van de opzet dat je met de hand niet
+// kunt nagaan: of de browser echt rechtstreeks mag uploaden vanaf de github.io-pagina.
+{
+  regels.push('\n**E. bestanden meesturen**')
+
+  // Twee kleine, echte bestanden. Geen fixtures op schijf nodig.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+    'base64',
+  )
+  const pdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n')
+  const bestanden = [
+    { naam: 'TEST-logo.png', type: 'image/png', bytes: png },
+    { naam: 'TEST-voorbeeld.pdf', type: 'application/pdf', bytes: pdf },
+  ]
+
+  const groepId = crypto.randomUUID()
+  const linkRes = await fetch(`${base}/functions/v1/bijlage-uploadlink`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
+    body: JSON.stringify({
+      doel: 'aanvraag',
+      groep_id: groepId,
+      bestanden: bestanden.map((b) => ({ naam: b.naam, type: b.type, grootte: b.bytes.length })),
+    }),
+    signal: AbortSignal.timeout(30_000),
+  })
+  const linkBody = await linkRes.json().catch(() => ({}))
+  const links = linkBody.links ?? []
+  check(linkRes.status === 200 && links.length === 2, 'uploadlinks gekregen', `HTTP ${linkRes.status}${linkBody.error ? `: ${linkBody.error}` : ''}`)
+
+  // Een verboden type hoort hier al te stranden.
+  const verboden = await fetch(`${base}/functions/v1/bijlage-uploadlink`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: 'https://marketing-nbc.github.io' },
+    body: JSON.stringify({
+      doel: 'aanvraag',
+      groep_id: crypto.randomUUID(),
+      bestanden: [{ naam: 'ontwerp.psd', type: 'image/vnd.adobe.photoshop', grootte: 1000 }],
+    }),
+    signal: AbortSignal.timeout(20_000),
+  })
+  check(verboden.status === 400, 'design-bronbestand wordt geweigerd', `HTTP ${verboden.status}`)
+
+  let geuploaded = 0
+  for (const [i, link] of links.entries()) {
+    const b = bestanden[i]
+    // Precies wat de browser doet: PUT naar de link, zonder sleutel, met het type erbij.
+    const put = await fetch(link.signed_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': b.type, 'Cache-Control': 'max-age=3600' },
+      body: b.bytes,
+      signal: AbortSignal.timeout(60_000),
+    })
+    if (put.ok) geuploaded++
+    else info(`upload van ${b.naam} mislukt: HTTP ${put.status} ${(await put.text()).slice(0, 200)}`)
+  }
+  check(geuploaded === links.length, 'bestanden rechtstreeks naar Storage geüpload', `${geuploaded} van ${links.length}`)
+
+  if (geuploaded === links.length) {
+    const aanvraagMetBijlagen = {
+      ...scenarios[0].aanvraag,
+      event: 'TEST bijlagen automatische test',
+    }
+    const { status, body } = await verstuur(aanvraagMetBijlagen, links.map((l) => l.bijlage_id))
+    check(status === 200 && body.asana_task_url, 'aanvraag met bijlagen geaccepteerd', `HTTP ${status}${body.error ? `: ${body.error}` : ''}`)
+
+    if (body.asana_task_url) {
+      const url = String(body.asana_task_url)
+      const gid = url.match(/\/task\/(\d+)/)?.[1] ?? url.split('/').filter((x) => /^\d+$/.test(x)).pop()
+      gemaakt.push({ gid, url, aanvraag: aanvraagMetBijlagen, aanvraagId: body.aanvraag_id })
+
+      const namen = await wachtOp(async () => {
+        const att = (await asana(`/attachments?parent=${gid}&opt_fields=name`)) ?? []
+        return att.length >= 2 ? att.map((a) => a.name) : null
+      })
+      check(Boolean(namen), 'beide bestanden staan als bijlage bij de taak', Array.isArray(namen) ? namen.join(', ') : 'niet binnen de wachttijd')
+
+      const taak = await asana(`/tasks/${gid}?opt_fields=notes`)
+      check(String(taak.notes ?? '').includes('TEST-logo.png'), 'de beschrijving noemt de meegestuurde bestanden')
+
+      const st = await fetch(`${base}/functions/v1/aanvraag-status?id=${body.aanvraag_id}`, { signal: AbortSignal.timeout(15_000) })
+      const stBody = await st.json().catch(() => ({}))
+      if (stBody.brand_error) info(`let op: ${stBody.brand_error}`)
+    }
+  }
+}
+
 // Planning-flow: alleen op de eerste testtaak.
 if (args['geen-planning'] !== 'true' && gemaakt.length) {
   const { gid, aanvraag } = gemaakt[0]
   const inPlanning = fields.sections?.in_planning?.gid
   const planningGid = fields.planning_project?.gid
-  regels.push('\n**E. planning-flow (webhook)**')
+  regels.push('\n**F. planning-flow (webhook)**')
 
   if (!inPlanning || !planningGid) {
     check(false, 'secties en planningsproject staan in asana-fields.json')
@@ -402,7 +492,8 @@ if (args.behoud === 'true') {
       info(`testtaak ${g.gid} kon niet verwijderd worden: ${e.message}`)
     }
   }
-  info('de rijen in de Supabase-tabel `aanvragen` blijven staan; die mag je met de hand weggooien')
+  info('de rijen in de Supabase-tabellen blijven staan; die mag je met de hand weggooien')
+  info('de geüploade testbestanden ruimt scripts/bijlagen-opruimen.mjs vanzelf op')
 }
 
 const kop = mislukt === 0 ? '### Asana-test geslaagd' : `### Asana-test: ${mislukt} controle(s) mislukt`

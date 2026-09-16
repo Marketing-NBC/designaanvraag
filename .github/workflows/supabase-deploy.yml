@@ -31,8 +31,8 @@ jobs:
       - name: deno check + test
         working-directory: supabase/functions
         run: |
-          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts
-          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/
+          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts
+          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/
 
   deploy:
     name: Migraties, functions en secrets

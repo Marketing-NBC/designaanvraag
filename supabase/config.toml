@@ -41,3 +41,10 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/aanvulling-toevoegen/index.ts"
+
+# Geeft tijdelijke uploadlinks uit; de browser uploadt daarna rechtstreeks naar Storage.
+[functions.bijlage-uploadlink]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/bijlage-uploadlink/index.ts"

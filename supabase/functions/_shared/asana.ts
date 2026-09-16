@@ -42,6 +42,12 @@ export interface AsanaClient {
   createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number; warnings: string[] }>
   /** Gid van de enum-optie met deze naam; maakt hem aan als hij nog niet bestaat. */
   enumOptie(fieldGid: string, naam: string): Promise<string>
+  uploadAttachment(taskGid: string, naam: string, bytes: Uint8Array<ArrayBuffer>, mime: string): Promise<AsanaBijlage>
+}
+
+export interface AsanaBijlage {
+  gid: string
+  url: string | null
 }
 
 /** Wat er nu in een custom field staat, uitgepakt naar de drie soorten die wij gebruiken. */
@@ -73,6 +79,7 @@ export interface AsanaTaskClient {
   addComment(taskGid: string, htmlText: string): Promise<void>
   /** Zet velden op een bestaande taak. Geeft terug wat Asana weigerde; leeg = alles gelukt. */
   updateCustomFields(taskGid: string, fields: Record<string, unknown>): Promise<string[]>
+  uploadAttachment(taskGid: string, naam: string, bytes: Uint8Array<ArrayBuffer>, mime: string): Promise<AsanaBijlage>
 }
 
 /**
@@ -159,6 +166,31 @@ async function asanaFetch(pat: string, path: string, init: RequestInit): Promise
   return { status: res.status, body }
 }
 
+/**
+ * Een bestand als bijlage bij een taak. Gaat met opzet niet via `asanaFetch`: die zet
+ * onvoorwaardelijk `Content-Type: application/json`, en dat sloopt de scheidingsmarkering van een
+ * multipart-verzoek. Ook de timeout van tien seconden is hier te kort — een bestand van tientallen
+ * megabytes doet er langer over dan een JSON-verzoekje.
+ *
+ * Geen Content-Type meegeven dus: `fetch` bepaalt hem zelf op basis van de FormData. Dezelfde aanpak
+ * als worker/lib/asana.mjs, die dit al draait.
+ */
+async function asanaUpload(pat: string, taskGid: string, naam: string, bytes: Uint8Array<ArrayBuffer>, mime: string): Promise<AsanaBijlage> {
+  const form = new FormData()
+  form.append('parent', taskGid)
+  form.append('file', new Blob([bytes], { type: mime }), naam)
+
+  const res = await fetch(`${API}/attachments`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json' },
+    body: form,
+    signal: AbortSignal.timeout(120_000),
+  })
+  const body = (await res.json().catch(() => ({}))) as { data?: { gid?: string; permalink_url?: string }; errors?: AsanaError[] }
+  if (!ok(res.status) || !body.data?.gid) throw new Error(`Bijlage "${naam}" mislukt (${res.status}: ${errorText(body)})`)
+  return { gid: String(body.data.gid), url: body.data.permalink_url ?? null }
+}
+
 function errorText(body: { errors?: AsanaError[] }): string {
   return body.errors?.map((e) => e.message).filter(Boolean).join('; ') ?? 'onbekende fout'
 }
@@ -234,6 +266,10 @@ export function createAsanaClient(pat: string): AsanaClient {
       })
       if (!ok(nieuw.status) || !nieuw.body.data?.gid) throw new Error(`Optie "${naam}" aanmaken mislukt (${nieuw.status}: ${errorText(nieuw.body)})`)
       return String(nieuw.body.data.gid)
+    },
+
+    uploadAttachment(taskGid, naam, bytes, mime) {
+      return asanaUpload(pat, taskGid, naam, bytes, mime)
     },
   }
 }
@@ -338,6 +374,9 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
     },
     updateCustomFields(taskGid, fields) {
       return putCustomFields(pat, taskGid, fields)
+    },
+    uploadAttachment(taskGid, naam, bytes, mime) {
+      return asanaUpload(pat, taskGid, naam, bytes, mime)
     },
   }
 }

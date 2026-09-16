@@ -1,0 +1,46 @@
+name: Bijlagen opruimen
+
+# Gooit meegestuurde bestanden weg die hun tijd gehad hebben: 30 dagen na een aanvraag, en 7 dagen
+# als het formulier nooit is afgemaakt. De bijlage bij de Asana-taak blijft; alleen de kopie in de
+# opslag verdwijnt. Vereist secrets SUPABASE_PROJECT_ID en SUPABASE_SECRET_KEY.
+
+on:
+  schedule:
+    # 03:30 UTC, ver buiten kantooruren.
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Alleen laten zien wat er zou verdwijnen'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: bijlagen-opruimen
+  cancel-in-progress: false
+
+jobs:
+  opruimen:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Secrets aanwezig?
+        run: |
+          missing=()
+          [ -z "$SUPABASE_PROJECT_ID" ] && missing+=(SUPABASE_PROJECT_ID)
+          [ -z "$SUPABASE_SECRET_KEY" ] && missing+=(SUPABASE_SECRET_KEY)
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Ontbrekende repository secrets: ${missing[*]} (Settings → Secrets and variables → Actions)"
+            exit 1
+          fi
+      - name: Opruimen
+        run: |
+          export SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
+          node scripts/bijlagen-opruimen.mjs ${{ inputs.dry_run && '--dry-run' || '' }}

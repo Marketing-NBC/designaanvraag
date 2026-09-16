@@ -95,6 +95,10 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
       const i = aanvullingen.findIndex((a) => a.id === id)
       if (i >= 0) aanvullingen[i] = { ...aanvullingen[i], ...patch } as (typeof aanvullingen)[number]
     },
+    insertBijlagen: () => Promise.resolve(),
+    claimBijlagen: () => Promise.resolve([]),
+    openBijlagenVan: () => Promise.resolve([]),
+    markeerBijlage: () => Promise.resolve(),
   }
   return db
 }
@@ -127,6 +131,7 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
       velden.push(fields)
       return opts.veldWaarschuwing ?? []
     },
+    uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
   }
 }
 
@@ -153,7 +158,7 @@ function post(body: unknown): Request {
 }
 
 function deps(over: Partial<Deps> = {}): Deps {
-  return { env, db: fakeDb(), asana: fakeAsana(), fields: cfg, log: () => {}, ...over }
+  return { env, db: fakeDb(), asana: fakeAsana(), storage: null, fields: cfg, log: () => {}, ...over }
 }
 
 // ── De regels zelf ───────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { createAsanaTaskClient } from '../_shared/asana.ts'
 import { createDb } from '../_shared/db.ts'
 import { readEnv } from '../_shared/env.ts'
+import { createStorage } from '../_shared/storage.ts'
 import { createHandler } from './handler.ts'
 
 const env = readEnv()
@@ -11,6 +12,7 @@ const handler = createHandler({
   // Zonder PAT blijft de aanvulling bewaard, maar komt hij niet in Asana. Dat staat dan in
   // `asana_error`, net als bij een aanvraag zonder Asana-configuratie.
   asana: env.asanaPat ? createAsanaTaskClient(env.asanaPat) : null,
+  storage: createStorage(env.supabaseUrl, env.supabaseSecretKey),
 })
 
 Deno.serve(async (req) => {

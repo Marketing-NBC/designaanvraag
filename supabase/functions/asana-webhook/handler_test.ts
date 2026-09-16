@@ -51,8 +51,9 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async addComment(taskGid, html) {
       posted.push([taskGid, html])
     },
-    // De planning-flow raakt geen velden aan; dit is er om aan `AsanaTaskClient` te voldoen.
+    // De planning-flow raakt geen velden of bijlagen aan; dit is er om aan `AsanaTaskClient` te voldoen.
     updateCustomFields: () => Promise.resolve([]),
+    uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
   }
   return { client, added, posted }
 }

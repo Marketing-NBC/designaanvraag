@@ -1,6 +1,6 @@
-import { assertEquals, assertMatch } from 'jsr:@std/assert@1'
+import { assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert@1'
 import type { Env } from '../_shared/env.ts'
-import type { AanvraagRow, Db, NewAanvraag } from '../_shared/db.ts'
+import type { AanvraagRow, BijlageRow, Db, NewAanvraag } from '../_shared/db.ts'
 import { HUISSTIJL_MARKER, renderNotes } from '../_shared/notes.ts'
 import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import { buildCustomFields } from '../_shared/asana.ts'
@@ -56,6 +56,10 @@ function fakeDb() {
     findAanvullingByClientRequestId: () => Promise.resolve(null),
     insertAanvulling: () => Promise.reject(new Error('niet gebruikt')),
     updateAanvulling: () => Promise.resolve(),
+    insertBijlagen: () => Promise.resolve(),
+    claimBijlagen: () => Promise.resolve([]),
+    openBijlagenVan: () => Promise.resolve([]),
+    markeerBijlage: () => Promise.resolve(),
   }
   return db
 }
@@ -76,6 +80,7 @@ function fakeAsana(opts: { fail?: boolean; warnings?: string[]; optieFail?: bool
       if (opts.fail) throw new Error('Asana-taak aanmaken mislukt (401: Not Authorized)')
       return { gid: '999', url: 'https://app.asana.com/0/111/999', subtasks: input.subtasks.length, warnings: opts.warnings ?? [] }
     },
+    uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
   }
 }
 
@@ -126,7 +131,7 @@ function setup(over: Partial<Deps> = {}) {
   const db = fakeDb()
   const asana = fakeAsana()
   const routine = fakeRoutine()
-  const handler = createHandler({ env, db, asana, routine, log: () => {}, ...over })
+  const handler = createHandler({ env, db, asana, routine, storage: null, log: () => {}, ...over })
   return { db, asana, routine, handler }
 }
 
@@ -291,7 +296,7 @@ Deno.test('taak zonder waarschuwingen laat asana_error leeg', async () => {
 Deno.test('gedeeltelijk gelukte taak: aanvraag slaagt, reden in asana_error', async () => {
   const db = fakeDb()
   const asana = fakeAsana({ warnings: ['velden niet gezet: deadline (400: Invalid field)'] })
-  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), log: () => {} })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, log: () => {} })
   const res = await handler(post(payload()))
   assertEquals(res.status, 200)
   const body = await res.json()
@@ -343,7 +348,7 @@ const velden = {
 Deno.test('aanvrager-optie wordt opgezocht en op de taak gezet', async () => {
   const db = fakeDb()
   const asana = fakeAsana()
-  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: velden, log: () => {} })
   await handler(post(payload()))
   assertEquals(asana.opties, [{ fieldGid: 'fA', naam: 'Noa' }])
   assertEquals(asana.calls[0].customFields, { fA: 'optie-Noa' })
@@ -353,7 +358,7 @@ Deno.test('aanvrager-optie wordt opgezocht en op de taak gezet', async () => {
 Deno.test('naam buiten de collegalijst krijgt geen optie', async () => {
   const db = fakeDb()
   const asana = fakeAsana()
-  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: velden, log: () => {} })
   await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Onbekende Indringer' } })))
   // Geen nieuwe optie in Asana, veld leeg, en de reden staat in de rij.
   assertEquals(asana.opties, [])
@@ -364,7 +369,7 @@ Deno.test('naam buiten de collegalijst krijgt geen optie', async () => {
 Deno.test('mislukte optie-lookup blokkeert de aanvraag niet', async () => {
   const db = fakeDb()
   const asana = fakeAsana({ optieFail: true })
-  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), fields: velden, log: () => {} })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: velden, log: () => {} })
   const res = await handler(post(payload()))
   assertEquals(res.status, 200)
   const rij = [...db.rows.values()][0]
@@ -387,4 +392,152 @@ Deno.test('zonder website: taak wel, huisstijl overgeslagen', async () => {
   // De beschrijving vermeldt het, en het Website-veld blijft leeg.
   assertMatch(asana.calls[0].plainNotes, /Website: niet opgegeven/)
   assertMatch(asana.calls[0].htmlNotes, /geen website op/)
+})
+
+// ── Meegestuurde bestanden ───────────────────────────────────────────────────
+
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])
+// Echte uuid's: het schema weigert al iets anders, en dat hoort het ook te doen.
+const B1 = '11111111-1111-4111-8111-111111111111'
+const B2 = '22222222-2222-4222-8222-222222222222'
+const PDF = new TextEncoder().encode('%PDF-1.4\nrest van het bestand')
+
+function bijlageRij(over: Partial<BijlageRow> = {}): BijlageRow {
+  return {
+    id: B1,
+    groep_id: 'g-1',
+    bestandsnaam: 'logo.png',
+    mime: 'image/png',
+    bytes: PNG.length,
+    storage_path: 'g-1/b-1.png',
+    status: 'verwacht',
+    asana_gid: null,
+    ...over,
+  }
+}
+
+/** Db-fake met bijlagen erbij: onthoudt wat er geclaimd en gemarkeerd wordt. */
+function dbMetBijlagen(rijen: BijlageRow[]) {
+  const db = fakeDb()
+  const gemarkeerd: { id: string; patch: Record<string, unknown> }[] = []
+  let open = [...rijen]
+  return Object.assign(db, {
+    gemarkeerd,
+    claimBijlagen: (ids: string[]) => Promise.resolve(rijen.filter((r) => ids.includes(r.id))),
+    openBijlagenVan: () => Promise.resolve(open),
+    markeerBijlage: (id: string, patch: Record<string, unknown>) => {
+      gemarkeerd.push({ id, patch })
+      if (patch.status !== 'verwacht') open = open.filter((r) => r.id !== id)
+      return Promise.resolve()
+    },
+  })
+}
+
+function fakeStorage(bestanden: Record<string, { bytes: Uint8Array; mime: string }>) {
+  return {
+    uploadlink: () => Promise.resolve('https://sb/x'),
+    download: (pad: string) => Promise.resolve(bestanden[pad] ? { bytes: new Uint8Array(bestanden[pad].bytes), mime: bestanden[pad].mime } : null),
+  }
+}
+
+function asanaMetBijlagen(opts: { weigert?: string[] } = {}) {
+  const asana = fakeAsana()
+  const geplaatst: { naam: string; bytes: number }[] = []
+  return Object.assign(asana, {
+    geplaatst,
+    uploadAttachment: (_gid: string, naam: string, bytes: Uint8Array) => {
+      if (opts.weigert?.includes(naam)) return Promise.reject(new Error('Bijlage mislukt (413: te groot voor Asana)'))
+      geplaatst.push({ naam, bytes: bytes.length })
+      return Promise.resolve({ gid: `att-${geplaatst.length}`, url: null })
+    },
+  })
+}
+
+Deno.test('bijlagen komen bij de taak en staan in de beschrijving', async () => {
+  const rijen = [bijlageRij(), bijlageRij({ id: B2, bestandsnaam: 'brief.pdf', mime: 'application/pdf', storage_path: 'g-1/b-2.pdf', bytes: PDF.length })]
+  const db = dbMetBijlagen(rijen)
+  const asana = asanaMetBijlagen()
+  const storage = fakeStorage({ 'g-1/b-1.png': { bytes: PNG, mime: 'image/png' }, 'g-1/b-2.pdf': { bytes: PDF, mime: 'application/pdf' } })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage, log: () => {} })
+
+  const res = await handler(post(payload({ bijlage_ids: [B1, B2] })))
+  assertEquals(res.status, 200)
+
+  assertEquals(asana.geplaatst.map((g) => g.naam), ['logo.png', 'brief.pdf'])
+  assertEquals(db.gemarkeerd.every((m) => m.patch.status === 'gekoppeld'), true)
+  // De namen staan in de taakbeschrijving, ook als een bijlage later zou mislukken.
+  assertStringIncludes(asana.calls[0].htmlNotes, 'logo.png, brief.pdf')
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.asana_error, null)
+})
+
+Deno.test('een bijlage die Asana weigert laat de aanvraag staan', async () => {
+  const db = dbMetBijlagen([bijlageRij()])
+  const asana = asanaMetBijlagen({ weigert: ['logo.png'] })
+  const storage = fakeStorage({ 'g-1/b-1.png': { bytes: PNG, mime: 'image/png' } })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage, log: () => {} })
+
+  const res = await handler(post(payload({ bijlage_ids: [B1] })))
+  assertEquals(res.status, 200)
+  const rij = [...db.rows.values()][0]
+  assertMatch(rij.asana_error ?? '', /logo\.png/)
+  assertEquals(db.gemarkeerd[0].patch.status, 'mislukt')
+})
+
+Deno.test('bytes die niet bij het opgegeven type horen worden geweigerd', async () => {
+  // Beweert een PDF te zijn, maar het zijn PNG-bytes. De bucket kijkt daar niet naar.
+  const db = dbMetBijlagen([bijlageRij({ mime: 'application/pdf', bestandsnaam: 'nep.pdf', storage_path: 'g-1/b-1.pdf' })])
+  const asana = asanaMetBijlagen()
+  const storage = fakeStorage({ 'g-1/b-1.pdf': { bytes: PNG, mime: 'application/pdf' } })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage, log: () => {} })
+
+  await handler(post(payload({ bijlage_ids: [B1] })))
+  assertEquals(asana.geplaatst.length, 0)
+  assertEquals(db.gemarkeerd[0].patch.status, 'geweigerd')
+  assertMatch([...db.rows.values()][0].asana_error ?? '', /is geen application\/pdf/)
+})
+
+Deno.test('een bestand dat uit de opslag verdwenen is blokkeert niets', async () => {
+  const db = dbMetBijlagen([bijlageRij()])
+  const asana = asanaMetBijlagen()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: fakeStorage({}), log: () => {} })
+
+  const res = await handler(post(payload({ bijlage_ids: [B1] })))
+  assertEquals(res.status, 200)
+  assertMatch([...db.rows.values()][0].asana_error ?? '', /stond niet meer in de opslag/)
+})
+
+Deno.test('een id dat al ergens bij hoort wordt gemeld en overgeslagen', async () => {
+  const db = dbMetBijlagen([]) // claim geeft niets terug
+  const asana = asanaMetBijlagen()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: fakeStorage({}), log: () => {} })
+
+  const res = await handler(post(payload({ bijlage_ids: [B1, B2] })))
+  assertEquals(res.status, 200)
+  assertEquals(asana.geplaatst.length, 0)
+  assertMatch([...db.rows.values()][0].asana_error ?? '', /2 meegestuurd bestand\(en\) niet gevonden/)
+})
+
+Deno.test('een herhaalde verzending pakt blijven liggen bijlagen alsnog op', async () => {
+  const db = dbMetBijlagen([bijlageRij()])
+  const asana = asanaMetBijlagen()
+  const storage = fakeStorage({ 'g-1/b-1.png': { bytes: PNG, mime: 'image/png' } })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage, log: () => {} })
+
+  // Eerste poging: doe alsof de aanvraag al bestond maar de bijlage nog niet geplaatst was.
+  const p = payload({ bijlage_ids: [] })
+  await handler(post(p))
+  assertEquals(asana.geplaatst.length, 0)
+
+  // Zelfde client_request_id: de aanvraag komt er niet nog een keer, de bijlage wél.
+  const res = await handler(post(p))
+  assertEquals(res.status, 200)
+  assertEquals(db.rows.size, 1)
+  assertEquals(asana.geplaatst.map((g) => g.naam), ['logo.png'])
+})
+
+Deno.test('zonder bijlagen verandert er niets aan de taakbeschrijving', async () => {
+  const { handler, asana } = setup()
+  await handler(post(payload()))
+  assertEquals(asana.calls[0].htmlNotes.includes('Meegestuurd'), false)
 })

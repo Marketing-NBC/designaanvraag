@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { bijlageIdsSchema } from './bijlagen.ts'
 import { REQUEST_TYPE_KEYS } from './request-types.ts'
 
 /** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
@@ -74,6 +75,11 @@ export const submitPayloadSchema = z.object({
   aanvraag: aanvraagSchema,
   client_request_id: z.uuid(),
   started_at: z.iso.datetime(),
+  /**
+   * Verwijzingen naar al geüploade bestanden. Staat bewust hier en niet in `aanvraagSchema`: dat
+   * object gaat één op één de database in, dus een veld erbij zou elke insert breken.
+   */
+  bijlage_ids: bijlageIdsSchema,
   /** Honeypot: mensen laten dit leeg. */
   website_confirm: z.string().max(0).optional(),
 })

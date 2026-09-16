@@ -33,7 +33,7 @@ function modusLabel(a: Aanvraag): string {
 }
 
 /** Beschrijving van de aanvraag: html_notes plus een platte fallback. */
-export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: string; plain: string } {
+export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: string[] }): { html: string; plain: string } {
   const rows: [string, string][] = [
     ['Aanvrager', a.naam],
     ['Event', a.event],
@@ -55,6 +55,9 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: 
       ? `<strong>Locatie op de schijf:</strong> <code>${escapeXml(a.schijf_locatie)}</code>`
       : `<strong>Locatie op de schijf:</strong> <em>niet opgegeven</em>`,
   )
+  if (opts.bijlagen?.length) {
+    htmlLines.push(`<strong>Meegestuurd:</strong> ${escapeXml(opts.bijlagen.join(', '))}`)
+  }
   htmlLines.push('')
   htmlLines.push('<h2>Wensen en bijzonderheden</h2>')
   htmlLines.push(a.omschrijving ? `<blockquote>${escapeXml(a.omschrijving)}</blockquote>` : '<em>Geen bijzonderheden opgegeven.</em>')
@@ -72,6 +75,7 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string }): { html: 
   const plainLines: string[] = rows.map(([k, v]) => `${k}: ${v}`)
   plainLines.push(`Website: ${a.website || 'niet opgegeven'}`)
   plainLines.push(`Locatie op de schijf: ${a.schijf_locatie || 'niet opgegeven'}`)
+  if (opts.bijlagen?.length) plainLines.push(`Meegestuurd: ${opts.bijlagen.join(', ')}`)
   plainLines.push('', 'Wensen en bijzonderheden', a.omschrijving || 'Geen bijzonderheden opgegeven.', '')
   plainLines.push(
     'Huisstijl',
@@ -96,11 +100,16 @@ export function renderAanvullingComment(v: {
   link: string
   /** Pad dat niet is overgenomen omdat het veld Schijf al gevuld was. */
   schijfNietOvergenomen: string
+  /** Namen van de bestanden die als bijlage bij deze taak zijn gezet. */
+  bijlagen?: string[]
 }): string {
   const lines: string[] = [`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '']
 
   if (v.bijgewerkt.length) {
     lines.push(`<strong>Bijgewerkt in deze taak:</strong> ${escapeXml(v.bijgewerkt.join(', '))}`)
+  }
+  if (v.bijlagen?.length) {
+    lines.push(`<strong>Meegestuurd:</strong> ${escapeXml(v.bijlagen.join(', '))} (als bijlage bij deze taak)`)
   }
   if (v.link) {
     lines.push(`<strong>Materiaal:</strong> <a href="${escapeXml(v.link)}">${escapeXml(hostOf(v.link))}</a>`)
@@ -110,7 +119,7 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

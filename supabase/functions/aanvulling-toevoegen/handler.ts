@@ -1,9 +1,11 @@
 import type { AsanaFieldsConfig, AsanaTaskClient } from '../_shared/asana.ts'
 import { asanaFields } from '../_shared/asana.ts'
+import { koppelBijlagen } from '../_shared/bijlagen-koppelen.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { AanvraagDetail, Db } from '../_shared/db.ts'
 import type { Env } from '../_shared/env.ts'
 import { renderAanvullingComment } from '../_shared/notes.ts'
+import type { Storage } from '../_shared/storage.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
@@ -25,6 +27,8 @@ export interface Deps {
   env: Env
   db: Db
   asana: AsanaTaskClient | null
+  /** Voor het ophalen van meegestuurde bestanden; zonder dit worden bijlagen overgeslagen. */
+  storage: Storage | null
   /** Veldmapping; standaard shared/asana-fields.json. Alleen tests geven hier iets anders mee. */
   fields?: AsanaFieldsConfig
   now?: () => Date
@@ -155,7 +159,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvulling, client_request_id } = parsed.data
+    const { aanvulling, client_request_id, bijlage_ids } = parsed.data
 
     // Idempotent: dubbelklik of retry plaatst geen tweede reactie.
     const bestaand = await db.findAanvullingByClientRequestId(client_request_id)
@@ -185,12 +189,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const aanvullingRij = await db.insertAanvulling({ ...aanvulling, client_request_id, ip_hash: ipHash })
     log('info', 'aanvulling opgeslagen', { id: aanvullingRij.id, aanvraag: row.id, event: row.event })
 
+    // Meegestuurde bestanden aan deze aanvulling hangen. Voorwaardelijk, dus ids die al ergens bij
+    // horen of niet bestaan vallen vanzelf af.
+    const bijlageRijen = bijlage_ids.length ? await db.claimBijlagen(bijlage_ids, { aanvulling_id: aanvullingRij.id }) : []
+
     if (!deps.asana) {
       await db.updateAanvulling(aanvullingRij.id, { asana_error: 'Asana niet geconfigureerd' })
       return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
     }
 
     const waarschuwingen: string[] = []
+    if (bijlage_ids.length !== bijlageRijen.length) {
+      waarschuwingen.push(`${bijlage_ids.length - bijlageRijen.length} meegestuurd bestand(en) niet gevonden of al gebruikt`)
+    }
     let wijziging: Wijziging = { velden: {}, bijgewerkt: [], nieuweTypes: row.aanvraag_types ?? [], schijfNietOvergenomen: aanvulling.schijf_locatie }
     try {
       const taak = await deps.asana.getTask(row.asana_task_gid)
@@ -203,6 +214,21 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       log('warn', 'velden bijwerken mislukt', { id: aanvullingRij.id, error: msg })
     }
 
+    let gekoppeldeBijlagen: string[] = []
+    if (bijlageRijen.length && deps.storage) {
+      const uitkomst = await koppelBijlagen(row.asana_task_gid, bijlageRijen, {
+        storage: deps.storage,
+        asana: deps.asana,
+        markeer: (id, patch) => db.markeerBijlage(id, patch),
+        now,
+        log,
+      })
+      gekoppeldeBijlagen = uitkomst.gekoppeld
+      waarschuwingen.push(...uitkomst.waarschuwingen)
+    } else if (bijlageRijen.length) {
+      waarschuwingen.push('opslag niet geconfigureerd, bijlagen overgeslagen')
+    }
+
     try {
       await deps.asana.addComment(
         row.asana_task_gid,
@@ -212,6 +238,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijgewerkt: wijziging.bijgewerkt,
           link: aanvulling.link,
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
+          bijlagen: gekoppeldeBijlagen,
         }),
       )
     } catch (e) {

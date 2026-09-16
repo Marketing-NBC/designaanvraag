@@ -1,3 +1,4 @@
+import { koppelBijlagen } from '../_shared/bijlagen-koppelen.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { Env } from '../_shared/env.ts'
 import type { AsanaClient, AsanaFieldsConfig } from '../_shared/asana.ts'
@@ -6,6 +7,7 @@ import type { Db } from '../_shared/db.ts'
 import { renderNotes } from '../_shared/notes.ts'
 import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
+import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
 import { isSpoed, vandaagInNl, werkdagenTotEvent } from '../_shared/shared/spoed.ts'
 
@@ -14,6 +16,8 @@ export interface Deps {
   db: Db
   asana: AsanaClient | null
   routine: RoutineClient | null
+  /** Voor het ophalen van meegestuurde bestanden; zonder dit worden bijlagen overgeslagen. */
+  storage: Storage | null
   /** Veldmapping; standaard shared/asana-fields.json. Alleen tests geven hier iets anders mee. */
   fields?: AsanaFieldsConfig
   now?: () => Date
@@ -74,11 +78,28 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvraag, client_request_id } = parsed.data
+    const { aanvraag, client_request_id, bijlage_ids } = parsed.data
 
-    // Idempotent: dubbelklik of retry geeft hetzelfde resultaat terug.
+    // Idempotent: dubbelklik of retry geeft hetzelfde resultaat terug. Wél nog even kijken of er
+    // bijlagen zijn blijven liggen: viel de verbinding weg tijdens het doorzetten, dan is dit de
+    // herkansing in plaats van dat de bestanden stilletjes verdwijnen.
     const existing = await db.findByClientRequestId(client_request_id)
-    if (existing) return json(resultOf(existing), 200, cors)
+    if (existing) {
+      if (existing.asana_task_gid && deps.asana && deps.storage) {
+        const open = await db.openBijlagenVan({ aanvraag_id: existing.id })
+        if (open.length) {
+          const { waarschuwingen } = await koppelBijlagen(existing.asana_task_gid, open, {
+            storage: deps.storage,
+            asana: deps.asana,
+            markeer: (id, patch) => db.markeerBijlage(id, patch),
+            now,
+            log,
+          })
+          if (waarschuwingen.length) log('warn', 'bijlagen bij herhaalde verzending', { id: existing.id, warnings: waarschuwingen.join('; ') })
+        }
+      }
+      return json(resultOf(existing), 200, cors)
+    }
 
     // Rate limits: per IP per uur, en een globaal dagplafond (beschermt Routine-runs en Asana).
     const ip = clientIp(req)
@@ -92,6 +113,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     // Spoed: minder dan 10 werkdagen tot het event, gemeten op het moment van indienen. Daarna
     // verandert de waarde niet meer, ook niet als de eventdatum later verschuift.
+    const extraWaarschuwingen: string[] = []
     const vandaag = vandaagInNl(now())
     const werkdagen = werkdagenTotEvent(aanvraag.event_datum, vandaag)
     const spoed = isSpoed(aanvraag.event_datum, vandaag)
@@ -105,10 +127,17 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     })
     log('info', 'aanvraag opgeslagen', { id: row.id, event: aanvraag.event, spoed, werkdagen })
 
+    // Meegestuurde bestanden aan deze aanvraag hangen. Voorwaardelijk, dus ids die al bij een andere
+    // aanvraag horen of niet bestaan vallen vanzelf af. De namen gaan mee de taakbeschrijving in,
+    // zodat Marketing ook bij een mislukte bijlage weet wat er had moeten staan.
+    const bijlageRijen = bijlage_ids.length ? await db.claimBijlagen(bijlage_ids, { aanvraag_id: row.id }) : []
+    if (bijlage_ids.length !== bijlageRijen.length) {
+      extraWaarschuwingen.push(`${bijlage_ids.length - bijlageRijen.length} meegestuurd bestand(en) niet gevonden of al gebruikt`)
+    }
+
     // Asana-taak (fase 3). Zonder configuratie slaan we dit over; de aanvraag blijft bewaard.
     let asanaUrl: string | null = null
     let asanaGid: string | null = null
-    const extraWaarschuwingen: string[] = []
     const projectGid = env.asanaProjectGid ?? cfg.project?.gid ?? null
     if (deps.asana && projectGid) {
       try {
@@ -129,7 +158,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           }
         }
 
-        const notes = renderNotes(aanvraag, { aanvraagId: row.id })
+        const notes = renderNotes(aanvraag, { aanvraagId: row.id, bijlagen: bijlageRijen.map((b) => b.bestandsnaam) })
         const task = await deps.asana.createTask({
           name: taskTitle(aanvraag),
           htmlNotes: notes.html,
@@ -142,6 +171,20 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         })
         asanaGid = task.gid
         asanaUrl = task.url
+
+        if (bijlageRijen.length && deps.storage) {
+          const { gekoppeld, waarschuwingen } = await koppelBijlagen(task.gid, bijlageRijen, {
+            storage: deps.storage,
+            asana: deps.asana,
+            markeer: (id, patch) => db.markeerBijlage(id, patch),
+            now,
+            log,
+          })
+          extraWaarschuwingen.push(...waarschuwingen)
+          log('info', 'bijlagen verwerkt', { id: row.id, gekoppeld: gekoppeld.length, van: bijlageRijen.length })
+        } else if (bijlageRijen.length) {
+          extraWaarschuwingen.push('opslag niet geconfigureerd, bijlagen overgeslagen')
+        }
         // Onderdelen die Asana weigerde (een veld, de kolom, de opmaak) blijven zichtbaar in
         // `asana_error`; de taak zelf bestaat, dus de aanvraag slaagt.
         const alleWaarschuwingen = [...extraWaarschuwingen, ...task.warnings]

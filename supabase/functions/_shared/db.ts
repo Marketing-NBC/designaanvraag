@@ -45,6 +45,33 @@ export interface NewAanvulling extends Aanvulling {
   ip_hash: string | null
 }
 
+export type BijlageStatus = 'verwacht' | 'gekoppeld' | 'mislukt' | 'geweigerd' | 'opgeruimd'
+
+export interface BijlageRow {
+  id: string
+  groep_id: string
+  bestandsnaam: string
+  mime: string
+  bytes: number
+  storage_path: string
+  status: BijlageStatus
+  asana_gid: string | null
+}
+
+export interface NewBijlage {
+  /** Zelf gemunt, want het opslagpad bevat hem: `<groep_id>/<id>.<ext>`. */
+  id: string
+  groep_id: string
+  bestandsnaam: string
+  mime: string
+  bytes: number
+  storage_path: string
+  ip_hash: string | null
+}
+
+/** Bij welke aanvraag of aanvulling een bijlage hoort; precies één van de twee. */
+export type BijlageOuder = { aanvraag_id: string } | { aanvulling_id: string }
+
 export interface NewAanvraag extends Aanvraag {
   client_request_id: string
   ip_hash: string | null
@@ -67,12 +94,23 @@ export interface Db {
   findAanvullingByClientRequestId(id: string): Promise<AanvullingRow | null>
   insertAanvulling(row: NewAanvulling): Promise<AanvullingRow>
   updateAanvulling(id: string, patch: Partial<AanvullingRow>): Promise<void>
+  insertBijlagen(rows: NewBijlage[]): Promise<void>
+  /**
+   * Hangt de bijlagen aan hun aanvraag en geeft terug welke dat gelukt is. Voorwaardelijk: alleen
+   * rijen die nog nergens bij horen. Zo kan hetzelfde bestand nooit aan twee aanvragen gekoppeld
+   * worden, ook niet als iemand dezelfde ids een tweede keer meestuurt.
+   */
+  claimBijlagen(ids: string[], ouder: BijlageOuder): Promise<BijlageRow[]>
+  /** Bijlagen van deze ouder die nog op doorzetten wachten; voor een herhaalde verzending. */
+  openBijlagenVan(ouder: BijlageOuder): Promise<BijlageRow[]>
+  markeerBijlage(id: string, patch: Partial<BijlageRow> & { fout?: string | null; asana_url?: string | null }): Promise<void>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url'
 const DETAIL_COLUMNS = `${ROW_COLUMNS}, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
 const ZOEK_COLUMNS = 'id, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
+const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
@@ -140,6 +178,35 @@ export function createDb(url: string, secretKey: string): Db {
     async updateAanvulling(id, patch) {
       const { error } = await sb.from('aanvullingen').update(patch).eq('id', id)
       if (error) throw new Error(`db update: ${error.message}`)
+    },
+    async insertBijlagen(rows) {
+      if (!rows.length) return
+      const { error } = await sb.from('bijlagen').insert(rows)
+      if (error) throw new Error(`db insert bijlagen: ${error.message}`)
+    },
+    async claimBijlagen(ids, ouder) {
+      if (!ids.length) return []
+      const { data, error } = await sb
+        .from('bijlagen')
+        .update(ouder)
+        .in('id', ids)
+        .eq('status', 'verwacht')
+        .is('aanvraag_id', null)
+        .is('aanvulling_id', null)
+        .select(BIJLAGE_COLUMNS)
+      if (error) throw new Error(`db claim bijlagen: ${error.message}`)
+      return (data as BijlageRow[] | null) ?? []
+    },
+    async openBijlagenVan(ouder) {
+      const kolom = 'aanvraag_id' in ouder ? 'aanvraag_id' : 'aanvulling_id'
+      const waarde = 'aanvraag_id' in ouder ? ouder.aanvraag_id : ouder.aanvulling_id
+      const { data, error } = await sb.from('bijlagen').select(BIJLAGE_COLUMNS).eq(kolom, waarde).eq('status', 'verwacht')
+      if (error) throw new Error(`db select bijlagen: ${error.message}`)
+      return (data as BijlageRow[] | null) ?? []
+    },
+    async markeerBijlage(id, patch) {
+      const { error } = await sb.from('bijlagen').update(patch).eq('id', id)
+      if (error) throw new Error(`db update bijlage: ${error.message}`)
     },
   }
 }

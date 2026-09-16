@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { isoDate, normalizeUrl } from './aanvraag-schema.ts'
+import { bijlageIdsSchema } from './bijlagen.ts'
 import { REQUEST_TYPE_KEYS, type RequestTypeKey } from './request-types.ts'
 
 /**
@@ -78,6 +79,8 @@ export const aanvullingPayloadSchema = z.object({
   aanvulling: aanvullingSchema,
   client_request_id: z.uuid(),
   started_at: z.iso.datetime(),
+  /** Zie submitPayloadSchema: hoort op payload-niveau, niet in het object dat de database in gaat. */
+  bijlage_ids: bijlageIdsSchema,
   /** Honeypot: mensen laten dit leeg. */
   website_confirm: z.string().max(0).optional(),
 })
