@@ -9,6 +9,7 @@ import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
+import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import { isSpoed, vandaagInNl, werkdagenTotEvent } from '../_shared/shared/spoed.ts'
 
 export interface Deps {
@@ -109,7 +110,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel aanvragen achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
     }
     const g = await db.bumpRateLimit('global', '1 day')
-    if (g > env.rateLimitGlobalPerDay) return json({ error: 'Het dagelijkse maximum aan aanvragen is bereikt. Probeer het morgen opnieuw of bel Marketing.' }, 429, cors)
+    if (g > env.rateLimitGlobalPerDay) {
+      return json({ error: `Het dagelijkse maximum aan aanvragen is bereikt. Probeer het morgen opnieuw of mail naar ${MARKETING_MAIL}.` }, 429, cors)
+    }
 
     // Spoed: minder dan 10 werkdagen tot het event, gemeten op het moment van indienen. Daarna
     // verandert de waarde niet meer, ook niet als de eventdatum later verschuift.

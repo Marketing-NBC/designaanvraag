@@ -4,6 +4,7 @@ import type { Env } from '../_shared/env.ts'
 import type { Storage } from '../_shared/storage.ts'
 import type { UploadLink, UploadlinkResult } from '../_shared/shared/bijlagen.ts'
 import { bestandsnaamOpschonen, extensieVan, uploadlinkPayloadSchema } from '../_shared/shared/bijlagen.ts'
+import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 
 /**
  * POST → tijdelijke uploadlinks, één per bestand.
@@ -82,7 +83,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     const globaal = await deps.bumpRateLimit('upload-global', '1 day')
     if (globaal > UPLOAD_LIMIET_PER_DAG) {
-      return json({ error: 'Het dagelijkse maximum aan bestanden is bereikt. Probeer het morgen opnieuw of bel Marketing.' }, 429, cors)
+      return json({ error: `Het dagelijkse maximum aan bestanden is bereikt. Probeer het morgen opnieuw of mail naar ${MARKETING_MAIL}.` }, 429, cors)
     }
 
     // Het pad krijgt een eigen uuid en de extensie; de bestandsnaam van de collega komt er bewust

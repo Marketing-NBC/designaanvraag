@@ -23,7 +23,7 @@ export const STEPS: StepDef[] = [
     id: 'naam',
     kind: 'naam',
     title: 'Hoe heet je?',
-    help: 'Kies je naam uit de lijst, dan weet Marketing wie ze kunnen bellen.',
+    help: 'Kies je naam uit de lijst, dan weet Marketing wie de aanvraag stuurde.',
     validate: (d) => (d.naam ? null : 'Kies je naam uit de lijst.'),
   },
   {

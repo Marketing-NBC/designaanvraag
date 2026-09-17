@@ -6,6 +6,7 @@ import type { AanvraagDetail, Db } from '../_shared/db.ts'
 import type { Env } from '../_shared/env.ts'
 import { renderAanvullingComment } from '../_shared/notes.ts'
 import type { Storage } from '../_shared/storage.ts'
+import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
@@ -176,12 +177,16 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const row = await db.findById(aanvulling.aanvraag_id)
     if (!row) return json({ error: 'We konden die aanvraag niet meer vinden. Zoek hem opnieuw op.' }, 404, cors)
     if (!row.asana_task_gid) {
-      return json({ error: 'Deze aanvraag is nooit bij Marketing aangekomen, dus er valt niets aan te vullen. Bel even met het marketingteam.' }, 409, cors)
+      return json(
+        { error: `Deze aanvraag is nooit bij Marketing aangekomen, dus er valt niets aan te vullen. Mail even naar ${MARKETING_MAIL}.` },
+        409,
+        cors,
+      )
     }
     // Marketing heeft de aanvraag weggehaald. Hij is niet meer te vinden in het zoekscherm, maar wie
     // het formulier al open had staan kan hier nog terechtkomen.
     if (row.vervallen_op) {
-      return json({ error: 'Deze aanvraag staat niet meer open bij Marketing. Dien hem opnieuw in, of bel even met het marketingteam.' }, 409, cors)
+      return json({ error: `Deze aanvraag staat niet meer open bij Marketing. Dien hem opnieuw in, of mail even naar ${MARKETING_MAIL}.` }, 409, cors)
     }
 
     // De ene datum kan pas tegen de andere aan als we de aanvraag erbij hebben: schuift alleen de
