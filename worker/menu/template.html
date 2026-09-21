@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Menuscherm</title>
+<style>
+  /* Fonts worden door render.mjs als data-URI ingevoegd (about:blank mag geen file:// laden). */
+  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Light.otf') format('opentype'); font-weight: 300; }
+  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Regular.otf') format('opentype'); font-weight: 400; }
+  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Medium.otf') format('opentype'); font-weight: 500; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Regular.otf') format('opentype'); font-weight: 400; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Semibold.otf') format('opentype'); font-weight: 600; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Extrabold.otf') format('opentype'); font-weight: 800; }
+
+  :root {
+    /* Merk-tokens: standaard NBC-huisstijl, worden per event overschreven
+       (blob-top/bottom + accent uit de huisstijl-extractie, logo uit de rode balk). */
+    --blob-top: #f6a304;
+    --blob-bottom: #229d96;
+    --accent: #f6a304;
+    --ink: #050606;
+    --dish: #121618;
+    --ingredients: #4a5054;
+    --paper: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 1920px; height: 1080px; background: var(--paper);
+    font-family: 'Area Normal', Inter, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
+    overflow: hidden;
+  }
+  .scherm { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+
+  /* Decoratieve blobs (merk-gekleurd). */
+  .blob { position: absolute; pointer-events: none; }
+  .blob-rechts { top: 0; right: 0; height: 1080px; width: 520px; }
+  .blob-linksonder { bottom: -40px; left: -60px; width: 780px; height: 420px; }
+
+  /* Titel linksboven. */
+  .titel {
+    position: absolute; left: 72px; top: 40px;
+    font-family: 'Pockota', Georgia, serif; font-weight: 400;
+    font-size: 132px; line-height: 1; color: var(--ink); letter-spacing: -0.01em;
+  }
+
+  /* Logo-balk opdrachtgever (rechtsboven). */
+  .logo-balk {
+    position: absolute; left: 1037px; top: 38px; width: 422px; height: 154px;
+    background: #ff0000; display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border-radius: 2px;
+  }
+  .logo-balk .placeholder { font-weight: 800; font-size: 30px; color: #050606; }
+  .logo-balk img { max-width: 88%; max-height: 82%; object-fit: contain; }
+
+  /* Kolommen met secties. */
+  .kolommen {
+    position: absolute; left: 72px; top: 300px; right: 300px;
+    display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr);
+    gap: 0 56px; align-content: start;
+  }
+  .kolom { display: flex; flex-direction: column; gap: 44px; }
+  .sectie-kop {
+    font-family: 'Pockota', Georgia, serif; font-weight: 400;
+    font-size: 40px; line-height: 1.1; color: var(--accent); margin-bottom: 26px;
+  }
+  .gerecht { margin-bottom: 30px; }
+  .gerecht:last-child { margin-bottom: 0; }
+  .gerecht .naam {
+    font-family: 'Area Normal', sans-serif; font-weight: 800;
+    font-size: 32px; line-height: 1.12; color: var(--dish); margin-bottom: 6px;
+  }
+  .gerecht .naam .tag { font-weight: 800; }
+  .gerecht .ingredienten {
+    font-family: 'Area Normal', sans-serif; font-weight: 400;
+    font-size: 25px; line-height: 1.28; color: var(--ingredients);
+  }
+
+  /* Voetregel: dieetwens/allergie. */
+  .voet {
+    position: absolute; left: 1037px; bottom: 60px;
+    display: flex; align-items: center; gap: 22px;
+  }
+  .voet .icoon { flex: none; }
+  .voet .tekst .kop {
+    font-family: 'Area Normal', sans-serif; font-weight: 800;
+    font-size: 30px; line-height: 1.15; color: var(--dish);
+  }
+  .voet .tekst .sub {
+    font-family: 'Area Normal', sans-serif; font-weight: 400;
+    font-size: 25px; line-height: 1.25; color: var(--ingredients);
+  }
+</style>
+</head>
+<body>
+<div class="scherm" id="scherm">
+  <!-- Blob rechts -->
+  <svg class="blob blob-rechts" viewBox="0 0 520 1080" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gr-rechts" x1="0.5" y1="0" x2="0.5" y2="1">
+        <stop offset="0" stop-color="var(--blob-top)"/>
+        <stop offset="1" stop-color="var(--blob-bottom)"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#gr-rechts)" d="M520,0 L520,1080 L300,1080 C210,980 250,860 300,760 C360,640 300,540 250,460 C180,350 240,230 330,150 C400,88 470,60 520,0 Z"/>
+  </svg>
+
+  <!-- Blob linksonder -->
+  <svg class="blob blob-linksonder" viewBox="0 0 780 420" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="gr-links" x1="0" y1="0.2" x2="1" y2="1">
+        <stop offset="0" stop-color="var(--blob-bottom)"/>
+        <stop offset="1" stop-color="var(--blob-top)"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#gr-links)" d="M0,120 C120,40 260,70 360,140 C470,215 560,180 660,240 C740,288 780,360 760,420 L0,420 Z"/>
+  </svg>
+
+  <div class="titel" id="titel"></div>
+
+  <div class="logo-balk" id="logoBalk">
+    <span class="placeholder">Logo opdrachtgever</span>
+  </div>
+
+  <div class="kolommen" id="kolommen"></div>
+
+  <div class="voet">
+    <svg class="icoon" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 8 v20 M12 34 v22"/>
+      <circle cx="32" cy="30" r="16"/>
+      <path d="M32 22 v10 M32 38 v0.5" stroke-width="4"/>
+      <path d="M52 8 c-4 0 -6 6 -6 12 c0 5 3 7 6 8 M52 8 v48"/>
+    </svg>
+    <div class="tekst">
+      <div class="kop">Dieetswens of allergie?</div>
+      <div class="sub">Laat het ons team weten,<br>we helpen je graag.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // De data wordt door render.mjs ingevoegd als window.__MENU__.
+  const data = window.__MENU__ || { title: '', columns: [] };
+
+  document.getElementById('titel').textContent = data.title || '';
+
+  const root = document.getElementById('scherm');
+  if (data.brand) {
+    const b = data.brand;
+    if (b.blobTop)    root.style.setProperty('--blob-top', b.blobTop);
+    if (b.blobBottom) root.style.setProperty('--blob-bottom', b.blobBottom);
+    if (b.accent)     root.style.setProperty('--accent', b.accent);
+    if (b.logo) {
+      const balk = document.getElementById('logoBalk');
+      balk.innerHTML = '';
+      balk.style.background = b.logoBg || '#ffffff';
+      const img = document.createElement('img');
+      img.src = b.logo;
+      balk.appendChild(img);
+    }
+  }
+
+  const cols = document.getElementById('kolommen');
+  cols.style.setProperty('--cols', String((data.columns || []).length || 1));
+  for (const sections of (data.columns || [])) {
+    const kolom = document.createElement('div');
+    kolom.className = 'kolom';
+    for (const sectie of sections) {
+      const blok = document.createElement('div');
+      const kop = document.createElement('div');
+      kop.className = 'sectie-kop';
+      kop.textContent = sectie.heading;
+      blok.appendChild(kop);
+      for (const item of (sectie.items || [])) {
+        const g = document.createElement('div');
+        g.className = 'gerecht';
+        const naam = document.createElement('div');
+        naam.className = 'naam';
+        naam.textContent = item.name;
+        if (item.tag) {
+          const t = document.createElement('span');
+          t.className = 'tag';
+          t.textContent = ' (' + item.tag + ')';
+          naam.appendChild(t);
+        }
+        g.appendChild(naam);
+        const ingr = Array.isArray(item.ingredients) ? item.ingredients.join(' | ') : (item.ingredients || '');
+        if (ingr) {
+          const p = document.createElement('div');
+          p.className = 'ingredienten';
+          p.textContent = ingr;
+          g.appendChild(p);
+        }
+        blok.appendChild(g);
+      }
+      kolom.appendChild(blok);
+    }
+    cols.appendChild(kolom);
+  }
+</script>
+</body>
+</html>
