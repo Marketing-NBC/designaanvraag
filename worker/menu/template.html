@@ -32,10 +32,8 @@
   }
   .scherm { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
 
-  /* Decoratieve blobs (merk-gekleurd). */
-  .blob { position: absolute; pointer-events: none; }
-  .blob-rechts { top: 0; right: 0; height: 1080px; width: 520px; }
-  .blob-linksonder { bottom: -40px; left: -60px; width: 780px; height: 420px; }
+  /* Decoratieve blobs (merk-gekleurd) — exacte vormen uit het Illustrator-bestand. */
+  .blobs { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
 
   /* Titel linksboven. */
   .titel {
@@ -94,26 +92,23 @@
 </head>
 <body>
 <div class="scherm" id="scherm">
-  <!-- Blob rechts -->
-  <svg class="blob blob-rechts" viewBox="0 0 520 1080" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Blobs: exacte vormen uit het .ai-bestand, gevuld met één diagonale merk-gradient
+       (oranje rechtsboven -> teal linksonder). Herkleurbaar via --blob-top/--blob-bottom. -->
+  <svg class="blobs" viewBox="0 0 3840 2160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="gr-rechts" x1="0.5" y1="0" x2="0.5" y2="1">
+      <!-- Rechter blob: verticaal, oranje boven -> teal onder (zoals in het .ai). -->
+      <linearGradient id="blobgrad-r" gradientUnits="userSpaceOnUse" x1="3463" y1="40" x2="3463" y2="2160">
         <stop offset="0" stop-color="var(--blob-top)"/>
         <stop offset="1" stop-color="var(--blob-bottom)"/>
       </linearGradient>
-    </defs>
-    <path fill="url(#gr-rechts)" d="M520,0 L520,1080 L300,1080 C210,980 250,860 300,760 C360,640 300,540 250,460 C180,350 240,230 330,150 C400,88 470,60 520,0 Z"/>
-  </svg>
-
-  <!-- Blob linksonder -->
-  <svg class="blob blob-linksonder" viewBox="0 0 780 420" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="gr-links" x1="0" y1="0.2" x2="1" y2="1">
+      <!-- Linksonder blob: teal linksboven -> oranje rechtsonder. -->
+      <linearGradient id="blobgrad-l" gradientUnits="userSpaceOnUse" x1="0" y1="1460" x2="1371" y2="2160">
         <stop offset="0" stop-color="var(--blob-bottom)"/>
         <stop offset="1" stop-color="var(--blob-top)"/>
       </linearGradient>
     </defs>
-    <path fill="url(#gr-links)" d="M0,120 C120,40 260,70 360,140 C470,215 560,180 660,240 C740,288 780,360 760,420 L0,420 Z"/>
+    <path fill="url(#blobgrad-r)" d="M3209.61 2160C3176.941 2125.68 3151.273 2081.118 3130.617 2026.839 3119.954 2000.374 3111.942 1973.398 3105.96 1942.461 3099.979 1911.523 3094.006 1880.638 3092.04 1856.007 3086.723 1828.513 3086.086 1796.539 3086.856 1757.146 3087.593 1717.824 3087.665 1689.283 3088.404 1664.187 3089.144 1639.096 3093.896 1606.083 3099.404 1562.261 3104.187 1514.948 3108.986 1481.926 3113.708 1463.205 3117.797 1440.975 3124.59 1404.053 3136.804 1351.789 3146.324 1300.046 3153.817 1266.503 3158.528 1247.726 3160.588 1229.461 3170.076 1192.018 3184.309 1135.728 3197.888 1076.06 3204.681 1039.139 3207.407 1024.317 3331.563 497.604 3332.268 169.411 3204.203 40.895L3155.124 0H3840V2160Z"/>
+    <path fill="url(#blobgrad-l)" d="M 0 2150.181 V 1460 H 1371.842 C 1222.791 1602.567 1029.7 1829.58 808.864 1819.66 580.815 1809.411 448.367 1635.454 346.57 1978.385 307.801 2072.409 218.029 2141.287 117.895 2156.47 104.047 2158.491 89.773 2159.505 75.349 2159.505 50.168 2159.505 24.55 2156.414 0 2150.181 Z"/>
   </svg>
 
   <div class="titel" id="titel"></div>
@@ -125,11 +120,12 @@
   <div class="kolommen" id="kolommen"></div>
 
   <div class="voet">
-    <svg class="icoon" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 8 v20 M12 34 v22"/>
-      <circle cx="32" cy="30" r="16"/>
-      <path d="M32 22 v10 M32 38 v0.5" stroke-width="4"/>
-      <path d="M52 8 c-4 0 -6 6 -6 12 c0 5 3 7 6 8 M52 8 v48"/>
+    <svg class="icoon" width="98" height="64" viewBox="0 0 314.38 204.21" fill="var(--accent)" xmlns="http://www.w3.org/2000/svg">
+      <path d="M314.37 12.06 C314.37 11.92 314.37 11.79 314.36 11.65 C314.04 7.12 311.42 3.29 307.50 1.66 C303.55 0.00 299.03 0.80 295.42 3.79 C285.55 11.98 279.00 37.46 276.65 48.02 C271.89 69.41 269.58 85.80 283.21 100.11 L283.21 189.61 C283.21 197.52 290.30 204.21 298.71 204.21 C307.19 204.21 314.38 197.61 314.38 189.80 L314.38 103.08 L314.38 103.02 L314.38 102.97 L314.37 12.06 M301.93 103.02 L301.93 103.08 L301.93 189.80 C301.93 190.53 300.47 191.96 298.71 191.96 C297.08 191.96 295.66 190.50 295.66 189.61 L295.66 97.73 C295.66 96.29 295.14 94.97 294.29 93.93 C293.97 93.48 293.62 93.07 293.24 92.69 C283.61 83.34 283.71 73.55 288.80 50.65 C291.88 36.86 297.09 21.17 301.92 14.86 L301.93 102.97 L301.93 103.02"/>
+      <path d="M40.02 0.69 L39.10 0.69 C18.26 0.69 7.15 23.58 3.96 43.30 C0.00 67.80 11.02 84.24 24.15 90.58 L24.15 189.91 C24.15 197.74 31.14 204.11 39.74 204.11 C48.34 204.11 55.34 197.74 55.34 189.91 L55.34 90.34 C72.64 81.92 77.76 60.67 74.96 43.30 C71.77 23.58 60.67 0.69 40.02 0.69 M47.14 80.44 C44.60 81.28 42.89 83.61 42.89 86.25 L42.89 189.91 C42.89 190.81 41.52 191.86 39.74 191.86 C37.97 191.86 36.60 190.81 36.60 189.91 L36.60 86.44 C36.60 83.76 34.82 81.39 32.21 80.59 C18.65 76.47 13.92 59.68 16.25 45.22 C18.19 33.20 25.20 12.94 39.33 12.94 L39.80 12.94 C53.72 12.94 60.72 33.20 62.66 45.22 C64.96 59.44 60.37 76.09 47.14 80.44"/>
+      <path d="M170.77 18.03 C123.27 18.03 84.64 56.05 84.64 102.78 C84.64 149.51 123.27 187.53 170.77 187.53 C218.27 187.53 256.91 149.51 256.91 102.78 C256.91 56.05 218.27 18.03 170.77 18.03 M170.77 175.28 C130.14 175.28 97.08 142.76 97.08 102.78 C97.08 62.80 130.14 30.28 170.77 30.28 C211.41 30.28 244.46 62.80 244.46 102.78 C244.46 142.76 211.41 175.28 170.77 175.28"/>
+      <path d="M170.77 141.41 C166.97 141.41 163.87 144.46 163.87 148.20 C163.87 151.95 166.97 155.00 170.77 155.00 C174.58 155.00 177.68 151.95 177.68 148.20 C177.68 144.46 174.58 141.41 170.77 141.41"/>
+      <path d="M170.77 135.66 C174.20 135.66 177.00 132.92 177.00 129.54 L177.00 54.87 C177.00 51.50 174.20 48.75 170.77 48.75 C167.34 48.75 164.54 51.50 164.54 54.87 L164.54 129.54 C164.54 132.92 167.34 135.66 170.77 135.66"/>
     </svg>
     <div class="tekst">
       <div class="kop">Dieetswens of allergie?</div>
