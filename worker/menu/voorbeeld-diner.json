@@ -9,9 +9,10 @@
   "layout": {
     "marginLeft": 130.7,
     "top": 290.5,
+    "sectionGap": 45.5,
     "columns": [
       { "left": 0, "width": 430 },
-      { "left": 545.3, "width": 430 },
+      { "left": 545.3, "width": 445 },
       { "left": 1008.45, "width": 430 }
     ]
   },

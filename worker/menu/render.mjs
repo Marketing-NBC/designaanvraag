@@ -5,6 +5,7 @@ import { chromiumExecutable, REPO_DIR, WORKER_DIR, parseArgs, log } from '../lib
 
 const FONTS = [
   'Pockota-Light', 'Pockota-Regular', 'Pockota-Medium',
+  'AreaNormal-Hairline', 'AreaNormal-HairlineItalic',
   'AreaNormal-Regular', 'AreaNormal-Semibold', 'AreaNormal-Extrabold',
 ]
 
