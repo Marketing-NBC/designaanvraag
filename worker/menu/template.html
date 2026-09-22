@@ -26,6 +26,18 @@
     --dish: #000000;
     --ingredients: #000000;
     --paper: #ffffff;
+
+    /* Typografische schaal + verticaal ritme (standaard = Diner; per pakket
+       overschreven via data.layout.type en data.layout.gaps). */
+    --title-size: 99.75px;
+    --heading-size: 39.6px;
+    --name-size: 30.8px;
+    --ingr-size: 20.9px;
+    --ingr-lh: 27.5px;
+    --head-mt: -7px;
+    --head-mb: 45.7px;
+    --name-mb: 7.5px;
+    --dish-mb: 23.75px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -43,7 +55,7 @@
   .titel {
     position: absolute; left: 129.6px; top: 98px;
     font-family: 'Pockota', Georgia, serif; font-weight: 500;
-    font-size: 99.75px; line-height: 1; color: var(--ink); letter-spacing: 0;
+    font-size: var(--title-size); line-height: 1; color: var(--ink); letter-spacing: 0;
   }
 
   /* Logo-balk opdrachtgever (rechtsboven) — rect 2075.8,74.3 791.4x297 -> /2. */
@@ -60,18 +72,18 @@
   .kolom { position: absolute; top: 0; display: flex; flex-direction: column; gap: 45.5px; }
   .sectie-kop {
     font-family: 'Pockota', Georgia, serif; font-weight: 500;
-    font-size: 39.6px; line-height: 1.0; color: var(--accent); margin: -7px 0 45.7px;
+    font-size: var(--heading-size); line-height: 1.0; color: var(--accent); margin: var(--head-mt) 0 var(--head-mb);
   }
-  .gerecht { margin-bottom: 23.75px; }
+  .gerecht { margin-bottom: var(--dish-mb); }
   .gerecht:last-child { margin-bottom: 0; }
   .gerecht .naam {
     font-family: 'Area Normal', sans-serif; font-weight: 800;
-    font-size: 30.8px; line-height: 1.0; color: var(--dish); margin-bottom: 7.5px;
+    font-size: var(--name-size); line-height: 1.0; color: var(--dish); margin-bottom: var(--name-mb);
   }
   .gerecht .naam .tag { font-weight: 800; }
   .gerecht .ingredienten {
     font-family: 'Area Normal', sans-serif; font-weight: 100;
-    font-size: 20.9px; line-height: 27.5px; color: var(--ingredients);
+    font-size: var(--ingr-size); line-height: var(--ingr-lh); color: var(--ingredients);
   }
 
   /* Voetregel: dieetwens/allergie — icoon 2038.8,1815.4 + tekst 2442.8,1811.9 -> /2. */
@@ -138,9 +150,35 @@
   // De data wordt door render.mjs ingevoegd als window.__MENU__.
   const data = window.__MENU__ || { title: '', columns: [] };
 
-  document.getElementById('titel').textContent = data.title || '';
+  const titelEl = document.getElementById('titel');
+  titelEl.textContent = data.title || '';
 
   const root = document.getElementById('scherm');
+
+  // Typografische schaal + ritme per pakket (uit layout.type / layout.gaps).
+  const lay = data.layout || {};
+  const t = lay.type || {};
+  const gp = lay.gaps || {};
+  const setv = (k, v, unit = 'px') => { if (v != null) root.style.setProperty(k, v + unit); };
+  setv('--title-size', t.title);
+  setv('--heading-size', t.heading);
+  setv('--name-size', t.name);
+  setv('--ingr-size', t.ingr);
+  setv('--ingr-lh', t.ingrLh);
+  setv('--head-mt', gp.headMt);
+  setv('--head-mb', gp.headMb);
+  setv('--name-mb', gp.nameMb);
+  setv('--dish-mb', gp.dishMb);
+  if (lay.title) {
+    if (lay.title.left != null) titelEl.style.left = lay.title.left + 'px';
+    if (lay.title.top != null) titelEl.style.top = lay.title.top + 'px';
+  }
+  if (lay.footer) {
+    const voet = document.querySelector('.voet');
+    if (lay.footer.left != null) voet.style.left = lay.footer.left + 'px';
+    if (lay.footer.top != null) { voet.style.top = lay.footer.top + 'px'; voet.style.bottom = 'auto'; }
+  }
+
   if (data.brand) {
     const b = data.brand;
     if (b.blobTop)    root.style.setProperty('--blob-top', b.blobTop);
