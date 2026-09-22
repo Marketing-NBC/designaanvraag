@@ -188,11 +188,21 @@
           naam.appendChild(t);
         }
         g.appendChild(naam);
-        const ingr = Array.isArray(item.ingredients) ? item.ingredients.join(' | ') : (item.ingredients || '');
-        if (ingr) {
+        // Ingredienten: elk onderdeel blijft als geheel op een regel; er mag alleen
+        // bij de scheiding " | " worden afgebroken (dus nooit "venne cress" splitsen).
+        const segs = Array.isArray(item.ingredients)
+          ? item.ingredients
+          : (item.ingredients ? String(item.ingredients).split('|').map((s) => s.trim()) : []);
+        if (segs.length) {
           const p = document.createElement('div');
           p.className = 'ingredienten';
-          p.textContent = ingr;
+          segs.forEach((seg, i) => {
+            const span = document.createElement('span');
+            span.style.whiteSpace = 'nowrap';
+            span.textContent = i < segs.length - 1 ? seg + ' |' : seg;
+            p.appendChild(span);
+            if (i < segs.length - 1) p.appendChild(document.createTextNode(' '));
+          });
           g.appendChild(p);
         }
         blok.appendChild(g);
