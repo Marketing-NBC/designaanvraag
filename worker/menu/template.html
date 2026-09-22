@@ -8,6 +8,8 @@
   @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Light.otf') format('opentype'); font-weight: 300; }
   @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Regular.otf') format('opentype'); font-weight: 400; }
   @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Medium.otf') format('opentype'); font-weight: 500; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Hairline.otf') format('opentype'); font-weight: 100; font-style: normal; }
+  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-HairlineItalic.otf') format('opentype'); font-weight: 100; font-style: italic; }
   @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Regular.otf') format('opentype'); font-weight: 400; }
   @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Semibold.otf') format('opentype'); font-weight: 600; }
   @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Extrabold.otf') format('opentype'); font-weight: 800; }
@@ -55,7 +57,7 @@
 
   /* Kolommen — absoluut geplaatst op de exacte x/y uit het .ai-bestand (via data.layout). */
   .kolommen { position: absolute; }
-  .kolom { position: absolute; top: 0; display: flex; flex-direction: column; gap: 27.5px; }
+  .kolom { position: absolute; top: 0; display: flex; flex-direction: column; gap: 45.5px; }
   .sectie-kop {
     font-family: 'Pockota', Georgia, serif; font-weight: 500;
     font-size: 39.6px; line-height: 1.0; color: var(--accent); margin: -7px 0 45.7px;
@@ -68,7 +70,7 @@
   }
   .gerecht .naam .tag { font-weight: 800; }
   .gerecht .ingredienten {
-    font-family: 'Area Normal', sans-serif; font-weight: 400;
+    font-family: 'Area Normal', sans-serif; font-weight: 100;
     font-size: 20.9px; line-height: 27.5px; color: var(--ingredients);
   }
 
@@ -83,7 +85,7 @@
     font-size: 26.95px; line-height: 1.0; color: #1d1d1b; margin-bottom: 9px;
   }
   .voet .tekst .sub {
-    font-family: 'Area Normal', sans-serif; font-weight: 400;
+    font-family: 'Area Normal', sans-serif; font-weight: 100;
     font-size: 21.65px; line-height: 26.5px; color: #1d1d1b;
   }
 </style>
@@ -166,6 +168,7 @@
     const c = (layout.columns && layout.columns[ci]) || { left: ci * 560, width: 430 };
     kolom.style.left = c.left + 'px';
     kolom.style.width = c.width + 'px';
+    if (layout.sectionGap != null) kolom.style.gap = layout.sectionGap + 'px';
     for (const sectie of sections) {
       const blok = document.createElement('div');
       const kop = document.createElement('div');
