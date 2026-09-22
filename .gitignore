@@ -9,3 +9,4 @@ web/test-results
 web/playwright-report
 .DS_Store
 web/e2e/screenshots
+__pycache__/

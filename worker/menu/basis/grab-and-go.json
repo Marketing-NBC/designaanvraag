@@ -100,18 +100,22 @@
   },
   "spatie": {
     "32.0": 8.64,
+    "37.58": 10.11,
     "38.0": 10.22,
-    "56.0": 10.22,
-    "72.0": 16.56
+    "46.76": 11.5,
+    "56.0": 13.78,
+    "57.0": 14.02,
+    "72.0": 16.56,
+    "183.83": 42.28
   },
   "kolommen": [
     {
       "x": 198.0,
       "kader": {
-        "breedte": 844.52,
+        "breedte": 732.4,
         "minimaal": 723.72,
-        "maximaal": 965.32,
-        "handmatigeAfbrekingen": 2
+        "maximaal": 775.96,
+        "handmatigeAfbrekingen": 3
       },
       "secties": [
         {
@@ -197,6 +201,7 @@
         {
           "soort": "ingr",
           "tekst": "•Rundertartaar umamicrème | kwartelei •Tallegio (vega) romige tallegio (kaasvulling) | kruidencrunch",
+          "gemengd": true,
           "regels": [
             {
               "baseline": 858.35,
@@ -435,10 +440,10 @@
     {
       "x": 1348.0,
       "kader": {
-        "breedte": 896.17,
+        "breedte": 796.82,
         "minimaal": 787.37,
-        "maximaal": 1004.97,
-        "handmatigeAfbrekingen": 1
+        "maximaal": 1042.77,
+        "handmatigeAfbrekingen": 2
       },
       "secties": [
         {
@@ -782,9 +787,9 @@
     {
       "x": 2481.0,
       "kader": {
-        "breedte": 1037.34,
-        "minimaal": 865.78,
-        "maximaal": 1208.89,
+        "breedte": 865.82,
+        "minimaal": 855.55,
+        "maximaal": 867.83,
         "handmatigeAfbrekingen": 0
       },
       "secties": [

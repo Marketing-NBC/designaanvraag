@@ -97,33 +97,43 @@ export async function controleer(namen, uitDir) {
       continue
     }
 
-    // Twee wegen naar hetzelfde beeld, allebei tegen het Illustrator-bestand gelegd:
-    //   kaal  het basisontwerp zoals het bevroren is
-    //   rond  hetzelfde ontwerp, maar via het invoerformaat waarin aanvragen
-    //         binnenkomen - wie het sjabloon ongewijzigd terugstuurt hoort
-    //         precies het basisontwerp te krijgen
+    // Drie wegen naar hetzelfde beeld, alle drie tegen het Illustrator-bestand gelegd:
+    //   kaal    het basisontwerp zoals het bevroren is
+    //   rond    hetzelfde ontwerp, maar via het invoerformaat waarin aanvragen
+    //           binnenkomen - wie het sjabloon ongewijzigd terugstuurt hoort
+    //           precies het basisontwerp te krijgen
+    //   herbouw hetzelfde ontwerp, maar met de regelval opnieuw uitgerekend in
+    //           plaats van overgenomen. Dit is wat er gebeurt zodra een gerecht
+    //           wijzigt, en het toetst of de kolombreedtes kloppen voor het font
+    //           dat wij zetten (Hairline) en niet alleen voor dat van het .ai (Thin).
     const kaal = await renderMenu({ pakket })
     const rond = await renderMenu(inhoudVanBasis(laadBasis(pakket)))
+    const herbouw = await renderMenu({ pakket, forceerHerberekening: true })
     const uitslagKaal = await vergelijk(kaal.png, referentie)
     const uitslagRond = await vergelijk(rond.png, referentie)
+    const uitslagHerbouw = await vergelijk(herbouw.png, referentie)
 
     if (uitDir) {
       mkdirSync(uitDir, { recursive: true })
       writeFileSync(join(uitDir, `${pakket}.png`), kaal.png)
       writeFileSync(join(uitDir, `${pakket}-verschil.png`), uitslagKaal.diff)
     }
-    uitslagen.push({ pakket, ...uitslagKaal, viaInvoer: uitslagRond,
-                     meldingen: kaal.meldingen, ontbrekendeFonts: kaal.ontbrekendeFonts })
+    uitslagen.push({ pakket, ...uitslagKaal, viaInvoer: uitslagRond, bijHerbouw: uitslagHerbouw,
+                     herbouwMeldingen: herbouw.meldingen,
+                     meldingen: kaal.meldingen, fonts: kaal.fonts })
 
     log(`${pakket.padEnd(22)} verplaatst ${uitslagKaal.procentVerplaatst.toFixed(3)}%  `
-      + `snitverschil ${uitslagKaal.procentZwaarte.toFixed(3)}%  `
+      + `snit ${uitslagKaal.procentZwaarte.toFixed(3)}%  `
       + `vlakwerk ${uitslagKaal.procentRest.toFixed(3)}%  `
-      + `via invoerformaat ${uitslagRond.procentVerplaatst.toFixed(3)}%  `
-      + `blob-botsingen ${kaal.meldingen.botsingen.length}`)
+      + `via invoer ${uitslagRond.procentVerplaatst.toFixed(3)}%  `
+      + `bij herberekening ${uitslagHerbouw.procentVerplaatst.toFixed(3)}%  `
+      + `botsingen ${kaal.meldingen.botsingen.length}`)
     for (const m of kaal.meldingen.structuur) log(`   structuur: ${m}`)
     for (const m of kaal.meldingen.overloop) log(`   overloop: ${m}`)
     for (const m of kaal.meldingen.botsingen) log(`   botsing: "${m.tekst}" op y=${m.baseline}`)
     for (const m of rond.meldingen.regelval) log(`   regelval via invoer: ${m}`)
+    for (const m of herbouw.meldingen.regelval) log(`   andere regelval bij herberekening: ${m}`)
+    for (const m of herbouw.meldingen.opmaak) log(`   let op: ${m}`)
   }
   return uitslagen
 }
@@ -136,7 +146,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   log(`Controle van ${namen.length} basisontwerp(en) tegen het Illustrator-bestand`)
   const uitslagen = await controleer(namen, uitDir)
 
-  const stuk = uitslagen.filter((u) => u.procentVerplaatst > 0.02 || u.viaInvoer.procentVerplaatst > 0.02
+  // Bij herberekening kijken we naar de regelval en niet naar het pixelverschil:
+  // een alinea met eigen opmaak per regel is nu eenmaal niet uit platte tekst te
+  // herbouwen, en die staat apart gemeld.
+  const stuk = uitslagen.filter((u) => u.procentVerplaatst > 0.02
+    || u.viaInvoer.procentVerplaatst > 0.02
+    || u.herbouwMeldingen.regelval.length
     || u.meldingen.botsingen.length)
   log('')
   if (stuk.length === 0) {

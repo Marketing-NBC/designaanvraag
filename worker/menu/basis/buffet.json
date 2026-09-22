@@ -97,18 +97,22 @@
   },
   "spatie": {
     "38.0": 10.22,
-    "41.8": 10.33,
-    "56.0": 15.15,
-    "61.6": 13.92,
-    "72.0": 16.56
+    "41.8": 11.24,
+    "43.3": 11.65,
+    "53.89": 13.26,
+    "56.0": 13.78,
+    "57.0": 14.02,
+    "61.6": 15.15,
+    "72.0": 16.56,
+    "79.2": 18.22
   },
   "kolommen": [
     {
       "x": 241.0,
       "kader": {
-        "breedte": 908.5,
-        "minimaal": 878.5,
-        "maximaal": 938.5,
+        "breedte": 878.7,
+        "minimaal": 868.28,
+        "maximaal": 881.74,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -338,7 +342,7 @@
     {
       "x": 1334.0,
       "kader": {
-        "breedte": 919.01,
+        "breedte": 899.68,
         "minimaal": 889.01,
         "maximaal": 949.01,
         "handmatigeAfbrekingen": 0
@@ -560,9 +564,9 @@
     {
       "x": 2464.0,
       "kader": {
-        "breedte": 543.64,
+        "breedte": 501.0,
         "minimaal": 495.0,
-        "maximaal": 592.28,
+        "maximaal": 538.2,
         "handmatigeAfbrekingen": 0
       },
       "secties": [

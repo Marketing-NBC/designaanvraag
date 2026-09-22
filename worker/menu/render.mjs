@@ -7,20 +7,36 @@ const MENU_DIR = join(WORKER_DIR, 'menu')
 const BASIS_DIR = join(MENU_DIR, 'basis')
 const FONT_DIR = join(REPO_DIR, 'web', 'src', 'assets', 'fonts')
 
-/**
- * De fonts die de basisontwerpen gebruiken, met de bestanden die erbij horen.
- * AreaNormal-Thin staat nog niet in de repo; zolang dat zo is valt hij terug op
- * Hairline. De breedtes schelen minder dan 1%, dus de regelval blijft gelijk,
- * maar de tekst oogt dan iets lichter dan in het .ai-bestand.
- */
-const FONTS = {
-  'Pockota-Medium': ['Pockota-Medium.otf'],
-  'AreaNormal-ExtraBold': ['AreaNormal-Extrabold.otf'],
-  'AreaNormal-Thin': ['AreaNormal-Thin.otf', 'AreaNormal-Hairline.otf'],
-  'AreaNormal-HairlineItalic': ['AreaNormal-HairlineItalic.otf'],
-  'AreaNormal-Regular': ['AreaNormal-Regular.otf'],
-  'AreaNormal-Semibold': ['AreaNormal-Semibold.otf'],
+/** Welk fontbestand hoort bij welke naam uit het basisontwerp. */
+const FONTBESTANDEN = {
+  'Pockota-Light': 'Pockota-Light.otf',
+  'Pockota-Regular': 'Pockota-Regular.otf',
+  'Pockota-Medium': 'Pockota-Medium.otf',
+  'AreaNormal-Hairline': 'AreaNormal-Hairline.otf',
+  'AreaNormal-HairlineItalic': 'AreaNormal-HairlineItalic.otf',
+  'AreaNormal-Regular': 'AreaNormal-Regular.otf',
+  'AreaNormal-Semibold': 'AreaNormal-Semibold.otf',
+  'AreaNormal-ExtraBold': 'AreaNormal-Extrabold.otf',
 }
+
+/**
+ * Bewuste afwijking van het Illustrator-bestand.
+ *
+ * De basisontwerpen zetten de ingredienten in AreaNormal-Thin, maar NBC gebruikt
+ * daarvoor Hairline. Die keuze staat hier, op een plek, in plaats van dat de
+ * renderer stilletjes op iets anders terugvalt als een font ontbreekt.
+ *
+ * Gevolg: de tekst is iets lichter dan in het .ai-bestand. Elk woord staat nog
+ * op precies dezelfde plek - de regelval van de basisontwerpen ligt vast en
+ * wordt niet opnieuw berekend. Alleen als een gerecht wijzigt breekt de engine
+ * die ene alinea zelf af, en dan gebeurt dat in Hairline-breedtes. Dat toetst
+ * controle.mjs met de kolom "bij herberekening".
+ */
+const VERVANGINGEN = {
+  'AreaNormal-Thin': 'AreaNormal-Hairline',
+}
+
+const fontVoor = (naam) => VERVANGINGEN[naam] || naam
 
 /** De pakketten waarvoor een bevroren basisontwerp klaarstaat. */
 export function pakketten() {
@@ -66,41 +82,48 @@ function dataUri(pad, type) {
   return `data:${type};base64,${readFileSync(pad).toString('base64')}`
 }
 
-function fontsInvoegen(html) {
-  const ontbreekt = []
-  for (const [familie, kandidaten] of Object.entries(FONTS)) {
-    const bestand = kandidaten.find((n) => existsSync(join(FONT_DIR, n)))
-    if (!bestand) {
-      ontbreekt.push(familie)
-      continue
+/**
+ * Zet voor elk gebruikt font een @font-face met het bestand als data-URI in de
+ * pagina; about:blank mag geen file:// laden. Alleen de fonts die het ontwerp
+ * echt gebruikt, zodat een familie nooit gedeclareerd kan staan zonder bestand.
+ */
+function fontsInvoegen(html, families) {
+  const regels = []
+  for (const familie of families) {
+    const bestand = FONTBESTANDEN[familie]
+    const pad = bestand && join(FONT_DIR, bestand)
+    if (!pad || !existsSync(pad)) {
+      throw new Error(`Fontbestand voor ${familie} ontbreekt in ${FONT_DIR}.`)
     }
-    if (bestand !== kandidaten[0]) ontbreekt.push(`${familie} (valt terug op ${bestand})`)
-    const uri = dataUri(join(FONT_DIR, bestand), 'font/otf')
-    html = html.split(`{{FONT}}/${kandidaten[0]}`).join(uri)
+    regels.push(`  @font-face { font-family: '${familie}'; `
+      + `src: url('${dataUri(pad, 'font/otf')}') format('opentype'); }`)
   }
-  // Wat er niet is, laten we als lege bron staan; de browser slaat die dan over.
-  html = html.replace(/url\('\{\{FONT\}\}\/[^']*'\)/g, "url('')")
-  return { html, ontbreekt }
+  return html.replace('{{FONTS}}', regels.join('\n'))
+}
+
+/** Past de bewuste fontvervangingen toe op een bevroren basisontwerp. */
+function vervangFonts(basis) {
+  const kopie = structuredClone(basis)
+  const zet = (o) => { if (o && o.font) o.font = fontVoor(o.font) }
+  zet(kopie.titel)
+  if (kopie.logobalk) zet(kopie.logobalk.plaatshouder)
+  for (const regel of kopie.voetregel?.regels || []) zet(regel)
+  for (const soort of Object.values(kopie.stijl || {})) zet(soort)
+  for (const kolom of kopie.kolommen) {
+    for (const alinea of kolom.alineas) {
+      for (const regel of alinea.regels) for (const run of regel.runs) zet(run)
+    }
+  }
+  return kopie
 }
 
 /**
- * Rendert een menuscherm op 3840x2160 uit een bevroren basisontwerp.
- *
- * @param {object} opdracht
- *   pakket   naam van het basisontwerp, bv. 'diner-4gangen'
- *   titel    optioneel: andere titel dan die van het basisontwerp
- *   merk     optioneel: { logo, logoAchtergrond, accent }
- *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
- *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
- * @returns {Promise<{png: Buffer, meldingen: object, ontbrekendeFonts: string[]}>}
+ * De fonts die dit basisontwerp gebruikt, en meteen de controle dat de renderer
+ * ze allemaal kent. Zonder die controle zou een onbekende fontnaam stil terug-
+ * vallen op een standaardfont: de tekst staat er dan wel, maar in andere
+ * breedtes en dus met een andere regelval dan het basisontwerp.
  */
-/**
- * Controleert dat elk font dat het basisontwerp gebruikt ook echt geladen wordt.
- * Zonder deze controle valt een onbekende fontnaam stil terug op een standaard-
- * font: de tekst staat er dan wel, maar in andere breedtes en dus met een andere
- * regelval dan het basisontwerp.
- */
-function controleerFonts(basis) {
+function gebruikteFonts(basis) {
   const gebruikt = new Set()
   const verzamel = (o) => { if (o && o.font) gebruikt.add(o.font) }
   verzamel(basis.titel)
@@ -111,29 +134,43 @@ function controleerFonts(basis) {
       for (const regel of alinea.regels) for (const run of regel.runs) verzamel(run)
     }
   }
-  const onbekend = [...gebruikt].filter((f) => !(f in FONTS))
+  const onbekend = [...gebruikt].filter((f) => !(f in FONTBESTANDEN))
   if (onbekend.length) {
     throw new Error(`Basisontwerp "${basis.pakket}" gebruikt fonts die de renderer niet kent: `
-      + `${onbekend.join(', ')}. Vul ze aan in FONTS in worker/menu/render.mjs.`)
+      + `${onbekend.join(', ')}. Vul ze aan in FONTBESTANDEN in worker/menu/render.mjs.`)
   }
+  return [...gebruikt].sort()
 }
 
+/**
+ * Rendert een menuscherm op 3840x2160 uit een bevroren basisontwerp.
+ *
+ * @param {object} opdracht
+ *   pakket   naam van het basisontwerp, bv. 'diner-4gangen'
+ *   titel    optioneel: andere titel dan die van het basisontwerp
+ *   merk     optioneel: { logo, logoAchtergrond, accent, blobBoven, blobOnder }
+ *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
+ *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
+ *   forceerHerberekening  alleen voor controle.mjs; zie payload hieronder
+ * @returns {Promise<{png: Buffer, meldingen: object, fonts: string[]}>}
+ */
 export async function renderMenu(opdracht) {
-  const basis = laadBasis(opdracht.pakket)
-  controleerFonts(basis)
+  const basis = vervangFonts(laadBasis(opdracht.pakket))
+  const families = gebruikteFonts(basis)
   const achtergrond = dataUri(join(BASIS_DIR, basis.achtergrond), 'image/png')
   const icoonSvg = readFileSync(join(BASIS_DIR, 'bestek-icoon.svg'), 'utf8')
   const icoon = icoonSvg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
 
-  let html = readFileSync(join(MENU_DIR, 'template.html'), 'utf8')
-  const { html: metFonts, ontbreekt } = fontsInvoegen(html)
-  html = metFonts
+  let html = fontsInvoegen(readFileSync(join(MENU_DIR, 'template.html'), 'utf8'), families)
 
   const payload = {
     basis,
     achtergrond,
     inhoud: { titel: opdracht.titel, secties: opdracht.secties },
     merk: opdracht.merk || {},
+    // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
+    // breken in plaats van de regelval van het basisontwerp over te nemen.
+    forceerHerberekening: Boolean(opdracht.forceerHerberekening),
   }
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   html = html.replace('<script>', '<script>'
@@ -147,7 +184,7 @@ export async function renderMenu(opdracht) {
     await page.setContent(html, { waitUntil: 'load' })
     const meldingen = await page.evaluate(() => window.__KLAAR__)
     const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 3840, height: 2160 } })
-    return { png, meldingen, ontbrekendeFonts: ontbreekt }
+    return { png, meldingen, fonts: families }
   } finally {
     await browser.close()
   }
@@ -175,9 +212,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const uit = args.out || join(MENU_DIR, 'out.png')
   log(`Menuscherm renderen: ${opdracht.pakket}`)
-  const { png, meldingen, ontbrekendeFonts } = await renderMenu(opdracht)
+  const { png, meldingen } = await renderMenu(opdracht)
   writeFileSync(uit, png)
-  for (const f of ontbrekendeFonts) log(`Let op: font ${f}`)
   for (const soort of ['structuur', 'regelval', 'botsingen', 'overloop']) {
     for (const m of meldingen[soort] || []) log(`${soort}: ${typeof m === 'string' ? m : JSON.stringify(m)}`)
   }

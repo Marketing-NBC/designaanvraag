@@ -4,13 +4,10 @@
 <meta charset="utf-8">
 <title>Menuscherm</title>
 <style>
-  /* De fonts worden door render.mjs als data-URI ingevoegd; about:blank mag geen file:// laden. */
-  @font-face { font-family: 'Pockota-Medium';           src: url('{{FONT}}/Pockota-Medium.otf') format('opentype'); }
-  @font-face { font-family: 'AreaNormal-ExtraBold';     src: url('{{FONT}}/AreaNormal-Extrabold.otf') format('opentype'); }
-  @font-face { font-family: 'AreaNormal-Thin';          src: url('{{FONT}}/AreaNormal-Thin.otf') format('opentype'); }
-  @font-face { font-family: 'AreaNormal-HairlineItalic';src: url('{{FONT}}/AreaNormal-HairlineItalic.otf') format('opentype'); }
-  @font-face { font-family: 'AreaNormal-Regular';       src: url('{{FONT}}/AreaNormal-Regular.otf') format('opentype'); }
-  @font-face { font-family: 'AreaNormal-Semibold';      src: url('{{FONT}}/AreaNormal-Semibold.otf') format('opentype'); }
+  /* render.mjs zet hier de @font-face-regels neer voor precies de fonts die dit
+     basisontwerp gebruikt, met het bestand als data-URI: about:blank mag geen
+     file:// laden. */
+{{FONTS}}
 
   * { margin: 0; padding: 0; }
   html, body { width: 3840px; height: 2160px; background: #ffffff; overflow: hidden; }
@@ -36,7 +33,7 @@
   const merk = gegevens.merk || {}
   const SVG = 'http://www.w3.org/2000/svg'
 
-  const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [] }
+  const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [] }
   window.__RESULTAAT__ = meldingen
 
   const el = (naam, attrs = {}) => {
@@ -134,7 +131,8 @@
    */
   function regelsVoor(alinea, nieuweTekst, kader, ritme) {
     const basisTekst = alinea.tekst
-    if (nieuweTekst == null || zelfdeInhoud(nieuweTekst, basisTekst)) {
+    const gelijk = nieuweTekst == null || zelfdeInhoud(nieuweTekst, basisTekst)
+    if (gelijk && !gegevens.forceerHerberekening) {
       // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp.
       // Die zijn niet altijd gelijk: in de opsomming van Grab & Go wisselt hij
       // per regel, en dat hoort zo.
@@ -146,7 +144,7 @@
       }
     }
     const stijl = alinea.regels[0].runs[0]
-    const stukken = afbreken(nieuweTekst, stijl.font, stijl.grootte, kader)
+    const stukken = afbreken(nieuweTekst ?? basisTekst, stijl.font, stijl.grootte, kader)
     const afstand = regelafstand(alinea, ritme)
     return {
       regels: stukken.map((t) => [{ tekst: t, x: 0, font: stijl.font, grootte: stijl.grootte, kleur: stijl.kleur }]),
@@ -407,11 +405,21 @@
         for (const taak of taken) {
           const { alinea, tekst } = taak
           const { regels, offsets, uitBasis } = regelsVoor(alinea, tekst, kader, ritme)
-          if (!uitBasis) structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
-          if (!uitBasis && regels.length !== alinea.regels.length) {
-            meldingen.regelval.push(
-              `"${(tekst || '').slice(0, 40)}" valt over ${regels.length} regels, ` +
-              `het basisontwerp had er ${alinea.regels.length}.`)
+          if (!uitBasis) {
+            structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
+            if (alinea.gemengd) {
+              // Zo'n alinea heeft per regel een eigen font of corps (de opsomming
+              // met bullets en cursieve subregels). Die opmaak zit niet in platte
+              // tekst, dus die kunnen we bij nieuwe inhoud niet reconstrueren.
+              meldingen.opmaak.push(
+                `"${(tekst ?? alinea.tekst).slice(0, 40)}" is in het basisontwerp een opsomming `
+                + 'met eigen opmaak per regel. Bij nieuwe tekst valt die opmaak weg; '
+                + 'controleer dit scherm met de hand.')
+            } else if (regels.length !== alinea.regels.length) {
+              meldingen.regelval.push(
+                `"${(tekst ?? alinea.tekst).slice(0, 40)}" valt over ${regels.length} regels, `
+                + `het basisontwerp had er ${alinea.regels.length}.`)
+            }
           }
 
           let baseline
@@ -450,9 +458,47 @@
     achtergrond.setAttribute('href', gegevens.achtergrond)
   })
 
+  /**
+   * Alle font-en-corps-combinaties die dit basisontwerp gebruikt.
+   * Nodig omdat ze expliciet geladen moeten worden voordat er iets gemeten wordt.
+   */
+  function fontspecs() {
+    const specs = new Set()
+    const zet = (o) => { if (o && o.font && o.grootte) specs.add(`${o.grootte}px "${o.font}"`) }
+    zet(basis.titel)
+    if (basis.logobalk) zet(basis.logobalk.plaatshouder)
+    for (const r of (basis.voetregel ? basis.voetregel.regels : [])) zet(r)
+    for (const kolom of basis.kolommen) {
+      for (const alinea of kolom.alineas) {
+        for (const regel of alinea.regels) for (const run of regel.runs) zet(run)
+      }
+    }
+    return [...specs]
+  }
+
+  /**
+   * Laadt elk gebruikt font expliciet.
+   *
+   * document.fonts.ready is hier niet genoeg: een @font-face die nog nergens in
+   * de DOM gebruikt is, wordt door de browser niet geladen, en dan meet canvas
+   * measureText stilletjes in een vervangend font. Dat scheelde in de praktijk
+   * 20% in breedte - genoeg om regels verkeerd af te breken en om tekst over een
+   * blob te laten lopen zonder dat de controle aansloeg.
+   */
+  async function fontsLaden() {
+    const specs = fontspecs()
+    await Promise.all(specs.map((s) => document.fonts.load(s).catch(() => {})))
+    await document.fonts.ready
+    const missend = specs.filter((s) => !document.fonts.check(s))
+    if (missend.length) {
+      meldingen.structuur.push(`Deze fonts konden niet geladen worden: ${missend.join(', ')}. `
+        + 'Alles wat gemeten wordt klopt dan niet.')
+    }
+  }
+
   window.__KLAAR__ = (async () => {
     const img = await klaar
-    await (document.fonts ? document.fonts.ready : Promise.resolve())
+    await fontsLaden()
     const grenzen = img ? achtergrondVerwerken(img) : null
     bouw(grenzen)
     return meldingen

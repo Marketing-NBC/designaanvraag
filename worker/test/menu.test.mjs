@@ -101,6 +101,20 @@ test('de eigen inhoud van een basisontwerp verandert de regelval niet', { timeou
   assert.deepEqual(meldingen.botsingen, [])
 })
 
+test('de engine meet in het echte font, niet in een vervanger', { timeout: 120_000 }, async () => {
+  // Als de fonts niet expliciet geladen worden voordat er gemeten wordt, meet
+  // canvas measureText stilletjes in een vervangend font - dat scheelde 20% in
+  // breedte. Gevolg: regels breken verkeerd af en tekst kan ongemerkt over een
+  // blob lopen. Deze test dwingt de engine de regelval zelf uit te rekenen en
+  // eist dat hij op dezelfde regels uitkomt als het basisontwerp.
+  for (const pakket of ['diner-4gangen', 'lunch-basic', 'buffet']) {
+    const { meldingen } = await renderMenu({ pakket, forceerHerberekening: true })
+    assert.deepEqual(meldingen.regelval, [],
+      `${pakket}: de opnieuw berekende regelval wijkt af van het basisontwerp`)
+    assert.deepEqual(meldingen.structuur, [], `${pakket}: ${meldingen.structuur.join(' ')}`)
+  }
+})
+
 test('tekst die over een blob zou vallen wordt gemeld', { timeout: 120_000 }, async () => {
   const basis = laadBasis('diner-4gangen')
   const inhoud = inhoudVanBasis(basis)
