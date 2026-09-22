@@ -1,4 +1,4 @@
-import pymupdf, json, sys, statistics
+import pymupdf, json, sys, statistics, re
 
 GOLD = 0xf6a107
 # Vaste teksten van logo-balk + voetregel; ook fragmenten (bv. "gie?") eruit filteren.
@@ -8,6 +8,35 @@ FOOTER_BLOB = ('Logo opdrachtgever Dieetswens of allergie? '
 # Diner-referentie (k=1): gekalibreerde correcties/ritme in CSS-px (artboard/2).
 REF = dict(Ctop=14.95, titleCorr=19.65, headMt=-7.0, headMb=45.7, nameMb=7.5,
            dishMb=23.75, sectionGap=45.5, ingrRef=20.9, ingrLh=27.5)
+
+def blobleft_path(page):
+    """Blob linksonder als clip-pad in artboard-coordinaten, of {'hide': True}."""
+    svg = page.get_svg_image()
+    m = re.search(r'<g clip-path="url\(#([^\)]+)\)">\s*<image\b[^>]*x="(\d+)"[^>]*y="(1[0-9]{3}|9[0-9]{2})"', svg)
+    if not m:
+        return {'hide': True}
+    cid, ix = m.group(1), int(m.group(2))
+    cm = re.search(r'<clipPath id="' + re.escape(cid) + r'">(.*?)</clipPath>', svg, re.S)
+    dm = re.search(r'\sd="([^"]+)"', cm.group(1))
+    toks = re.findall(r'[MLHVCZ]|-?\d*\.?\d+', dm.group(1))
+    out = []; i = 0
+    fy = lambda t: f'{2160 - float(t):.2f}'.rstrip('0').rstrip('.')
+    fx = lambda t: f'{float(t) + ix:.2f}'.rstrip('0').rstrip('.')
+    while i < len(toks):
+        t = toks[i]
+        if t in 'MLC':
+            out.append(t); i += 1
+            while i < len(toks) and toks[i] not in 'MLHVCZ':
+                out.append(fx(toks[i])); out.append(fy(toks[i + 1])); i += 2
+        elif t == 'V': out.append('V'); i += 1; out.append(fy(toks[i])); i += 1
+        elif t == 'H': out.append('H'); i += 1; out.append(fx(toks[i])); i += 1
+        elif t == 'Z': out.append('Z'); i += 1
+        else: i += 1
+    s = ''
+    for tk in out:
+        s += ((' ' if s else '') + tk + ' ') if tk in 'MLHVCZ' else (tk + ' ')
+    return {'path': s.strip()}
+
 
 def classify(s):
     f = s['font']; c = s['color']; sz = s['size']; txt = s['text'].strip()
@@ -127,6 +156,8 @@ def extract(page):
     if gold_xs and diet:
         layout['footer'] = {'left': round(min(gold_xs) / 2, 1),
                             'top': round(diet[1] / 2 + 12.5, 1)}
+    # Blob linksonder: eigen vorm als de pagina er een heeft, anders verbergen.
+    layout['blobLeft'] = blobleft_path(page)
     return {'title': title['text'] if title else '',
             'brand': {'accent': '#f6a107', 'blobTop': '#f6a107', 'blobBottom': '#229d96', 'logo': None},
             'layout': layout, 'columns': columns}

@@ -114,14 +114,15 @@
         <stop offset="0" stop-color="var(--blob-top)"/>
         <stop offset="1" stop-color="var(--blob-bottom)"/>
       </linearGradient>
-      <!-- Linksonder blob: teal linksboven -> oranje rechtsonder. -->
-      <linearGradient id="blobgrad-l" gradientUnits="userSpaceOnUse" x1="0" y1="1460" x2="1371" y2="2160">
+      <!-- Linksonder blob: teal linksboven -> oranje rechtsonder. objectBoundingBox
+           zodat de gradient klopt ongeacht positie/grootte per pakket. -->
+      <linearGradient id="blobgrad-l" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="var(--blob-bottom)"/>
         <stop offset="1" stop-color="var(--blob-top)"/>
       </linearGradient>
     </defs>
     <path id="blobRight" fill="url(#blobgrad-r)" d="M 3209.61 0 C 3176.941 34.32 3151.273 78.882 3130.617 133.161 3119.954 159.626 3111.942 186.602 3105.96 217.539 3099.979 248.477 3094.006 279.362 3092.04 303.993 3086.723 331.487 3086.086 363.461 3086.856 402.854 3087.593 442.176 3087.665 470.717 3088.404 495.813 3089.144 520.904 3093.896 553.917 3099.404 597.739 3104.187 645.052 3108.986 678.074 3113.708 696.795 3117.797 719.025 3124.59 755.947 3136.804 808.211 3146.324 859.954 3153.817 893.497 3158.528 912.274 3160.588 930.539 3170.076 967.982 3184.309 1024.272 3197.888 1083.94 3204.681 1120.861 3207.407 1135.683 3331.563 1662.396 3332.268 1990.589 3204.203 2119.105 L 3155.124 2160 H 3840 V 0 Z"/>
-    <path fill="url(#blobgrad-l)" d="M 0 1469.819 V 2160 H 1371.842 C 1222.791 2017.433 1029.7 1790.42 808.864 1800.34 580.815 1810.589 448.367 1984.546 346.57 1641.615 307.801 1547.591 218.029 1478.713 117.895 1463.53 104.047 1461.509 89.773 1460.495 75.349 1460.495 50.168 1460.495 24.55 1463.586 0 1469.819 Z"/>
+    <path id="blobLeft" fill="url(#blobgrad-l)" d="M 0 1469.819 V 2160 H 1371.842 C 1222.791 2017.433 1029.7 1790.42 808.864 1800.34 580.815 1810.589 448.367 1984.546 346.57 1641.615 307.801 1547.591 218.029 1478.713 117.895 1463.53 104.047 1461.509 89.773 1460.495 75.349 1460.495 50.168 1460.495 24.55 1463.586 0 1469.819 Z"/>
   </svg>
 
   <div class="titel" id="titel"></div>
@@ -154,6 +155,16 @@
   const titelEl = document.getElementById('titel');
   titelEl.textContent = data.title || '';
 
+  // Debug-hulp voor collisietests: verberg tekst of blobs.
+  const dbg = data.debug || '';
+  if (dbg.includes('hideText')) {
+    // visibility:hidden behoudt de layout, zodat de blob-verschuiving (die op de
+    // tekstbreedte rekent) ook in deze modus correct wordt berekend.
+    for (const sel of ['#titel', '#kolommen', '.voet', '.logo-balk'])
+      document.querySelectorAll(sel).forEach((e) => (e.style.visibility = 'hidden'));
+  }
+  if (dbg.includes('hideBlobs')) document.querySelectorAll('.blobs').forEach((e) => (e.style.display = 'none'));
+
   const root = document.getElementById('scherm');
 
   // Typografische schaal + ritme per pakket (uit layout.type / layout.gaps).
@@ -178,6 +189,14 @@
     const voet = document.querySelector('.voet');
     if (lay.footer.left != null) voet.style.left = lay.footer.left + 'px';
     if (lay.footer.top != null) { voet.style.top = lay.footer.top + 'px'; voet.style.bottom = 'auto'; }
+  }
+  // Blob linksonder per pakket: verbergen (Lunch/Grab & Go) of eigen vorm (Buffet).
+  if (lay.blobLeft) {
+    const bl = document.getElementById('blobLeft');
+    if (bl) {
+      if (lay.blobLeft.hide) bl.style.display = 'none';
+      else if (lay.blobLeft.path) bl.setAttribute('d', lay.blobLeft.path);
+    }
   }
 
   if (data.brand) {
