@@ -1,8 +1,9 @@
 import pymupdf, json, sys, statistics
 
 GOLD = 0xf6a107
-SKIP_TEXTS = {'Logo opdrachtgever', 'Dieetswens of allergie?', 'Laat het ons team weten,',
-              'we helpen je graag.', 'Laat het ons team weten', 'we helpen je graag'}
+# Vaste teksten van logo-balk + voetregel; ook fragmenten (bv. "gie?") eruit filteren.
+FOOTER_BLOB = ('Logo opdrachtgever Dieetswens of allergie? '
+               'Laat het ons team weten, we helpen je graag.')
 
 # Diner-referentie (k=1): gekalibreerde correcties/ritme in CSS-px (artboard/2).
 REF = dict(Ctop=14.95, titleCorr=19.65, headMt=-7.0, headMb=45.7, nameMb=7.5,
@@ -10,7 +11,7 @@ REF = dict(Ctop=14.95, titleCorr=19.65, headMt=-7.0, headMb=45.7, nameMb=7.5,
 
 def classify(s):
     f = s['font']; c = s['color']; sz = s['size']; txt = s['text'].strip()
-    if txt in SKIP_TEXTS: return None
+    if txt and len(txt) >= 3 and txt in FOOTER_BLOB: return None
     if c == GOLD: return 'heading'
     if 'Pockota' in f and sz > 100: return 'title'
     if 'ExtraBold' in f: return 'name'
