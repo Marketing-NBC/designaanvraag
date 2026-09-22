@@ -14,13 +14,15 @@
 
   :root {
     /* Merk-tokens: standaard NBC-huisstijl, worden per event overschreven
-       (blob-top/bottom + accent uit de huisstijl-extractie, logo uit de rode balk). */
-    --blob-top: #f6a304;
+       (blob-top/bottom + accent uit de huisstijl-extractie, logo uit de rode balk).
+       Alle maten zijn artboard-coordinaten (3840x2160) gedeeld door 2 -> 1920x1080.
+       Bij deviceScaleFactor 2 rendert dat exact 1:1 op het .ai-bestand. */
+    --blob-top: #f6a107;
     --blob-bottom: #229d96;
-    --accent: #f6a304;
-    --ink: #050606;
-    --dish: #121618;
-    --ingredients: #4a5054;
+    --accent: #f6a107;
+    --ink: #000000;
+    --dish: #000000;
+    --ingredients: #000000;
     --paper: #ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,58 +37,54 @@
   /* Decoratieve blobs (merk-gekleurd) — exacte vormen uit het Illustrator-bestand. */
   .blobs { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
 
-  /* Titel linksboven. */
+  /* Titel linksboven — Pockota Medium 199.5/2 = 99.75px. */
   .titel {
-    position: absolute; left: 72px; top: 78px;
-    font-family: 'Pockota', Georgia, serif; font-weight: 400;
-    font-size: 132px; line-height: 1; color: var(--ink); letter-spacing: -0.01em;
+    position: absolute; left: 129.6px; top: 98px;
+    font-family: 'Pockota', Georgia, serif; font-weight: 500;
+    font-size: 99.75px; line-height: 1; color: var(--ink); letter-spacing: 0;
   }
 
-  /* Logo-balk opdrachtgever (rechtsboven). */
+  /* Logo-balk opdrachtgever (rechtsboven) — rect 2075.8,74.3 791.4x297 -> /2. */
   .logo-balk {
-    position: absolute; left: 1037px; top: 38px; width: 422px; height: 154px;
+    position: absolute; left: 1037.9px; top: 37.15px; width: 395.7px; height: 148.5px;
     background: #ff0000; display: flex; align-items: center; justify-content: center;
-    overflow: hidden; border-radius: 2px;
+    overflow: hidden;
   }
-  .logo-balk .placeholder { font-weight: 800; font-size: 30px; color: #050606; }
+  .logo-balk .placeholder { font-weight: 800; font-size: 28.5px; color: #000000; }
   .logo-balk img { max-width: 88%; max-height: 82%; object-fit: contain; }
 
-  /* Kolommen met secties. */
-  .kolommen {
-    position: absolute; left: 72px; top: 300px; right: 300px;
-    display: grid; grid-template-columns: repeat(var(--cols, 3), 1fr);
-    gap: 0 56px; align-content: start;
-  }
-  .kolom { display: flex; flex-direction: column; gap: 44px; }
+  /* Kolommen — absoluut geplaatst op de exacte x/y uit het .ai-bestand (via data.layout). */
+  .kolommen { position: absolute; }
+  .kolom { position: absolute; top: 0; display: flex; flex-direction: column; gap: 27.5px; }
   .sectie-kop {
-    font-family: 'Pockota', Georgia, serif; font-weight: 400;
-    font-size: 40px; line-height: 1.1; color: var(--accent); margin-bottom: 26px;
+    font-family: 'Pockota', Georgia, serif; font-weight: 500;
+    font-size: 39.6px; line-height: 1.0; color: var(--accent); margin: -7px 0 45.7px;
   }
-  .gerecht { margin-bottom: 30px; }
+  .gerecht { margin-bottom: 23.75px; }
   .gerecht:last-child { margin-bottom: 0; }
   .gerecht .naam {
     font-family: 'Area Normal', sans-serif; font-weight: 800;
-    font-size: 32px; line-height: 1.12; color: var(--dish); margin-bottom: 6px;
+    font-size: 30.8px; line-height: 1.0; color: var(--dish); margin-bottom: 7.5px;
   }
   .gerecht .naam .tag { font-weight: 800; }
   .gerecht .ingredienten {
     font-family: 'Area Normal', sans-serif; font-weight: 400;
-    font-size: 25px; line-height: 1.28; color: var(--ingredients);
+    font-size: 20.9px; line-height: 27.5px; color: var(--ingredients);
   }
 
-  /* Voetregel: dieetwens/allergie. */
+  /* Voetregel: dieetwens/allergie — icoon 2038.8,1815.4 + tekst 2442.8,1811.9 -> /2. */
   .voet {
-    position: absolute; left: 1037px; bottom: 60px;
-    display: flex; align-items: center; gap: 22px;
+    position: absolute; left: 1019.4px; top: 918.45px;
+    display: flex; align-items: flex-start; gap: 44.8px;
   }
   .voet .icoon { flex: none; }
   .voet .tekst .kop {
     font-family: 'Area Normal', sans-serif; font-weight: 800;
-    font-size: 30px; line-height: 1.15; color: var(--dish);
+    font-size: 26.95px; line-height: 1.0; color: #1d1d1b; margin-bottom: 9px;
   }
   .voet .tekst .sub {
     font-family: 'Area Normal', sans-serif; font-weight: 400;
-    font-size: 25px; line-height: 1.25; color: var(--ingredients);
+    font-size: 21.65px; line-height: 26.5px; color: #1d1d1b;
   }
 </style>
 </head>
@@ -120,7 +118,7 @@
   <div class="kolommen" id="kolommen"></div>
 
   <div class="voet">
-    <svg class="icoon" width="98" height="64" viewBox="0 0 314.38 204.21" fill="var(--accent)" xmlns="http://www.w3.org/2000/svg">
+    <svg class="icoon" width="157.2" height="102.1" viewBox="0 0 314.38 204.21" fill="var(--accent)" xmlns="http://www.w3.org/2000/svg">
       <path d="M314.37 12.06 C314.37 11.92 314.37 11.79 314.36 11.65 C314.04 7.12 311.42 3.29 307.50 1.66 C303.55 0.00 299.03 0.80 295.42 3.79 C285.55 11.98 279.00 37.46 276.65 48.02 C271.89 69.41 269.58 85.80 283.21 100.11 L283.21 189.61 C283.21 197.52 290.30 204.21 298.71 204.21 C307.19 204.21 314.38 197.61 314.38 189.80 L314.38 103.08 L314.38 103.02 L314.38 102.97 L314.37 12.06 M301.93 103.02 L301.93 103.08 L301.93 189.80 C301.93 190.53 300.47 191.96 298.71 191.96 C297.08 191.96 295.66 190.50 295.66 189.61 L295.66 97.73 C295.66 96.29 295.14 94.97 294.29 93.93 C293.97 93.48 293.62 93.07 293.24 92.69 C283.61 83.34 283.71 73.55 288.80 50.65 C291.88 36.86 297.09 21.17 301.92 14.86 L301.93 102.97 L301.93 103.02"/>
       <path d="M40.02 0.69 L39.10 0.69 C18.26 0.69 7.15 23.58 3.96 43.30 C0.00 67.80 11.02 84.24 24.15 90.58 L24.15 189.91 C24.15 197.74 31.14 204.11 39.74 204.11 C48.34 204.11 55.34 197.74 55.34 189.91 L55.34 90.34 C72.64 81.92 77.76 60.67 74.96 43.30 C71.77 23.58 60.67 0.69 40.02 0.69 M47.14 80.44 C44.60 81.28 42.89 83.61 42.89 86.25 L42.89 189.91 C42.89 190.81 41.52 191.86 39.74 191.86 C37.97 191.86 36.60 190.81 36.60 189.91 L36.60 86.44 C36.60 83.76 34.82 81.39 32.21 80.59 C18.65 76.47 13.92 59.68 16.25 45.22 C18.19 33.20 25.20 12.94 39.33 12.94 L39.80 12.94 C53.72 12.94 60.72 33.20 62.66 45.22 C64.96 59.44 60.37 76.09 47.14 80.44"/>
       <path d="M170.77 18.03 C123.27 18.03 84.64 56.05 84.64 102.78 C84.64 149.51 123.27 187.53 170.77 187.53 C218.27 187.53 256.91 149.51 256.91 102.78 C256.91 56.05 218.27 18.03 170.77 18.03 M170.77 175.28 C130.14 175.28 97.08 142.76 97.08 102.78 C97.08 62.80 130.14 30.28 170.77 30.28 C211.41 30.28 244.46 62.80 244.46 102.78 C244.46 142.76 211.41 175.28 170.77 175.28"/>
@@ -157,10 +155,17 @@
   }
 
   const cols = document.getElementById('kolommen');
-  cols.style.setProperty('--cols', String((data.columns || []).length || 1));
-  for (const sections of (data.columns || [])) {
+  // Layout (exacte geometrie uit het .ai-bestand); valt terug op een gelijkmatige verdeling.
+  const layout = data.layout || {};
+  const n = (data.columns || []).length || 1;
+  cols.style.left = (layout.marginLeft ?? 130) + 'px';
+  cols.style.top = (layout.top ?? 273) + 'px';
+  data.columns.forEach((sections, ci) => {
     const kolom = document.createElement('div');
     kolom.className = 'kolom';
+    const c = (layout.columns && layout.columns[ci]) || { left: ci * 560, width: 430 };
+    kolom.style.left = c.left + 'px';
+    kolom.style.width = c.width + 'px';
     for (const sectie of sections) {
       const blok = document.createElement('div');
       const kop = document.createElement('div');
@@ -192,7 +197,7 @@
       kolom.appendChild(blok);
     }
     cols.appendChild(kolom);
-  }
+  });
 </script>
 </body>
 </html>
