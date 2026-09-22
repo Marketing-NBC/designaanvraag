@@ -66,11 +66,21 @@ export function inhoudVanBasis(basis) {
     for (const sectie of kolom.secties) {
       const uit = { kop: sectie.kopAlinea == null ? null : kolom.alineas[sectie.kopAlinea].tekst, gerechten: [] }
       for (const gerecht of sectie.gerechten) {
-        const ingr = gerecht.ingrAlinea == null ? null : kolom.alineas[gerecht.ingrAlinea].tekst
-        uit.gerechten.push({
-          naam: kolom.alineas[gerecht.naamAlinea].tekst,
-          ...(ingr ? { ingredienten: ingr.split('|').map((s) => s.trim()).filter(Boolean) } : {}),
-        })
+        const omschrijving = gerecht.ingrAlinea == null ? null : kolom.alineas[gerecht.ingrAlinea]
+        const naam = kolom.alineas[gerecht.naamAlinea].tekst
+        if (omschrijving && omschrijving.soort === 'opsomming') {
+          // Een opsomming met bullets, zoals "Tartelettes": per onderdeel een naam
+          // en een toelichting. Zo kun je er een onderdeel bij zetten of hem naar
+          // een ander pakket verplaatsen.
+          uit.gerechten.push({ naam, onderdelen: omschrijving.onderdelen })
+        } else if (omschrijving) {
+          uit.gerechten.push({
+            naam,
+            ingredienten: omschrijving.tekst.split('|').map((s) => s.trim()).filter(Boolean),
+          })
+        } else {
+          uit.gerechten.push({ naam })
+        }
       }
       secties.push(uit)
     }

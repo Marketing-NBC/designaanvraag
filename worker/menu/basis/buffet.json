@@ -83,6 +83,22 @@
       "kleur": "#000000"
     }
   },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 35.99,
+    "naam": {
+      "font": "AreaNormal-Thin",
+      "grootte": 38.0,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 32.0,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 38.4,
+    "naarBullet": 66.0
+  },
   "ritme": {
     "overgang": {
       "kop->naam": 155.2,

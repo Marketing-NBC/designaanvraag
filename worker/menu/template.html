@@ -123,19 +123,74 @@
   }
 
   /**
+   * Zet een opsomming met bullets: per onderdeel een bullet met de naam, en
+   * daaronder desgewenst een cursieve toelichting.
+   *
+   * De maten komen uit opsommingStijl van het pakket. Die is afgeleid uit het
+   * enige basisontwerp dat een opsomming heeft (Grab & Go) en meegeschaald naar
+   * het corps van elk pakket, zodat een gerecht met bullets ook in een pakket
+   * gezet kan worden waar het .ai-bestand er geen heeft.
+   */
+  function regelsVoorOpsomming(onderdelen, stijl, kader, ritme) {
+    const regels = []
+    const offsets = []
+    const binnenKader = kader - stijl.inspring
+    const naamAfstand = ritme.regelafstand.ingr ?? stijl.naam.grootte * 1.3
+    let y = 0
+    let eerste = true
+
+    for (const onderdeel of onderdelen) {
+      const naamRegels = afbreken(String(onderdeel.naam ?? ''), stijl.naam.font, stijl.naam.grootte, binnenKader)
+      naamRegels.forEach((tekst, j) => {
+        if (eerste) eerste = false
+        else y += j === 0 ? stijl.naarBullet : naamAfstand
+        const runs = []
+        if (j === 0) runs.push({ tekst: stijl.bullet, x: 0, ...stijl.naam })
+        runs.push({ tekst, x: stijl.inspring, ...stijl.naam })
+        regels.push(runs)
+        offsets.push(y)
+      })
+
+      const delen = Array.isArray(onderdeel.toelichting)
+        ? onderdeel.toelichting
+        : (onderdeel.toelichting ? [String(onderdeel.toelichting)] : [])
+      const toelichting = delen.filter(Boolean).join(' | ')
+      if (!toelichting || !stijl.toelichting) continue
+      for (const tekst of afbreken(toelichting, stijl.toelichting.font, stijl.toelichting.grootte, binnenKader)) {
+        y += stijl.naarToelichting
+        regels.push([{ tekst, x: stijl.inspring, ...stijl.toelichting }])
+        offsets.push(y)
+      }
+    }
+    return { regels, offsets, uitBasis: false }
+  }
+
+  /** Twee opsommingen zijn dezelfde inhoud als elke naam en toelichting gelijk is. */
+  function zelfdeOpsomming(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false
+    return a.every((o, i) => zelfdeInhoud(o.naam, b[i].naam)
+      && zelfdeInhoud((o.toelichting || []).join(' | '), (b[i].toelichting || []).join(' | ')))
+  }
+
+  /**
    * Bepaalt per alinea welke regels er komen te staan.
    *
-   * Is de tekst dezelfde als in het basisontwerp, dan nemen we de regelval daarvan
+   * Is de inhoud dezelfde als in het basisontwerp, dan nemen we de regelval daarvan
    * letterlijk over - dan is het resultaat per definitie identiek. Alleen als de
-   * tekst echt wijzigt, breken we zelf af binnen het kader van de kolom.
+   * inhoud echt wijzigt, zetten we de alinea zelf opnieuw binnen het kader.
    */
-  function regelsVoor(alinea, nieuweTekst, kader, ritme) {
-    const basisTekst = alinea.tekst
-    const gelijk = nieuweTekst == null || zelfdeInhoud(nieuweTekst, basisTekst)
+  function regelsVoor(alinea, nieuw, kader, ritme) {
+    const opsommingStijl = basis.opsommingStijl
+    const nieuweOnderdelen = nieuw && nieuw.onderdelen
+    const nieuweTekst = nieuw && nieuw.tekst
+
+    const gelijk = nieuweOnderdelen
+      ? zelfdeOpsomming(nieuweOnderdelen, alinea.onderdelen)
+      : (nieuweTekst == null || zelfdeInhoud(nieuweTekst, alinea.tekst))
+
     if (gelijk && !gegevens.forceerHerberekening) {
-      // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp.
-      // Die zijn niet altijd gelijk: in de opsomming van Grab & Go wisselt hij
-      // per regel, en dat hoort zo.
+      // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp;
+      // in een opsomming wisselen die per regel, en dat hoort zo.
       const nul = alinea.regels[0].baseline
       return {
         regels: alinea.regels.map((r) => r.runs),
@@ -143,8 +198,21 @@
         uitBasis: true,
       }
     }
-    const stijl = alinea.regels[0].runs[0]
-    const stukken = afbreken(nieuweTekst ?? basisTekst, stijl.font, stijl.grootte, kader)
+
+    // Een opsomming: uit de aangeleverde onderdelen, of anders die van het ontwerp.
+    const onderdelen = nieuweOnderdelen
+      || (nieuweTekst == null && alinea.soort === 'opsomming' ? alinea.onderdelen : null)
+    if (onderdelen && opsommingStijl) {
+      return regelsVoorOpsomming(onderdelen, opsommingStijl, kader, ritme)
+    }
+
+    // Gewone lopende tekst. Bij een alinea die in het ontwerp een opsomming was,
+    // pakken we de ingredientenstijl van het pakket: de eerste run is daar de
+    // bullet, en die heeft een eigen kleur.
+    const stijl = alinea.soort === 'opsomming'
+      ? (basis.stijl.ingr || alinea.regels[0].runs[0])
+      : alinea.regels[0].runs[0]
+    const stukken = afbreken(nieuweTekst ?? alinea.tekst, stijl.font, stijl.grootte, kader)
     const afstand = regelafstand(alinea, ritme)
     return {
       regels: stukken.map((t) => [{ tekst: t, x: 0, font: stijl.font, grootte: stijl.grootte, kleur: stijl.kleur }]),
@@ -195,9 +263,20 @@
       if (!eersteStijl) eersteStijl = run
     }
     groep.appendChild(t)
-    const totaal = runs.reduce((som, r) => som + breedte(r.tekst, r.font, r.grootte), 0)
-    const links = runs[0].x ? x + runs[0].x : x
-    return { x0: links, x1: links + totaal, baseline, grootte: eersteStijl.grootte }
+    // De rechterrand is de verste run, niet de som van de breedtes: in een
+    // opsomming staat de bullet los van de tekst ernaast, en met optellen zou de
+    // regel smaller lijken dan hij is. Daar hangt de blob-controle op.
+    let x0 = Infinity
+    let x1 = -Infinity
+    let loopend = x
+    for (const run of runs) {
+      const start = run.x ? x + run.x : loopend
+      const eind = start + breedte(run.tekst, run.font, run.grootte)
+      x0 = Math.min(x0, start)
+      x1 = Math.max(x1, eind)
+      loopend = eind
+    }
+    return { x0, x1, baseline, grootte: eersteStijl.grootte }
   }
 
   // ------------------------------------------------------- blob-verbod
@@ -381,18 +460,29 @@
 
         // Elke alinea van deze sectie op volgorde: kop, dan per gerecht naam + ingredienten.
         const taken = []
-        if (sectie.kop) taken.push({ alinea: sectie.kop, tekst: nieuw ? nieuw.kop : null })
+        if (sectie.kop) taken.push({ alinea: sectie.kop, nieuw: nieuw ? { tekst: nieuw.kop } : null })
         sectie.gerechten.forEach((gerecht, gi) => {
           const bron = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten[gi] : null
-          taken.push({ alinea: gerecht.naam, tekst: bron ? bron.naam : null })
-          if (gerecht.ingr) {
-            const ingr = bron && bron.ingredienten
-              ? (Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten))
-              : null
-            taken.push({ alinea: gerecht.ingr, tekst: ingr })
+          taken.push({ alinea: gerecht.naam, nieuw: bron ? { tekst: bron.naam } : null })
+
+          // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
+          // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
+          // naar een pakket verhuizen dat er geen had, en andersom.
+          let inhoudVoorIngr = null
+          if (bron && Array.isArray(bron.onderdelen) && bron.onderdelen.length) {
+            inhoudVoorIngr = { onderdelen: bron.onderdelen }
           } else if (bron && bron.ingredienten && bron.ingredienten.length) {
+            inhoudVoorIngr = {
+              tekst: Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten),
+            }
+          }
+
+          if (gerecht.ingr) {
+            taken.push({ alinea: gerecht.ingr, nieuw: inhoudVoorIngr })
+          } else if (inhoudVoorIngr) {
             meldingen.structuur.push(
-              `"${bron.naam || gerecht.naam.tekst}" krijgt ingredienten, maar heeft die niet in het basisontwerp.`)
+              `"${bron.naam || gerecht.naam.tekst}" krijgt een omschrijving, `
+              + 'maar heeft die niet in het basisontwerp.')
           }
         })
         if (nieuw && Array.isArray(nieuw.gerechten) && nieuw.gerechten.length !== sectie.gerechten.length) {
@@ -403,21 +493,25 @@
         }
 
         for (const taak of taken) {
-          const { alinea, tekst } = taak
-          const { regels, offsets, uitBasis } = regelsVoor(alinea, tekst, kader, ritme)
+          const { alinea, nieuw: nieuweInhoud } = taak
+          const { regels, offsets, uitBasis } = regelsVoor(alinea, nieuweInhoud, kader, ritme)
           if (!uitBasis) {
             structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
-            if (alinea.gemengd) {
-              // Zo'n alinea heeft per regel een eigen font of corps (de opsomming
-              // met bullets en cursieve subregels). Die opmaak zit niet in platte
-              // tekst, dus die kunnen we bij nieuwe inhoud niet reconstrueren.
+            const omschrijving = ((nieuweInhoud && nieuweInhoud.tekst) ?? alinea.tekst).slice(0, 40)
+            const wasOpsomming = alinea.soort === 'opsomming'
+            const wordtOpsomming = Boolean(nieuweInhoud && nieuweInhoud.onderdelen)
+            if (wasOpsomming && !wordtOpsomming && nieuweInhoud) {
               meldingen.opmaak.push(
-                `"${(tekst ?? alinea.tekst).slice(0, 40)}" is in het basisontwerp een opsomming `
-                + 'met eigen opmaak per regel. Bij nieuwe tekst valt die opmaak weg; '
-                + 'controleer dit scherm met de hand.')
+                `"${omschrijving}" staat in het basisontwerp als opsomming met bullets, `
+                + 'maar is aangeleverd als gewone rij ingredienten. Lever "onderdelen" aan '
+                + 'als de bullets moeten blijven.')
+            } else if (!wasOpsomming && wordtOpsomming) {
+              meldingen.opmaak.push(
+                `"${omschrijving}" wordt als opsomming met bullets gezet terwijl het `
+                + 'basisontwerp daar gewone ingredienten had. Kijk dit scherm even na.')
             } else if (regels.length !== alinea.regels.length) {
               meldingen.regelval.push(
-                `"${(tekst ?? alinea.tekst).slice(0, 40)}" valt over ${regels.length} regels, `
+                `"${omschrijving}" valt over ${regels.length} regels, `
                 + `het basisontwerp had er ${alinea.regels.length}.`)
             }
           }

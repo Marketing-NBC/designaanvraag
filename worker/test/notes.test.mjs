@@ -9,7 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { renderNotes } from '../../supabase/functions/_shared/notes.ts'
-import { mergeIntoNotes, renderComment, renderHuisstijlSection } from '../lib/notes.mjs'
+import { mergeIntoNotes, renderComment, renderHuisstijlSection, renderMenuComment, renderMenuFailureComment } from '../lib/notes.mjs'
 
 /** Tags die Asana accepteert in html_notes. */
 const TOEGESTAAN = new Set(['body', 'h1', 'h2', 'strong', 'em', 'u', 's', 'code', 'pre', 'ol', 'ul', 'li', 'a', 'blockquote', 'hr', 'img'])
@@ -93,4 +93,56 @@ test('de comment gebruikt geen img of koppen', () => {
   const comment = renderComment({ brief, website: aanvraag.website, attachmentNames })
   controleerXml(comment)
   assert.doesNotMatch(comment, /<img|<h1|<h2/)
+})
+
+// ── Menuschermen ─────────────────────────────────────────────────────
+// De meldingen van de opmaak-engine gaan naar Asana, niet naar een logbestand.
+// Ze bevatten gerechtnamen van opdrachtgevers, dus met alle tekens die daarin
+// kunnen zitten; een losse & of < zou de hele comment laten weigeren.
+
+const menuMeldingen = {
+  botsingen: [{ tekst: 'saus van "rode" ui & kruiden', baseline: 1547.4 }],
+  overloop: ['<Chocoladetrifle> valt onder de onderrand'],
+  structuur: ['Sectie "Op tafel" heeft 2 gerechten in het basisontwerp, 3 in de inhoud.'],
+  regelval: ['"kip | kimchi & komkommer" valt over 3 regels, het basisontwerp had er 2.'],
+  opmaak: ['"Tartelettes" wordt als opsomming gezet <met bullets>'],
+}
+
+test('de menu-comment is geldige XML, ook met rare tekens in de gerechten', () => {
+  const html = renderMenuComment({
+    pakket: 'grab-and-go',
+    bestandsnaam: 'menuscherm-grab-and-go.png',
+    meldingen: menuMeldingen,
+    sessionUrl: 'https://claude.ai/code/session_x?a=1&b=2',
+  })
+  controleerXml(html)
+  assert.ok(html.includes('aandachtspunten'), 'de comment noemt niet hoeveel er mis is')
+  assert.ok(!html.includes('<img'), 'Asana weigert img in een comment')
+})
+
+test('een menuscherm zonder meldingen leest als "klaar"', () => {
+  const html = renderMenuComment({
+    pakket: 'diner-4gangen',
+    bestandsnaam: 'menuscherm-diner-4gangen.png',
+    meldingen: { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [] },
+    sessionUrl: null,
+  })
+  controleerXml(html)
+  assert.ok(html.includes('volgens het basisontwerp'))
+  assert.ok(!html.includes('<ul>'), 'zonder meldingen hoort er geen lijstje in te staan')
+})
+
+test('een enkel aandachtspunt staat in enkelvoud', () => {
+  const html = renderMenuComment({
+    pakket: 'buffet',
+    bestandsnaam: 'x.png',
+    meldingen: { opmaak: ['iets'] },
+  })
+  controleerXml(html)
+  assert.ok(html.includes('is 1 aandachtspunt'), html)
+})
+
+test('de mislukking-comment is geldige XML', () => {
+  controleerXml(renderMenuFailureComment({ pakket: 'lunch-basic', reason: 'pakket "x" & <y> onbekend' }))
+  controleerXml(renderMenuFailureComment({ pakket: null, reason: 'geen inhoud' }))
 })
