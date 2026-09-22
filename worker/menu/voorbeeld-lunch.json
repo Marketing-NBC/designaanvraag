@@ -45,6 +45,9 @@
     "footer": {
       "left": 104.5,
       "top": 959.3
+    },
+    "blobLeft": {
+      "hide": true
     }
   },
   "columns": [
