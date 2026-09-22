@@ -17,13 +17,44 @@ Het resultaat leek op het ontwerp, maar was het nooit.
 
 Nu wordt het ontwerp één keer bevroren en daarna alleen nog gevuld.
 
-## De drie onderdelen
+## De onderdelen
 
 | Bestand | Wat het doet |
 |---|---|
 | `basis-extract.py` | Draait eenmalig. Bevriest elk basisontwerp uit het `.ai`-bestand tot een achtergrond (PNG) en een geometriebestand (JSON). |
 | `template.html` | De opmaak-engine. Vult een bevroren basisontwerp met de gerechten van een evenement. |
-| `controle.mjs` | Legt het resultaat pixel voor pixel naast de pagina uit het `.ai`-bestand. |
+| `render.mjs` | Roept de engine aan en levert de PNG plus de meldingen op. |
+| `controle.mjs` | Legt het resultaat pixel voor pixel naast de pagina uit het `.ai`-bestand. Ontwikkelgereedschap. |
+| `../menu-publiceer.mjs` | De productieweg: rendert, hangt het scherm aan de Asana-taak en zet de meldingen daar als comment bij. |
+
+## Hoe het in productie loopt
+
+De collega die de aanvraag indient ziet hier niets van. Het formulier vraagt om
+het pakket en de gerechten, meer niet; de opmaak draait in de worker en alles
+wat daaruit komt landt in Asana, waar Marketing toch al werkt.
+
+```
+formulier → aanvragen.menu_inhoud → worker/menu-publiceer.mjs → Asana-taak
+                                                                 ├─ bijlage: menuscherm-<pakket>.png
+                                                                 └─ comment: de meldingen
+```
+
+```
+node worker/menu-publiceer.mjs --aanvraag-id <uuid>
+node worker/menu-publiceer.mjs --data menu.json --dry-run     # niets naar Asana of Supabase
+```
+
+De comment noemt per punt wat er aan de hand is, op volgorde van ernst: tekst die
+een blob raakt, tekst die buiten het scherm valt, een opbouw die afwijkt van het
+basisontwerp, een opsomming die van vorm wisselt, en tot slot een gerecht dat
+anders afbreekt. Is er niets aan de hand, dan staat er één regel dat het scherm
+volgens het basisontwerp is opgemaakt.
+
+**Een mislukking blijft nooit stil.** Lukt de opmaak niet — onbekend pakket, geen
+inhoud, een fout in de engine — dan komt er een comment in Asana met de reden en
+gaat `menu_status` op `failed`. De statusvelden (`menu_status`, `menu_inhoud`,
+`menu_result`, `menu_error`) volgen dezelfde vorm als de `brand_*`-velden; zie
+`supabase/migrations/20260922140000_menuschermen.sql`.
 
 ### 1. Bevriezen
 
@@ -68,11 +99,17 @@ Invoerformaat:
   },
   "secties": [
     { "kop": "Op tafel", "gerechten": [
-      { "naam": "Zuurdesembrood", "ingredienten": ["roomboter", "fleur de sel"] }
+      { "naam": "Zuurdesembrood", "ingredienten": ["roomboter", "fleur de sel"] },
+      { "naam": "Tartelettes", "onderdelen": [
+        { "naam": "Rundertartaar", "toelichting": ["umamicrème", "kwartelei"] }
+      ]}
     ]}
   ]
 }
 ```
+
+Een gerecht heeft óf `ingredienten` (een rij achter elkaar, gescheiden door `|`)
+óf `onderdelen` (een opsomming met bullets); zie *Opsommingen* hieronder.
 
 Alles onder `merk` is optioneel. Zonder `merk` krijg je de NBC-huisstijl met de
 rode plaatshouder voor het logo. `blobBoven`/`blobOnder` zijn voor opdrachtgevers
@@ -188,13 +225,35 @@ zodat ze in het `.ai` opgeruimd kunnen worden. De grootste:
 - Het bestek-icoon in de voetregel heeft drie formaten (124,58 / 131,96 /
   204,21) die niet meeschalen met de tekst ernaast.
 
-**De opsomming in Grab & Go kan niet automatisch mee.** Bij "Tartelettes" staat
-een opsomming met bullets en een cursieve subregel per item — elke regel heeft
-daar een eigen font en corps. Zolang die tekst ongewijzigd blijft, komt hij
-letterlijk uit het basisontwerp. Vervang je hem, dan kan de engine die opmaak
-niet uit platte tekst reconstrueren; je krijgt dan de melding *"is in het
-basisontwerp een opsomming met eigen opmaak per regel"* en dat scherm moet met
-de hand nagekeken worden.
+## Opsommingen met bullets
+
+Bij "Tartelettes" in Grab & Go staat geen rij ingrediënten maar een opsomming:
+per onderdeel een bullet met de naam, en daaronder een cursieve toelichting.
+
+Dat is geen uitzondering in de code maar een **opmaakvorm die overal kan
+opduiken**, dus hij ligt vast als structuur:
+
+```json
+{
+  "naam": "Tartelettes",
+  "onderdelen": [
+    { "naam": "Rundertartaar", "toelichting": ["umamicrème", "kwartelei"] },
+    { "naam": "Tallegio (vega)", "toelichting": ["romige tallegio (kaasvulling)", "kruidencrunch"] }
+  ]
+}
+```
+
+Daardoor kun je er een onderdeel bij zetten (een derde smaak) en kun je het
+gerecht naar een **ander pakket** verplaatsen — ook naar een pakket waar het
+`.ai`-bestand zelf geen opsomming heeft. De maten van een opsomming (inspringing,
+corps van de toelichting, de sprong naar de volgende bullet) zijn één keer
+afgeleid uit Grab & Go en als verhouding vastgelegd. Elk pakket krijgt ze
+meegeschaald op zijn eigen corps, in `opsommingStijl`. Dat mag, omdat de twee
+typografische schalen in de ontwerpen precies een factor 1,1 schelen.
+
+Wissel je van vorm — bullets waar het ontwerp ingrediënten had of andersom — dan
+komt dat als melding terug, want het scherm ziet er dan anders uit dan het
+basisontwerp.
 
 ## Als het `.ai`-bestand verandert
 

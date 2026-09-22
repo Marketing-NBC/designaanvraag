@@ -67,7 +67,15 @@ for (const pakket of alle) {
         for (const gerecht of sectie.gerechten) {
           assert.equal(kolom.alineas[gerecht.naamAlinea].soort, 'naam')
           if (gerecht.ingrAlinea != null) {
-            assert.equal(kolom.alineas[gerecht.ingrAlinea].soort, 'ingr')
+            // De omschrijving onder een gerecht is een rij ingredienten of een
+            // opsomming met bullets; allebei horen bij dat gerecht.
+            const omschrijving = kolom.alineas[gerecht.ingrAlinea]
+            assert.ok(['ingr', 'opsomming'].includes(omschrijving.soort),
+              `onverwachte soort ${omschrijving.soort} onder een gerecht`)
+            if (omschrijving.soort === 'opsomming') {
+              assert.ok(Array.isArray(omschrijving.onderdelen) && omschrijving.onderdelen.length,
+                'een opsomming zonder onderdelen is nergens aan aan te passen')
+            }
           }
         }
       }
@@ -128,6 +136,60 @@ test('tekst die over een blob zou vallen wordt gemeld', { timeout: 120_000 }, as
     assert.ok(typeof botsing.baseline === 'number' && botsing.tekst,
       'een botsingsmelding moet zeggen welke regel waar botst')
   }
+})
+
+test('een opsomming met bullets is een structuur, geen losse regels', () => {
+  // "Tartelettes" in Grab & Go staat als opsomming in het ontwerp. Die moet als
+  // onderdelen in de data staan, anders is er niets aan te veranderen.
+  const basis = laadBasis('grab-and-go')
+  const opsommingen = basis.kolommen
+    .flatMap((k) => k.alineas)
+    .filter((a) => a.soort === 'opsomming')
+  assert.equal(opsommingen.length, 1, 'de opsomming van Grab & Go is niet herkend')
+  const onderdelen = opsommingen[0].onderdelen
+  assert.equal(onderdelen.length, 2)
+  assert.equal(onderdelen[0].naam, 'Rundertartaar')
+  assert.deepEqual(onderdelen[0].toelichting, ['umamicrème', 'kwartelei'])
+
+  // Elk pakket kent de maten van een opsomming, ook de pakketten die er zelf geen
+  // hebben: een gerecht met bullets kan naar een ander pakket verhuizen.
+  for (const pakket of alle) {
+    const stijl = laadBasis(pakket).opsommingStijl
+    assert.ok(stijl && stijl.bullet && stijl.naam && stijl.toelichting,
+      `${pakket} heeft geen opsomming-maten`)
+    assert.ok(stijl.naarBullet > stijl.naarToelichting,
+      `${pakket}: de sprong naar een nieuwe bullet hoort groter te zijn dan die naar een toelichting`)
+  }
+})
+
+test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () => {
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  const tartelettes = inhoud.secties[0].gerechten[0]
+  assert.ok(Array.isArray(tartelettes.onderdelen), 'Tartelettes komt niet als opsomming terug')
+  tartelettes.onderdelen.push({ naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcreme'] })
+
+  const { meldingen } = await renderMenu(inhoud)
+  assert.deepEqual(meldingen.botsingen, [], 'de langere opsomming raakt een blob')
+  assert.deepEqual(meldingen.overloop, [])
+  // De alinea wordt langer, en dat hoort gemeld te worden.
+  assert.equal(meldingen.regelval.length, 1)
+  assert.match(meldingen.regelval[0], /6 regels/)
+})
+
+test('een opsomming kan naar een pakket dat er zelf geen heeft', { timeout: 120_000 }, async () => {
+  const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
+  inhoud.secties[0].gerechten[1] = {
+    naam: 'Tartelettes',
+    onderdelen: [
+      { naam: 'Rundertartaar', toelichting: ['umamicrème', 'kwartelei'] },
+      { naam: 'Tallegio (vega)', toelichting: ['romige tallegio (kaasvulling)', 'kruidencrunch'] },
+    ],
+  }
+  const { meldingen } = await renderMenu(inhoud)
+  assert.deepEqual(meldingen.botsingen, [])
+  assert.deepEqual(meldingen.overloop, [])
+  assert.equal(meldingen.opmaak.length, 1, 'de wissel van ingredienten naar bullets hoort gemeld')
+  assert.match(meldingen.opmaak[0], /opsomming met bullets/)
 })
 
 test('een onbekend pakket geeft een duidelijke fout', () => {

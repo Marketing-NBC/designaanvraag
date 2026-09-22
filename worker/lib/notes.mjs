@@ -102,3 +102,62 @@ export function renderFailureComment({ website, reason, rerunHint }) {
     `Reden: ${escapeXml(reason)}. ${escapeXml(rerunHint ?? 'Kijk zelf even op de site, of vraag Devi de extractie opnieuw te starten.')}</body>`
   )
 }
+
+/**
+ * De comment bij een gerenderd menuscherm.
+ *
+ * Alles wat de opmaak-engine opmerkt komt hier terecht, want Marketing werkt in
+ * Asana en niet in de logs. De volgorde is die van de ernst: eerst wat er mis kan
+ * zijn met het beeld zelf, dan wat er afwijkt van het basisontwerp.
+ *
+ * @param {object} p
+ * @param {string} p.pakket        naam van het basisontwerp, bv. 'diner-4gangen'
+ * @param {string} p.bestandsnaam  naam van de bijlage bij de taak
+ * @param {object} p.meldingen     { botsingen, overloop, structuur, regelval, opmaak }
+ * @param {string|null} p.sessionUrl
+ */
+export function renderMenuComment({ pakket, bestandsnaam, meldingen, sessionUrl }) {
+  const m = meldingen ?? {}
+  const punten = []
+
+  for (const b of m.botsingen ?? []) {
+    punten.push(`<li><strong>Tekst raakt een blob:</strong> ${escapeXml(b.tekst ?? '')} `
+      + `(op hoogte ${Math.round(b.baseline ?? 0)}). Dit scherm kan zo niet de deur uit.</li>`)
+  }
+  for (const t of m.overloop ?? []) {
+    punten.push(`<li><strong>Valt buiten het scherm:</strong> ${escapeXml(t)}</li>`)
+  }
+  for (const t of m.structuur ?? []) {
+    punten.push(`<li><strong>Opbouw wijkt af:</strong> ${escapeXml(t)}</li>`)
+  }
+  for (const t of m.opmaak ?? []) {
+    punten.push(`<li><strong>Opmaak:</strong> ${escapeXml(t)}</li>`)
+  }
+  for (const t of m.regelval ?? []) {
+    punten.push(`<li>Andere regelval dan het basisontwerp: ${escapeXml(t)}</li>`)
+  }
+
+  const aandachtspunten = `${punten.length} aandachtspunt${punten.length === 1 ? '' : 'en'}`
+  const kop = punten.length === 0
+    ? `Menuscherm <strong>${escapeXml(pakket)}</strong> is opgemaakt volgens het basisontwerp `
+      + 'en staat als bijlage'
+    : `Menuscherm <strong>${escapeXml(pakket)}</strong> staat als bijlage, `
+      + `maar er ${punten.length === 1 ? 'is' : 'zijn'} ${aandachtspunten}`
+
+  const staart = sessionUrl
+    ? ` <a href="${escapeXml(sessionUrl)}">Bekijk de sessie</a>.`
+    : ''
+
+  return `<body>${kop} (<em>${escapeXml(bestandsnaam)}</em>).`
+    + (punten.length ? `<ul>${punten.join('')}</ul>` : '')
+    + `${staart}</body>`
+}
+
+/** De comment als het menuscherm helemaal niet gerenderd kon worden. */
+export function renderMenuFailureComment({ pakket, reason }) {
+  return (
+    `<body>Het menuscherm${pakket ? ` voor <strong>${escapeXml(pakket)}</strong>` : ''} `
+    + `kon niet automatisch worden opgemaakt. Reden: ${escapeXml(reason)}. `
+    + 'Maak het scherm met de hand op, of vraag Devi de opmaak opnieuw te starten.</body>'
+  )
+}

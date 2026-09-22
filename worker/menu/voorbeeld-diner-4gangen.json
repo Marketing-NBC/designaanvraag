@@ -3,6 +3,11 @@
     "Voorbeeld van een echte aanvraag: het viergangen sit-down diner, waarbij de",
     "opdrachtgever 'Tasteful gift' heeft vervangen door 'Tartelettes' en een ander",
     "nagerecht heeft gekozen. De rest staat zoals in het basisontwerp.",
+    "",
+    "De Tartelettes komen uit Grab & Go en zijn daar een opsomming met bullets.",
+    "Die vorm verhuist mee: 'onderdelen' in plaats van 'ingredienten'. De maten",
+    "schalen naar het corps van dit pakket.",
+    "",
     "Een leeg startpunt maak je met:",
     "  node worker/menu/render.mjs --pakket diner-4gangen --sjabloon > menu.json"
   ],
@@ -18,7 +23,10 @@
         },
         {
           "naam": "Tartelettes",
-          "ingredienten": ["rundertartaar", "umamicrème", "kwartelei"]
+          "onderdelen": [
+            { "naam": "Rundertartaar", "toelichting": ["umamicrème", "kwartelei"] },
+            { "naam": "Tallegio (vega)", "toelichting": ["romige tallegio (kaasvulling)", "kruidencrunch"] }
+          ]
         }
       ]
     },

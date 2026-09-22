@@ -83,6 +83,22 @@
       "kleur": "#000000"
     }
   },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 35.99,
+    "naam": {
+      "font": "AreaNormal-Thin",
+      "grootte": 38.0,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 32.0,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 38.4,
+    "naarBullet": 66.0
+  },
   "ritme": {
     "overgang": {
       "kop->naam": 145.2,
@@ -199,9 +215,24 @@
           ]
         },
         {
-          "soort": "ingr",
+          "soort": "opsomming",
           "tekst": "•Rundertartaar umamicrème | kwartelei •Tallegio (vega) romige tallegio (kaasvulling) | kruidencrunch",
-          "gemengd": true,
+          "onderdelen": [
+            {
+              "naam": "Rundertartaar",
+              "toelichting": [
+                "umamicrème",
+                "kwartelei"
+              ]
+            },
+            {
+              "naam": "Tallegio (vega)",
+              "toelichting": [
+                "romige tallegio (kaasvulling)",
+                "kruidencrunch"
+              ]
+            }
+          ],
           "regels": [
             {
               "baseline": 858.35,

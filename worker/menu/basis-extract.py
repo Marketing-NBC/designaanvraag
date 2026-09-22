@@ -494,6 +494,134 @@ def afwijkingen_zoeken(per_kolom, ritme) -> list:
 
 # ---------------------------------------------------------------- uitschrijven
 
+# ----------------------------------------------------------------- opsommingen
+
+BULLETS = ('•', '‣', '·')
+
+
+def is_bullet(regel) -> bool:
+    return regel['runs'][0]['tekst'].strip() in BULLETS
+
+
+def opsomming_van(alinea):
+    """Leest een opsomming met bullets uit een alinea, of geeft None.
+
+    Zo staat "Tartelettes" in Grab & Go: per onderdeel een bullet met de naam, en
+    daaronder een cursieve regel met de smaakomschrijving. Dat is geen uitzondering
+    maar een opmaakvorm die overal kan opduiken, dus we leggen hem vast als
+    structuur - onderdelen met een naam en een toelichting - in plaats van als
+    losse regels tekst.
+    """
+    if alinea['soort'] != 'ingr' or not any(is_bullet(r) for r in alinea['regels']):
+        return None
+
+    bullet_regel = next(r for r in alinea['regels'] if is_bullet(r))
+    naam_stijl = bullet_regel['runs'][-1]
+    toelichting_stijl = next(
+        (r['runs'][0] for r in alinea['regels']
+         if not is_bullet(r) and (r['runs'][0]['font'], r['runs'][0]['grootte'])
+         != (naam_stijl['font'], naam_stijl['grootte'])),
+        None)
+
+    onderdelen = []
+    for regel in alinea['regels']:
+        eerste = regel['runs'][0]
+        if is_bullet(regel):
+            tekst = ''.join(r['tekst'] for r in regel['runs'][1:]).strip()
+            onderdelen.append({'naam': tekst, 'toelichting': []})
+        elif not onderdelen:
+            continue
+        elif toelichting_stijl and (eerste['font'], eerste['grootte']) == \
+                (toelichting_stijl['font'], toelichting_stijl['grootte']):
+            regeltekst = ''.join(r['tekst'] for r in regel['runs']).strip()
+            onderdelen[-1]['toelichting'].append(regeltekst)
+        else:
+            # doorloop van een lange onderdeelnaam
+            onderdelen[-1]['naam'] += ' ' + ''.join(r['tekst'] for r in regel['runs']).strip()
+
+    for onderdeel in onderdelen:
+        samen = ' '.join(onderdeel['toelichting'])
+        onderdeel['toelichting'] = [p.strip() for p in samen.split('|') if p.strip()]
+
+    # Baseline-afstanden: naar een toelichting, en naar de volgende bullet.
+    naar_toelichting = naar_bullet = None
+    for vorige, deze in zip(alinea['regels'], alinea['regels'][1:]):
+        afstand = round(deze['baseline'] - vorige['baseline'], 2)
+        if is_bullet(deze):
+            naar_bullet = afstand
+        elif naar_toelichting is None:
+            naar_toelichting = afstand
+
+    return {
+        'onderdelen': onderdelen,
+        'stijl': {
+            'bullet': bullet_regel['runs'][0]['tekst'].strip(),
+            'bulletX': rond(bullet_regel['runs'][0]['x']),
+            'inspring': rond(naam_stijl['x'] - bullet_regel['runs'][0]['x']),
+            'naam': {'font': naam_stijl['font'], 'grootte': naam_stijl['grootte'],
+                     'kleur': naam_stijl['kleur']},
+            'toelichting': ({'font': toelichting_stijl['font'],
+                             'grootte': toelichting_stijl['grootte'],
+                             'kleur': toelichting_stijl['kleur']} if toelichting_stijl else None),
+            'naarToelichting': naar_toelichting,
+            'naarBullet': naar_bullet,
+        },
+    }
+
+
+def opsomming_ratios(doc):
+    """De maten van een opsomming, uitgedrukt als verhouding tot het ingredientencorps.
+
+    De basisontwerpen bestaan in twee typografische schalen die precies een factor
+    1,1 schelen (72/56/38 tegenover 79,2/61,6/41,8). Door de opsomming als
+    verhouding vast te leggen kan hij in elk pakket gezet worden, ook in pakketten
+    waar het .ai-bestand er geen heeft - en dat moet kunnen, want een gerecht met
+    bullets kan naar een ander pakket verhuizen.
+    """
+    for pagina_nr, _ in PAKKETTEN:
+        page = doc[pagina_nr - 1]
+        alles = spans_van(page)
+        inhoud = [s for s in alles if s['soort'] != 'titel' and not is_sjabloontekst(s)]
+        marges = kolom_x(inhoud)
+        for i, links in enumerate(marges):
+            grens = marges[i + 1] - 40 if i + 1 < len(marges) else 1e9
+            eigen = [s for s in inhoud if links - 40 <= s['x'] < grens]
+            for alinea in alineas_bouwen(regels_bouwen(eigen)):
+                gevonden = opsomming_van(alinea)
+                if not gevonden:
+                    continue
+                stijl = gevonden['stijl']
+                basis = stijl['naam']['grootte']
+                return {
+                    'bron': f'pagina {pagina_nr}',
+                    'bullet': stijl['bullet'],
+                    'naamFont': stijl['naam']['font'],
+                    'naamKleur': stijl['naam']['kleur'],
+                    'toelichtingFont': stijl['toelichting']['font'],
+                    'toelichtingKleur': stijl['toelichting']['kleur'],
+                    'inspring': stijl['inspring'] / basis,
+                    'toelichtingGrootte': stijl['toelichting']['grootte'] / basis,
+                    'naarToelichting': stijl['naarToelichting'] / basis,
+                    'naarBullet': stijl['naarBullet'] / basis,
+                }
+    return None
+
+
+def opsomming_stijl(ratios, ingr_grootte: float) -> dict:
+    """De opsomming-maten voor een pakket, geschaald op zijn eigen ingredientencorps."""
+    return {
+        'bullet': ratios['bullet'],
+        'inspring': rond(ratios['inspring'] * ingr_grootte),
+        'naam': {'font': ratios['naamFont'], 'grootte': rond(ingr_grootte),
+                 'kleur': ratios['naamKleur']},
+        'toelichting': {'font': ratios['toelichtingFont'],
+                        'grootte': rond(ratios['toelichtingGrootte'] * ingr_grootte),
+                        'kleur': ratios['toelichtingKleur']},
+        'naarToelichting': rond(ratios['naarToelichting'] * ingr_grootte),
+        'naarBullet': rond(ratios['naarBullet'] * ingr_grootte),
+    }
+
+
 def secties_van(alineas) -> list:
     """De alinea's van een kolom gegroepeerd tot secties met gerechten.
 
@@ -515,7 +643,7 @@ def secties_van(alineas) -> list:
                 secties.append(sectie)
             gerecht = {'naamAlinea': i, 'ingrAlinea': None}
             sectie['gerechten'].append(gerecht)
-        elif alinea['soort'] == 'ingr' and gerecht is not None:
+        elif alinea['soort'] in ('ingr', 'opsomming') and gerecht is not None:
             gerecht['ingrAlinea'] = i
     return secties
 
@@ -533,15 +661,21 @@ def alinea_naar_json(alinea, links):
         regels.append({'baseline': rond(regel['baseline']), 'runs': runs})
     # De platte tekst is wat de renderer opnieuw afbreekt als de inhoud wijzigt.
     tekst = ' '.join(''.join(r['tekst'] for r in regel['runs']).strip() for regel in alinea['regels'])
-    # Een alinea met meerdere font/corps-combinaties (de opsomming van Grab & Go:
-    # bullets met een cursieve subregel) is niet uit platte tekst te herbouwen.
-    # De renderer moet dat melden in plaats van hem stilletjes plat te slaan.
-    stijlen = {(r['font'], r['grootte']) for regel in alinea['regels'] for r in regel['runs']}
-    return {'soort': alinea['soort'], 'tekst': re.sub(r'\s+', ' ', tekst).strip(),
-            **({'gemengd': True} if len(stijlen) > 1 else {}), 'regels': regels}
+    uit = {'soort': alinea['soort'], 'tekst': re.sub(r'\s+', ' ', tekst).strip()}
+
+    # Een opsomming met bullets leggen we vast als structuur, niet als losse
+    # regels: dan kan hij opnieuw gezet worden als er een onderdeel bij komt of
+    # als het gerecht naar een ander pakket verhuist.
+    gevonden = opsomming_van(alinea)
+    if gevonden:
+        uit['soort'] = 'opsomming'
+        uit['onderdelen'] = gevonden['onderdelen']
+
+    uit['regels'] = regels
+    return uit
 
 
-def pakket_extraheren(doc, pagina_nr: int, naam: str) -> dict:
+def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
     page = doc[pagina_nr - 1]
     alles = spans_van(page)
 
@@ -628,6 +762,8 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str) -> dict:
                        for s in sorted(voet, key=lambda s: s['baseline'])],
         },
         'stijl': stijl,
+        'opsommingStijl': (opsomming_stijl(ratios, stijl['ingr']['grootte'])
+                           if ratios and 'ingr' in stijl else None),
         'ritme': ritme,
         'spatie': {str(g): b for g, b in sorted(spaties.items())},
         'kolommen': kolommen,
@@ -650,9 +786,15 @@ def main():
     referentie = BASIS / 'referentie'
     referentie.mkdir(exist_ok=True)
 
+    ratios = opsomming_ratios(doc)
+    if not ratios:
+        raise SystemExit('Geen opsomming gevonden in het .ai-bestand; de maten daarvan '
+                         'zijn nodig om opsommingen in elk pakket te kunnen zetten.')
+    print(f'Opsomming-maten afgeleid uit {ratios["bron"]}.')
+
     overzicht = []
     for pagina_nr, naam in PAKKETTEN:
-        data = pakket_extraheren(doc, pagina_nr, naam)
+        data = pakket_extraheren(doc, pagina_nr, naam, ratios)
         pix = maak_achtergrond(pagina_nr)
         pix.save(BASIS / f'{naam}.png')
         # De volledige pagina uit het .ai: hiertegen vergelijkt controle.mjs de render.
