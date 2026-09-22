@@ -251,37 +251,53 @@ def is_sjabloontekst(span) -> bool:
 
 # -------------------------------------------------------------- woordbreedtes
 
-def woordindex(page, baselines):
+def woordindex(page) -> dict:
     """Woorden met hun echte breedte, gegroepeerd op de baseline waarop ze staan.
 
-    pymupdf geeft per woord een bbox maar geen baseline; we koppelen elk woord aan
-    de baseline die binnen zijn regelhoogte valt.
+    We lezen de losse letters (rawdict) in plaats van de woordenlijst, omdat die
+    laatste geen baseline meegeeft - alleen een letterkader. Woorden aan een
+    baseline koppelen via dat kader gaat mis zodra kolommen naast elkaar staan:
+    een woord belandt dan zomaar bij de regel van de buurkolom. De baseline van
+    de span is niet te verwarren.
     """
-    gesorteerd = sorted(baselines)
     index = {}
-    for x0, y0, x1, y1, woord, *_ in page.get_text('words'):
-        passend = [b for b in gesorteerd if y0 - 1 <= b <= y1 + 1]
-        if not passend:
+    for blok in page.get_text('rawdict')['blocks']:
+        if blok.get('type') != 0:
             continue
-        index.setdefault(min(passend, key=lambda b: abs(b - (y0 + y1) / 2)), []).append(
-            (round(x0, 2), round(x1, 2), woord))
+        for regel in blok['lines']:
+            for span in regel['spans']:
+                baseline = round(span['origin'][1], 2)
+                rij = index.setdefault(baseline, [])
+                huidig = None
+                for teken in span['chars']:
+                    if teken['c'].isspace():
+                        huidig = None
+                        continue
+                    if huidig is None:
+                        huidig = [round(teken['bbox'][0], 2), round(teken['bbox'][2], 2), teken['c']]
+                        rij.append(huidig)
+                    else:
+                        huidig[1] = round(teken['bbox'][2], 2)
+                        huidig[2] += teken['c']
     for woorden in index.values():
         woorden.sort()
     return index
 
 
-def spatiebreedtes(index, regels_per_baseline) -> dict:
-    """Breedte van een spatie per corpsgrootte, gemeten aan de echte woordafstanden."""
+def spatiebreedtes(page) -> dict:
+    """Breedte van een spatie per corpsgrootte, gemeten aan de spaties zelf."""
     per_grootte = {}
-    for baseline, woorden in index.items():
-        regel = regels_per_baseline.get(baseline)
-        if not regel:
+    for blok in page.get_text('rawdict')['blocks']:
+        if blok.get('type') != 0:
             continue
-        grootte = regel['runs'][0]['grootte']
-        for a, b in zip(woorden, woorden[1:]):
-            gat = b[0] - a[1]
-            if 0 < gat < grootte:
-                per_grootte.setdefault(grootte, []).append(gat)
+        for regel in blok['lines']:
+            for span in regel['spans']:
+                grootte = round(span['size'], 2)
+                for teken in span['chars']:
+                    if teken['c'] == ' ':
+                        breedte = teken['bbox'][2] - teken['bbox'][0]
+                        if breedte > 0:
+                            per_grootte.setdefault(grootte, []).append(breedte)
     return {g: round(statistics.median(v), 2) for g, v in per_grootte.items()}
 
 
@@ -344,7 +360,7 @@ def alineas_bouwen(regels):
     return alineas
 
 
-def kaderbreedte(alineas, links: float, index, spaties) -> dict:
+def kaderbreedte(alineas, links: float, grens: float, index, spaties) -> dict:
     """Leidt af hoe breed het tekstkader in Illustrator was.
 
     Elke regel moet passen: dat geeft een harde ondergrens. Brak een regel af,
@@ -356,25 +372,51 @@ def kaderbreedte(alineas, links: float, index, spaties) -> dict:
     bovengrens op die onder de ondergrens duikt; die tellen we niet mee, en we
     rapporteren hoeveel het er waren.
     """
+    # Regelbreedtes meten we tot de laatste letter, niet tot het einde van de span:
+    # die loopt door tot en met de spatie waar de regel op afbreekt, en dat maakt
+    # elke regel zo'n tien eenheden te breed.
+    def woorden_van(regel):
+        return [w for w in index.get(regel['baseline'], []) if links - 40 <= w[0] < grens]
+
+    def regelbreedte(regel):
+        woorden = woorden_van(regel)
+        return (max(w[1] for w in woorden) - links) if woorden else 0.0
+
     onder = 0.0
     bovengrenzen = []
     for alinea in alineas:
-        for i, regel in enumerate(alinea['regels']):
-            onder = max(onder, max(r['x1'] for r in regel['runs']) - links)
+        for regel in alinea['regels']:
+            onder = max(onder, regelbreedte(regel))
     for alinea in alineas:
         for i, regel in enumerate(alinea['regels'][:-1]):
-            rechts = max(r['x1'] for r in regel['runs']) - links
             volgende = alinea['regels'][i + 1]
-            woorden = index.get(volgende['baseline'], [])
+            woorden = woorden_van(volgende)
             if not woorden:
                 continue
             x0, x1, _ = woorden[0]
             spatie = spaties.get(volgende['runs'][0]['grootte'], volgende['runs'][0]['grootte'] * 0.26)
-            bovengrenzen.append(rechts + spatie + (x1 - x0))
+            bovengrenzen.append(regelbreedte(regel) + spatie + (x1 - x0))
     echt = [b for b in bovengrenzen if b > onder]
     handmatig = len(bovengrenzen) - len(echt)
-    boven = min(echt) if echt else onder + 60
-    gekozen = (onder + boven) / 2
+    if not echt:
+        # Geen enkele automatische afbreking in deze kolom: dan valt er niets af
+        # te leiden en schatten we ruim. Dat wordt gerapporteerd, want als dit
+        # gebeurt terwijl er wel afgebroken regels staan, is er iets mis.
+        boven = onder + 60
+    else:
+        boven = min(echt)
+
+    # Binnen dat interval kiezen we vlak boven de ondergrens, niet in het midden.
+    # Elke regel die in het ontwerp heel bleef past dan nog net, en elk woord dat
+    # in het ontwerp doorschoof naar de volgende regel schuift nog steeds door -
+    # dat is precies wat de bovengrenzen zeggen. Een breder kader zou regels gaan
+    # samenvoegen die de ontwerper had afgebroken.
+    #
+    # De marge erbovenop vangt op dat wij in Hairline zetten en het .ai in Thin:
+    # Hairline is tot 0,75% breder, dus zonder marge zou een regel die in het
+    # ontwerp nog net paste bij ons alsnog afbreken.
+    marge = max(6.0, onder * 0.012)
+    gekozen = onder + marge if onder + marge < boven else (onder + boven) / 2
     return {'breedte': rond(gekozen), 'minimaal': rond(onder), 'maximaal': rond(boven),
             'handmatigeAfbrekingen': handmatig}
 
@@ -491,7 +533,12 @@ def alinea_naar_json(alinea, links):
         regels.append({'baseline': rond(regel['baseline']), 'runs': runs})
     # De platte tekst is wat de renderer opnieuw afbreekt als de inhoud wijzigt.
     tekst = ' '.join(''.join(r['tekst'] for r in regel['runs']).strip() for regel in alinea['regels'])
-    return {'soort': alinea['soort'], 'tekst': re.sub(r'\s+', ' ', tekst).strip(), 'regels': regels}
+    # Een alinea met meerdere font/corps-combinaties (de opsomming van Grab & Go:
+    # bullets met een cursieve subregel) is niet uit platte tekst te herbouwen.
+    # De renderer moet dat melden in plaats van hem stilletjes plat te slaan.
+    stijlen = {(r['font'], r['grootte']) for regel in alinea['regels'] for r in regel['runs']}
+    return {'soort': alinea['soort'], 'tekst': re.sub(r'\s+', ' ', tekst).strip(),
+            **({'gemengd': True} if len(stijlen) > 1 else {}), 'regels': regels}
 
 
 def pakket_extraheren(doc, pagina_nr: int, naam: str) -> dict:
@@ -519,14 +566,14 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str) -> dict:
 
     # Woordbreedtes en spatiebreedtes komen uit de pagina zelf; die hebben we nodig
     # om te bepalen hoe breed de tekstkaders in Illustrator waren.
-    alle_regels = {r['baseline']: r for _, regels in regels_per_kolom for r in regels}
-    index = woordindex(page, alle_regels.keys())
-    spaties = spatiebreedtes(index, alle_regels)
+    index = woordindex(page)
+    spaties = spatiebreedtes(page)
 
-    for (links, _), alineas in zip(regels_per_kolom, per_kolom):
+    for i, ((links, _), alineas) in enumerate(zip(regels_per_kolom, per_kolom)):
+        grens = marges[i + 1] - 40 if i + 1 < len(marges) else 1e9
         kolommen.append({
             'x': rond(links),
-            'kader': kaderbreedte(alineas, links, index, spaties),
+            'kader': kaderbreedte(alineas, links, grens, index, spaties),
             'secties': secties_van(alineas),
             'alineas': [alinea_naar_json(a, links) for a in alineas],
         })

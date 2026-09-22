@@ -92,13 +92,18 @@ Rendert elk pakket en vergelijkt het met de pagina uit het `.ai`. De uitslag
 splitst het verschil op, want niet elk verschil betekent hetzelfde:
 
 - **verplaatst** — tekst staat op een andere plek dan in het basisontwerp. Dit
-  hoort 0,000% te zijn en is dat op dit moment voor alle acht de pakketten.
-- **snitverschil** — dezelfde letter op dezelfde plek, maar iets dunner of dikker
-  gezet. Zie *Openstaand* hieronder.
+  hoort 0,000% te zijn en is dat voor alle acht de pakketten.
+- **snit** — dezelfde letter op dezelfde plek, maar iets dunner gezet. Dit is de
+  bewuste keuze voor Hairline; zie *Fonts* hieronder.
 - **vlakwerk** — de randen van de blobs, op sub-pixelniveau.
-- **via invoerformaat** — hetzelfde ontwerp, maar heen en weer door het
-  invoerformaat. Wie het sjabloon ongewijzigd terugstuurt, hoort exact het
-  basisontwerp te krijgen. Ook 0,000%.
+- **via invoer** — hetzelfde ontwerp, maar heen en weer door het invoerformaat.
+  Wie het sjabloon ongewijzigd terugstuurt, hoort exact het basisontwerp te
+  krijgen. Ook 0,000%.
+- **bij herberekening** — hetzelfde ontwerp, maar met de regelval opnieuw
+  uitgerekend in plaats van overgenomen. Dit is wat er gebeurt zodra een gerecht
+  wijzigt. Zo zie je of de kolombreedtes kloppen voor het font dat wij zetten.
+  Zes van de acht staan op 0,000%; de rest op sub-pixelruis. Alleen Grab & Go
+  wijkt af, en dat staat hieronder uitgelegd.
 
 ## Hoe de opmaak werkt
 
@@ -147,15 +152,26 @@ De namen zijn een aanname op basis van hoe de ontwerpen zich tot elkaar
 verhouden; pas ze aan in `PAKKETTEN` in `basis-extract.py` als ze bij NBC anders
 heten.
 
-## Openstaand
+## Fonts
 
-**Het font `AreaNormal-Thin` ontbreekt in de repo.** De basisontwerpen zetten de
-ingrediënten in Thin; de repo heeft alleen `AreaNormal-Hairline.otf`, een
-lichtere snit. De engine valt daarop terug en meldt dat bij elke render. De
-breedtes schelen minder dan 1%, dus de regelval blijft gelijk en alles staat op
-de juiste plek — de tekst oogt alleen 0,5 tot 2,5% lichter dan in het `.ai`.
-Zet `AreaNormal-Thin.otf` in `web/src/assets/fonts/` en het verschil is weg;
-`render.mjs` pakt hem dan vanzelf op.
+De basisontwerpen zetten de ingrediënten in `AreaNormal-Thin`, maar NBC gebruikt
+daarvoor **Hairline**. Die vervanging staat op één plek, in `VERVANGINGEN` in
+`render.mjs`, en is een bewuste keuze — geen terugval omdat een bestand ontbreekt.
+Dat verschil is precies wat de kolom **snit** in de controle laat zien: de tekst
+is 0,5 tot 2,5% lichter dan in het `.ai`, maar staat op exact dezelfde plek.
+
+Kent de renderer een font niet, dan **faalt de render** met een duidelijke fout.
+Hij valt nooit stilzwijgend op iets anders terug, want dat levert andere breedtes
+en dus een andere regelval op dan het basisontwerp.
+
+Om diezelfde reden laadt de engine elk font expliciet vóórdat er iets gemeten
+wordt. `document.fonts.ready` is daarvoor niet genoeg: een `@font-face` die nog
+nergens in de DOM gebruikt is, wordt niet geladen, en dan meet canvas
+`measureText` stilletjes in een vervangend font — in de praktijk 20% te smal.
+Dat brak zowel de regelval als de blob-controle. De test *"de engine meet in het
+echte font, niet in een vervanger"* bewaakt dit.
+
+## Openstaand
 
 **Onregelmatigheden in de basisontwerpen.** De ontwerpen zijn met de hand gezet
 en zijn onderling niet consistent. De extractie rapporteert ze per pakket in
@@ -171,6 +187,14 @@ zodat ze in het `.ai` opgeruimd kunnen worden. De grootste:
   kolom 3.
 - Het bestek-icoon in de voetregel heeft drie formaten (124,58 / 131,96 /
   204,21) die niet meeschalen met de tekst ernaast.
+
+**De opsomming in Grab & Go kan niet automatisch mee.** Bij "Tartelettes" staat
+een opsomming met bullets en een cursieve subregel per item — elke regel heeft
+daar een eigen font en corps. Zolang die tekst ongewijzigd blijft, komt hij
+letterlijk uit het basisontwerp. Vervang je hem, dan kan de engine die opmaak
+niet uit platte tekst reconstrueren; je krijgt dan de melding *"is in het
+basisontwerp een opsomming met eigen opmaak per regel"* en dat scherm moet met
+de hand nagekeken worden.
 
 ## Als het `.ai`-bestand verandert
 

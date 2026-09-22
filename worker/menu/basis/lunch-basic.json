@@ -95,7 +95,10 @@
     "kopBaseline": null
   },
   "spatie": {
-    "41.8": 11.25,
+    "41.8": 11.24,
+    "43.3": 11.65,
+    "53.89": 13.26,
+    "57.0": 14.02,
     "61.6": 15.15,
     "79.2": 18.22
   },
@@ -103,9 +106,9 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 863.11,
-        "minimaal": 788.17,
-        "maximaal": 938.04,
+        "breedte": 786.24,
+        "minimaal": 776.92,
+        "maximaal": 926.79,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -323,7 +326,7 @@
     {
       "x": 1425.0,
       "kader": {
-        "breedte": 870.8,
+        "breedte": 850.89,
         "minimaal": 840.8,
         "maximaal": 900.8,
         "handmatigeAfbrekingen": 0

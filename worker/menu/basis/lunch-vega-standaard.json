@@ -97,15 +97,19 @@
     "kopBaseline": null
   },
   "spatie": {
+    "37.58": 10.11,
     "38.0": 10.22,
-    "56.0": 10.92,
-    "72.0": 10.23
+    "46.76": 11.5,
+    "56.0": 13.78,
+    "57.0": 14.02,
+    "72.0": 16.56,
+    "199.53": 45.89
   },
   "kolommen": [
     {
       "x": 211.0,
       "kader": {
-        "breedte": 726.64,
+        "breedte": 705.0,
         "minimaal": 696.64,
         "maximaal": 756.64,
         "handmatigeAfbrekingen": 0
@@ -364,9 +368,9 @@
     {
       "x": 1329.0,
       "kader": {
-        "breedte": 796.66,
-        "minimaal": 787.77,
-        "maximaal": 805.55,
+        "breedte": 786.88,
+        "minimaal": 777.55,
+        "maximaal": 814.4,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -695,9 +699,9 @@
     {
       "x": 2596.0,
       "kader": {
-        "breedte": 968.26,
-        "minimaal": 895.49,
-        "maximaal": 1041.03,
+        "breedte": 895.89,
+        "minimaal": 885.27,
+        "maximaal": 1054.56,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
