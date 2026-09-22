@@ -1,0 +1,145 @@
+{
+  "title": "Buﬀet",
+  "brand": {
+    "accent": "#f6a107",
+    "blobTop": "#f6a107",
+    "blobBottom": "#229d96",
+    "logo": null
+  },
+  "layout": {
+    "marginLeft": 120.7,
+    "top": 289.8,
+    "sectionGap": 41.4,
+    "columns": [
+      {
+        "left": 0.0,
+        "width": 445.1
+      },
+      {
+        "left": 546.4,
+        "width": 450.4
+      },
+      {
+        "left": 1111.3,
+        "width": 253.5
+      }
+    ],
+    "type": {
+      "title": 99.77,
+      "heading": 36.0,
+      "name": 30.8,
+      "ingr": 19.0,
+      "ingrLh": 25.0
+    },
+    "gaps": {
+      "headMt": -6.36,
+      "headMb": 41.55,
+      "nameMb": 6.82,
+      "dishMb": 21.59
+    },
+    "title": {
+      "left": 119.6,
+      "top": 96.2,
+      "size": 99.77
+    },
+    "footer": {
+      "left": 1035.0,
+      "top": 918.4
+    }
+  },
+  "columns": [
+    [
+      {
+        "heading": "Salade specials bar",
+        "items": [
+          {
+            "name": "Burrata",
+            "ingredients": [
+              "gedroogde mini vijgjes verse vijgen",
+              "spruitjes",
+              "pistache",
+              "mesclun"
+            ]
+          },
+          {
+            "name": "Rode bieten",
+            "ingredients": [
+              "appel",
+              "gerookte makreel",
+              "mierikswortel creme"
+            ]
+          },
+          {
+            "name": "Thaise kip",
+            "ingredients": [
+              "romaine",
+              "wortel",
+              "komkommer",
+              "gepofte zoete paprika"
+            ]
+          },
+          {
+            "name": "Pompoen",
+            "ingredients": [
+              "feta",
+              "rozijnen",
+              "rode kool",
+              "wortel"
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "heading": "Warme items",
+        "items": [
+          {
+            "name": "Krokante parmezaan piepers"
+          },
+          {
+            "name": "Winterse rattatouille"
+          },
+          {
+            "name": "Gebrande zalm",
+            "ingredients": [
+              "zuurkool",
+              "gefermenteerde mosterd"
+            ]
+          },
+          {
+            "name": "Coq au vin"
+          },
+          {
+            "name": "Boneless short ribs",
+            "ingredients": [
+              "miso boter jus"
+            ]
+          },
+          {
+            "name": "Pompoen risotto",
+            "ingredients": [
+              "gorgonzola",
+              "verse vijgen"
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "heading": "Desserts",
+        "items": [
+          {
+            "name": "Chocoladetriﬂe",
+            "ingredients": [
+              "Oreo crunch",
+              "kersen",
+              "Tony’s Chocolonely schaaf"
+            ]
+          }
+        ]
+      }
+    ]
+  ]
+}

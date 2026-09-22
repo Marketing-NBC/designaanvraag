@@ -1,0 +1,222 @@
+{
+  "title": "Lunch",
+  "brand": {
+    "accent": "#f6a107",
+    "blobTop": "#f6a107",
+    "blobBottom": "#229d96",
+    "logo": null
+  },
+  "layout": {
+    "marginLeft": 105.4,
+    "top": 246.0,
+    "sectionGap": 41.4,
+    "columns": [
+      {
+        "left": 0.0,
+        "width": 336.6
+      },
+      {
+        "left": 556.4,
+        "width": 420.2
+      },
+      {
+        "left": 1192.4,
+        "width": 458.4
+      }
+    ],
+    "type": {
+      "title": 99.77,
+      "heading": 36.0,
+      "name": 28.0,
+      "ingr": 19.0,
+      "ingrLh": 25.0
+    },
+    "gaps": {
+      "headMt": -6.36,
+      "headMb": 41.55,
+      "nameMb": 6.82,
+      "dishMb": 21.59
+    },
+    "title": {
+      "left": 100.0,
+      "top": 81.2,
+      "size": 99.77
+    },
+    "footer": {
+      "left": 104.5,
+      "top": 959.3
+    }
+  },
+  "columns": [
+    [
+      {
+        "heading": "Spaanse tortilla’s",
+        "items": [
+          {
+            "name": "Rode bieten tortilla",
+            "ingredients": [
+              "hummus",
+              "gegrilde groenten (vega)"
+            ]
+          },
+          {
+            "name": "Spinazie tortilla",
+            "ingredients": [
+              "zalm",
+              "hüttenkäse"
+            ]
+          },
+          {
+            "name": "Volkoren tortilla",
+            "ingredients": [
+              "pulled chicken",
+              "yoghurt Madras"
+            ]
+          }
+        ]
+      },
+      {
+        "heading": "Pinsa’s",
+        "items": [
+          {
+            "name": "Burrata",
+            "ingredients": [
+              "tomatenmix",
+              "basilicumolie (vega)"
+            ]
+          },
+          {
+            "name": "Mortadella",
+            "ingredients": [
+              "ricotta",
+              "rucola"
+            ]
+          },
+          {
+            "name": "Tuna melt",
+            "ingredients": [
+              "ui",
+              "jalapeño"
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "heading": "Stokkies",
+        "items": [
+          {
+            "name": "Wit",
+            "ingredients": [
+              "kip",
+              "Koreaanse kimchi-mayonaise",
+              "zoetzure rode ui",
+              "komkommer"
+            ]
+          },
+          {
+            "name": "Meergranen",
+            "ingredients": [
+              "avocado",
+              "komkommerspread",
+              "lente-ui",
+              "tomaat (vega)"
+            ]
+          },
+          {
+            "name": "Kaas",
+            "ingredients": [
+              "mosterdmayonaise",
+              "komkommer",
+              "rucola"
+            ]
+          }
+        ]
+      },
+      {
+        "heading": "Warme items",
+        "items": [
+          {
+            "name": "Minestrone Bar",
+            "ingredients": [
+              "Pittige tomatenbouillon",
+              "tortellini",
+              "mozzarella",
+              "parmezaan",
+              "paprika",
+              "basilicum",
+              "bruschetta’s",
+              "tomatenmix",
+              "groene kruidenmix"
+            ]
+          },
+          {
+            "name": "Broodje kroket of vegakroket",
+            "ingredients": [
+              "mosterdmayonaise",
+              "rundvlees of oesterzwam (vega)"
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      {
+        "heading": "Fris & Zoet",
+        "items": [
+          {
+            "name": "Greek Yoghurt Bar",
+            "ingredients": [
+              "kip",
+              "Koreaanse kimchi-mayonaise",
+              "zoetzure rode ui",
+              "komkommer"
+            ]
+          },
+          {
+            "name": "Vers fruit",
+            "ingredients": [
+              "avocado",
+              "komkommerspread",
+              "lente-ui",
+              "tomaat (vega)"
+            ]
+          },
+          {
+            "name": "Sweet Buns",
+            "ingredients": [
+              "Mini punt brioche",
+              "gele geslagen room",
+              "pistachecrunch",
+              "poedersuiker (vega)"
+            ]
+          }
+        ]
+      },
+      {
+        "heading": "Salade specials bar",
+        "items": [
+          {
+            "name": "Fregola (vegan)"
+          },
+          {
+            "name": "Caprese (vega)"
+          },
+          {
+            "name": "Niçoise (vis)"
+          },
+          {
+            "name": "Caesar (kip)",
+            "ingredients": [
+              "Croutons",
+              "oliën",
+              "vinaigrette",
+              "caesardressing"
+            ]
+          }
+        ]
+      }
+    ]
+  ]
+}
