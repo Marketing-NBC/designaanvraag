@@ -1,10 +1,19 @@
 {
   "title": "Diner",
   "brand": {
-    "accent": "#f6a304",
-    "blobTop": "#f6a304",
+    "accent": "#f6a107",
+    "blobTop": "#f6a107",
     "blobBottom": "#229d96",
     "logo": null
+  },
+  "layout": {
+    "marginLeft": 130.7,
+    "top": 290.5,
+    "columns": [
+      { "left": 0, "width": 430 },
+      { "left": 545.3, "width": 430 },
+      { "left": 1008.45, "width": 430 }
+    ]
   },
   "columns": [
     [
