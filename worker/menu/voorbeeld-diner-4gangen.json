@@ -1,0 +1,62 @@
+{
+  "_toelichting": [
+    "Voorbeeld van een echte aanvraag: het viergangen sit-down diner, waarbij de",
+    "opdrachtgever 'Tasteful gift' heeft vervangen door 'Tartelettes' en een ander",
+    "nagerecht heeft gekozen. De rest staat zoals in het basisontwerp.",
+    "Een leeg startpunt maak je met:",
+    "  node worker/menu/render.mjs --pakket diner-4gangen --sjabloon > menu.json"
+  ],
+  "pakket": "diner-4gangen",
+  "titel": "Diner",
+  "secties": [
+    {
+      "kop": "Op tafel",
+      "gerechten": [
+        {
+          "naam": "Zuurdesembrood",
+          "ingredienten": ["roomboter", "fleur de sel", "limoen", "olijven", "zongedroogde tomaat", "curry dip"]
+        },
+        {
+          "naam": "Tartelettes",
+          "ingredienten": ["rundertartaar", "umamicrème", "kwartelei"]
+        }
+      ]
+    },
+    {
+      "kop": "Voorgerecht",
+      "gerechten": [
+        {
+          "naam": "Gebakken brioche",
+          "ingredienten": ["rilette van eend", "gele -uienrelish", "venne cress"]
+        }
+      ]
+    },
+    {
+      "kop": "Tussengerecht",
+      "gerechten": [
+        {
+          "naam": "Pompoenravioli",
+          "ingredienten": ["gedroogde Italiaanse ham", "saliebotersaus"]
+        }
+      ]
+    },
+    {
+      "kop": "Hoofdgerecht",
+      "gerechten": [
+        {
+          "naam": "Boneless short ribs",
+          "ingredienten": ["crème van winterpeen", "spaghetti van pastinaak", "sticky hoisin"]
+        }
+      ]
+    },
+    {
+      "kop": "Nagerecht",
+      "gerechten": [
+        {
+          "naam": "Pompoen risotto",
+          "ingredienten": ["gorgonzola", "verse vijgen"]
+        }
+      ]
+    }
+  ]
+}
