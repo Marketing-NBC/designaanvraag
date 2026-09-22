@@ -4,290 +4,460 @@
 <meta charset="utf-8">
 <title>Menuscherm</title>
 <style>
-  /* Fonts worden door render.mjs als data-URI ingevoegd (about:blank mag geen file:// laden). */
-  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Light.otf') format('opentype'); font-weight: 300; }
-  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Regular.otf') format('opentype'); font-weight: 400; }
-  @font-face { font-family: 'Pockota'; src: url('{{FONT_DIR}}/Pockota-Medium.otf') format('opentype'); font-weight: 500; }
-  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Hairline.otf') format('opentype'); font-weight: 100; font-style: normal; }
-  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-HairlineItalic.otf') format('opentype'); font-weight: 100; font-style: italic; }
-  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Regular.otf') format('opentype'); font-weight: 400; }
-  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Semibold.otf') format('opentype'); font-weight: 600; }
-  @font-face { font-family: 'Area Normal'; src: url('{{FONT_DIR}}/AreaNormal-Extrabold.otf') format('opentype'); font-weight: 800; }
+  /* De fonts worden door render.mjs als data-URI ingevoegd; about:blank mag geen file:// laden. */
+  @font-face { font-family: 'Pockota-Medium';           src: url('{{FONT}}/Pockota-Medium.otf') format('opentype'); }
+  @font-face { font-family: 'AreaNormal-ExtraBold';     src: url('{{FONT}}/AreaNormal-Extrabold.otf') format('opentype'); }
+  @font-face { font-family: 'AreaNormal-Thin';          src: url('{{FONT}}/AreaNormal-Thin.otf') format('opentype'); }
+  @font-face { font-family: 'AreaNormal-HairlineItalic';src: url('{{FONT}}/AreaNormal-HairlineItalic.otf') format('opentype'); }
+  @font-face { font-family: 'AreaNormal-Regular';       src: url('{{FONT}}/AreaNormal-Regular.otf') format('opentype'); }
+  @font-face { font-family: 'AreaNormal-Semibold';      src: url('{{FONT}}/AreaNormal-Semibold.otf') format('opentype'); }
 
-  :root {
-    /* Merk-tokens: standaard NBC-huisstijl, worden per event overschreven
-       (blob-top/bottom + accent uit de huisstijl-extractie, logo uit de rode balk).
-       Alle maten zijn artboard-coordinaten (3840x2160) gedeeld door 2 -> 1920x1080.
-       Bij deviceScaleFactor 2 rendert dat exact 1:1 op het .ai-bestand. */
-    --blob-top: #f6a107;
-    --blob-bottom: #229d96;
-    --accent: #f6a107;
-    --ink: #000000;
-    --dish: #000000;
-    --ingredients: #000000;
-    --paper: #ffffff;
-
-    /* Typografische schaal + verticaal ritme (standaard = Diner; per pakket
-       overschreven via data.layout.type en data.layout.gaps). */
-    --title-size: 99.75px;
-    --heading-size: 39.6px;
-    --name-size: 30.8px;
-    --ingr-size: 20.9px;
-    --ingr-lh: 27.5px;
-    --head-mt: -7px;
-    --head-mb: 45.7px;
-    --name-mb: 7.5px;
-    --dish-mb: 23.75px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body {
-    width: 1920px; height: 1080px; background: var(--paper);
-    font-family: 'Area Normal', Inter, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision;
-    overflow: hidden;
-  }
-  .scherm { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
-
-  /* Decoratieve blobs (merk-gekleurd) — exacte vormen uit het Illustrator-bestand. */
-  .blobs { position: absolute; inset: 0; width: 1920px; height: 1080px; pointer-events: none; }
-
-  /* Titel linksboven — Pockota Medium 199.5/2 = 99.75px. */
-  .titel {
-    position: absolute; left: 129.6px; top: 98px;
-    font-family: 'Pockota', Georgia, serif; font-weight: 500;
-    font-size: var(--title-size); line-height: 1; color: var(--ink); letter-spacing: 0;
-  }
-
-  /* Logo-balk opdrachtgever (rechtsboven) — rect 2075.8,74.3 791.4x297 -> /2. */
-  .logo-balk {
-    position: absolute; left: 1037.9px; top: 37.15px; width: 395.7px; height: 148.5px;
-    background: #ff0000; display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-  }
-  .logo-balk .placeholder { font-weight: 800; font-size: 28.5px; color: #000000; }
-  .logo-balk img { max-width: 88%; max-height: 82%; object-fit: contain; }
-
-  /* Kolommen — absoluut geplaatst op de exacte x/y uit het .ai-bestand (via data.layout). */
-  .kolommen { position: absolute; }
-  .kolom { position: absolute; top: 0; display: flex; flex-direction: column; gap: 45.5px; }
-  .sectie-kop {
-    font-family: 'Pockota', Georgia, serif; font-weight: 500;
-    font-size: var(--heading-size); line-height: 1.0; color: var(--accent); margin: var(--head-mt) 0 var(--head-mb);
-  }
-  .gerecht { margin-bottom: var(--dish-mb); }
-  .gerecht:last-child { margin-bottom: 0; }
-  .gerecht .naam {
-    font-family: 'Area Normal', sans-serif; font-weight: 800;
-    font-size: var(--name-size); line-height: 1.0; color: var(--dish); margin-bottom: var(--name-mb);
-  }
-  .gerecht .naam .tag { font-weight: 800; }
-  .gerecht .ingredienten {
-    font-family: 'Area Normal', sans-serif; font-weight: 100;
-    font-size: var(--ingr-size); line-height: var(--ingr-lh); color: var(--ingredients);
-  }
-
-  /* Voetregel: dieetwens/allergie — icoon 2038.8,1815.4 + tekst 2442.8,1811.9 -> /2. */
-  .voet {
-    position: absolute; left: 1019.4px; top: 918.45px;
-    display: flex; align-items: flex-start; gap: 44.8px;
-  }
-  .voet .icoon { flex: none; }
-  .voet .tekst .kop {
-    font-family: 'Area Normal', sans-serif; font-weight: 800;
-    font-size: 26.95px; line-height: 1.0; color: #1d1d1b; margin-bottom: 9px;
-  }
-  .voet .tekst .sub {
-    font-family: 'Area Normal', sans-serif; font-weight: 100;
-    font-size: 21.65px; line-height: 26.5px; color: #1d1d1b;
-  }
+  * { margin: 0; padding: 0; }
+  html, body { width: 3840px; height: 2160px; background: #ffffff; overflow: hidden; }
+  svg { display: block; }
+  text { white-space: pre; }
 </style>
 </head>
 <body>
-<div class="scherm" id="scherm">
-  <!-- Blobs: exacte vormen uit het .ai-bestand, gevuld met één diagonale merk-gradient
-       (oranje rechtsboven -> teal linksonder). Herkleurbaar via --blob-top/--blob-bottom. -->
-  <svg class="blobs" viewBox="0 0 3840 2160" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <!-- Rechter blob: verticaal, oranje boven -> teal onder. objectBoundingBox
-           zodat de gradient meebeweegt als de blob naar rechts opschuift. -->
-      <linearGradient id="blobgrad-r" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="var(--blob-top)"/>
-        <stop offset="1" stop-color="var(--blob-bottom)"/>
-      </linearGradient>
-      <!-- Linksonder blob: teal linksboven -> oranje rechtsonder. objectBoundingBox
-           zodat de gradient klopt ongeacht positie/grootte per pakket. -->
-      <linearGradient id="blobgrad-l" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="var(--blob-bottom)"/>
-        <stop offset="1" stop-color="var(--blob-top)"/>
-      </linearGradient>
-    </defs>
-    <path id="blobRight" fill="url(#blobgrad-r)" d="M 3209.61 0 C 3176.941 34.32 3151.273 78.882 3130.617 133.161 3119.954 159.626 3111.942 186.602 3105.96 217.539 3099.979 248.477 3094.006 279.362 3092.04 303.993 3086.723 331.487 3086.086 363.461 3086.856 402.854 3087.593 442.176 3087.665 470.717 3088.404 495.813 3089.144 520.904 3093.896 553.917 3099.404 597.739 3104.187 645.052 3108.986 678.074 3113.708 696.795 3117.797 719.025 3124.59 755.947 3136.804 808.211 3146.324 859.954 3153.817 893.497 3158.528 912.274 3160.588 930.539 3170.076 967.982 3184.309 1024.272 3197.888 1083.94 3204.681 1120.861 3207.407 1135.683 3331.563 1662.396 3332.268 1990.589 3204.203 2119.105 L 3155.124 2160 H 3840 V 0 Z"/>
-    <path id="blobLeft" fill="url(#blobgrad-l)" d="M 0 1469.819 V 2160 H 1371.842 C 1222.791 2017.433 1029.7 1790.42 808.864 1800.34 580.815 1810.589 448.367 1984.546 346.57 1641.615 307.801 1547.591 218.029 1478.713 117.895 1463.53 104.047 1461.509 89.773 1460.495 75.349 1460.495 50.168 1460.495 24.55 1463.586 0 1469.819 Z"/>
-  </svg>
-
-  <div class="titel" id="titel"></div>
-
-  <div class="logo-balk" id="logoBalk">
-    <span class="placeholder">Logo opdrachtgever</span>
-  </div>
-
-  <div class="kolommen" id="kolommen"></div>
-
-  <div class="voet">
-    <svg class="icoon" width="157.2" height="102.1" viewBox="0 0 314.38 204.21" fill="var(--accent)" xmlns="http://www.w3.org/2000/svg">
-      <path d="M314.37 12.06 C314.37 11.92 314.37 11.79 314.36 11.65 C314.04 7.12 311.42 3.29 307.50 1.66 C303.55 0.00 299.03 0.80 295.42 3.79 C285.55 11.98 279.00 37.46 276.65 48.02 C271.89 69.41 269.58 85.80 283.21 100.11 L283.21 189.61 C283.21 197.52 290.30 204.21 298.71 204.21 C307.19 204.21 314.38 197.61 314.38 189.80 L314.38 103.08 L314.38 103.02 L314.38 102.97 L314.37 12.06 M301.93 103.02 L301.93 103.08 L301.93 189.80 C301.93 190.53 300.47 191.96 298.71 191.96 C297.08 191.96 295.66 190.50 295.66 189.61 L295.66 97.73 C295.66 96.29 295.14 94.97 294.29 93.93 C293.97 93.48 293.62 93.07 293.24 92.69 C283.61 83.34 283.71 73.55 288.80 50.65 C291.88 36.86 297.09 21.17 301.92 14.86 L301.93 102.97 L301.93 103.02"/>
-      <path d="M40.02 0.69 L39.10 0.69 C18.26 0.69 7.15 23.58 3.96 43.30 C0.00 67.80 11.02 84.24 24.15 90.58 L24.15 189.91 C24.15 197.74 31.14 204.11 39.74 204.11 C48.34 204.11 55.34 197.74 55.34 189.91 L55.34 90.34 C72.64 81.92 77.76 60.67 74.96 43.30 C71.77 23.58 60.67 0.69 40.02 0.69 M47.14 80.44 C44.60 81.28 42.89 83.61 42.89 86.25 L42.89 189.91 C42.89 190.81 41.52 191.86 39.74 191.86 C37.97 191.86 36.60 190.81 36.60 189.91 L36.60 86.44 C36.60 83.76 34.82 81.39 32.21 80.59 C18.65 76.47 13.92 59.68 16.25 45.22 C18.19 33.20 25.20 12.94 39.33 12.94 L39.80 12.94 C53.72 12.94 60.72 33.20 62.66 45.22 C64.96 59.44 60.37 76.09 47.14 80.44"/>
-      <path d="M170.77 18.03 C123.27 18.03 84.64 56.05 84.64 102.78 C84.64 149.51 123.27 187.53 170.77 187.53 C218.27 187.53 256.91 149.51 256.91 102.78 C256.91 56.05 218.27 18.03 170.77 18.03 M170.77 175.28 C130.14 175.28 97.08 142.76 97.08 102.78 C97.08 62.80 130.14 30.28 170.77 30.28 C211.41 30.28 244.46 62.80 244.46 102.78 C244.46 142.76 211.41 175.28 170.77 175.28"/>
-      <path d="M170.77 141.41 C166.97 141.41 163.87 144.46 163.87 148.20 C163.87 151.95 166.97 155.00 170.77 155.00 C174.58 155.00 177.68 151.95 177.68 148.20 C177.68 144.46 174.58 141.41 170.77 141.41"/>
-      <path d="M170.77 135.66 C174.20 135.66 177.00 132.92 177.00 129.54 L177.00 54.87 C177.00 51.50 174.20 48.75 170.77 48.75 C167.34 48.75 164.54 51.50 164.54 54.87 L164.54 129.54 C164.54 132.92 167.34 135.66 170.77 135.66"/>
-    </svg>
-    <div class="tekst">
-      <div class="kop">Dieetswens of allergie?</div>
-      <div class="sub">Laat het ons team weten,<br>we helpen je graag.</div>
-    </div>
-  </div>
-</div>
+<svg id="doek" width="3840" height="2160" viewBox="0 0 3840 2160" xmlns="http://www.w3.org/2000/svg">
+  <!-- De achtergrond komt rechtstreeks uit het .ai-bestand: de blobs zijn niet nagebouwd. -->
+  <image id="achtergrond" x="0" y="0" width="3840" height="2160" preserveAspectRatio="none"/>
+  <g id="logobalk"></g>
+  <g id="titel"></g>
+  <g id="inhoud"></g>
+  <g id="voet"></g>
+</svg>
 
 <script>
-  // De data wordt door render.mjs ingevoegd als window.__MENU__.
-  const data = window.__MENU__ || { title: '', columns: [] };
+(() => {
+  const gegevens = window.__MENU__ || {}
+  const basis = gegevens.basis
+  const inhoud = gegevens.inhoud || {}
+  const merk = gegevens.merk || {}
+  const SVG = 'http://www.w3.org/2000/svg'
 
-  const titelEl = document.getElementById('titel');
-  titelEl.textContent = data.title || '';
+  const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [] }
+  window.__RESULTAAT__ = meldingen
 
-  // Debug-hulp voor collisietests: verberg tekst of blobs.
-  const dbg = data.debug || '';
-  if (dbg.includes('hideText')) {
-    // visibility:hidden behoudt de layout, zodat de blob-verschuiving (die op de
-    // tekstbreedte rekent) ook in deze modus correct wordt berekend.
-    for (const sel of ['#titel', '#kolommen', '.voet', '.logo-balk'])
-      document.querySelectorAll(sel).forEach((e) => (e.style.visibility = 'hidden'));
+  const el = (naam, attrs = {}) => {
+    const e = document.createElementNS(SVG, naam)
+    for (const [k, v] of Object.entries(attrs)) if (v != null) e.setAttribute(k, v)
+    return e
   }
-  if (dbg.includes('hideBlobs')) document.querySelectorAll('.blobs').forEach((e) => (e.style.display = 'none'));
 
-  const root = document.getElementById('scherm');
+  // ---------------------------------------------------------------- meten
 
-  // Typografische schaal + ritme per pakket (uit layout.type / layout.gaps).
-  const lay = data.layout || {};
-  const t = lay.type || {};
-  const gp = lay.gaps || {};
-  const setv = (k, v, unit = 'px') => { if (v != null) root.style.setProperty(k, v + unit); };
-  setv('--title-size', t.title);
-  setv('--heading-size', t.heading);
-  setv('--name-size', t.name);
-  setv('--ingr-size', t.ingr);
-  setv('--ingr-lh', t.ingrLh);
-  setv('--head-mt', gp.headMt);
-  setv('--head-mb', gp.headMb);
-  setv('--name-mb', gp.nameMb);
-  setv('--dish-mb', gp.dishMb);
-  if (lay.title) {
-    if (lay.title.left != null) titelEl.style.left = lay.title.left + 'px';
-    if (lay.title.top != null) titelEl.style.top = lay.title.top + 'px';
-  }
-  if (lay.footer) {
-    const voet = document.querySelector('.voet');
-    if (lay.footer.left != null) voet.style.left = lay.footer.left + 'px';
-    if (lay.footer.top != null) { voet.style.top = lay.footer.top + 'px'; voet.style.bottom = 'auto'; }
-  }
-  // Blob linksonder per pakket: verbergen (Lunch/Grab & Go) of eigen vorm (Buffet).
-  if (lay.blobLeft) {
-    const bl = document.getElementById('blobLeft');
-    if (bl) {
-      if (lay.blobLeft.hide) bl.style.display = 'none';
-      else if (lay.blobLeft.path) bl.setAttribute('d', lay.blobLeft.path);
+  const meetDoek = document.createElement('canvas').getContext('2d')
+  const meetCache = new Map()
+
+  /** Breedte van een stuk tekst in hetzelfde font en corps als waarin het getekend wordt. */
+  function breedte(tekst, font, grootte) {
+    const sleutel = font + '|' + grootte + '|' + tekst
+    let w = meetCache.get(sleutel)
+    if (w === undefined) {
+      meetDoek.font = `${grootte}px "${font}"`
+      w = meetDoek.measureText(tekst).width
+      meetCache.set(sleutel, w)
     }
+    return w
   }
 
-  if (data.brand) {
-    const b = data.brand;
-    if (b.blobTop)    root.style.setProperty('--blob-top', b.blobTop);
-    if (b.blobBottom) root.style.setProperty('--blob-bottom', b.blobBottom);
-    if (b.accent)     root.style.setProperty('--accent', b.accent);
-    if (b.logo) {
-      const balk = document.getElementById('logoBalk');
-      balk.innerHTML = '';
-      balk.style.background = b.logoBg || '#ffffff';
-      const img = document.createElement('img');
-      img.src = b.logo;
-      balk.appendChild(img);
-    }
-  }
-
-  const cols = document.getElementById('kolommen');
-  // Layout (exacte geometrie uit het .ai-bestand); valt terug op een gelijkmatige verdeling.
-  const layout = data.layout || {};
-  const n = (data.columns || []).length || 1;
-  cols.style.left = (layout.marginLeft ?? 130) + 'px';
-  cols.style.top = (layout.top ?? 273) + 'px';
-  data.columns.forEach((sections, ci) => {
-    const kolom = document.createElement('div');
-    kolom.className = 'kolom';
-    const c = (layout.columns && layout.columns[ci]) || { left: ci * 560, width: 430 };
-    kolom.style.left = c.left + 'px';
-    kolom.style.width = c.width + 'px';
-    if (layout.sectionGap != null) kolom.style.gap = layout.sectionGap + 'px';
-    for (const sectie of sections) {
-      const blok = document.createElement('div');
-      const kop = document.createElement('div');
-      kop.className = 'sectie-kop';
-      kop.textContent = sectie.heading;
-      blok.appendChild(kop);
-      for (const item of (sectie.items || [])) {
-        const g = document.createElement('div');
-        g.className = 'gerecht';
-        const naam = document.createElement('div');
-        naam.className = 'naam';
-        naam.textContent = item.name;
-        if (item.tag) {
-          const t = document.createElement('span');
-          t.className = 'tag';
-          t.textContent = ' (' + item.tag + ')';
-          naam.appendChild(t);
-        }
-        g.appendChild(naam);
-        // Ingredienten: elk onderdeel blijft als geheel op een regel; er mag alleen
-        // bij de scheiding " | " worden afgebroken (dus nooit "venne cress" splitsen).
-        const segs = Array.isArray(item.ingredients)
-          ? item.ingredients
-          : (item.ingredients ? String(item.ingredients).split('|').map((s) => s.trim()) : []);
-        if (segs.length) {
-          const p = document.createElement('div');
-          p.className = 'ingredienten';
-          segs.forEach((seg, i) => {
-            const span = document.createElement('span');
-            span.style.whiteSpace = 'nowrap';
-            span.textContent = i < segs.length - 1 ? seg + ' |' : seg;
-            p.appendChild(span);
-            if (i < segs.length - 1) p.appendChild(document.createTextNode(' '));
-          });
-          g.appendChild(p);
-        }
-        blok.appendChild(g);
+  /**
+   * Breekt tekst af binnen een kaderbreedte.
+   * Ingredienten worden gescheiden door " | "; zo'n onderdeel blijft altijd heel,
+   * precies zoals in het basisontwerp. Losse woorden breken alleen als het moet.
+   */
+  function afbreken(tekst, font, grootte, kader) {
+    const delen = tekst.split(/\s+/).filter(Boolean)
+    const regels = []
+    let huidig = ''
+    for (const deel of delen) {
+      const kandidaat = huidig ? huidig + ' ' + deel : deel
+      if (huidig && breedte(kandidaat, font, grootte) > kader) {
+        regels.push(huidig)
+        huidig = deel
+      } else {
+        huidig = kandidaat
       }
-      kolom.appendChild(blok);
     }
-    cols.appendChild(kolom);
-  });
+    if (huidig) regels.push(huidig)
+    return regels.length ? regels : ['']
+  }
 
-  // Rechter blob opschuiven zodat hij nooit over de tekst valt.
-  // Coördinaten in het blob-svg zijn artboard-eenheden (2x de CSS-px).
-  (function shiftBlob() {
-    const blob = document.getElementById('blobRight');
-    if (!blob) return;
-    const schermRect = root.getBoundingClientRect();
-    let maxRight = 0;
-    const range = document.createRange();
-    cols.querySelectorAll('.sectie-kop, .naam, .ingredienten').forEach((el) => {
-      // Range-rects omsluiten de echte tekst (per regel), niet de volle kolombreedte.
-      range.selectNodeContents(el);
-      for (const r of range.getClientRects()) maxRight = Math.max(maxRight, r.right - schermRect.left);
-    });
-    const GAP = 24;                 // minimale witruimte tussen tekst en blob (CSS-px)
-    const NAT_LEFT = 3086;          // natuurlijke linkerrand van de blob (artboard)
-    const shift = Math.max(0, (maxRight + GAP) * 2 - NAT_LEFT);
-    if (shift > 0) blob.setAttribute('transform', `translate(${shift.toFixed(1)} 0)`);
-  })();
+  // ------------------------------------------------- basis -> inhoudsmodel
+
+  /**
+   * De sectie-indeling komt uit het bevroren basisontwerp: welke alinea de kop is
+   * en welke alinea's bij welk gerecht horen. De renderer leidt dat niet zelf af.
+   */
+  function sectiesVan(kolom) {
+    return kolom.secties.map((s) => ({
+      kop: s.kopAlinea == null ? null : kolom.alineas[s.kopAlinea],
+      gerechten: s.gerechten.map((g) => ({
+        naam: kolom.alineas[g.naamAlinea],
+        ingr: g.ingrAlinea == null ? null : kolom.alineas[g.ingrAlinea],
+      })),
+    }))
+  }
+
+  /** De secties uit de invoer, plat over alle kolommen heen. */
+  function invoersecties() {
+    const lijst = inhoud.secties
+    return Array.isArray(lijst) ? lijst : null
+  }
+
+  // ------------------------------------------------------------ opmaken
+
+  /**
+   * Twee teksten zijn "dezelfde inhoud" als alleen de scheidingstekens anders
+   * staan. Het basisontwerp bevat daar twee onregelmatigheden in: ergens staat
+   * "vijgen| spruitjes" zonder spatie, en een paar regels eindigen op een losse
+   * "|" die er is blijven staan. Dat zijn zetfouten in het ontwerp, geen andere
+   * inhoud - zonder deze normalisatie zou zoiets de hele regelval laten
+   * verspringen. Wat er getekend wordt blijft wel letterlijk het basisontwerp.
+   */
+  function zelfdeInhoud(a, b) {
+    const schoon = (t) => String(t)
+      .replace(/\s*\|\s*/g, ' | ')
+      .replace(/\s+/g, ' ')
+      .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
+      .trim()
+    return schoon(a) === schoon(b)
+  }
+
+  /**
+   * Bepaalt per alinea welke regels er komen te staan.
+   *
+   * Is de tekst dezelfde als in het basisontwerp, dan nemen we de regelval daarvan
+   * letterlijk over - dan is het resultaat per definitie identiek. Alleen als de
+   * tekst echt wijzigt, breken we zelf af binnen het kader van de kolom.
+   */
+  function regelsVoor(alinea, nieuweTekst, kader, ritme) {
+    const basisTekst = alinea.tekst
+    if (nieuweTekst == null || zelfdeInhoud(nieuweTekst, basisTekst)) {
+      // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp.
+      // Die zijn niet altijd gelijk: in de opsomming van Grab & Go wisselt hij
+      // per regel, en dat hoort zo.
+      const nul = alinea.regels[0].baseline
+      return {
+        regels: alinea.regels.map((r) => r.runs),
+        offsets: alinea.regels.map((r) => r.baseline - nul),
+        uitBasis: true,
+      }
+    }
+    const stijl = alinea.regels[0].runs[0]
+    const stukken = afbreken(nieuweTekst, stijl.font, stijl.grootte, kader)
+    const afstand = regelafstand(alinea, ritme)
+    return {
+      regels: stukken.map((t) => [{ tekst: t, x: 0, font: stijl.font, grootte: stijl.grootte, kleur: stijl.kleur }]),
+      offsets: stukken.map((_, i) => i * afstand),
+      uitBasis: false,
+    }
+  }
+
+  /** Regelafstand binnen een alinea: uit het basisontwerp, anders uit het ritme. */
+  function regelafstand(alinea, ritme) {
+    if (alinea.regels.length > 1) {
+      return alinea.regels[1].baseline - alinea.regels[0].baseline
+    }
+    return ritme.regelafstand[alinea.soort] ?? alinea.regels[0].runs[0].grootte * 1.2
+  }
+
+  /**
+   * De sprong van de vorige alinea naar deze.
+   * Zolang de opbouw gelijk is aan het basisontwerp nemen we de afstand letterlijk
+   * over - inclusief de handmatige correcties die de ontwerper heeft gemaakt.
+   * Wijkt de opbouw af, dan valt hij terug op het vaste ritme van het pakket.
+   */
+  function sprong(vorige, deze, ritme, structuurGewijzigd) {
+    const letterlijk = deze.regels[0].baseline - vorige.regels[vorige.regels.length - 1].baseline
+    if (!structuurGewijzigd) return letterlijk
+    const uitRitme = ritme.overgang[`${vorige.soort}->${deze.soort}`]
+    return uitRitme ?? letterlijk
+  }
+
+  // ------------------------------------------------------------ tekenen
+
+  /** De sectiekoppen staan in het accent van de huisstijl; die mag per klant wisselen. */
+  const kopKleur = (basis.stijl && basis.stijl.kop && basis.stijl.kop.kleur) || '#f6a107'
+  const kleurVan = (run) => (merk.accent && run.kleur === kopKleur ? merk.accent : run.kleur)
+
+  function tekenRegel(groep, runs, x, baseline) {
+    const t = el('text', { x, y: baseline })
+    let eersteStijl = null
+    for (const run of runs) {
+      const span = el('tspan', {
+        x: run.x ? x + run.x : null,
+        'font-family': run.font,
+        'font-size': run.grootte,
+        fill: kleurVan(run),
+      })
+      span.textContent = run.tekst
+      t.appendChild(span)
+      if (!eersteStijl) eersteStijl = run
+    }
+    groep.appendChild(t)
+    const totaal = runs.reduce((som, r) => som + breedte(r.tekst, r.font, r.grootte), 0)
+    const links = runs[0].x ? x + runs[0].x : x
+    return { x0: links, x1: links + totaal, baseline, grootte: eersteStijl.grootte }
+  }
+
+  // ------------------------------------------------------- blob-verbod
+
+  const NBC_BOVEN = [246, 161, 7]     // oranje, bovenin de blobs
+  const NBC_ONDER = [34, 157, 150]    // teal, onderin de blobs
+
+  const naarRgb = (h) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(h || ''))
+    if (!m) return null
+    const n = parseInt(m[1], 16)
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+  }
+
+  /**
+   * Geeft de blobs de kleuren van de opdrachtgever, zonder de vorm aan te raken.
+   *
+   * Elke blobpixel is een mengsel van wit, het oranje en het teal uit de huisstijl:
+   *   pixel = wit + u*(oranje - wit) + v*(teal - oranje)
+   * Door u en v terug te rekenen weten we hoe dekkend de pixel is en waar hij in
+   * het verloop zit; met dezelfde u en v bouwen we hem opnieuw op in de twee
+   * nieuwe kleuren. Vorm, verloop en randen blijven daardoor exact zoals in het
+   * Illustrator-bestand - alleen de kleur verschuift.
+   */
+  function hertint(px, boven, onder) {
+    const m1 = [NBC_BOVEN[0] - 255, NBC_BOVEN[1] - 255, NBC_BOVEN[2] - 255]
+    const m2 = [NBC_ONDER[0] - NBC_BOVEN[0], NBC_ONDER[1] - NBC_BOVEN[1], NBC_ONDER[2] - NBC_BOVEN[2]]
+    const n1 = [boven[0] - 255, boven[1] - 255, boven[2] - 255]
+    const n2 = [onder[0] - boven[0], onder[1] - boven[1], onder[2] - boven[2]]
+    const a = m1[0] * m1[0] + m1[1] * m1[1] + m1[2] * m1[2]
+    const b = m1[0] * m2[0] + m1[1] * m2[1] + m1[2] * m2[2]
+    const d = m2[0] * m2[0] + m2[1] * m2[1] + m2[2] * m2[2]
+    const det = a * d - b * b
+    if (!det) return
+    for (let i = 0; i < px.length; i += 4) {
+      const r = px[i] - 255, g = px[i + 1] - 255, bl = px[i + 2] - 255
+      if (r > -6 && g > -6 && bl > -6) continue        // wit: geen blob
+      const p = m1[0] * r + m1[1] * g + m1[2] * bl
+      const q = m2[0] * r + m2[1] * g + m2[2] * bl
+      const u = (d * p - b * q) / det
+      const v = (a * q - b * p) / det
+      px[i] = Math.max(0, Math.min(255, Math.round(255 + u * n1[0] + v * n2[0])))
+      px[i + 1] = Math.max(0, Math.min(255, Math.round(255 + u * n1[1] + v * n2[1])))
+      px[i + 2] = Math.max(0, Math.min(255, Math.round(255 + u * n1[2] + v * n2[2])))
+    }
+  }
+
+  /**
+   * Leest de achtergrond uit en bepaalt per beeldrij waar de blobs beginnen.
+   * De regel is hard: er mag nooit tekst over een blob vallen.
+   * Meteen ook de plek om de blobs te herkleuren, want de pixels liggen hier al klaar.
+   */
+  function achtergrondVerwerken(afbeelding) {
+    const B = 3840, H = 2160
+    const c = document.createElement('canvas')
+    c.width = B; c.height = H
+    const ctx = c.getContext('2d', { willReadFrequently: true })
+    ctx.drawImage(afbeelding, 0, 0, B, H)
+    const beeld = ctx.getImageData(0, 0, B, H)
+    const px = beeld.data
+
+    const boven = naarRgb(merk.blobBoven)
+    const onder = naarRgb(merk.blobOnder)
+    if (boven && onder) {
+      hertint(px, boven, onder)
+      ctx.putImageData(beeld, 0, 0)
+      document.getElementById('achtergrond').setAttribute('href', c.toDataURL('image/png'))
+    }
+
+    const rechts = new Int32Array(H).fill(B)   // linkerrand van de rechter blob
+    const links = new Int32Array(H).fill(-1)   // rechterrand van de linker blob
+    for (let y = 0; y < H; y++) {
+      const rij = y * B * 4
+      for (let x = 0; x < B; x++) {
+        const i = rij + x * 4
+        const gekleurd = px[i] < 243 || px[i + 1] < 243 || px[i + 2] < 243
+        if (!gekleurd) continue
+        if (x > B / 2) { if (x < rechts[y]) rechts[y] = x }
+        else if (x > links[y]) links[y] = x
+      }
+    }
+    return { rechts, links }
+  }
+
+  function controleerBotsing(grenzen, vak, wat) {
+    if (!grenzen) return
+    const boven = Math.max(0, Math.round(vak.baseline - vak.grootte))
+    const onder = Math.min(2159, Math.round(vak.baseline + vak.grootte * 0.3))
+    for (let y = boven; y <= onder; y++) {
+      if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) {
+        meldingen.botsingen.push({ tekst: wat, x0: Math.round(vak.x0), x1: Math.round(vak.x1),
+                                   baseline: Math.round(vak.baseline) })
+        return
+      }
+    }
+  }
+
+  // ------------------------------------------------------------- opbouw
+
+  function bouw(grenzen) {
+    const doek = document.getElementById('doek')
+
+    // --- titel
+    const titelGroep = document.getElementById('titel')
+    const tb = basis.titel
+    if (tb && tb.tekst) {
+      const tekst = inhoud.titel || tb.tekst
+      const t = el('text', { x: tb.x, y: tb.baseline, 'font-family': tb.font,
+                             'font-size': tb.grootte, fill: merk.tekstkleur || tb.kleur })
+      t.textContent = tekst
+      titelGroep.appendChild(t)
+    }
+
+    // --- logobalk van de opdrachtgever
+    const lb = basis.logobalk
+    const logoGroep = document.getElementById('logobalk')
+    if (lb) {
+      if (merk.logo) {
+        logoGroep.appendChild(el('rect', { x: lb.x, y: lb.y, width: lb.breedte, height: lb.hoogte,
+                                           fill: merk.logoAchtergrond || '#ffffff' }))
+        logoGroep.appendChild(el('image', {
+          href: merk.logo, x: lb.x + lb.breedte * 0.06, y: lb.y + lb.hoogte * 0.09,
+          width: lb.breedte * 0.88, height: lb.hoogte * 0.82,
+          preserveAspectRatio: 'xMidYMid meet',
+        }))
+      } else {
+        logoGroep.appendChild(el('rect', { x: lb.x, y: lb.y, width: lb.breedte, height: lb.hoogte,
+                                           fill: lb.vulkleur }))
+        const p = lb.plaatshouder
+        const t = el('text', { x: p.x, y: p.baseline, 'font-family': p.font,
+                               'font-size': p.grootte, fill: '#000000' })
+        t.textContent = p.tekst
+        logoGroep.appendChild(t)
+      }
+    }
+
+    // --- voetregel: bestek-icoon plus de vaste dieetwens-tekst
+    const voet = document.getElementById('voet')
+    const vi = basis.voetregel && basis.voetregel.icoon
+    if (vi) {
+      const accent = merk.accent || vi.kleur
+      const g = el('g', {
+        transform: `translate(${vi.x} ${vi.y}) scale(${vi.breedte / 314.38} ${vi.hoogte / 204.21})`,
+        fill: accent,
+      })
+      g.innerHTML = window.__ICOON__
+      voet.appendChild(g)
+    }
+    for (const regel of (basis.voetregel ? basis.voetregel.regels : [])) {
+      const t = el('text', { x: regel.x, y: regel.baseline, 'font-family': regel.font,
+                             'font-size': regel.grootte, fill: regel.kleur })
+      t.textContent = regel.tekst
+      voet.appendChild(t)
+    }
+
+    // --- de menu-inhoud
+    const inhoudGroep = document.getElementById('inhoud')
+    const ritme = basis.ritme
+    const nieuweSecties = invoersecties()
+
+    // De secties van het basisontwerp, in leesvolgorde over de kolommen heen.
+    const kolomSecties = basis.kolommen.map(sectiesVan)
+    const alleBasisSecties = kolomSecties.flat()
+
+    if (nieuweSecties && nieuweSecties.length !== alleBasisSecties.length) {
+      meldingen.structuur.push(
+        `Het basisontwerp "${basis.pakket}" heeft ${alleBasisSecties.length} secties, ` +
+        `de aangeleverde inhoud ${nieuweSecties.length}.`)
+    }
+
+    let sectieTeller = 0
+    basis.kolommen.forEach((kolom, ki) => {
+      const kader = kolom.kader.breedte
+      let vorigeAlinea = null
+      let vorigeBaseline = null
+      let structuurGewijzigd = false
+
+      for (const sectie of kolomSecties[ki]) {
+        const nieuw = nieuweSecties ? nieuweSecties[sectieTeller] : null
+        sectieTeller += 1
+
+        // Elke alinea van deze sectie op volgorde: kop, dan per gerecht naam + ingredienten.
+        const taken = []
+        if (sectie.kop) taken.push({ alinea: sectie.kop, tekst: nieuw ? nieuw.kop : null })
+        sectie.gerechten.forEach((gerecht, gi) => {
+          const bron = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten[gi] : null
+          taken.push({ alinea: gerecht.naam, tekst: bron ? bron.naam : null })
+          if (gerecht.ingr) {
+            const ingr = bron && bron.ingredienten
+              ? (Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten))
+              : null
+            taken.push({ alinea: gerecht.ingr, tekst: ingr })
+          } else if (bron && bron.ingredienten && bron.ingredienten.length) {
+            meldingen.structuur.push(
+              `"${bron.naam || gerecht.naam.tekst}" krijgt ingredienten, maar heeft die niet in het basisontwerp.`)
+          }
+        })
+        if (nieuw && Array.isArray(nieuw.gerechten) && nieuw.gerechten.length !== sectie.gerechten.length) {
+          meldingen.structuur.push(
+            `Sectie "${sectie.kop ? sectie.kop.tekst : '(zonder kop)'}" heeft ` +
+            `${sectie.gerechten.length} gerechten in het basisontwerp, ` +
+            `${nieuw.gerechten.length} in de aangeleverde inhoud.`)
+        }
+
+        for (const taak of taken) {
+          const { alinea, tekst } = taak
+          const { regels, offsets, uitBasis } = regelsVoor(alinea, tekst, kader, ritme)
+          if (!uitBasis) structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
+          if (!uitBasis && regels.length !== alinea.regels.length) {
+            meldingen.regelval.push(
+              `"${(tekst || '').slice(0, 40)}" valt over ${regels.length} regels, ` +
+              `het basisontwerp had er ${alinea.regels.length}.`)
+          }
+
+          let baseline
+          if (vorigeAlinea === null) {
+            baseline = alinea.regels[0].baseline
+          } else {
+            baseline = vorigeBaseline + sprong(vorigeAlinea, alinea, ritme, structuurGewijzigd)
+          }
+
+          regels.forEach((runs, i) => {
+            const y = baseline + offsets[i]
+            const vak = tekenRegel(inhoudGroep, runs, kolom.x, y)
+            controleerBotsing(grenzen, vak, runs.map((r) => r.tekst).join(''))
+            if (y > 2160 - 40) {
+              meldingen.overloop.push(
+                `"${runs.map((r) => r.tekst).join('').slice(0, 40)}" valt onder de onderrand van het scherm.`)
+            }
+          })
+
+          vorigeAlinea = alinea
+          vorigeBaseline = baseline + offsets[offsets.length - 1]
+        }
+      }
+    })
+  }
+
+  // ------------------------------------------------------------- starten
+
+  const achtergrond = document.getElementById('achtergrond')
+  const klaar = new Promise((resolve) => {
+    if (!gegevens.achtergrond) return resolve(null)
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = gegevens.achtergrond
+    achtergrond.setAttribute('href', gegevens.achtergrond)
+  })
+
+  window.__KLAAR__ = (async () => {
+    const img = await klaar
+    await (document.fonts ? document.fonts.ready : Promise.resolve())
+    const grenzen = img ? achtergrondVerwerken(img) : null
+    bouw(grenzen)
+    return meldingen
+  })()
+})()
 </script>
 </body>
 </html>

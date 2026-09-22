@@ -1,0 +1,561 @@
+{
+  "pakket": "diner-4gangen",
+  "bron": {
+    "bestand": "Flexibele-template-designs.ai",
+    "pagina": 8
+  },
+  "canvas": {
+    "breedte": 3840,
+    "hoogte": 2160
+  },
+  "achtergrond": "diner-4gangen.png",
+  "titel": {
+    "tekst": "Diner",
+    "x": 259.11,
+    "baseline": 344.45,
+    "font": "Pockota-Medium",
+    "grootte": 199.53,
+    "kleur": "#000000"
+  },
+  "logobalk": {
+    "x": 2075.84,
+    "y": 74.28,
+    "breedte": 791.37,
+    "hoogte": 296.96,
+    "vulkleur": "#ff0000",
+    "plaatshouder": {
+      "tekst": "Logo opdrachtgever",
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 57.0,
+      "baseline": 242.95,
+      "x": 2189.22
+    }
+  },
+  "voetregel": {
+    "icoon": {
+      "x": 2038.75,
+      "y": 1815.45,
+      "breedte": 314.38,
+      "hoogte": 204.21,
+      "kleur": "#f6a107"
+    },
+    "regels": [
+      {
+        "tekst": "Dieetswens of allergie?",
+        "x": 2442.78,
+        "baseline": 1881.03,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 53.89,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "Laat het ons team weten,",
+        "x": 2442.78,
+        "baseline": 1938.65,
+        "font": "AreaNormal-Thin",
+        "grootte": 43.3,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "we helpen je graag.",
+        "x": 2442.78,
+        "baseline": 1991.66,
+        "font": "AreaNormal-Thin",
+        "grootte": 43.3,
+        "kleur": "#1d1d1b"
+      }
+    ]
+  },
+  "stijl": {
+    "kop": {
+      "font": "Pockota-Medium",
+      "grootte": 79.2,
+      "kleur": "#f6a107"
+    },
+    "naam": {
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 61.6,
+      "kleur": "#000000"
+    },
+    "ingr": {
+      "font": "AreaNormal-Thin",
+      "grootte": 41.8,
+      "kleur": "#000000"
+    }
+  },
+  "ritme": {
+    "overgang": {
+      "kop->naam": 161.04,
+      "naam->ingr": 68.2,
+      "ingr->naam": 128.92,
+      "ingr->kop": 150.04
+    },
+    "regelafstand": {
+      "ingr": 55.0
+    },
+    "kopBaseline": null
+  },
+  "spatie": {
+    "41.8": 11.24,
+    "61.6": 15.15,
+    "79.2": 18.22
+  },
+  "kolommen": [
+    {
+      "x": 261.0,
+      "kader": {
+        "breedte": 996.44,
+        "minimaal": 859.44,
+        "maximaal": 1133.43,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Op tafel",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "Op tafel",
+                  "x": 0.37,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Zuurdesembrood",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Zuurdesembrood",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "roomboter | fleur de sel | limoen | olijven | zongedroogde tomaat | curry dip",
+          "regels": [
+            {
+              "baseline": 854.92,
+              "runs": [
+                {
+                  "tekst": "roomboter | fleur de sel | limoen | olijven | ",
+                  "x": 0.37,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "zongedroogde tomaat | curry dip",
+                  "x": 0.37,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Tasteful gift",
+          "regels": [
+            {
+              "baseline": 1038.84,
+              "runs": [
+                {
+                  "tekst": "Tasteful gift",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Tonijntartaar | mierikswortel | affilla cress | uiencrumble",
+          "regels": [
+            {
+              "baseline": 1107.04,
+              "runs": [
+                {
+                  "tekst": "Tonijntartaar | mierikswortel | affilla cress | ",
+                  "x": 0.37,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1162.04,
+              "runs": [
+                {
+                  "tekst": "uiencrumble",
+                  "x": 0.37,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 1352.0,
+      "kader": {
+        "breedte": 928.0,
+        "minimaal": 865.85,
+        "maximaal": 990.16,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            }
+          ]
+        },
+        {
+          "kopAlinea": 3,
+          "gerechten": [
+            {
+              "naamAlinea": 4,
+              "ingrAlinea": 5
+            }
+          ]
+        },
+        {
+          "kopAlinea": 6,
+          "gerechten": [
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Voorgerecht",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "Voorgerecht",
+                  "x": 0.09,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Gebakken brioche",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Gebakken brioche",
+                  "x": 0.09,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "rilette van eend | gele -uienrelish | venne cress",
+          "regels": [
+            {
+              "baseline": 854.92,
+              "runs": [
+                {
+                  "tekst": "rilette van eend | gele -uienrelish | ",
+                  "x": 0.09,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "venne cress",
+                  "x": 0.09,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Tussengerecht",
+          "regels": [
+            {
+              "baseline": 1059.96,
+              "runs": [
+                {
+                  "tekst": "Tussengerecht",
+                  "x": 0.09,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pompoenravioli",
+          "regels": [
+            {
+              "baseline": 1221.0,
+              "runs": [
+                {
+                  "tekst": "Pompoenravioli",
+                  "x": 0.09,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "gedroogde Italiaanse ham | saliebotersaus",
+          "regels": [
+            {
+              "baseline": 1289.2,
+              "runs": [
+                {
+                  "tekst": "gedroogde Italiaanse ham | saliebotersaus",
+                  "x": 0.09,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Hoofdgerecht",
+          "regels": [
+            {
+              "baseline": 1439.24,
+              "runs": [
+                {
+                  "tekst": "Hoofdgerecht",
+                  "x": 0.09,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Boneless short ribs",
+          "regels": [
+            {
+              "baseline": 1600.28,
+              "runs": [
+                {
+                  "tekst": "Boneless short ribs",
+                  "x": 0.09,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "crème van winterpeen | spaghetti van pastinaak | sticky hoisin",
+          "regels": [
+            {
+              "baseline": 1668.48,
+              "runs": [
+                {
+                  "tekst": "crème van winterpeen | spaghetti van ",
+                  "x": 0.09,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1723.48,
+              "runs": [
+                {
+                  "tekst": "pastinaak | sticky hoisin",
+                  "x": 0.09,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 2278.0,
+      "kader": {
+        "breedte": 664.06,
+        "minimaal": 544.85,
+        "maximaal": 783.27,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Nagerecht",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "Nagerecht",
+                  "x": 0.28,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Chocoladetrifle",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Chocoladetrifle",
+                  "x": 0.28,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Oreo crunch | kersen | Tony’s Chocolonely schaaf",
+          "regels": [
+            {
+              "baseline": 854.92,
+              "runs": [
+                {
+                  "tekst": "Oreo crunch | kersen | ",
+                  "x": 0.28,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "Tony’s Chocolonely schaaf",
+                  "x": 0.28,
+                  "font": "AreaNormal-Thin",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "afwijkingen": [],
+  "zetfouten": []
+}

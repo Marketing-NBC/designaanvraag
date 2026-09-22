@@ -320,6 +320,11 @@ Claude Design heeft geen API. Haakjes die we nu al leggen: `aanvraag_types` beva
 `menukaart_print`/`menu_scherm`, brand-brief + logo staan in Storage, en `steps.tsx` ondersteunt
 conditionele stappen zodat "Plak de menu-inhoud" later één regel is.
 
+De **menuschermen** lopen inmiddels niet meer via Claude Design maar via een eigen opmaak-engine
+die de basisontwerpen per pakket letterlijk overneemt uit het Illustrator-bestand; zie
+`worker/menu/README.md`. De koppeling met een aanvraag (welk pakket, welke gerechten) moet nog
+gelegd worden.
+
 ## Wat er onderweg misging (en hoe het is opgelost)
 
 Nuttig voor wie dit later onderhoudt; alle vier de fouten waren onzichtbaar tot er een echte aanvraag
