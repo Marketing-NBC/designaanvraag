@@ -864,44 +864,96 @@ def kaders_delen(alles: dict) -> None:
                 k['gedeeldMet'] = [n for n in namen]
 
 
+def regelval_van(alinea) -> list:
+    """De regels van een alinea, met hoeveel elke volgende regel lager staat."""
+    nul = alinea['regels'][0]['baseline']
+    return [{'tekst': ''.join(r['tekst'] for r in regel['runs']).rstrip(),
+             'offset': rond(regel['baseline'] - nul)}
+            for regel in alinea['regels']]
+
+
 def gerechtenbibliotheek(alles: dict) -> dict:
-    """Legt vast hoe elke tekst uit de basisontwerpen op het scherm hoort te staan.
+    """Legt vast hoe elk gerecht uit de basisontwerpen op het scherm hoort te staan.
 
     NBC werkt met een vast repertoire: dezelfde gerechten komen in verschillende
     pakketten terug. Staat een gerecht in een ontwerp, dan is dat de manier waarop
-    het gezet hoort te worden - inclusief de plek waar de regel afbreekt. Die
-    regelval leggen we hier vast, zodat hetzelfde gerecht er in elk pakket precies
-    zo uitziet als de ontwerper het heeft gezet, en niet zoals onze afbreking hem
-    toevallig uitrekent.
+    het gezet hoort te worden - inclusief waar de naam ophoudt en waar de regels
+    afbreken. Anders zou onze eigen afbreking dat bepalen, en die kijkt alleen naar
+    kaderbreedte.
+
+    Er zitten twee lagen in:
+
+    gerechten  het hele gerecht, zoals iemand het intypt: "naam | ingredient |
+               ingredient". Dit is de laag die ertoe doet, want hij weet ook waar
+               de naam ophoudt. Schrijft iemand dezelfde schotel met de streep op
+               een andere plek, dan wordt hij nog steeds gevonden en alsnog gezet
+               zoals de ontwerper hem zette.
+    alineas    losse namen en omschrijvingen. Vangnet voor het geval een gerecht
+               deels terugkomt - "Burrata" staat in twee pakketten met heel andere
+               ingredienten, en die naam hoort in allebei hetzelfde te breken.
 
     Ook teksten die op een regel passen gaan mee: dat ze niet afbreken is net zo
     goed een keuze van de ontwerper, en zonder die vastlegging zou een net iets te
     smal kader ze alsnog in tweeen hakken.
-
-    De sleutel is de soort, het corps en de tekst zonder toevallige spaties; zie
-    tekstsleutel() hieronder en zelfdeInhoud() in template.html, die hetzelfde doen.
     """
-    uit = {}
-    for naam, data in alles.items():
+    gerechten = {}
+    alineas = {}
+
+    for pakket, data in alles.items():
         for kolom in data['kolommen']:
+            for sectie in kolom['secties']:
+                for gerecht in sectie['gerechten']:
+                    naam_alinea = kolom['alineas'][gerecht['naamAlinea']]
+                    omschrijving = (kolom['alineas'][gerecht['ingrAlinea']]
+                                    if gerecht['ingrAlinea'] is not None else None)
+                    if omschrijving is not None and omschrijving['soort'] == 'opsomming':
+                        # Een opsomming met bullets is een eigen structuur; die staat
+                        # als onderdelen in het pakket zelf en hoort hier niet thuis.
+                        continue
+
+                    naam_grootte = naam_alinea['regels'][0]['runs'][0]['grootte']
+                    volledig = naam_alinea['tekst']
+                    if omschrijving is not None:
+                        volledig = f"{volledig} | {omschrijving['tekst']}"
+
+                    sleutel = f'{maat(naam_grootte)}|{gerechtsleutel(volledig)}'
+                    if sleutel in gerechten:
+                        eerder = gerechten[sleutel]
+                        if (eerder['naam'] != naam_alinea['tekst']
+                                or eerder['naamRegels'] != regelval_van(naam_alinea)):
+                            print(f'  "{volledig[:60]}" staat in {eerder["bron"]} en in '
+                                  f'{pakket} anders gezet; {eerder["bron"]} telt.')
+                    else:
+                        gerechten[sleutel] = {
+                            'naam': naam_alinea['tekst'],
+                            'ingredienten': ([p.strip() for p in omschrijving['tekst'].split('|') if p.strip()]
+                                             if omschrijving is not None else []),
+                            'bron': pakket,
+                            'naamGrootte': naam_grootte,
+                            'naamRegels': regelval_van(naam_alinea),
+                            'ingrGrootte': (omschrijving['regels'][0]['runs'][0]['grootte']
+                                            if omschrijving is not None else None),
+                            'ingrRegels': (regelval_van(omschrijving)
+                                           if omschrijving is not None else None),
+                        }
+
             for alinea in kolom['alineas']:
                 if alinea['soort'] not in ('naam', 'ingr'):
                     continue
                 grootte = alinea['regels'][0]['runs'][0]['grootte']
                 sleutel = f"{alinea['soort']}|{maat(grootte)}|{tekstsleutel(alinea['tekst'])}"
-                if sleutel in uit:
+                if sleutel in alineas:
                     continue
-                nul = alinea['regels'][0]['baseline']
-                uit[sleutel] = {
+                alineas[sleutel] = {
                     'soort': alinea['soort'],
                     'grootte': grootte,
                     'tekst': alinea['tekst'],
-                    'bron': naam,
-                    'regels': [{'tekst': ''.join(r['tekst'] for r in regel['runs']).rstrip(),
-                                'offset': rond(regel['baseline'] - nul)}
-                               for regel in alinea['regels']],
+                    'bron': pakket,
+                    'regels': regelval_van(alinea),
                 }
-    return dict(sorted(uit.items()))
+
+    return {'gerechten': dict(sorted(gerechten.items())),
+            'alineas': dict(sorted(alineas.items()))}
 
 
 # Tekens die wel anders gezet worden maar hetzelfde betekenen. Wie een rechte
@@ -936,6 +988,17 @@ def tekstsleutel(tekst: str) -> str:
     return re.sub(r'^\s*\|\s*|\s*\|\s*$', '', t).strip()
 
 
+def gerechtsleutel(tekst: str) -> str:
+    """De sleutel van een heel gerecht: naam en ingredienten samen.
+
+    Waar de streep staat telt hier niet mee. "Dessertbuffet met zoete lekkernijen |
+    L'OR Coffee Popping Pearls" en "Dessertbuffet | met zoete lekkernijen | L'OR
+    Coffee Popping Pearls" zijn hetzelfde gerecht; waar de naam ophoudt staat in de
+    bibliotheek en niet in wat iemand intypt.
+    """
+    return re.sub(r'\s+', ' ', tekstsleutel(tekst).replace('|', ' ')).strip()
+
+
 def main():
     BASIS.mkdir(parents=True, exist_ok=True)
     doc = pymupdf.open(BRON)
@@ -964,7 +1027,8 @@ def main():
     bibliotheek = gerechtenbibliotheek(alles)
     (BASIS / 'gerechten.json').write_text(
         json.dumps(bibliotheek, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print(f'Gerechtenbibliotheek: {len(bibliotheek)} regelvallen vastgelegd.')
+    print(f"Gerechtenbibliotheek: {len(bibliotheek['gerechten'])} gerechten, "
+          f"{len(bibliotheek['alineas'])} losse alinea's vastgelegd.")
 
     overzicht = []
     for pagina_nr, naam in PAKKETTEN:

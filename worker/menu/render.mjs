@@ -164,19 +164,17 @@ function zetTerugNaarBron(payload) {
       for (const regel of alinea.regels) for (const run of regel.runs) run.tekst = terug(run.tekst)
     }
   }
-  for (const item of Object.values(payload.bibliotheek ?? {})) {
-    item.tekst = terug(item.tekst)
-    for (const regel of item.regels) regel.tekst = terug(regel.tekst)
+  for (const gerecht of Object.values(payload.bibliotheek?.gerechten ?? {})) {
+    gerecht.naam = terug(gerecht.naam)
+    gerecht.ingredienten = gerecht.ingredienten.map(terug)
+    for (const regel of [...gerecht.naamRegels, ...(gerecht.ingrRegels ?? [])]) {
+      regel.tekst = terug(regel.tekst)
+    }
   }
-}
-
-/** Dezelfde fontvervanging voor de gerechtenbibliotheek. */
-function vervangFontsInBibliotheek(bibliotheek) {
-  const uit = {}
-  for (const [sleutel, item] of Object.entries(bibliotheek)) {
-    uit[sleutel] = item.font ? { ...item, font: fontVoor(item.font) } : item
+  for (const alinea of Object.values(payload.bibliotheek?.alineas ?? {})) {
+    alinea.tekst = terug(alinea.tekst)
+    for (const regel of alinea.regels) regel.tekst = terug(regel.tekst)
   }
-  return uit
 }
 
 /** Past de bewuste fontvervangingen toe op een bevroren basisontwerp. */
@@ -243,7 +241,7 @@ export async function renderMenu(opdracht) {
 
   const payload = {
     basis,
-    bibliotheek: vervangFontsInBibliotheek(laadBibliotheek()),
+    bibliotheek: laadBibliotheek(),
     achtergrond,
     inhoud: { titel: opdracht.titel, secties: opdracht.secties },
     merk: opdracht.merk || {},

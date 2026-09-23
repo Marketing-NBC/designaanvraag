@@ -32,6 +32,8 @@
   const inhoud = gegevens.inhoud || {}
   const merk = gegevens.merk || {}
   const bibliotheek = gegevens.bibliotheek || {}
+  const bekendeGerechten = bibliotheek.gerechten || {}
+  const bekendeAlineas = bibliotheek.alineas || {}
   const SVG = 'http://www.w3.org/2000/svg'
 
   const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [] }
@@ -129,16 +131,36 @@
     return tekstsleutel(a) === tekstsleutel(b)
   }
 
+  // Moet gelijk blijven aan gerechtsleutel() in basis-extract.py: voor een heel
+  // gerecht telt niet mee waar de streep staat.
+  const gerechtsleutel = (t) => tekstsleutel(t).replace(/\|/g, ' ').replace(/\s+/g, ' ').trim()
+
   /**
-   * Zoekt op hoe deze tekst in de basisontwerpen gezet is.
+   * Zoekt op hoe dit hele gerecht in de basisontwerpen gezet is.
    *
    * NBC werkt met een vast repertoire: hetzelfde gerecht komt in meerdere
    * pakketten terug. Staat het in een ontwerp, dan is dat de manier waarop het
-   * hoort te staan - inclusief waar de regel afbreekt. Dat weegt zwaarder dan
-   * onze eigen afbreking, die alleen op kaderbreedte kijkt.
+   * hoort te staan - inclusief waar de naam ophoudt en waar de regels afbreken.
+   * Dat weegt zwaarder dan onze eigen afbreking, die alleen op kaderbreedte kijkt.
+   *
+   * Naam en ingredienten gaan samen de sleutel in. Zet iemand de streep ergens
+   * anders dan de ontwerper - "Dessertbuffet | met zoete lekkernijen | L'OR Coffee
+   * Popping Pearls" tegen "Dessertbuffet met zoete lekkernijen | L'OR Coffee
+   * Popping Pearls" - dan is het nog steeds hetzelfde gerecht, en de bibliotheek
+   * zegt welk deel de naam is.
+   */
+  function uitGerechtenbibliotheek(naam, ingredienten, grootte) {
+    const geheel = [naam, ingredienten].filter(Boolean).join(' | ')
+    return bekendeGerechten[`${grootte}|${gerechtsleutel(geheel)}`] ?? null
+  }
+
+  /**
+   * Zoekt op hoe een losse naam of omschrijving gezet is. Vangnet voor het geval
+   * alleen een deel van een gerecht terugkomt: "Burrata" staat in twee pakketten
+   * met heel andere ingredienten, en hoort in allebei hetzelfde te breken.
    */
   function uitBibliotheek(soort, tekst, grootte) {
-    return bibliotheek[`${soort}|${grootte}|${tekstsleutel(tekst)}`] ?? null
+    return bekendeAlineas[`${soort}|${grootte}|${tekstsleutel(tekst)}`] ?? null
   }
 
   /**
@@ -197,8 +219,12 @@
    * Is de inhoud dezelfde als in het basisontwerp, dan nemen we de regelval daarvan
    * letterlijk over - dan is het resultaat per definitie identiek. Alleen als de
    * inhoud echt wijzigt, zetten we de alinea zelf opnieuw binnen het kader.
+   *
+   * vasteRegels is de regelval die de gerechtenbibliotheek voor deze alinea gaf;
+   * die komt uit een ontwerp waar dit hele gerecht in staat en gaat dus voor op
+   * wat we per losse alinea zouden vinden.
    */
-  function regelsVoor(alinea, nieuw, kader, ritme) {
+  function regelsVoor(alinea, nieuw, kader, ritme, vasteRegels) {
     const opsommingStijl = basis.opsommingStijl
     const nieuweOnderdelen = nieuw && nieuw.onderdelen
     const nieuweTekst = nieuw && nieuw.tekst
@@ -235,19 +261,26 @@
     const afstand = regelafstand(alinea, ritme)
 
     // Staat deze tekst in een basisontwerp? Dan zetten we hem zoals daar, ook als
-    // hij uit een ander pakket komt.
+    // hij uit een ander pakket komt. Eerst het hele gerecht, dan de losse alinea.
     //
     // Bij forceerHerberekening slaan we de bibliotheek over: die stand toetst juist
     // of onze eigen afbreking op dezelfde regels uitkomt als de ontwerper. Zou de
     // bibliotheek daar meedoen, dan bewees die controle niets meer.
     const bekend = gegevens.forceerHerberekening
       ? null
-      : uitBibliotheek(alinea.soort === 'opsomming' ? 'ingr' : alinea.soort, tekst, stijl.grootte)
+      : (vasteRegels
+        ?? uitBibliotheek(alinea.soort === 'opsomming' ? 'ingr' : alinea.soort,
+                          tekst, stijl.grootte)?.regels)
+    // stijl.x is de inspring die de alinea in het ontwerp heeft - vaak een fractie
+    // van een pixel, maar zonder die inspring staat een herzette regel net niet
+    // waar de ontwerper hem zette.
+    const zetRegel = (t) => [{ tekst: t, x: stijl.x ?? 0, font: stijl.font,
+                               grootte: stijl.grootte, kleur: stijl.kleur }]
+
     if (bekend) {
       return {
-        regels: bekend.regels.map((r) => [{ tekst: r.tekst, x: 0, font: stijl.font,
-                                            grootte: stijl.grootte, kleur: stijl.kleur }]),
-        offsets: bekend.regels.map((r) => r.offset),
+        regels: bekend.map((r) => zetRegel(r.tekst)),
+        offsets: bekend.map((r) => r.offset),
         uitBasis: false,
         uitBibliotheek: true,
       }
@@ -255,7 +288,7 @@
 
     const stukken = afbreken(tekst, stijl.font, stijl.grootte, kader)
     return {
-      regels: stukken.map((t) => [{ tekst: t, x: 0, font: stijl.font, grootte: stijl.grootte, kleur: stijl.kleur }]),
+      regels: stukken.map(zetRegel),
       offsets: stukken.map((_, i) => i * afstand),
       uitBasis: false,
     }
@@ -573,9 +606,6 @@
           const bron = bronGerechten ? bronGerechten[gi] : null
           const uitOntwerp = sectie.gerechten[gi] ?? null
           const naamAlinea = uitOntwerp ? uitOntwerp.naam : maakAlinea('naam')
-          const gerechtNaam = (bron && bron.naam) || (uitOntwerp ? uitOntwerp.naam.tekst : '')
-          taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
-                       buitenOntwerp: !uitOntwerp, gerechtNaam })
 
           // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
           // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
@@ -589,12 +619,28 @@
             }
           }
 
+          // Kennen we dit gerecht als geheel? Dan bepaalt het ontwerp waar het in
+          // staat hoe het hier komt te staan: waar de naam ophoudt en waar de
+          // regels afbreken. Een opsomming met bullets slaan we over - dat is een
+          // eigen structuur en die staat niet in de bibliotheek.
+          const bekend = bron && !(omschrijving && omschrijving.onderdelen)
+            ? uitGerechtenbibliotheek(bron.naam, omschrijving ? omschrijving.tekst : '',
+                                      naamAlinea.regels[0].runs[0].grootte)
+            : null
+          const gerechtNaam = (bekend && bekend.naam) || (bron && bron.naam)
+            || (uitOntwerp ? uitOntwerp.naam.tekst : '')
+
+          taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
+                       buitenOntwerp: !uitOntwerp, gerechtNaam,
+                       vasteRegels: bekend ? bekend.naamRegels : null })
+
           if (bronGerechten) {
             // Geen omschrijving aangeleverd? Dan komt er ook geen te staan.
             if (omschrijving) {
               const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
               taken.push({ alinea, nieuw: omschrijving, gerechtNaam,
-                           buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr) })
+                           buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr),
+                           vasteRegels: bekend ? bekend.ingrRegels : null })
             }
           } else if (uitOntwerp && uitOntwerp.ingr) {
             taken.push({ alinea: uitOntwerp.ingr, nieuw: null, gerechtNaam })
@@ -619,7 +665,7 @@
           // telt het ritme van het pakket.
           if (taak.buitenOntwerp) structuurGewijzigd = true
           const { regels, offsets, uitBasis, uitBibliotheek: viaBibliotheek } =
-            regelsVoor(alinea, nieuweInhoud, kader, ritme)
+            regelsVoor(alinea, nieuweInhoud, kader, ritme, taak.vasteRegels)
           if (!uitBasis) {
             structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
             const omschrijving = ((nieuweInhoud && nieuweInhoud.tekst) ?? alinea.tekst).slice(0, 40)

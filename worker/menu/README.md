@@ -188,9 +188,10 @@ Voor elke alinea wordt in deze volgorde bepaald hoe hij komt te staan:
 1. **Staat deze tekst op deze plek in het basisontwerp?** Dan worden de regelval
    én de onderlinge afstanden letterlijk overgenomen, inclusief de handmatige
    correcties van de ontwerper. Het resultaat is dan per definitie identiek.
-2. **Staat deze tekst érgens in een basisontwerp?** Dan wordt hij gezet zoals
-   dáár — zie de gerechtenbibliotheek hieronder.
-3. **Anders** breekt de engine de alinea zelf af binnen het kader van de kolom.
+2. **Staat dit hele gerecht érgens in een basisontwerp?** Dan wordt het gezet
+   zoals dáár — zie de gerechtenbibliotheek hieronder.
+3. **Staat deze losse naam of omschrijving érgens in een basisontwerp?** Dan die.
+4. **Anders** breekt de engine de alinea zelf af binnen het kader van de kolom.
 
 Verandert er iets, dan schuift de rest van de kolom mee volgens het vaste ritme
 van dat pakket. De rest van het scherm blijft staan waar het stond.
@@ -202,9 +203,16 @@ pakketten terug. Staat een gerecht in een ontwerp, dan is dat de manier waarop
 het gezet hoort te worden — **inclusief de plek waar de regel afbreekt**. Dat
 weegt zwaarder dan onze eigen afbreking, die alleen naar kaderbreedte kijkt.
 
-`basis/gerechten.json` legt dat vast: voor elke tekst uit elk basisontwerp de
-regels waarin hij uiteenvalt. Zo ziet het dessert van pagina 7 er in het
-viergangen diner precies zo uit als de ontwerper het op pagina 7 zette:
+`basis/gerechten.json` legt dat vast, in twee lagen:
+
+- **`gerechten`** — het hele gerecht, zoals iemand het intypt: naam en
+  ingrediënten samen. Dit is de laag die ertoe doet.
+- **`alineas`** — losse namen en omschrijvingen. Vangnet voor het geval een
+  gerecht maar deels terugkomt; "Burrata" staat in twee pakketten met heel
+  andere ingrediënten, en hoort in allebei hetzelfde te breken.
+
+Zo ziet het dessert van pagina 7 er in het viergangen diner precies zo uit als
+de ontwerper het op pagina 7 zette:
 
 ```
 Dessertbuffet met          ← breekt na "met", niet na "Dessertbuffet"
@@ -215,6 +223,17 @@ L'OR Coffee Popping Pearls ← blijft op één regel
 Het opzoeken is ongevoelig voor zetwerk dat geen inhoud is: hoofdletters, de
 soort apostrof (`'` of `’`) en spaties rond een `|` doen niet mee. Wat er
 getekend wordt is altijd de tekst zoals hij in het ontwerp staat.
+
+Voor een heel gerecht telt bovendien niet mee wáár de streep staat. Deze twee
+zijn hetzelfde gerecht:
+
+```
+Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls
+Dessertbuffet | met zoete lekkernijen | L'OR Coffee Popping Pearls
+```
+
+De bibliotheek zegt welk deel de naam is, niet degene die het intypt — dus
+beide leveren hetzelfde scherm op, tot op de pixel.
 
 Bij het opnieuw uitrekenen van de regelval (`bij herberekening` in de controle)
 wordt de bibliotheek bewust overgeslagen: die stand toetst juist of onze eigen
