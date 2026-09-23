@@ -12,7 +12,7 @@ export function Review({
   titleId,
 }: {
   draft: Draft
-  onEdit: (step: number) => void
+  onEdit: (stepId: string) => void
   onSubmit: () => void
   busy: boolean
   error: string | null
@@ -43,7 +43,7 @@ export function Review({
                 <div className="review__label">{r.label}</div>
                 <div className={`review__value${r.muted ? ' review__value--muted' : ''}`}>{r.value}</div>
               </div>
-              <button type="button" className="link review__edit" onClick={() => onEdit(r.step)}>
+              <button type="button" className="link review__edit" onClick={() => onEdit(r.stepId)}>
                 wijzig
               </button>
             </div>

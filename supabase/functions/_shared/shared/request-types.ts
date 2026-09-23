@@ -29,6 +29,16 @@ export function describeRequestTypes(keys: readonly RequestTypeKey[], andersTeks
     .join(', ')
 }
 
+/**
+ * Aanvraagtypes waar een menu bij hoort. Kiest iemand een van deze, dan vraagt het
+ * formulier daarna om de culinaire invulling, en maakt de worker het menuscherm op.
+ */
+export const MENU_TYPES: readonly RequestTypeKey[] = ['menukaart_print', 'menu_scherm']
+
+export function vraagtOmMenu(keys: readonly RequestTypeKey[]): boolean {
+  return keys.some((k) => MENU_TYPES.includes(k))
+}
+
 export const DESIGN_MODES = [
   {
     key: 'custom',

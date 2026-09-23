@@ -62,6 +62,14 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   htmlLines.push('<h2>Wensen en bijzonderheden</h2>')
   htmlLines.push(a.omschrijving ? `<blockquote>${escapeXml(a.omschrijving)}</blockquote>` : '<em>Geen bijzonderheden opgegeven.</em>')
   htmlLines.push('')
+  if (a.menu_tekst) {
+    // De culinaire invulling staat hier voluit, zodat Marketing hem kan nalezen en
+    // corrigeren. De worker maakt er het menuscherm van en hangt dat als bijlage
+    // bij deze taak.
+    htmlLines.push('<h2>Menu</h2>')
+    htmlLines.push(`<blockquote>${escapeXml(a.menu_tekst)}</blockquote>`)
+    htmlLines.push('')
+  }
   htmlLines.push('<hr/>')
   htmlLines.push('<h2>Huisstijl</h2>')
   htmlLines.push(
@@ -77,6 +85,7 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   plainLines.push(`Locatie op de schijf: ${a.schijf_locatie || 'niet opgegeven'}`)
   if (opts.bijlagen?.length) plainLines.push(`Meegestuurd: ${opts.bijlagen.join(', ')}`)
   plainLines.push('', 'Wensen en bijzonderheden', a.omschrijving || 'Geen bijzonderheden opgegeven.', '')
+  if (a.menu_tekst) plainLines.push('Menu', a.menu_tekst, '')
   plainLines.push(
     'Huisstijl',
     a.website ? `${HUISSTIJL_MARKER} van ${hostOf(a.website)}.` : 'De aanvrager gaf geen website op, dus er is geen huisstijl opgehaald.',

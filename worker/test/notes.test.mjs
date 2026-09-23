@@ -47,6 +47,7 @@ const aanvraag = {
   anders_tekst: '',
   design_modus: 'custom',
   omschrijving: 'Graag <groot> & duidelijk, met "quotes".',
+  menu_tekst: '',
 }
 
 const brief = {
@@ -145,4 +146,23 @@ test('een enkel aandachtspunt staat in enkelvoud', () => {
 test('de mislukking-comment is geldige XML', () => {
   controleerXml(renderMenuFailureComment({ pakket: 'lunch-basic', reason: 'pakket "x" & <y> onbekend' }))
   controleerXml(renderMenuFailureComment({ pakket: null, reason: 'geen inhoud' }))
+})
+
+test('de menu-invulling komt in de beschrijving en blijft geldige XML', () => {
+  const metMenu = {
+    ...aanvraag,
+    aanvraag_types: ['menu_scherm'],
+    menu_tekst: 'Op tafel\n\n\u2022 Bruschetta & dips\n\nVoorgerecht\n\n\u2022 Hoenderfilet | gel van <basilicum>',
+  }
+  const { html, plain } = renderNotes(metMenu, { aanvraagId: '11111111-2222-4333-8444-555555555555' })
+  controleerXml(html)
+  assert.ok(html.includes('<h2>Menu</h2>'), 'het menu staat niet in de beschrijving')
+  assert.ok(html.includes('&lt;basilicum&gt;'), 'de menutekst is niet ge-escaped')
+  assert.ok(plain.includes('Bruschetta & dips'))
+})
+
+test('zonder menu blijft de beschrijving zoals hij was', () => {
+  const { html } = renderNotes(aanvraag, { aanvraagId: '11111111-2222-4333-8444-555555555555' })
+  controleerXml(html)
+  assert.ok(!html.includes('<h2>Menu</h2>'))
 })

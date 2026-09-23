@@ -34,6 +34,15 @@ ACCENT = '#f6a107'
 VOET_REGELS = ('Dieetswens of allergie?', 'Laat het ons team weten,', 'we helpen je graag.')
 LOGO_TEKST = 'Logo opdrachtgever'
 
+# Correcties op het Illustrator-bestand: {pakket: {'titel': (zoals het er staat, zoals het moet)}}.
+# Het basisontwerp is de norm, dus hier staat op een plek wat we er bewust van laten afwijken en
+# waarom. Klopt de bron al, dan meldt de extractie dat de correctie weg kan.
+CORRECTIES = {
+    # De schermtitel is in het .ai per ongeluk Nederlands gespeld; NBC schrijft Dinner.
+    'diner-3gangen': {'titel': ('Diner', 'Dinner')},
+    'diner-4gangen': {'titel': ('Diner', 'Dinner')},
+}
+
 # Pagina (1-based) -> pakketnaam. Pagina 9 is een exacte kopie van pagina 8.
 PAKKETTEN = [
     (1, 'lunch-standaard'),
@@ -714,6 +723,22 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
 
     ritme = ritme_meten(per_kolom)
     balk = rode_balk(page)
+
+    # Correcties op de bron toepassen; wat er niet meer nodig is, melden we.
+    bronTitel = titel['tekst'].strip() if titel else ''
+    titelTekst = bronTitel
+    correctie = CORRECTIES.get(naam, {}).get('titel')
+    if correctie:
+        staat_er, moet_zijn = correctie
+        if bronTitel == staat_er:
+            titelTekst = moet_zijn
+        elif bronTitel == moet_zijn:
+            print(f'  {naam}: de titel in het .ai is inmiddels "{moet_zijn}"; '
+                  f'de correctie in CORRECTIES kan weg.')
+        else:
+            print(f'  {naam}: correctie verwacht titel "{staat_er}" maar het .ai zegt '
+                  f'"{bronTitel}". Niets gewijzigd - kijk hier even naar.')
+
     icoon = goud_rect(page)
 
     stijl = {}
@@ -733,7 +758,11 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
         'canvas': {'breedte': 3840, 'hoogte': 2160},
         'achtergrond': f'{naam}.png',
         'titel': {
-            'tekst': titel['tekst'].strip() if titel else '',
+            'tekst': titelTekst,
+            # Wat er in het .ai staat, als dat iets anders is dan wat we zetten.
+            # controle.mjs vergelijkt daarmee, zodat de pixelvergelijking blijft
+            # kloppen terwijl het scherm de gecorrigeerde titel toont.
+            **({'bronTekst': bronTitel} if bronTitel != titelTekst else {}),
             'x': rond(titel['x']) if titel else 0,
             'baseline': rond(titel['baseline']) if titel else 0,
             'font': titel['font'] if titel else 'Pockota-Medium',

@@ -14,6 +14,8 @@ export interface Draft {
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
   design_modus: DesignMode | null
+  /** De culinaire invulling; alleen gevraagd bij een menukaart of menuscherm. */
+  menu_tekst: string
   omschrijving: string
 }
 
@@ -28,5 +30,6 @@ export const emptyDraft = (): Draft => ({
   aanvraag_types: [],
   anders_tekst: '',
   design_modus: null,
+  menu_tekst: '',
   omschrijving: '',
 })

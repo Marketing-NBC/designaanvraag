@@ -14,7 +14,8 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
-import { renderMenu, laadBasis, pakketten, inhoudVanBasis } from '../menu/render.mjs'
+import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
+import { renderMenu, laadBasis, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
 
 const BASIS_DIR = join(WORKER_DIR, 'menu', 'basis')
 
@@ -203,4 +204,108 @@ test('het voorbeeldmenu past bij een bestaand basisontwerp', () => {
   const sectiesInBasis = basis.kolommen.reduce((n, k) => n + k.secties.length, 0)
   assert.equal(voorbeeld.secties.length, sectiesInBasis,
     'het voorbeeld heeft een ander aantal secties dan het basisontwerp')
+})
+
+// ── De menu-invulling lezen ──────────────────────────────────────────
+// De collega plakt het menu zoals hij het van de opdrachtgever krijgt. Die tekst
+// moet betrouwbaar om te zetten zijn, en het juiste basisontwerp moet erbij
+// gezocht worden zonder dat iemand het pakket erbij hoeft te noemen.
+
+const ECHTE_INVULLING = `Invulling menu:
+Op tafel
+
+• Bruschetta-spiezen met seasonal dips
+
+Voorgerecht
+
+• Gerookte hoenderfilet | gel van basilicum en appel | gepofte boekweit | mustard cress
+Tussengerecht
+
+• Aka-uo Tatsuta (gefrituurde roodbaars) | zoetzure komkommer | rode peper | rode ui | misosaus
+
+Hoofdgerecht
+
+• Langzaam gegaarde kalfsrollade | parmezaanse roomsaus | citroen | groene peper
+
+Nagerecht
+
+• dessertbuffet – verschillende zoete lekkernijen`
+
+test('de aangeleverde menu-invulling wordt goed gelezen', () => {
+  const { secties, opmerkingen } = leesMenuTekst(ECHTE_INVULLING)
+  assert.deepEqual(opmerkingen, [])
+  assert.deepEqual(secties.map((s) => s.kop),
+    ['Op tafel', 'Voorgerecht', 'Tussengerecht', 'Hoofdgerecht', 'Nagerecht'])
+
+  // "Invulling menu:" hoort bij de mail, niet bij het menu.
+  assert.ok(!secties.some((s) => /invulling/i.test(s.kop)))
+
+  // Voor de streep staat de naam, erachter de ingredienten.
+  const voorgerecht = secties[1].gerechten[0]
+  assert.equal(voorgerecht.naam, 'Gerookte hoenderfilet')
+  assert.deepEqual(voorgerecht.ingredienten,
+    ['gel van basilicum en appel', 'gepofte boekweit', 'mustard cress'])
+
+  // Een gerecht zonder streep heeft alleen een naam.
+  assert.equal(secties[0].gerechten[0].naam, 'Bruschetta-spiezen met seasonal dips')
+  assert.equal(secties[0].gerechten[0].ingredienten, undefined)
+})
+
+test('het basisontwerp wordt aan de kopjes herkend', () => {
+  const { secties } = leesMenuTekst(ECHTE_INVULLING)
+  const keuze = kiesPakket(secties, pakketkenmerken())
+  assert.equal(keuze.pakket, 'diner-4gangen')
+  assert.equal(keuze.score, 1)
+
+  // Zonder Tussengerecht is het een driegangen.
+  const zonder = secties.filter((s) => s.kop !== 'Tussengerecht')
+  assert.equal(kiesPakket(zonder, pakketkenmerken()).pakket, 'diner-3gangen')
+})
+
+test('kopjes die nergens bij passen leveren geen pakket op', () => {
+  const { secties } = leesMenuTekst('Hapjes\n\n• Iets\n\nBorrel\n\n• Iets anders')
+  const keuze = kiesPakket(secties, pakketkenmerken())
+  assert.equal(keuze.pakket, null)
+  assert.match(keuze.uitleg, /geen enkel basisontwerp/)
+})
+
+test('een opsomming met bullets komt als onderdelen terug', () => {
+  // Zo staat "Tartelettes" in Grab & Go: een gerecht met onderdelen eronder.
+  const { secties } = leesMenuTekst(`Op de tafel staat het volgende klaar:
+
+• Tartelettes
+  - Rundertartaar | umamicreme | kwartelei
+  - Tallegio (vega) | romige tallegio | kruidencrunch
+
+• Pao de Queijo | Braziliaanse kaasballetjes`)
+  const gerechten = secties[0].gerechten
+  assert.equal(gerechten.length, 2)
+  assert.equal(gerechten[0].naam, 'Tartelettes')
+  assert.equal(gerechten[0].onderdelen.length, 2)
+  assert.equal(gerechten[0].onderdelen[0].naam, 'Rundertartaar')
+  assert.deepEqual(gerechten[0].onderdelen[0].toelichting, ['umamicreme', 'kwartelei'])
+  // Het gerecht ernaast blijft een gewoon gerecht met ingredienten.
+  assert.deepEqual(gerechten[1].ingredienten, ['Braziliaanse kaasballetjes'])
+})
+
+test('gerechten uit het ontwerp die niet zijn aangeleverd verdwijnen', { timeout: 120_000 }, async () => {
+  // Het basisontwerp van het viergangen diner heeft twee gerechten op tafel. Levert
+  // de opdrachtgever er maar een, dan mag het tweede niet blijven staan: dat zou een
+  // gerecht op het scherm zetten dat niemand besteld heeft.
+  const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
+  inhoud.secties[0].gerechten = [inhoud.secties[0].gerechten[0]]
+  const { meldingen } = await renderMenu(inhoud)
+  assert.equal(meldingen.structuur.length, 1)
+  assert.match(meldingen.structuur[0], /2 gerechten in het basisontwerp, 1 in de aangeleverde/)
+})
+
+test('tekst die de dieetwens-regel raakt wordt gemeld', { timeout: 120_000 }, async () => {
+  // De voetregel staat niet in de achtergrond, dus de blob-controle ziet hem niet.
+  // Juist daar loopt een kolom tegenaan zodra de gerechten langer worden.
+  const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
+  inhoud.secties[3].gerechten[0].ingredienten =
+    Array.from({ length: 12 }, (_, i) => `een vrij lang ingredient nummer ${i}`)
+  const { meldingen } = await renderMenu(inhoud)
+  assert.ok(meldingen.botsingen.some((b) => b.waar === 'de dieetwens-regel'),
+    `verwachtte een botsing met de voetregel, kreeg ${JSON.stringify(meldingen.botsingen)}`)
 })

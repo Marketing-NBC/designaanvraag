@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { bijlageIdsSchema } from './bijlagen.ts'
-import { REQUEST_TYPE_KEYS } from './request-types.ts'
+import { REQUEST_TYPE_KEYS, vraagtOmMenu } from './request-types.ts'
 
 /** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
 export const MIN_LEAD_BUSINESS_DAYS = 5
@@ -57,6 +57,12 @@ export const aanvraagSchema = z
     anders_tekst: z.string().trim().max(200, 'Maximaal 200 tekens').default(''),
     design_modus: z.enum(['custom', 'standaard'], { error: 'Maak een keuze' }),
     omschrijving: z.string().trim().max(3000, 'Maximaal 3000 tekens').default(''),
+    /**
+     * De culinaire invulling, zoals de collega hem van de opdrachtgever krijgt:
+     * een kopje per gang met daaronder de gerechten. De worker leest die tekst uit
+     * en maakt er het menuscherm van; zie worker/menu/menu-tekst.mjs.
+     */
+    menu_tekst: z.string().trim().max(8000, 'Maximaal 8000 tekens').default(''),
   })
   .superRefine((a, ctx) => {
     if (a.deadline > a.event_datum) {
@@ -64,6 +70,11 @@ export const aanvraagSchema = z
     }
     if (a.aanvraag_types.includes('anders') && !a.anders_tekst) {
       ctx.addIssue({ code: 'custom', path: ['anders_tekst'], message: 'Vul in wat je wilt aanvragen' })
+    }
+    if (!vraagtOmMenu(a.aanvraag_types) && a.menu_tekst) {
+      // Wie geen menukaart of menuscherm aanvraagt, hoort ook geen menu mee te sturen;
+      // anders staat er straks een invulling bij een aanvraag die er niets mee doet.
+      ctx.addIssue({ code: 'custom', path: ['menu_tekst'], message: 'Er is geen menukaart of menuscherm aangevraagd' })
     }
   })
 

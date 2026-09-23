@@ -221,6 +221,22 @@
     }
   }
 
+  /**
+   * Een alinea die het basisontwerp niet heeft: een extra gerecht, of een
+   * omschrijving bij een gerecht dat er in het ontwerp geen had. Hij heeft alleen
+   * de stijl van het pakket; zijn plek komt uit het ritme, want er is geen
+   * baseline uit het ontwerp om op terug te vallen.
+   */
+  function maakAlinea(soort) {
+    const stijl = basis.stijl[soort] ?? basis.stijl.ingr
+    return {
+      soort,
+      tekst: '',
+      buitenOntwerp: true,
+      regels: [{ baseline: 0, runs: [{ tekst: '', x: 0, ...stijl }] }],
+    }
+  }
+
   /** Regelafstand binnen een alinea: uit het basisontwerp, anders uit het ritme. */
   function regelafstand(alinea, ritme) {
     if (alinea.regels.length > 1) {
@@ -361,14 +377,55 @@
     return { rechts, links }
   }
 
-  function controleerBotsing(grenzen, vak, wat) {
-    if (!grenzen) return
+  /**
+   * De vaste onderdelen van het scherm waar de menutekst niet overheen mag: de
+   * logobalk van de opdrachtgever en de dieetwens-regel met het bestek-icoon.
+   * Die staan niet in de achtergrond, dus de blob-controle ziet ze niet - en juist
+   * de voetregel komt in beeld zodra een kolom langer wordt dan in het ontwerp.
+   */
+  function verbodenVlakken() {
+    const vlakken = []
+    const lb = basis.logobalk
+    if (lb) {
+      vlakken.push({ naam: 'de logobalk', x0: lb.x, y0: lb.y,
+                     x1: lb.x + lb.breedte, y1: lb.y + lb.hoogte })
+    }
+    const voet = basis.voetregel
+    if (voet) {
+      let x0 = Infinity; let y0 = Infinity; let x1 = -Infinity; let y1 = -Infinity
+      if (voet.icoon) {
+        x0 = Math.min(x0, voet.icoon.x); y0 = Math.min(y0, voet.icoon.y)
+        x1 = Math.max(x1, voet.icoon.x + voet.icoon.breedte)
+        y1 = Math.max(y1, voet.icoon.y + voet.icoon.hoogte)
+      }
+      for (const regel of voet.regels ?? []) {
+        x0 = Math.min(x0, regel.x)
+        y0 = Math.min(y0, regel.baseline - regel.grootte)
+        x1 = Math.max(x1, regel.x + breedte(regel.tekst, regel.font, regel.grootte))
+        y1 = Math.max(y1, regel.baseline + regel.grootte * 0.3)
+      }
+      if (Number.isFinite(x0)) vlakken.push({ naam: 'de dieetwens-regel', x0, y0, x1, y1 })
+    }
+    return vlakken
+  }
+
+  function controleerBotsing(grenzen, vlakken, vak, wat) {
     const boven = Math.max(0, Math.round(vak.baseline - vak.grootte))
     const onder = Math.min(2159, Math.round(vak.baseline + vak.grootte * 0.3))
-    for (let y = boven; y <= onder; y++) {
-      if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) {
-        meldingen.botsingen.push({ tekst: wat, x0: Math.round(vak.x0), x1: Math.round(vak.x1),
-                                   baseline: Math.round(vak.baseline) })
+
+    if (grenzen) {
+      for (let y = boven; y <= onder; y++) {
+        if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) {
+          meldingen.botsingen.push({ tekst: wat, waar: 'een blob', x0: Math.round(vak.x0),
+                                     x1: Math.round(vak.x1), baseline: Math.round(vak.baseline) })
+          return
+        }
+      }
+    }
+    for (const vlak of vlakken) {
+      if (vak.x1 > vlak.x0 && vak.x0 < vlak.x1 && onder > vlak.y0 && boven < vlak.y1) {
+        meldingen.botsingen.push({ tekst: wat, waar: vlak.naam, x0: Math.round(vak.x0),
+                                   x1: Math.round(vak.x1), baseline: Math.round(vak.baseline) })
         return
       }
     }
@@ -433,6 +490,7 @@
     }
 
     // --- de menu-inhoud
+    const vlakken = verbodenVlakken()
     const inhoudGroep = document.getElementById('inhoud')
     const ritme = basis.ritme
     const nieuweSecties = invoersecties()
@@ -461,39 +519,58 @@
         // Elke alinea van deze sectie op volgorde: kop, dan per gerecht naam + ingredienten.
         const taken = []
         if (sectie.kop) taken.push({ alinea: sectie.kop, nieuw: nieuw ? { tekst: nieuw.kop } : null })
-        sectie.gerechten.forEach((gerecht, gi) => {
-          const bron = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten[gi] : null
-          taken.push({ alinea: gerecht.naam, nieuw: bron ? { tekst: bron.naam } : null })
+
+        // Zodra er inhoud is aangeleverd, bepaalt die wat er op het scherm komt.
+        // Het basisontwerp levert alleen de plek en de stijl. Een gerecht uit het
+        // ontwerp dat niet is aangeleverd valt weg - anders zou er een gerecht op
+        // het scherm staan dat de opdrachtgever niet heeft besteld.
+        const bronGerechten = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten : null
+        const aantal = bronGerechten ? bronGerechten.length : sectie.gerechten.length
+
+        for (let gi = 0; gi < aantal; gi++) {
+          const bron = bronGerechten ? bronGerechten[gi] : null
+          const uitOntwerp = sectie.gerechten[gi] ?? null
+          const naamAlinea = uitOntwerp ? uitOntwerp.naam : maakAlinea('naam')
+          taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
+                       buitenOntwerp: !uitOntwerp })
 
           // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
           // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
           // naar een pakket verhuizen dat er geen had, en andersom.
-          let inhoudVoorIngr = null
+          let omschrijving = null
           if (bron && Array.isArray(bron.onderdelen) && bron.onderdelen.length) {
-            inhoudVoorIngr = { onderdelen: bron.onderdelen }
+            omschrijving = { onderdelen: bron.onderdelen }
           } else if (bron && bron.ingredienten && bron.ingredienten.length) {
-            inhoudVoorIngr = {
+            omschrijving = {
               tekst: Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten),
             }
           }
 
-          if (gerecht.ingr) {
-            taken.push({ alinea: gerecht.ingr, nieuw: inhoudVoorIngr })
-          } else if (inhoudVoorIngr) {
-            meldingen.structuur.push(
-              `"${bron.naam || gerecht.naam.tekst}" krijgt een omschrijving, `
-              + 'maar heeft die niet in het basisontwerp.')
+          if (bronGerechten) {
+            // Geen omschrijving aangeleverd? Dan komt er ook geen te staan.
+            if (omschrijving) {
+              const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
+              taken.push({ alinea, nieuw: omschrijving,
+                           buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr) })
+            }
+          } else if (uitOntwerp && uitOntwerp.ingr) {
+            taken.push({ alinea: uitOntwerp.ingr, nieuw: null })
           }
-        })
-        if (nieuw && Array.isArray(nieuw.gerechten) && nieuw.gerechten.length !== sectie.gerechten.length) {
+        }
+
+        if (bronGerechten && bronGerechten.length !== sectie.gerechten.length) {
           meldingen.structuur.push(
-            `Sectie "${sectie.kop ? sectie.kop.tekst : '(zonder kop)'}" heeft ` +
-            `${sectie.gerechten.length} gerechten in het basisontwerp, ` +
-            `${nieuw.gerechten.length} in de aangeleverde inhoud.`)
+            `Sectie "${sectie.kop ? sectie.kop.tekst : '(zonder kop)'}" heeft `
+            + `${sectie.gerechten.length} gerechten in het basisontwerp, `
+            + `${bronGerechten.length} in de aangeleverde inhoud.`)
         }
 
         for (const taak of taken) {
           const { alinea, nieuw: nieuweInhoud } = taak
+          // Een alinea die buiten het ontwerp valt (extra gerecht, of een gerecht
+          // uit het ontwerp dat wegvalt) breekt de vaste baselines; vanaf daar
+          // telt het ritme van het pakket.
+          if (taak.buitenOntwerp) structuurGewijzigd = true
           const { regels, offsets, uitBasis } = regelsVoor(alinea, nieuweInhoud, kader, ritme)
           if (!uitBasis) {
             structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
@@ -526,7 +603,7 @@
           regels.forEach((runs, i) => {
             const y = baseline + offsets[i]
             const vak = tekenRegel(inhoudGroep, runs, kolom.x, y)
-            controleerBotsing(grenzen, vak, runs.map((r) => r.tekst).join(''))
+            controleerBotsing(grenzen, vlakken, vak, runs.map((r) => r.tekst).join(''))
             if (y > 2160 - 40) {
               meldingen.overloop.push(
                 `"${runs.map((r) => r.tekst).join('').slice(0, 40)}" valt onder de onderrand van het scherm.`)
