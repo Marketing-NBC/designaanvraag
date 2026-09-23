@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Huisstijl-extractie: draait in een Claude Code Routine (zie worker/ROUTINE.md).",
+  "description": "Huisstijl-extractie en menuschermen: draaien in een Claude Code Routine (zie worker/ROUTINE.md en worker/MENU-ROUTINE.md).",
   "scripts": {
     "extract": "node extract.mjs",
     "validate": "node validate.mjs",
