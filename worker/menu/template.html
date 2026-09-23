@@ -116,24 +116,11 @@
    * inhoud - zonder deze normalisatie zou zoiets de hele regelval laten
    * verspringen. Wat er getekend wordt blijft wel letterlijk het basisontwerp.
    */
-  // Moet gelijk blijven aan tekstsleutel() in basis-extract.py: de soort apostrof
-  // en hoofdletters zijn zetwerk, geen andere inhoud.
-  const tekstsleutel = (t) => String(t)
-    .replace(/[\u2018\u2019\u00b4\u0060]/g, "'")
-    .replace(/[\u201c\u201d]/g, '"')
-    .toLowerCase()
-    .replace(/\s*\|\s*/g, ' | ')
-    .replace(/\s+/g, ' ')
-    .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
-    .trim()
-
+  // tekstsleutel, gerechtsleutel en zoekGerecht komen uit menu/gerecht-match.mjs;
+  // render.mjs zet dat bestand als script boven dit script in de pagina.
   function zelfdeInhoud(a, b) {
     return tekstsleutel(a) === tekstsleutel(b)
   }
-
-  // Moet gelijk blijven aan gerechtsleutel() in basis-extract.py: voor een heel
-  // gerecht telt niet mee waar de streep staat.
-  const gerechtsleutel = (t) => tekstsleutel(t).replace(/\|/g, ' ').replace(/\s+/g, ' ').trim()
 
   /**
    * Zoekt op hoe dit hele gerecht in de basisontwerpen gezet is.
@@ -143,15 +130,23 @@
    * hoort te staan - inclusief waar de naam ophoudt en waar de regels afbreken.
    * Dat weegt zwaarder dan onze eigen afbreking, die alleen op kaderbreedte kijkt.
    *
-   * Naam en ingredienten gaan samen de sleutel in. Zet iemand de streep ergens
-   * anders dan de ontwerper - "Dessertbuffet | met zoete lekkernijen | L'OR Coffee
-   * Popping Pearls" tegen "Dessertbuffet met zoete lekkernijen | L'OR Coffee
-   * Popping Pearls" - dan is het nog steeds hetzelfde gerecht, en de bibliotheek
-   * zegt welk deel de naam is.
+   * De tekst komt binnen zoals de traiteur hem opschrijft, dus zoekGerecht laat
+   * een andere bewoording, een andere volgorde en een tikfout toe. Een gerecht
+   * waar een woord uit het ontwerp ontbreekt is een ander gerecht; zie
+   * menu/gerecht-match.mjs voor waarom dat zo streng moet.
    */
   function uitGerechtenbibliotheek(naam, ingredienten, grootte) {
     const geheel = [naam, ingredienten].filter(Boolean).join(' | ')
-    return bekendeGerechten[`${grootte}|${gerechtsleutel(geheel)}`] ?? null
+    const gevonden = zoekGerecht(geheel, bekendeGerechten, grootte)
+    if (!gevonden) return null
+    if (!gevonden.letterlijk) {
+      // Wat er op het scherm komt is nu de tekst van de ontwerper en niet die van
+      // de invuller. Dat hoort zo, maar Marketing moet het wel kunnen nakijken.
+      const gezet = [gevonden.gerecht.naam, ...gevonden.gerecht.ingredienten].join(' | ')
+      meldingen.opmaak.push(`"${geheel}" is gezet zoals het in het basisontwerp `
+        + `staat: "${gezet}".`)
+    }
+    return gevonden.gerecht
   }
 
   /**
@@ -635,10 +630,17 @@
                        vasteRegels: bekend ? bekend.naamRegels : null })
 
           if (bronGerechten) {
-            // Geen omschrijving aangeleverd? Dan komt er ook geen te staan.
-            if (omschrijving) {
+            // Kent de bibliotheek dit gerecht met een omschrijving, dan hoort die
+            // erbij - ook als hij in een adem met de naam is ingetypt. Zo staat
+            // "dessertbuffet met zoete lekkernijen met L'OR coffee popping pearls"
+            // alsnog met de pearls op hun eigen regel, zoals in het ontwerp.
+            const uitBibliotheek = bekend && bekend.ingrRegels ? bekend : null
+            const omschrijvingOfBekend = omschrijving
+              ?? (uitBibliotheek ? { tekst: uitBibliotheek.ingredienten.join(' | ') } : null)
+            // Verder geldt: geen omschrijving aangeleverd, dan komt er ook geen te staan.
+            if (omschrijvingOfBekend) {
               const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
-              taken.push({ alinea, nieuw: omschrijving, gerechtNaam,
+              taken.push({ alinea, nieuw: omschrijvingOfBekend, gerechtNaam,
                            buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr),
                            vasteRegels: bekend ? bekend.ingrRegels : null })
             }

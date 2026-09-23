@@ -235,6 +235,41 @@ Dessertbuffet | met zoete lekkernijen | L'OR Coffee Popping Pearls
 De bibliotheek zegt welk deel de naam is, niet degene die het intypt — dus
 beide leveren hetzelfde scherm op, tot op de pixel.
 
+### Een gerecht dat anders is opgeschreven
+
+Het repertoire ligt vast, maar de tekst komt binnen zoals de traiteur hem
+opschrijft: andere bewoording, andere volgorde, soms een tikfout. `gerecht-match.mjs`
+vindt het gerecht dan alsnog.
+
+**Niet op gelijkenis.** Dat is geprobeerd en het is gevaarlijk. "tasteful gift
+zalmtartaar | mierikswortel | affilla cress" lijkt voor 90% op de tonijnversie uit
+het ontwerp — met een marge van 0,57 tot het eerstvolgende gerecht, dus geen enkele
+drempel houdt dat tegen. Er zou tonijn op het scherm komen waar zalm besteld is, en
+juist het wisselen van een product is bij NBC de normale gang van zaken.
+
+**Wel op dekking:** elk woord uit het basisontwerp moet ook in de aangeleverde tekst
+staan. Een tikfout mag (één letter erbij, eraf of anders, alleen in woorden vanaf
+vijf letters — "ui" en "ei" zijn geen verschrijving van elkaar), extra woorden mogen
+tot 40% van de lengte, een andere volgorde mag. Ontbreekt er een woord, dan is het
+een ander gerecht en houden we onze handen ervan af.
+
+| Aangeleverd | Uitkomst |
+|---|---|
+| `dessertbuffet – verschillende zoete lekkernijen met L'OR coffee popping pearls` | ✔ herkend |
+| `dessertbuffet met zoete lekkernije \| L'OR coffee popping pearls` | ✔ herkend (tikfout) |
+| `tasteful gift zalmtartaar \| mierikswortel \| affilla cress` | ✘ ander gerecht |
+| `pompoenravioli \| gedroogde spaanse ham \| saliebotersaus` | ✘ ander gerecht |
+| `burrata \| tomatenmix \| truffelolie` | ✘ ander gerecht |
+
+Passen er twee gerechten even goed, dan raadt hij niet: onze eigen afbreking is beter
+dan het verkeerde gerecht. En wordt een gerecht wél herkend maar niet letterlijk, dan
+staat er iets anders op het scherm dan er is ingetypt — dat komt als melding in de
+Asana-comment te staan, zodat Marketing het kan nakijken.
+
+`gerecht-match.mjs` draait op twee plekken: in de tests hier, en in de browser waar de
+opmaak-engine staat. `render.mjs` zet het bestand als script in het sjabloon, zodat de
+regels op één plek staan en niet uit elkaar kunnen lopen.
+
 Bij het opnieuw uitrekenen van de regelval (`bij herberekening` in de controle)
 wordt de bibliotheek bewust overgeslagen: die stand toetst juist of onze eigen
 afbreking op dezelfde regels uitkomt.

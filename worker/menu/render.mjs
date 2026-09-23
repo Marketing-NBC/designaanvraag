@@ -177,6 +177,19 @@ function zetTerugNaarBron(payload) {
   }
 }
 
+/**
+ * De vergelijkingsregels uit gerecht-match.mjs, als gewoon script het sjabloon in.
+ *
+ * Het sjabloon draait in de browser en kan niets importeren, maar deze regels
+ * moeten daar precies hetzelfde werken als in de tests hier. Daarom staan ze op
+ * een plek, en wordt alleen het `export`-woord eruit gehaald zodat de functies
+ * als globals beschikbaar komen.
+ */
+function matchScript() {
+  const bron = readFileSync(join(MENU_DIR, 'gerecht-match.mjs'), 'utf8')
+  return `<script>\n${bron.replace(/^export /gm, '')}\n</script>`
+}
+
 /** Past de bewuste fontvervangingen toe op een bevroren basisontwerp. */
 function vervangFonts(basis) {
   const kopie = structuredClone(basis)
@@ -257,7 +270,7 @@ export async function renderMenu(opdracht) {
   html = html.replace('<script>', '<script>'
     + `window.__MENU__ = ${json};`
     + `window.__ICOON__ = ${JSON.stringify(icoon)};`
-    + '</script>\n<script>')
+    + '</script>\n' + matchScript() + '\n<script>')
 
   const browser = await chromium.launch({ executablePath: chromiumExecutable(), args: ['--no-sandbox'] })
   try {
