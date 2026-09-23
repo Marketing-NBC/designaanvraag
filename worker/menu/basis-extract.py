@@ -51,6 +51,7 @@ CORRECTIES: dict = {}
 # in plaats van die van de ontwerper.
 WOORDCORRECTIES = [
     ('lekkernije', 'lekkernijen'),   # "Dessertbuffet met zoete lekkernije" op pagina 7
+    ('L”OR', 'L’OR'),                # een dubbel aanhalingsteken op pagina 10
 ]
 
 
@@ -78,6 +79,15 @@ PAKKETTEN = [
     (6, 'buffet'),
     (7, 'diner-3gangen'),
     (8, 'diner-4gangen'),
+]
+
+# Pagina's die geen pakket zijn maar wel laten zien hoe een gerecht gezet hoort te
+# worden. Ze leveren alleen aan de gerechtenbibliotheek: geen achtergrond, geen
+# geometrie, geen eigen pakket. Zo staat een gerecht dat de ontwerper ergens heeft
+# uitgewerkt overal hetzelfde op het scherm, ook als die pagina zelf nooit gebruikt
+# wordt.
+VOORBEELDEN = [
+    (10, 'diner-4gangen p10'),
 ]
 
 
@@ -1030,7 +1040,11 @@ def main():
     alles = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
              for pagina_nr, naam in PAKKETTEN}
     kaders_delen(alles)
-    bibliotheek = gerechtenbibliotheek(alles)
+    # De voorbeeldpagina's delen hun tekstkaders niet: dat zijn geen pakketten, en
+    # hun kolommen staan net ergens anders. Hun gerechten tellen wel mee.
+    voorbeelden = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
+                   for pagina_nr, naam in VOORBEELDEN}
+    bibliotheek = gerechtenbibliotheek({**alles, **voorbeelden})
     (BASIS / 'gerechten.json').write_text(
         json.dumps(bibliotheek, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(f"Gerechtenbibliotheek: {len(bibliotheek['gerechten'])} gerechten, "
@@ -1055,7 +1069,9 @@ def main():
               f'{len(data["zetfouten"])}x zetfout')
 
     print('\nPagina 9 is een exacte kopie van pagina 8 en is overgeslagen.')
-    print('Pagina 10 is een voorbeeld van doorstroom, geen pakket; zie PAKKETTEN.')
+    for pagina_nr, naam in VOORBEELDEN:
+        print(f'Pagina {pagina_nr} is geen pakket; alleen zijn gerechten gaan de '
+              f'bibliotheek in (als "{naam}").')
     return overzicht
 
 

@@ -260,6 +260,17 @@ Dessertbuffet | met zoete lekkernijen | L'OR Coffee Popping Pearls
 De bibliotheek zegt welk deel de naam is, niet degene die het intypt — dus
 beide leveren hetzelfde scherm op, tot op de pixel.
 
+### Pagina's die geen pakket zijn
+
+`VOORBEELDEN` in `basis-extract.py` noemt pagina's die geen pakket zijn maar wel
+laten zien hoe een gerecht gezet hoort te worden. Ze leveren alleen aan de
+bibliotheek: geen achtergrond, geen geometrie, geen eigen pakket.
+
+Pagina 10 is er zo een: hetzelfde viergangendiner als pagina 8, maar met andere,
+langere gerechten. Zet je daar een gerecht uit, dan komt dat gerecht voortaan
+overal zo op het scherm — ook in een ander pakket, en ook als iemand het anders
+intypt. Zo hoef je een gerecht maar één keer te zetten.
+
 ### Een gerecht dat anders is opgeschreven
 
 Het repertoire ligt vast, maar de tekst komt binnen zoals de traiteur hem

@@ -1064,6 +1064,38 @@
         }
       ]
     },
+    "61.6|aka-uo tatsuta (gefrituurde roodbaars) zoetzure komkommer rode peper rode ui misosaus": {
+      "naam": "Aka-uo Tatsuta (gefrituurde roodbaars)",
+      "ingredienten": [
+        "zoetzure komkommer",
+        "rode peper",
+        "rode ui",
+        "misosaus"
+      ],
+      "bron": "diner-4gangen p10",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Aka-uo Tatsuta",
+          "offset": 0.0
+        },
+        {
+          "tekst": "(gefrituurde roodbaars)",
+          "offset": 73.92
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "zoetzure komkommer | rode peper|",
+          "offset": 0.0
+        },
+        {
+          "tekst": "rode ui | misosaus",
+          "offset": 55.01
+        }
+      ]
+    },
     "61.6|boneless short ribs crème van winterpeen spaghetti van pastinaak sticky hoisin": {
       "naam": "Boneless short ribs",
       "ingredienten": [
@@ -1227,6 +1259,27 @@
         }
       ]
     },
+    "61.6|bruschetta spiezen seasonal dips": {
+      "naam": "Bruschetta spiezen",
+      "ingredienten": [
+        "seasonal dips"
+      ],
+      "bron": "diner-4gangen p10",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Bruschetta spiezen",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "seasonal dips",
+          "offset": 0.0
+        }
+      ]
+    },
     "61.6|chocoladetrifle oreo crunch kersen tony's chocolonely schaaf": {
       "naam": "Chocoladetrifle",
       "ingredienten": [
@@ -1342,6 +1395,33 @@
         }
       ]
     },
+    "61.6|gerookte hoenderfilet gel van basilicum en appel gepofte boekweit mustard cress": {
+      "naam": "Gerookte hoenderfilet",
+      "ingredienten": [
+        "gel van basilicum en appel",
+        "gepofte boekweit",
+        "mustard cress"
+      ],
+      "bron": "diner-4gangen p10",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Gerookte hoenderfilet",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "gel van basilicum en appel | gepofte",
+          "offset": 0.0
+        },
+        {
+          "tekst": "boekweit | mustard cress",
+          "offset": 55.01
+        }
+      ]
+    },
     "61.6|krokante parmezaan piepers": {
       "naam": "Krokante parmezaan piepers",
       "ingredienten": [],
@@ -1355,6 +1435,43 @@
       ],
       "ingrGrootte": null,
       "ingrRegels": null
+    },
+    "61.6|langzaam gegaarde kalfsrollade parmezaanse roomsaus citroen groene peper aardappel millefeuille krokante frietjes": {
+      "naam": "Langzaam gegaarde Kalfsrollade",
+      "ingredienten": [
+        "parmezaanse roomsaus",
+        "citroen",
+        "groene peper",
+        "aardappel millefeuille",
+        "krokante frietjes"
+      ],
+      "bron": "diner-4gangen p10",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Langzaam gegaarde",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Kalfsrollade",
+          "offset": 73.92
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "parmezaanse roomsaus | citroen |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "groene peper | aardappel millefeuille |",
+          "offset": 55.01
+        },
+        {
+          "tekst": "krokante frietjes",
+          "offset": 110.02
+        }
+      ]
     },
     "61.6|meergranen stokkie geitenkaas harissa romaine (vega)": {
       "naam": "Meergranen stokkie",
@@ -2234,6 +2351,22 @@
         }
       ]
     },
+    "ingr|41.8|gel van basilicum en appel | gepofte boekweit | mustard cress": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "gel van basilicum en appel | gepofte boekweit | mustard cress",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "gel van basilicum en appel | gepofte",
+          "offset": 0.0
+        },
+        {
+          "tekst": "boekweit | mustard cress",
+          "offset": 55.01
+        }
+      ]
+    },
     "ingr|41.8|gorgonzola | verse vijgen": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2326,6 +2459,26 @@
         }
       ]
     },
+    "ingr|41.8|parmezaanse roomsaus | citroen | groene peper | aardappel millefeuille | krokante frietjes": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "parmezaanse roomsaus | citroen | groene peper | aardappel millefeuille | krokante frietjes",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "parmezaanse roomsaus | citroen |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "groene peper | aardappel millefeuille |",
+          "offset": 55.01
+        },
+        {
+          "tekst": "krokante frietjes",
+          "offset": 110.02
+        }
+      ]
+    },
     "ingr|41.8|pikante humus | botersla | tomaat": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2382,6 +2535,18 @@
         }
       ]
     },
+    "ingr|41.8|seasonal dips": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "seasonal dips",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "seasonal dips",
+          "offset": 0.0
+        }
+      ]
+    },
     "ingr|41.8|tonijntartaar | mierikswortel | affilla cress | uiencrumble": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2395,6 +2560,22 @@
         {
           "tekst": "uiencrumble",
           "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|zoetzure komkommer | rode peper | rode ui | misosaus": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "zoetzure komkommer | rode peper| rode ui | misosaus",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "zoetzure komkommer | rode peper|",
+          "offset": 0.0
+        },
+        {
+          "tekst": "rode ui | misosaus",
+          "offset": 55.01
         }
       ]
     },
@@ -2822,6 +3003,22 @@
         }
       ]
     },
+    "naam|61.6|aka-uo tatsuta (gefrituurde roodbaars)": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Aka-uo Tatsuta (gefrituurde roodbaars)",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "Aka-uo Tatsuta",
+          "offset": 0.0
+        },
+        {
+          "tekst": "(gefrituurde roodbaars)",
+          "offset": 73.92
+        }
+      ]
+    },
     "naam|61.6|boneless short ribs": {
       "soort": "naam",
       "grootte": 61.6,
@@ -2878,6 +3075,18 @@
       "regels": [
         {
           "tekst": "Bruine bol",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|bruschetta spiezen": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Bruschetta spiezen",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "Bruschetta spiezen",
           "offset": 0.0
         }
       ]
@@ -2946,6 +3155,18 @@
         }
       ]
     },
+    "naam|61.6|gerookte hoenderfilet": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Gerookte hoenderfilet",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "Gerookte hoenderfilet",
+          "offset": 0.0
+        }
+      ]
+    },
     "naam|61.6|krokante parmezaan piepers": {
       "soort": "naam",
       "grootte": 61.6,
@@ -2955,6 +3176,22 @@
         {
           "tekst": "Krokante parmezaan piepers",
           "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|langzaam gegaarde kalfsrollade": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Langzaam gegaarde Kalfsrollade",
+      "bron": "diner-4gangen p10",
+      "regels": [
+        {
+          "tekst": "Langzaam gegaarde",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Kalfsrollade",
+          "offset": 73.92
         }
       ]
     },
