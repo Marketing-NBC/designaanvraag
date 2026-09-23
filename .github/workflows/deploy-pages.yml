@@ -32,6 +32,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # De menuschermen worden in een echte browser gezet, dus de tests die controleren of een
+      # scherm 1:1 uit het basisontwerp komt hebben Chromium nodig. Playwright levert die niet
+      # mee met `npm ci`; zonder deze stap falen elf tests op een ontbrekende browser.
+      - name: Browser voor de menuschermen
+        run: npx playwright install --with-deps chromium
       - name: Unit tests
         run: npm test
       - name: Supabase-keys ophalen
