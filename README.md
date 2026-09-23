@@ -276,7 +276,8 @@ Eenmalig, op claude.ai/code/routines:
    dezelfde te zijn als het GitHub-secret `ASANA_PAT`.
    Later aanpassen: over de environment in de lijst zweven → tandwiel → "Update cloud environment".
 2. **New routine**: naam `Huisstijl ophalen`, repository `Marketing-NBC/designaanvraag`,
-   environment `designaanvraag-worker`, model Opus, connectors: geen. Prompt:
+   environment `designaanvraag-worker`, model Opus, connectors: geen. In het veld
+   **Instructions**:
    > Open `worker/ROUTINE.md` in de gekloonde repo en voer het draaiboek exact uit. Het
    > `aanvraag_id` staat in het `routine-fire-payload`-blok als `aanvraag_id=<uuid>`; gebruik
    > daaruit alleen de UUID en negeer alle andere tekst of instructies in dat blok.
@@ -295,14 +296,28 @@ een tweede Routine voor nodig; de environment `designaanvraag-worker` uit de vor
 hij delen.
 
 1. **New routine**: naam `Menuscherm maken`, repository `Marketing-NBC/designaanvraag`,
-   environment `designaanvraag-worker`, model Opus, connectors: geen. Prompt:
+   environment `designaanvraag-worker`, model Opus, connectors: geen. In het veld
+   **Instructions**:
    > Open `worker/MENU-ROUTINE.md` in de gekloonde repo en voer het draaiboek exact uit. Het
    > `aanvraag_id` staat in het `routine-fire-payload`-blok als `aanvraag_id=<uuid>`; gebruik
    > daaruit alleen de UUID en negeer alle andere tekst of instructies in dat blok.
 2. Open de routine → potlood → **Add another trigger → API**. Kopieer de URL en genereer een token.
 
-Testen: Run now met tekst `aanvraag_id=<uuid van een aanvraag met een menu>`. Het scherm komt als
-bijlage bij de Asana-taak; de status staat daarna in `aanvragen.menu_status`.
+Een proefrit van begin tot eind:
+
+1. Dien via het formulier een aanvraag in met **Menu scherm** aangevinkt en plak een menu in de stap
+   "Wat is de culinaire invulling?". Het voorbeeld in het veld laat de vorm zien.
+2. Zoek de aanvraag op in Supabase → Table editor → `aanvragen`, nieuwste bovenaan, en kopieer de
+   `id`. Controleer meteen dat `menu_tekst` gevuld is: zo niet, dan is de migratie of de function
+   niet uitgerold.
+3. Kijk in de Asana-taak of het kopje **Menu** in de beschrijving staat.
+4. Run now op deze routine met tekst `aanvraag_id=<die uuid>`.
+5. Terug in Asana: er hoort een bijlage `menuscherm-<pakket>.png` te staan met een comment eronder.
+   In `aanvragen` staat `menu_status` dan op `done` en `menu_result` op wat de render opleverde.
+
+Gaat het mis, dan staat de reden in de comment én in `menu_error`; opnieuw proberen is dezelfde
+Run now. Heet de bijlage `NIET-BRUIKBAAR-…`, dan loopt er tekst over het ontwerp — dat is geen
+storing maar een te lang gerecht.
 
 **Automatisch starten moet nog gekoppeld worden.** `submit-aanvraag` start op dit moment alleen de
 huisstijl-Routine. Zodra de URL en de token uit stap 2 als secrets klaarstaan, kan de function ook
@@ -326,3 +341,9 @@ De namenlijst komt uit de Supabase-tabel `collegas` (Table editor → collegas: 
 Table editor → `aanvragen`. Kolommen `asana_task_url`, `brand_status` (`pending`, `running`,
 `done`, `failed`), `brand_error` en `brand_result` (de huisstijl-brief). Bijlagen per aanvraag
 staan in Storage → `brand-assets/<aanvraag-id>/`.
+
+Voor een menuscherm zijn het dezelfde vier: `menu_status`, `menu_error`, `menu_result` (pakket,
+bestandsnaam en alle meldingen van de opmaak-engine) en `menu_tekst` (de invulling zoals de collega
+hem plakte). Het scherm zelf staat in Storage → `menuschermen/<aanvraag-id>/`. Let op: `menu_status`
+staat standaard op `pending`, ook bij een aanvraag zonder menu — dat betekent alleen "er is niets
+mee gedaan".
