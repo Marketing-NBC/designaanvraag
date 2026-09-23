@@ -116,22 +116,40 @@ export function renderFailureComment({ website, reason, rerunHint }) {
  * @param {object} p.meldingen     { botsingen, overloop, structuur, regelval, opmaak }
  * @param {string|null} p.sessionUrl
  */
+/**
+ * Of een gerenderd scherm bruikbaar is.
+ *
+ * Tekst mag nooit over een blob, over de logobalk of over de dieetwens-regel
+ * lopen, en mag nooit buiten het scherm vallen. Gebeurt dat toch, dan is het
+ * scherm niet af - dan is het een signaal dat de tekst te lang is voor dit
+ * pakket. Zo'n scherm gaat niet als resultaat de deur uit.
+ */
+export function menuIsBruikbaar(meldingen) {
+  const m = meldingen ?? {}
+  return (m.botsingen?.length ?? 0) === 0 && (m.overloop?.length ?? 0) === 0
+}
+
 export function renderMenuComment({ pakket, bestandsnaam, meldingen, invoer, sessionUrl }) {
   const m = meldingen ?? {}
+  const bruikbaar = menuIsBruikbaar(m)
+  const blokkades = []
   const punten = []
 
-  // Eerst hoe de invulling is gelezen: welk basisontwerp erbij is gezocht en wat
-  // daarbij opviel. Dat bepaalt alles wat erna komt, dus het hoort bovenaan.
-  for (const t of invoer ?? []) {
-    punten.push(`<li><strong>Invulling:</strong> ${escapeXml(t)}</li>`)
-  }
-
+  // Eerst wat het scherm onbruikbaar maakt. Daar valt niet mee te leven, dus dat
+  // staat los van de rest en bovenaan.
   for (const b of m.botsingen ?? []) {
-    punten.push(`<li><strong>Tekst raakt een blob:</strong> ${escapeXml(b.tekst ?? '')} `
-      + `(op hoogte ${Math.round(b.baseline ?? 0)}). Dit scherm kan zo niet de deur uit.</li>`)
+    const waarbij = [b.sectie, b.gerecht].filter(Boolean).join(' \u2013 ')
+    blokkades.push(`<li>${waarbij ? `<strong>${escapeXml(waarbij)}:</strong> ` : ''}`
+      + `"${escapeXml(b.tekst ?? '')}" loopt over ${escapeXml(b.waar ?? 'een vast onderdeel')}.</li>`)
   }
   for (const t of m.overloop ?? []) {
-    punten.push(`<li><strong>Valt buiten het scherm:</strong> ${escapeXml(t)}</li>`)
+    blokkades.push(`<li>${escapeXml(t)}</li>`)
+  }
+
+  // Daarna hoe de invulling is gelezen: welk basisontwerp erbij is gezocht en wat
+  // daarbij opviel. Dat bepaalt alles wat erna komt.
+  for (const t of invoer ?? []) {
+    punten.push(`<li><strong>Invulling:</strong> ${escapeXml(t)}</li>`)
   }
   for (const t of m.structuur ?? []) {
     punten.push(`<li><strong>Opbouw wijkt af:</strong> ${escapeXml(t)}</li>`)
@@ -143,16 +161,25 @@ export function renderMenuComment({ pakket, bestandsnaam, meldingen, invoer, ses
     punten.push(`<li>Andere regelval dan het basisontwerp: ${escapeXml(t)}</li>`)
   }
 
+  const staart = sessionUrl ? ` <a href="${escapeXml(sessionUrl)}">Bekijk de sessie</a>.` : ''
+
+  if (!bruikbaar) {
+    return '<body><strong>Dit menuscherm kan zo niet gebruikt worden.</strong> '
+      + `De tekst loopt over vaste onderdelen van het ontwerp heen, en dat mag nooit. `
+      + `De bijlage <em>${escapeXml(bestandsnaam)}</em> laat zien waar het misgaat.`
+      + `<ul>${blokkades.join('')}</ul>`
+      + 'Kort de gerechten in - in het basisontwerp staat een lang gerecht als een korte naam '
+      + 'met de rest erachter als omschrijving - en dien de invulling opnieuw in.'
+      + (punten.length ? `<ul>${punten.join('')}</ul>` : '')
+      + `${staart}</body>`
+  }
+
   const aandachtspunten = `${punten.length} aandachtspunt${punten.length === 1 ? '' : 'en'}`
   const kop = punten.length === 0
     ? `Menuscherm <strong>${escapeXml(pakket)}</strong> is opgemaakt volgens het basisontwerp `
       + 'en staat als bijlage'
     : `Menuscherm <strong>${escapeXml(pakket)}</strong> staat als bijlage, `
       + `maar er ${punten.length === 1 ? 'is' : 'zijn'} ${aandachtspunten}`
-
-  const staart = sessionUrl
-    ? ` <a href="${escapeXml(sessionUrl)}">Bekijk de sessie</a>.`
-    : ''
 
   return `<body>${kop} (<em>${escapeXml(bestandsnaam)}</em>).`
     + (punten.length ? `<ul>${punten.join('')}</ul>` : '')

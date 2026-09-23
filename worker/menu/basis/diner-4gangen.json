@@ -11,7 +11,6 @@
   "achtergrond": "diner-4gangen.png",
   "titel": {
     "tekst": "Dinner",
-    "bronTekst": "Diner",
     "x": 259.11,
     "baseline": 344.45,
     "font": "Pockota-Medium",
@@ -42,7 +41,7 @@
     },
     "regels": [
       {
-        "tekst": "Dieetswens of allergie?",
+        "tekst": "Dieetwens of allergie?",
         "x": 2442.78,
         "baseline": 1881.03,
         "font": "AreaNormal-ExtraBold",
@@ -53,7 +52,7 @@
         "tekst": "Laat het ons team weten,",
         "x": 2442.78,
         "baseline": 1938.65,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       },
@@ -61,7 +60,7 @@
         "tekst": "we helpen je graag.",
         "x": 2442.78,
         "baseline": 1991.66,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       }
@@ -79,7 +78,7 @@
       "kleur": "#000000"
     },
     "ingr": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 41.8,
       "kleur": "#000000"
     }
@@ -88,7 +87,7 @@
     "bullet": "•",
     "inspring": 39.59,
     "naam": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 41.8,
       "kleur": "#1d1d1b"
     },
@@ -113,8 +112,8 @@
     "kopBaseline": null
   },
   "spatie": {
-    "41.8": 11.24,
-    "43.3": 11.65,
+    "41.8": 11.29,
+    "43.3": 11.69,
     "53.89": 13.26,
     "57.0": 14.02,
     "61.6": 15.15,
@@ -124,9 +123,9 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 858.37,
-        "minimaal": 848.19,
-        "maximaal": 1122.18,
+        "breedte": 856.51,
+        "minimaal": 846.35,
+        "maximaal": 1120.22,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -191,7 +190,7 @@
                 {
                   "tekst": "roomboter | fleur de sel | limoen | olijven | ",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -203,7 +202,7 @@
                 {
                   "tekst": "zongedroogde tomaat | curry dip",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -239,7 +238,7 @@
                 {
                   "tekst": "Tonijntartaar | mierikswortel | affilla cress | ",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -251,7 +250,7 @@
                 {
                   "tekst": "uiencrumble",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -264,9 +263,9 @@
     {
       "x": 1352.0,
       "kader": {
-        "breedte": 876.24,
-        "minimaal": 865.85,
-        "maximaal": 978.92,
+        "breedte": 875.19,
+        "minimaal": 864.81,
+        "maximaal": 977.59,
         "handmatigeAfbrekingen": 1
       },
       "secties": [
@@ -345,7 +344,7 @@
                 {
                   "tekst": "rilette van eend | gele -uienrelish | ",
                   "x": 0.09,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -357,7 +356,7 @@
                 {
                   "tekst": "venne cress",
                   "x": 0.09,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -411,7 +410,7 @@
                 {
                   "tekst": "gedroogde Italiaanse ham | saliebotersaus",
                   "x": 0.09,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -465,7 +464,7 @@
                 {
                   "tekst": "crème van winterpeen | spaghetti van ",
                   "x": 0.09,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -477,7 +476,7 @@
                 {
                   "tekst": "pastinaak | sticky hoisin",
                   "x": 0.09,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -490,9 +489,9 @@
     {
       "x": 2278.0,
       "kader": {
-        "breedte": 551.39,
-        "minimaal": 544.85,
-        "maximaal": 592.37,
+        "breedte": 550.79,
+        "minimaal": 544.26,
+        "maximaal": 592.0,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -553,7 +552,7 @@
                 {
                   "tekst": "Oreo crunch | kersen | ",
                   "x": 0.28,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -565,7 +564,7 @@
                 {
                   "tekst": "Tony’s Chocolonely schaaf",
                   "x": 0.28,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }

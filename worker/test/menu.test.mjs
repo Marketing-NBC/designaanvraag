@@ -15,6 +15,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
+import { menuIsBruikbaar } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
 
 const BASIS_DIR = join(WORKER_DIR, 'menu', 'basis')
@@ -299,13 +300,26 @@ test('gerechten uit het ontwerp die niet zijn aangeleverd verdwijnen', { timeout
   assert.match(meldingen.structuur[0], /2 gerechten in het basisontwerp, 1 in de aangeleverde/)
 })
 
-test('tekst die de dieetwens-regel raakt wordt gemeld', { timeout: 120_000 }, async () => {
+test('tekst die de dieetwens-regel raakt maakt het scherm onbruikbaar', { timeout: 120_000 }, async () => {
   // De voetregel staat niet in de achtergrond, dus de blob-controle ziet hem niet.
-  // Juist daar loopt een kolom tegenaan zodra de gerechten langer worden.
+  // Juist daar loopt een kolom tegenaan zodra de gerechten langer worden. Zo'n scherm
+  // mag niet als resultaat de deur uit - melden alleen is niet genoeg.
   const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
   inhoud.secties[3].gerechten[0].ingredienten =
     Array.from({ length: 12 }, (_, i) => `een vrij lang ingredient nummer ${i}`)
   const { meldingen } = await renderMenu(inhoud)
-  assert.ok(meldingen.botsingen.some((b) => b.waar === 'de dieetwens-regel'),
-    `verwachtte een botsing met de voetregel, kreeg ${JSON.stringify(meldingen.botsingen)}`)
+  const raakt = meldingen.botsingen.find((b) => b.waar === 'de dieetwens-regel')
+  assert.ok(raakt, `verwachtte een botsing met de voetregel, kreeg ${JSON.stringify(meldingen.botsingen)}`)
+  assert.equal(menuIsBruikbaar(meldingen), false, 'zo n scherm hoort niet goedgekeurd te worden')
+  // De melding moet zeggen welke gang te lang is, anders kun je er niets mee.
+  assert.equal(raakt.sectie, 'Hoofdgerecht')
+  assert.ok(raakt.gerecht, 'de melding noemt geen gerecht')
+})
+
+test('een basisontwerp levert altijd een bruikbaar scherm', { timeout: 300_000 }, async () => {
+  for (const pakket of alle) {
+    const { meldingen } = await renderMenu({ pakket })
+    assert.equal(menuIsBruikbaar(meldingen), true,
+      `${pakket}: ${JSON.stringify(meldingen.botsingen)} ${JSON.stringify(meldingen.overloop)}`)
+  }
 })

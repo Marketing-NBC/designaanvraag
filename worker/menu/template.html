@@ -409,23 +409,25 @@
     return vlakken
   }
 
-  function controleerBotsing(grenzen, vlakken, vak, wat) {
+  function controleerBotsing(grenzen, vlakken, vak, wat, waarbij) {
     const boven = Math.max(0, Math.round(vak.baseline - vak.grootte))
     const onder = Math.min(2159, Math.round(vak.baseline + vak.grootte * 0.3))
 
     if (grenzen) {
       for (let y = boven; y <= onder; y++) {
         if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) {
-          meldingen.botsingen.push({ tekst: wat, waar: 'een blob', x0: Math.round(vak.x0),
-                                     x1: Math.round(vak.x1), baseline: Math.round(vak.baseline) })
+          meldingen.botsingen.push({ tekst: wat, waar: 'een blob', ...waarbij,
+                                     x0: Math.round(vak.x0), x1: Math.round(vak.x1),
+                                     baseline: Math.round(vak.baseline) })
           return
         }
       }
     }
     for (const vlak of vlakken) {
       if (vak.x1 > vlak.x0 && vak.x0 < vlak.x1 && onder > vlak.y0 && boven < vlak.y1) {
-        meldingen.botsingen.push({ tekst: wat, waar: vlak.naam, x0: Math.round(vak.x0),
-                                   x1: Math.round(vak.x1), baseline: Math.round(vak.baseline) })
+        meldingen.botsingen.push({ tekst: wat, waar: vlak.naam, ...waarbij,
+                                   x0: Math.round(vak.x0), x1: Math.round(vak.x1),
+                                   baseline: Math.round(vak.baseline) })
         return
       }
     }
@@ -531,8 +533,9 @@
           const bron = bronGerechten ? bronGerechten[gi] : null
           const uitOntwerp = sectie.gerechten[gi] ?? null
           const naamAlinea = uitOntwerp ? uitOntwerp.naam : maakAlinea('naam')
+          const gerechtNaam = (bron && bron.naam) || (uitOntwerp ? uitOntwerp.naam.tekst : '')
           taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
-                       buitenOntwerp: !uitOntwerp })
+                       buitenOntwerp: !uitOntwerp, gerechtNaam })
 
           // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
           // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
@@ -550,11 +553,11 @@
             // Geen omschrijving aangeleverd? Dan komt er ook geen te staan.
             if (omschrijving) {
               const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
-              taken.push({ alinea, nieuw: omschrijving,
+              taken.push({ alinea, nieuw: omschrijving, gerechtNaam,
                            buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr) })
             }
           } else if (uitOntwerp && uitOntwerp.ingr) {
-            taken.push({ alinea: uitOntwerp.ingr, nieuw: null })
+            taken.push({ alinea: uitOntwerp.ingr, nieuw: null, gerechtNaam })
           }
         }
 
@@ -564,6 +567,10 @@
             + `${sectie.gerechten.length} gerechten in het basisontwerp, `
             + `${bronGerechten.length} in de aangeleverde inhoud.`)
         }
+
+        // Waar deze regels bij horen, zodat een botsing zegt welke gang te lang is
+        // en niet alleen welk stukje tekst eroverheen valt.
+        const sectieNaam = nieuw?.kop || (sectie.kop ? sectie.kop.tekst : '')
 
         for (const taak of taken) {
           const { alinea, nieuw: nieuweInhoud } = taak
@@ -603,7 +610,8 @@
           regels.forEach((runs, i) => {
             const y = baseline + offsets[i]
             const vak = tekenRegel(inhoudGroep, runs, kolom.x, y)
-            controleerBotsing(grenzen, vlakken, vak, runs.map((r) => r.tekst).join(''))
+            controleerBotsing(grenzen, vlakken, vak, runs.map((r) => r.tekst).join(''),
+              { sectie: sectieNaam, gerecht: taak.gerechtNaam })
             if (y > 2160 - 40) {
               meldingen.overloop.push(
                 `"${runs.map((r) => r.tekst).join('').slice(0, 40)}" valt onder de onderrand van het scherm.`)

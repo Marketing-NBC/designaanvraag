@@ -16,7 +16,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { addComment, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
-import { renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
+import { menuIsBruikbaar, renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
 import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
 import { renderMenu, pakketten, pakketkenmerken } from './menu/render.mjs'
 
@@ -121,7 +121,14 @@ try {
   await afbreken(`De opmaak liep vast: ${e.message}`, inhoud.pakket)
 }
 
-const bestandsnaam = `menuscherm-${veiligeNaam(inhoud.pakket)}.png`
+// Tekst die over een blob, de logobalk of de dieetwens-regel loopt maakt het scherm
+// onbruikbaar. Zo'n scherm gaat niet als resultaat de deur uit: het komt wel mee als
+// bijlage - je moet kunnen zien waar het misgaat - maar onder een naam die geen
+// misverstand toelaat, met de status op failed.
+const bruikbaar = menuIsBruikbaar(meldingen)
+const bestandsnaam = bruikbaar
+  ? `menuscherm-${veiligeNaam(inhoud.pakket)}.png`
+  : `NIET-BRUIKBAAR-menuscherm-${veiligeNaam(inhoud.pakket)}.png`
 const aantalMeldingen = ['botsingen', 'overloop', 'structuur', 'regelval', 'opmaak']
   .reduce((n, k) => n + (meldingen[k]?.length ?? 0), 0)
 
@@ -135,6 +142,10 @@ if (dryRun || !id) {
     }
   }
   console.log(`Dry-run: geen Asana of Supabase. Scherm staat in ${uit} (${aantalMeldingen} melding(en)).`)
+  if (!bruikbaar) {
+    console.error('Dit scherm is NIET bruikbaar: de tekst loopt over vaste onderdelen van het ontwerp.')
+    process.exit(1)
+  }
   process.exit(0)
 }
 
@@ -159,12 +170,17 @@ await addComment(taskGid, renderMenuComment({
 }))
 log('Asana-comment geplaatst', { meldingen: aantalMeldingen })
 
+const blokkades = meldingen.botsingen.map((b) => `"${b.tekst}" loopt over ${b.waar ?? 'een vast onderdeel'}`)
+  .concat(meldingen.overloop ?? [])
+
 await updateMenu(id, {
-  menu_status: 'done',
-  menu_error: null,
+  menu_status: bruikbaar ? 'done' : 'failed',
+  menu_error: bruikbaar ? null
+    : `Het scherm is niet bruikbaar: ${blokkades.join('; ')}`.slice(0, 500),
   menu_result: {
     pakket: inhoud.pakket,
     invoer: invoerNotities,
+    bruikbaar,
     bestandsnaam,
     asana_gid: bijlage.gid,
     storage_path: opslagpad,
@@ -173,6 +189,11 @@ await updateMenu(id, {
   },
 })
 
-log('klaar', { id, taskGid, pakket: inhoud.pakket, meldingen: aantalMeldingen })
+log('klaar', { id, taskGid, pakket: inhoud.pakket, meldingen: aantalMeldingen, bruikbaar })
+if (!bruikbaar) {
+  console.error(`Menuscherm ${inhoud.pakket} is NIET bruikbaar en staat als zodanig bij `
+    + `Asana-taak ${taskGid} (${aanvraag.asana_task_url ?? ''}): ${blokkades.join('; ')}`)
+  process.exit(1)
+}
 console.log(`Menuscherm ${inhoud.pakket} staat bij Asana-taak ${taskGid} `
   + `(${aanvraag.asana_task_url ?? ''}) met ${aantalMeldingen} melding(en).`)
