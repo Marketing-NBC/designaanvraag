@@ -63,6 +63,12 @@ def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
     return tekst
 
 # Pagina (1-based) -> pakketnaam. Pagina 9 is een exacte kopie van pagina 8.
+#
+# Pagina 10 is geen pakket maar een voorbeeld: hetzelfde viergangendiner als
+# pagina 8, maar met langere gerechten, en met de hand opgelost door het
+# Voorgerecht naar de linkerkolom te halen. Daar is de doorstroom over de
+# kolommen op gebouwd; de test in worker/test/menu.test.mjs legt de uitkomst
+# van de engine naast de baselines die daar staan.
 PAKKETTEN = [
     (1, 'lunch-standaard'),
     (2, 'lunch-basic'),
@@ -1049,6 +1055,7 @@ def main():
               f'{len(data["zetfouten"])}x zetfout')
 
     print('\nPagina 9 is een exacte kopie van pagina 8 en is overgeslagen.')
+    print('Pagina 10 is een voorbeeld van doorstroom, geen pakket; zie PAKKETTEN.')
     return overzicht
 
 

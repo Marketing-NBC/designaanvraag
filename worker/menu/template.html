@@ -322,8 +322,22 @@
   function sprong(vorige, deze, ritme, structuurGewijzigd) {
     const letterlijk = deze.regels[0].baseline - vorige.regels[vorige.regels.length - 1].baseline
     if (!structuurGewijzigd) return letterlijk
+
     const uitRitme = ritme.overgang[`${vorige.soort}->${deze.soort}`]
-    return uitRitme ?? letterlijk
+    if (uitRitme != null) return uitRitme
+
+    // Deze overgang staat niet in het ritme. Dat gebeurt zodra er iets opduikt wat
+    // in geen enkel basisontwerp staat: een gerecht zonder ingredienten gevolgd
+    // door een nieuwe gang, bijvoorbeeld. De afstand tot een kop is optisch
+    // dezelfde, wat eraan voorafging ook - dus nemen we de overgang naar hetzelfde
+    // soort alinea die het ritme wel kent.
+    for (const [naam, waarde] of Object.entries(ritme.overgang)) {
+      if (naam.endsWith(`->${deze.soort}`)) return waarde
+    }
+    // Als laatste redmiddel de letterlijke afstand, maar alleen als die vooruit
+    // wijst: bij een sectie die naar een andere kolom is verhuisd komen de twee
+    // baselines uit verschillende kolommen en is het verschil negatief.
+    return letterlijk > 0 ? letterlijk : deze.regels[0].runs[0].grootte * 1.6
   }
 
   // ------------------------------------------------------------ tekenen
@@ -332,24 +346,16 @@
   const kopKleur = (basis.stijl && basis.stijl.kop && basis.stijl.kop.kleur) || '#f6a107'
   const kleurVan = (run) => (merk.accent && run.kleur === kopKleur ? merk.accent : run.kleur)
 
-  function tekenRegel(groep, runs, x, baseline) {
-    const t = el('text', { x, y: baseline })
-    let eersteStijl = null
-    for (const run of runs) {
-      const span = el('tspan', {
-        x: run.x ? x + run.x : null,
-        'font-family': run.font,
-        'font-size': run.grootte,
-        fill: kleurVan(run),
-      })
-      span.textContent = run.tekst
-      t.appendChild(span)
-      if (!eersteStijl) eersteStijl = run
-    }
-    groep.appendChild(t)
-    // De rechterrand is de verste run, niet de som van de breedtes: in een
-    // opsomming staat de bullet los van de tekst ernaast, en met optellen zou de
-    // regel smaller lijken dan hij is. Daar hangt de blob-controle op.
+  /**
+   * Waar deze regel komt te staan, zonder hem te tekenen. De engine probeert
+   * meerdere verdelingen over de kolommen voordat hij er een kiest, en alleen de
+   * gekozen verdeling wordt getekend.
+   *
+   * De rechterrand is de verste run, niet de som van de breedtes: in een
+   * opsomming staat de bullet los van de tekst ernaast, en met optellen zou de
+   * regel smaller lijken dan hij is. Daar hangt de blob-controle op.
+   */
+  function meetRegel(runs, x, baseline) {
     let x0 = Infinity
     let x1 = -Infinity
     let loopend = x
@@ -360,7 +366,23 @@
       x1 = Math.max(x1, eind)
       loopend = eind
     }
-    return { x0, x1, baseline, grootte: eersteStijl.grootte }
+    return { x0, x1, baseline, grootte: runs[0].grootte }
+  }
+
+  function tekenRegel(groep, runs, x, baseline) {
+    const t = el('text', { x, y: baseline })
+    for (const run of runs) {
+      const span = el('tspan', {
+        x: run.x ? x + run.x : null,
+        'font-family': run.font,
+        'font-size': run.grootte,
+        fill: kleurVan(run),
+      })
+      span.textContent = run.tekst
+      t.appendChild(span)
+    }
+    groep.appendChild(t)
+    return meetRegel(runs, x, baseline)
   }
 
   // ------------------------------------------------------- blob-verbod
@@ -477,28 +499,69 @@
     return vlakken
   }
 
-  function controleerBotsing(grenzen, vlakken, vak, wat, waarbij) {
+  /**
+   * Raakt deze regel iets wat vrij hoort te blijven? Geeft terug wat er geraakt
+   * wordt ('een blob', 'de dieetwens-regel', ...) of null.
+   */
+  function raaktIets(grenzen, vlakken, vak) {
     const boven = Math.max(0, Math.round(vak.baseline - vak.grootte))
     const onder = Math.min(2159, Math.round(vak.baseline + vak.grootte * 0.3))
 
     if (grenzen) {
       for (let y = boven; y <= onder; y++) {
-        if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) {
-          meldingen.botsingen.push({ tekst: wat, waar: 'een blob', ...waarbij,
-                                     x0: Math.round(vak.x0), x1: Math.round(vak.x1),
-                                     baseline: Math.round(vak.baseline) })
-          return
-        }
+        if (vak.x1 > grenzen.rechts[y] || vak.x0 < grenzen.links[y]) return 'een blob'
       }
     }
     for (const vlak of vlakken) {
-      if (vak.x1 > vlak.x0 && vak.x0 < vlak.x1 && onder > vlak.y0 && boven < vlak.y1) {
-        meldingen.botsingen.push({ tekst: wat, waar: vlak.naam, ...waarbij,
-                                   x0: Math.round(vak.x0), x1: Math.round(vak.x1),
-                                   baseline: Math.round(vak.baseline) })
-        return
+      if (vak.x1 > vlak.x0 && vak.x0 < vlak.x1 && onder > vlak.y0 && boven < vlak.y1) return vlak.naam
+    }
+    return null
+  }
+
+  /**
+   * Kiest hoe de secties over de kolommen verdeeld worden.
+   *
+   * De verdeling uit het basisontwerp gaat voor: past die, dan komt het ontwerp er
+   * ongewijzigd uit. Past hij niet, dan schuift er zo min mogelijk op - een gang
+   * naar de kolom ernaast, en pas als dat niet helpt verder. Past geen enkele
+   * verdeling, dan houden we die van het ontwerp aan en blijft de botsing staan:
+   * dan is het menu echt te lang, en dat hoort gemeld te worden, niet verstopt.
+   */
+  function kiesVerdeling(namen, aantalKolommen, basisKolom, legUit) {
+    const aantalSecties = namen.length
+    // Elke verdeling is niet-dalend: de gangen blijven in leesvolgorde staan.
+    const verdelingen = []
+    const bouwOp = (rij, kolom) => {
+      if (rij.length === aantalSecties) { verdelingen.push(rij.slice()); return }
+      for (let k = kolom; k < aantalKolommen; k++) bouwOp([...rij, k], k)
+    }
+    bouwOp([], 0)
+
+    // Eerst zo dicht mogelijk bij het basisontwerp. Schuiven er evenveel gangen op,
+    // dan die verdeling die de linkerkolommen het eerst vult - zoals je leest, en
+    // zoals Abel het op pagina 10 zelf oploste: het Voorgerecht een kolom naar
+    // links in plaats van het Hoofdgerecht naar de smalle kolom rechts.
+    const afstand = (v) => v.reduce((n, k, i) => n + Math.abs(k - (basisKolom[i] ?? k)), 0)
+    const vergelijk = (a, b) => {
+      const verschil = afstand(a) - afstand(b)
+      if (verschil !== 0) return verschil
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]
+      return 0
+    }
+    verdelingen.sort(vergelijk)
+
+    let eerste = null
+    for (const verdeling of verdelingen) {
+      const uit = legUit(verdeling)
+      if (!eerste) eerste = { ...uit, verdeling }
+      if (!uit.botsingen.length && !uit.overloop.length) {
+        const verschoven = verdeling
+          .map((k, i) => (k === basisKolom[i] ? null : `"${namen[i] || `sectie ${i + 1}`}"`))
+          .filter(Boolean)
+        return { ...uit, verdeling, verschoven }
       }
     }
+    return { ...eerste, verschoven: [] }
   }
 
   // ------------------------------------------------------------- opbouw
@@ -560,14 +623,26 @@
     }
 
     // --- de menu-inhoud
+    //
+    // De gangen staan niet vast aan een kolom. Ze lopen door, zoals tekst door
+    // gekoppelde kaders loopt: elke kolom begint bovenaan, en een gang die er niet
+    // meer bij past begint in de volgende. Het basisontwerp bepaalt waar de
+    // kolomovergangen bij voorkeur vallen; pas als de inhoud daar niet in past
+    // schuift er een gang op. Zo komt een ongewijzigd ontwerp er 1:1 uit, en past
+    // een langer menu zich aan zonder dat het ontwerp verandert.
     const vlakken = verbodenVlakken()
     const inhoudGroep = document.getElementById('inhoud')
     const ritme = basis.ritme
     const nieuweSecties = invoersecties()
 
-    // De secties van het basisontwerp, in leesvolgorde over de kolommen heen.
+    // De secties van het basisontwerp, in leesvolgorde over de kolommen heen, en
+    // per kolom de bovenkant waar de eerste gang begint.
     const kolomSecties = basis.kolommen.map(sectiesVan)
     const alleBasisSecties = kolomSecties.flat()
+    const kolomTop = basis.kolommen.map(
+      (k) => Math.min(...k.alineas.flatMap((a) => a.regels.map((r) => r.baseline))))
+    // De kolom waar elke sectie in het basisontwerp staat.
+    const basisKolom = kolomSecties.flatMap((secties, ki) => secties.map(() => ki))
 
     if (nieuweSecties && nieuweSecties.length !== alleBasisSecties.length) {
       meldingen.structuur.push(
@@ -575,146 +650,197 @@
         `de aangeleverde inhoud ${nieuweSecties.length}.`)
     }
 
-    let sectieTeller = 0
-    basis.kolommen.forEach((kolom, ki) => {
-      const kader = kolom.kader.breedte
-      let vorigeAlinea = null
-      let vorigeBaseline = null
-      let structuurGewijzigd = false
+    // Per sectie de alinea's die erin komen, op volgorde. Dit hangt niet van de
+    // kolom af, dus het gebeurt een keer - ook de opzoekingen in de bibliotheek,
+    // die anders bij elke poging opnieuw zouden melden.
+    const secties = alleBasisSecties.map((sectie, si) => {
+      const nieuw = nieuweSecties ? nieuweSecties[si] : null
+      const taken = []
+      if (sectie.kop) taken.push({ alinea: sectie.kop, nieuw: nieuw ? { tekst: nieuw.kop } : null })
 
-      for (const sectie of kolomSecties[ki]) {
-        const nieuw = nieuweSecties ? nieuweSecties[sectieTeller] : null
-        sectieTeller += 1
+      // Zodra er inhoud is aangeleverd, bepaalt die wat er op het scherm komt.
+      // Het basisontwerp levert alleen de plek en de stijl. Een gerecht uit het
+      // ontwerp dat niet is aangeleverd valt weg - anders zou er een gerecht op
+      // het scherm staan dat de opdrachtgever niet heeft besteld.
+      const bronGerechten = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten : null
+      const aantal = bronGerechten ? bronGerechten.length : sectie.gerechten.length
 
-        // Elke alinea van deze sectie op volgorde: kop, dan per gerecht naam + ingredienten.
-        const taken = []
-        if (sectie.kop) taken.push({ alinea: sectie.kop, nieuw: nieuw ? { tekst: nieuw.kop } : null })
+      for (let gi = 0; gi < aantal; gi++) {
+        const bron = bronGerechten ? bronGerechten[gi] : null
+        const uitOntwerp = sectie.gerechten[gi] ?? null
+        const naamAlinea = uitOntwerp ? uitOntwerp.naam : maakAlinea('naam')
 
-        // Zodra er inhoud is aangeleverd, bepaalt die wat er op het scherm komt.
-        // Het basisontwerp levert alleen de plek en de stijl. Een gerecht uit het
-        // ontwerp dat niet is aangeleverd valt weg - anders zou er een gerecht op
-        // het scherm staan dat de opdrachtgever niet heeft besteld.
-        const bronGerechten = nieuw && Array.isArray(nieuw.gerechten) ? nieuw.gerechten : null
-        const aantal = bronGerechten ? bronGerechten.length : sectie.gerechten.length
-
-        for (let gi = 0; gi < aantal; gi++) {
-          const bron = bronGerechten ? bronGerechten[gi] : null
-          const uitOntwerp = sectie.gerechten[gi] ?? null
-          const naamAlinea = uitOntwerp ? uitOntwerp.naam : maakAlinea('naam')
-
-          // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
-          // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
-          // naar een pakket verhuizen dat er geen had, en andersom.
-          let omschrijving = null
-          if (bron && Array.isArray(bron.onderdelen) && bron.onderdelen.length) {
-            omschrijving = { onderdelen: bron.onderdelen }
-          } else if (bron && bron.ingredienten && bron.ingredienten.length) {
-            omschrijving = {
-              tekst: Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten),
-            }
-          }
-
-          // Kennen we dit gerecht als geheel? Dan bepaalt het ontwerp waar het in
-          // staat hoe het hier komt te staan: waar de naam ophoudt en waar de
-          // regels afbreken. Een opsomming met bullets slaan we over - dat is een
-          // eigen structuur en die staat niet in de bibliotheek.
-          const bekend = bron && !(omschrijving && omschrijving.onderdelen)
-            ? uitGerechtenbibliotheek(bron.naam, omschrijving ? omschrijving.tekst : '',
-                                      naamAlinea.regels[0].runs[0].grootte)
-            : null
-          const gerechtNaam = (bekend && bekend.naam) || (bron && bron.naam)
-            || (uitOntwerp ? uitOntwerp.naam.tekst : '')
-
-          taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
-                       buitenOntwerp: !uitOntwerp, gerechtNaam,
-                       vasteRegels: bekend ? bekend.naamRegels : null })
-
-          if (bronGerechten) {
-            // Kent de bibliotheek dit gerecht met een omschrijving, dan hoort die
-            // erbij - ook als hij in een adem met de naam is ingetypt. Zo staat
-            // "dessertbuffet met zoete lekkernijen met L'OR coffee popping pearls"
-            // alsnog met de pearls op hun eigen regel, zoals in het ontwerp.
-            const uitBibliotheek = bekend && bekend.ingrRegels ? bekend : null
-            const omschrijvingOfBekend = omschrijving
-              ?? (uitBibliotheek ? { tekst: uitBibliotheek.ingredienten.join(' | ') } : null)
-            // Verder geldt: geen omschrijving aangeleverd, dan komt er ook geen te staan.
-            if (omschrijvingOfBekend) {
-              const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
-              taken.push({ alinea, nieuw: omschrijvingOfBekend, gerechtNaam,
-                           buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr),
-                           vasteRegels: bekend ? bekend.ingrRegels : null })
-            }
-          } else if (uitOntwerp && uitOntwerp.ingr) {
-            taken.push({ alinea: uitOntwerp.ingr, nieuw: null, gerechtNaam })
+        // Een gerecht heeft ofwel een rij ingredienten, ofwel een opsomming met
+        // bullets. Beide kunnen van het basisontwerp afwijken: een opsomming kan
+        // naar een pakket verhuizen dat er geen had, en andersom.
+        let omschrijving = null
+        if (bron && Array.isArray(bron.onderdelen) && bron.onderdelen.length) {
+          omschrijving = { onderdelen: bron.onderdelen }
+        } else if (bron && bron.ingredienten && bron.ingredienten.length) {
+          omschrijving = {
+            tekst: Array.isArray(bron.ingredienten) ? bron.ingredienten.join(' | ') : String(bron.ingredienten),
           }
         }
 
-        if (bronGerechten && bronGerechten.length !== sectie.gerechten.length) {
-          meldingen.structuur.push(
-            `Sectie "${sectie.kop ? sectie.kop.tekst : '(zonder kop)'}" heeft `
-            + `${sectie.gerechten.length} gerechten in het basisontwerp, `
-            + `${bronGerechten.length} in de aangeleverde inhoud.`)
-        }
+        // Kennen we dit gerecht als geheel? Dan bepaalt het ontwerp waar het in
+        // staat hoe het hier komt te staan: waar de naam ophoudt en waar de
+        // regels afbreken. Een opsomming met bullets slaan we over - dat is een
+        // eigen structuur en die staat niet in de bibliotheek.
+        const bekend = bron && !(omschrijving && omschrijving.onderdelen)
+          ? uitGerechtenbibliotheek(bron.naam, omschrijving ? omschrijving.tekst : '',
+                                    naamAlinea.regels[0].runs[0].grootte)
+          : null
+        const gerechtNaam = (bekend && bekend.naam) || (bron && bron.naam)
+          || (uitOntwerp ? uitOntwerp.naam.tekst : '')
 
-        // Waar deze regels bij horen, zodat een botsing zegt welke gang te lang is
-        // en niet alleen welk stukje tekst eroverheen valt.
-        const sectieNaam = nieuw?.kop || (sectie.kop ? sectie.kop.tekst : '')
+        taken.push({ alinea: naamAlinea, nieuw: bron ? { tekst: bron.naam } : null,
+                     buitenOntwerp: !uitOntwerp, gerechtNaam,
+                     vasteRegels: bekend ? bekend.naamRegels : null })
 
-        for (const taak of taken) {
-          const { alinea, nieuw: nieuweInhoud } = taak
-          // Een alinea die buiten het ontwerp valt (extra gerecht, of een gerecht
-          // uit het ontwerp dat wegvalt) breekt de vaste baselines; vanaf daar
-          // telt het ritme van het pakket.
-          if (taak.buitenOntwerp) structuurGewijzigd = true
-          const { regels, offsets, uitBasis, uitBibliotheek: viaBibliotheek } =
-            regelsVoor(alinea, nieuweInhoud, kader, ritme, taak.vasteRegels)
-          if (!uitBasis) {
-            structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
-            const omschrijving = ((nieuweInhoud && nieuweInhoud.tekst) ?? alinea.tekst).slice(0, 40)
-            const wasOpsomming = alinea.soort === 'opsomming'
-            const wordtOpsomming = Boolean(nieuweInhoud && nieuweInhoud.onderdelen)
-            if (wasOpsomming && !wordtOpsomming && nieuweInhoud) {
-              meldingen.opmaak.push(
-                `"${omschrijving}" staat in het basisontwerp als opsomming met bullets, `
-                + 'maar is aangeleverd als gewone rij ingredienten. Lever "onderdelen" aan '
-                + 'als de bullets moeten blijven.')
-            } else if (!wasOpsomming && wordtOpsomming) {
-              meldingen.opmaak.push(
-                `"${omschrijving}" wordt als opsomming met bullets gezet terwijl het `
-                + 'basisontwerp daar gewone ingredienten had. Kijk dit scherm even na.')
-            } else if (viaBibliotheek) {
-              // De regelval komt uit een basisontwerp waar deze tekst al in staat.
-              // Dat is geen afwijking maar juist de bedoeling; niets te melden.
-            } else if (regels.length !== alinea.regels.length) {
-              meldingen.regelval.push(
-                `"${omschrijving}" valt over ${regels.length} regels, `
-                + `het basisontwerp had er ${alinea.regels.length}.`)
-            }
+        if (bronGerechten) {
+          // Kent de bibliotheek dit gerecht met een omschrijving, dan hoort die
+          // erbij - ook als hij in een adem met de naam is ingetypt. Zo staat
+          // "dessertbuffet met zoete lekkernijen met L\'OR coffee popping pearls"
+          // alsnog met de pearls op hun eigen regel, zoals in het ontwerp.
+          const uitBibliotheek = bekend && bekend.ingrRegels ? bekend : null
+          const omschrijvingOfBekend = omschrijving
+            ?? (uitBibliotheek ? { tekst: uitBibliotheek.ingredienten.join(' | ') } : null)
+          // Verder geldt: geen omschrijving aangeleverd, dan komt er ook geen te staan.
+          if (omschrijvingOfBekend) {
+            const alinea = (uitOntwerp && uitOntwerp.ingr) || maakAlinea('ingr')
+            taken.push({ alinea, nieuw: omschrijvingOfBekend, gerechtNaam,
+                         buitenOntwerp: !(uitOntwerp && uitOntwerp.ingr),
+                         vasteRegels: bekend ? bekend.ingrRegels : null })
           }
-
-          let baseline
-          if (vorigeAlinea === null) {
-            baseline = alinea.regels[0].baseline
-          } else {
-            baseline = vorigeBaseline + sprong(vorigeAlinea, alinea, ritme, structuurGewijzigd)
-          }
-
-          regels.forEach((runs, i) => {
-            const y = baseline + offsets[i]
-            const vak = tekenRegel(inhoudGroep, runs, kolom.x, y)
-            controleerBotsing(grenzen, vlakken, vak, runs.map((r) => r.tekst).join(''),
-              { sectie: sectieNaam, gerecht: taak.gerechtNaam })
-            if (y > 2160 - 40) {
-              meldingen.overloop.push(
-                `"${runs.map((r) => r.tekst).join('').slice(0, 40)}" valt onder de onderrand van het scherm.`)
-            }
-          })
-
-          vorigeAlinea = alinea
-          vorigeBaseline = baseline + offsets[offsets.length - 1]
+        } else if (uitOntwerp && uitOntwerp.ingr) {
+          taken.push({ alinea: uitOntwerp.ingr, nieuw: null, gerechtNaam })
         }
       }
+
+      if (bronGerechten && bronGerechten.length !== sectie.gerechten.length) {
+        meldingen.structuur.push(
+          `Sectie "${sectie.kop ? sectie.kop.tekst : '(zonder kop)'}" heeft `
+          + `${sectie.gerechten.length} gerechten in het basisontwerp, `
+          + `${bronGerechten.length} in de aangeleverde inhoud.`)
+      }
+
+      // Waar deze regels bij horen, zodat een botsing zegt welke gang te lang is
+      // en niet alleen welk stukje tekst eroverheen valt.
+      return { taken, naam: nieuw?.kop || (sectie.kop ? sectie.kop.tekst : '') }
     })
+
+    /**
+     * Zet alle secties op hun plek volgens `verdeling` (per sectie de kolom),
+     * zonder iets te tekenen. Geeft de regels terug, plus wat eraan mankeert.
+     */
+    function legUit(verdeling) {
+      const regels = []
+      const botsingen = []
+      const overloop = []
+      const praat = []
+      for (let ki = 0; ki < basis.kolommen.length; ki++) {
+        const kolom = basis.kolommen[ki]
+        const kader = kolom.kader.breedte
+        let vorigeAlinea = null
+        let vorigeBaseline = null
+
+        // Staan in deze kolom precies de secties die het basisontwerp er zette, in
+        // dezelfde volgorde? Dan gelden de baselines uit het ontwerp en komt de
+        // kolom er letterlijk zo uit. Zodra er iets verschoven is - ook als een
+        // sectie in zijn eigen kolom blijft maar er de eerste wordt - klopt geen
+        // enkele baseline uit het ontwerp meer en telt het ritme van het pakket.
+        const hier = []
+        const uitOntwerp = []
+        for (let si = 0; si < secties.length; si++) {
+          if (verdeling[si] === ki) hier.push(si)
+          if (basisKolom[si] === ki) uitOntwerp.push(si)
+        }
+        const zelfdeAlsOntwerp = hier.length === uitOntwerp.length
+          && hier.every((si, i) => si === uitOntwerp[i])
+        let structuurGewijzigd = !zelfdeAlsOntwerp
+
+        for (const si of hier) {
+
+          for (const taak of secties[si].taken) {
+            const { alinea, nieuw: nieuweInhoud } = taak
+            if (taak.buitenOntwerp) structuurGewijzigd = true
+            const uitkomst = regelsVoor(alinea, nieuweInhoud, kader, ritme, taak.vasteRegels)
+            const { regels: stukken, offsets, uitBasis, uitBibliotheek: viaBibliotheek } = uitkomst
+            if (!uitBasis) {
+              structuurGewijzigd = structuurGewijzigd || stukken.length !== alinea.regels.length
+              const kort = ((nieuweInhoud && nieuweInhoud.tekst) ?? alinea.tekst).slice(0, 40)
+              const wasOpsomming = alinea.soort === 'opsomming'
+              const wordtOpsomming = Boolean(nieuweInhoud && nieuweInhoud.onderdelen)
+              if (wasOpsomming && !wordtOpsomming && nieuweInhoud) {
+                praat.push(['opmaak',
+                  `"${kort}" staat in het basisontwerp als opsomming met bullets, `
+                  + 'maar is aangeleverd als gewone rij ingredienten. Lever "onderdelen" aan '
+                  + 'als de bullets moeten blijven.'])
+              } else if (!wasOpsomming && wordtOpsomming) {
+                praat.push(['opmaak',
+                  `"${kort}" wordt als opsomming met bullets gezet terwijl het `
+                  + 'basisontwerp daar gewone ingredienten had. Kijk dit scherm even na.'])
+              } else if (viaBibliotheek) {
+                // De regelval komt uit een basisontwerp waar deze tekst al in staat.
+                // Dat is geen afwijking maar juist de bedoeling; niets te melden.
+              } else if (stukken.length !== alinea.regels.length) {
+                praat.push(['regelval',
+                  `"${kort}" valt over ${stukken.length} regels, `
+                  + `het basisontwerp had er ${alinea.regels.length}.`])
+              }
+            }
+
+            let baseline
+            if (vorigeAlinea === null) {
+              // Bovenaan de kolom: de baseline uit het ontwerp als deze kolom
+              // onveranderd is, anders de bovenkant waar elke kolom begint.
+              baseline = zelfdeAlsOntwerp ? alinea.regels[0].baseline : kolomTop[ki]
+            } else {
+              baseline = vorigeBaseline + sprong(vorigeAlinea, alinea, ritme, structuurGewijzigd)
+            }
+
+            stukken.forEach((runs, i) => {
+              const y = baseline + offsets[i]
+              const vak = meetRegel(runs, kolom.x, y)
+              const tekst = runs.map((r) => r.tekst).join('')
+              regels.push({ runs, x: kolom.x, y, vak, tekst,
+                            waarbij: { sectie: secties[si].naam, gerecht: taak.gerechtNaam } })
+              const raakt = raaktIets(grenzen, vlakken, vak)
+              if (raakt) botsingen.push({ tekst, waar: raakt, baseline: y, ...vak,
+                                          ...{ sectie: secties[si].naam, gerecht: taak.gerechtNaam } })
+              if (y > 2160 - 40) overloop.push(`"${tekst.slice(0, 40)}" valt onder de onderrand van het scherm.`)
+            })
+
+            vorigeAlinea = alinea
+            vorigeBaseline = baseline + offsets[offsets.length - 1]
+          }
+        }
+      }
+      return { regels, botsingen, overloop, praat }
+    }
+
+    // Alle manieren om de secties op volgorde over de kolommen te verdelen, met de
+    // verdeling uit het basisontwerp vooraan. Die van het ontwerp wint dus altijd
+    // als hij past; anders schuift er zo min mogelijk op.
+    const uitkomst = kiesVerdeling(secties.map((s) => s.naam), basis.kolommen.length,
+                                   basisKolom, legUit)
+    for (const [soort, tekst] of uitkomst.praat) meldingen[soort].push(tekst)
+    for (const b of uitkomst.botsingen) meldingen.botsingen.push(b)
+    for (const t of uitkomst.overloop) meldingen.overloop.push(t)
+    if (uitkomst.verschoven.length) {
+      meldingen.opmaak.push(`De inhoud paste niet in de kolommen van het basisontwerp; `
+        + `${uitkomst.verschoven.join(' en ')} ${uitkomst.verschoven.length === 1 ? 'staat' : 'staan'} `
+        + 'nu in een andere kolom.')
+    }
+    for (const r of uitkomst.regels) tekenRegel(inhoudGroep, r.runs, r.x, r.y)
+
+    // De uitkomst zelf, zodat een test kan nakijken welke gang in welke kolom
+    // staat en op welke baseline. Zonder dit kun je alleen naar pixels kijken.
+    window.__OPMAAK__ = {
+      verdeling: uitkomst.verdeling,
+      regels: uitkomst.regels.map((r) => ({ x: r.x, baseline: Math.round(r.y * 100) / 100,
+                                            sectie: r.waarbij.sectie, tekst: r.tekst })),
+    }
   }
 
   // ------------------------------------------------------------- starten

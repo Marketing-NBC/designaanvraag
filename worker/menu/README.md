@@ -196,6 +196,31 @@ Voor elke alinea wordt in deze volgorde bepaald hoe hij komt te staan:
 Verandert er iets, dan schuift de rest van de kolom mee volgens het vaste ritme
 van dat pakket. De rest van het scherm blijft staan waar het stond.
 
+### Gangen stromen door de kolommen
+
+De gangen staan niet vast aan een kolom. Ze lopen door, zoals tekst door gekoppelde
+kaders loopt: elke kolom begint bovenaan, en een gang die er niet meer bij past
+begint in de volgende.
+
+Het basisontwerp bepaalt waar de kolomovergangen **bij voorkeur** vallen. Past de
+inhoud daarin, dan verandert er niets en komt het ontwerp er 1:1 uit. Past hij niet,
+dan wordt gezocht naar de verdeling die er het dichtst bij ligt: eerst één gang
+opschuiven, en pas als dat niet helpt verder. Schuiven er evenveel gangen op, dan
+wint de verdeling die de linkerkolommen het eerst vult — zoals je leest.
+
+Zo loste Abel het op pagina 10 van het Illustrator-bestand met de hand op: hetzelfde
+viergangendiner als pagina 8, maar met langere gerechten, en het Voorgerecht een
+kolom naar links. De engine komt op precies diezelfde verdeling én op dezelfde
+baselines uit; `worker/test/menu.test.mjs` toetst dat regel voor regel tegen de
+waarden uit dat ontwerp.
+
+Past geen enkele verdeling, dan houdt de engine die van het ontwerp aan en blijft de
+botsing staan. Dan is het menu echt te lang, en dat hoort gemeld te worden en niet
+weggemoffeld — zie **Tekst mag nooit over iets anders heen**.
+
+Verschuift er een gang, dan komt dat als melding in de Asana-comment: het scherm ziet
+er dan anders uit dan het basisontwerp, ook al klopt elke maat.
+
 ### De gerechtenbibliotheek
 
 NBC werkt met een vast repertoire: dezelfde gerechten komen in verschillende

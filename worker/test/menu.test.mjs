@@ -535,6 +535,81 @@ test('een gerecht dat anders is opgeschreven komt zo op het scherm', { timeout: 
   assert.match(anders.meldingen.opmaak[0], /is gezet zoals het in het basisontwerp staat/)
 })
 
+// ── Gangen stromen door de kolommen ─────────────────────────────────
+// De gangen staan niet vast aan een kolom. Past een menu niet in de verdeling van
+// het basisontwerp, dan schuift er een gang naar een andere kolom - precies zoals
+// Abel het op pagina 10 van het Illustrator-bestand met de hand oploste.
+
+// Pagina 10: hetzelfde viergangendiner als pagina 8, maar met langere gerechten.
+// Abel loste het op door het Voorgerecht naar de linkerkolom te halen. Dit zijn de
+// baselines die hij daar zette; de engine hoort er precies op uit te komen.
+const PAGINA_10 = [
+  [0, 625.68, 'Op tafel'],
+  [0, 786.72, 'Bruschetta spiezen'],
+  [0, 854.92, 'seasonal dips'],
+  [0, 1004.96, 'Voorgerecht'],
+  [0, 1166.00, 'Gerookte hoenderfilet'],
+  [0, 1234.20, 'gel van basilicum en appel'],
+  [0, 1289.20, 'boekweit'],
+  [1, 625.68, 'Tussengerecht'],
+  [1, 786.72, 'Aka-uo Tatsuta'],
+  [1, 928.84, 'zoetzure komkommer'],
+  [1, 983.84, 'ui'],
+  [1, 1133.88, 'Hoofdgerecht'],
+  [1, 1294.92, 'Langzaam gegaarde'],
+  [1, 1368.84, 'Kalfsrollade'],
+  [1, 1437.04, 'parmezaanse roomsaus'],
+  [1, 1547.04, 'frietjes'],
+  [2, 625.68, 'Nagerecht'],
+  [2, 786.72, 'Dessertbuffet met'],
+  [2, 860.64, 'zoete lekkernijen'],
+  [2, 928.84, 'Coffee Popping Pearls'],
+]
+
+const MENU_PAGINA_10 = [
+  { kop: 'Op tafel', gerechten: [{ naam: 'Bruschetta spiezen', ingredienten: ['seasonal dips'] }] },
+  { kop: 'Voorgerecht', gerechten: [{ naam: 'Gerookte hoenderfilet',
+    ingredienten: ['gel van basilicum en appel', 'gepofte boekweit', 'mustard cress'] }] },
+  { kop: 'Tussengerecht', gerechten: [{ naam: 'Aka-uo Tatsuta (gefrituurde roodbaars)',
+    ingredienten: ['zoetzure komkommer', 'rode peper', 'rode ui', 'misosaus'] }] },
+  { kop: 'Hoofdgerecht', gerechten: [{ naam: 'Langzaam gegaarde Kalfsrollade',
+    ingredienten: ['parmezaanse roomsaus', 'citroen', 'groene peper', 'aardappel millefeuille',
+                   'krokante frietjes'] }] },
+  { kop: 'Nagerecht', gerechten: [{ naam: 'Dessertbuffet met zoete lekkernijen',
+    ingredienten: ["L'OR Coffee Popping Pearls"] }] },
+]
+
+test('een te lang menu schuift een gang naar een andere kolom', { timeout: 120_000 }, async () => {
+  const { opmaak, meldingen } = await renderMenu({ pakket: 'diner-4gangen', secties: MENU_PAGINA_10 })
+
+  // Het Voorgerecht gaat naar de linkerkolom, de rest blijft staan: 0-0-1-1-2.
+  assert.deepEqual(opmaak.verdeling, [0, 0, 1, 1, 2])
+  assert.deepEqual(meldingen.botsingen, [], 'er hoort niets meer over het ontwerp te lopen')
+  assert.equal(menuIsBruikbaar(meldingen), true)
+
+  // En elke regel staat waar Abel hem met de hand zette.
+  const kolomX = [261, 1352, 2278]
+  for (const [kolom, baseline, stuk] of PAGINA_10) {
+    const gevonden = opmaak.regels.find((r) => r.tekst.includes(stuk))
+    assert.ok(gevonden, `"${stuk}" staat niet op het scherm`)
+    assert.equal(gevonden.x, kolomX[kolom], `"${stuk}" staat in de verkeerde kolom`)
+    assert.ok(Math.abs(gevonden.baseline - baseline) < 0.05,
+      `"${stuk}" staat op ${gevonden.baseline}, Abel zette hem op ${baseline}`)
+  }
+})
+
+test('een menu dat wel past houdt de kolommen van het basisontwerp', { timeout: 300_000 }, async () => {
+  // Het omgekeerde net zo hard: zolang de inhoud past mag er niets opschuiven,
+  // anders komt een ongewijzigd ontwerp er niet meer 1:1 uit.
+  for (const pakket of alle) {
+    const { opmaak, meldingen } = await renderMenu(inhoudVanBasis(laadBasis(pakket)))
+    const basis = laadBasis(pakket)
+    const verwacht = basis.kolommen.flatMap((k, ki) => k.secties.map(() => ki))
+    assert.deepEqual(opmaak.verdeling, verwacht, `${pakket}: de gangen zijn verschoven`)
+    assert.deepEqual(meldingen.botsingen, [])
+  }
+})
+
 test('pagina 7 en 8 delen hun tekstkaders', () => {
   // Het is dezelfde layout, dus hetzelfde kader. Leidde je dat per pagina af uit
   // de inhoud die daar toevallig staat, dan werd kolom 3 te smal en brak een

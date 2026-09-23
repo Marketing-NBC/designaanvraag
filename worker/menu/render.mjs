@@ -277,8 +277,11 @@ export async function renderMenu(opdracht) {
     const page = await browser.newPage({ viewport: { width: 3840, height: 2160 }, deviceScaleFactor: 1 })
     await page.setContent(html, { waitUntil: 'load' })
     const meldingen = await page.evaluate(() => window.__KLAAR__)
+    // De opmaak zoals de engine hem gelegd heeft: welke gang in welke kolom, en
+    // elke regel met zijn baseline. Daar kan een test op toetsen.
+    const opmaak = await page.evaluate(() => window.__OPMAAK__ ?? null)
     const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 3840, height: 2160 } })
-    return { png, meldingen, fonts: families }
+    return { png, meldingen, opmaak, fonts: families }
   } finally {
     await browser.close()
   }
