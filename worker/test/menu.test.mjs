@@ -17,6 +17,7 @@ import { WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
 import { menuIsBruikbaar } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
+import { zoekGerecht } from '../menu/gerecht-match.mjs'
 
 /** Zelfde normalisatie als tekstsleutel() in basis-extract.py en template.html. */
 const sleutelVan = (t) => String(t)
@@ -444,6 +445,94 @@ test('de streep mag ergens anders staan dan de ontwerper hem zette',
   assert.deepEqual(anders.meldingen.botsingen, [])
   assert.ok(anders.png.equals(zoalsHetHoort.png),
     'het scherm ziet er anders uit dan wanneer de streep op de plek van de ontwerper staat')
+})
+
+// ── Een gerecht terugvinden dat anders is opgeschreven ──────────────
+// Het repertoire ligt vast, maar de tekst komt binnen zoals de traiteur hem
+// opschrijft. Zoeken op gelijkenis is hier levensgevaarlijk: wisselt NBC tonijn
+// voor zalm, dan lijkt dat gerecht voor 90% op de versie uit het ontwerp en zou
+// er tonijn op het scherm komen. Daarom telt dekking en niet gelijkenis.
+
+test('een gerecht dat anders geformuleerd is wordt herkend', () => {
+  const { gerechten } = laadBibliotheek()
+  const zoek = (t) => zoekGerecht(t, gerechten, 61.6)
+
+  // Zoals Abel het van de traiteur krijgt: andere woorden, geen streepjes.
+  const anders = zoek("dessertbuffet – verschillende zoete lekkernijen met L'OR coffee popping pearls")
+  assert.ok(anders, 'het dessert is niet herkend')
+  assert.equal(anders.gerecht.naam, 'Dessertbuffet met zoete lekkernijen')
+  assert.equal(anders.letterlijk, false)
+
+  // Een tikfout mag, een andere volgorde ook.
+  assert.equal(zoek("dessertbuffet met zoete lekkernije | L'OR coffee popping pearls")?.gerecht.naam,
+    'Dessertbuffet met zoete lekkernijen')
+  assert.equal(zoek("L'OR Coffee Popping Pearls | Dessertbuffet met zoete lekkernijen")?.gerecht.naam,
+    'Dessertbuffet met zoete lekkernijen')
+
+  // En letterlijk hetzelfde blijft gewoon letterlijk.
+  assert.equal(zoek("Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls")?.letterlijk, true)
+})
+
+test('een gewisseld product wordt nooit voor het origineel aangezien', () => {
+  const { gerechten } = laadBibliotheek()
+  // Alle drie lijken sterk op een gerecht uit een basisontwerp, maar er is een
+  // product gewisseld. Dat is een ander gerecht, en het mag nooit stilzwijgend
+  // als het origineel gezet worden - dan staat er tonijn waar zalm besteld is.
+  const gewisseld = [
+    ['tasteful gift zalmtartaar | mierikswortel | affilla cress | uiencrumble', 61.6],
+    ['spinazieravioli | gedroogde italiaanse ham | saliebotersaus', 61.6],
+    ['pompoenravioli | gedroogde spaanse ham | saliebotersaus', 61.6],
+    ['burrata | tomatenmix | truffelolie', 56],
+  ]
+  for (const [tekst, grootte] of gewisseld) {
+    assert.equal(zoekGerecht(tekst, gerechten, grootte), null,
+      `"${tekst}" is ten onrechte aan een gerecht uit het ontwerp gekoppeld`)
+  }
+})
+
+test('geen enkele verhaspeling levert het verkeerde gerecht op', () => {
+  // De hele bibliotheek langs, met verhaspelingen die in de praktijk voorkomen.
+  // Niet herkennen is prima - dan zet de engine hem zelf. Het verkeerde gerecht
+  // herkennen is het enige wat echt niet mag.
+  const { gerechten } = laadBibliotheek()
+  let herkend = 0
+  let gemist = 0
+  for (const [sleutel, gerecht] of Object.entries(gerechten)) {
+    const grootte = sleutel.slice(0, sleutel.indexOf('|'))
+    const heel = [gerecht.naam, ...gerecht.ingredienten].join(' | ')
+    const woorden = heel.split(' ')
+    const langste = woorden.reduce((a, b) => (b.length > a.length ? b : a))
+    const varianten = [
+      heel.replace(' ', ' verschillende '),                        // een woord erbij
+      heel.replace(langste, langste.slice(0, -1)),                 // een tikfout
+      heel.toUpperCase(),                                          // andere kapitalen
+      heel.replace(' | ', ' - '),                                  // ander scheidingsteken
+    ]
+    for (const v of varianten) {
+      const r = zoekGerecht(v, gerechten, grootte)
+      if (r === null) gemist += 1
+      else if (r.sleutel === sleutel) herkend += 1
+      else assert.fail(`"${v}" werd aangezien voor "${r.gerecht.naam}"`)
+    }
+  }
+  assert.ok(herkend > gemist * 3, `te weinig herkend: ${herkend} herkend, ${gemist} gemist`)
+})
+
+test('een gerecht dat anders is opgeschreven komt zo op het scherm', { timeout: 120_000 }, async () => {
+  // Het hele pad: iemand typt het dessert zoals de traiteur het stuurt, in een
+  // adem, zonder streepje. Op het scherm hoort het te staan zoals Abel het zette
+  // - naam op twee regels, de pearls op hun eigen regel eronder.
+  const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
+  const nagerecht = inhoud.secties[inhoud.secties.length - 1]
+  nagerecht.gerechten = [{ naam: "dessertbuffet – verschillende zoete lekkernijen met L'OR coffee popping pearls" }]
+  const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
+  const anders = await renderMenu(inhoud)
+
+  assert.ok(anders.png.equals(zoalsHetHoort.png),
+    'het scherm wijkt af van het basisontwerp')
+  // En het moet wel gemeld worden: er staat iets anders dan er is ingetypt.
+  assert.equal(anders.meldingen.opmaak.length, 1)
+  assert.match(anders.meldingen.opmaak[0], /is gezet zoals het in het basisontwerp staat/)
 })
 
 test('pagina 7 en 8 delen hun tekstkaders', () => {
