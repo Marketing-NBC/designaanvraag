@@ -66,6 +66,14 @@
       }
     ]
   },
+  "correcties": {
+    "woorden": [
+      [
+        "lekkernije",
+        "lekkernijen"
+      ]
+    ]
+  },
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -126,8 +134,12 @@
       "kader": {
         "breedte": 856.51,
         "minimaal": 846.35,
-        "maximaal": 1120.23,
-        "handmatigeAfbrekingen": 0
+        "maximaal": 1120.22,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen"
+        ]
       },
       "secties": [
         {
@@ -429,8 +441,12 @@
       "kader": {
         "breedte": 580.44,
         "minimaal": 573.56,
-        "maximaal": 758.19,
-        "handmatigeAfbrekingen": 0
+        "maximaal": 592.0,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen"
+        ]
       },
       "secties": [
         {
@@ -464,7 +480,7 @@
         },
         {
           "soort": "naam",
-          "tekst": "Dessertbuffet met zoete lekkernije",
+          "tekst": "Dessertbuffet met zoete lekkernijen",
           "regels": [
             {
               "baseline": 786.72,
@@ -482,7 +498,7 @@
               "baseline": 860.64,
               "runs": [
                 {
-                  "tekst": "zoete lekkernije",
+                  "tekst": "zoete lekkernijen",
                   "x": 0.28,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,

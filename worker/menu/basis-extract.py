@@ -40,10 +40,27 @@ LOGO_TEKST = 'Logo opdrachtgever'
 # Correcties op het Illustrator-bestand: {pakket: {'titel': (zoals het er staat, zoals het moet)}}.
 # Het basisontwerp is de norm, dus hier staat op een plek wat we er bewust van laten afwijken en
 # waarom. Klopt de bron al, dan meldt de extractie dat de correctie weg kan.
-# Op dit moment is er niets te corrigeren: de titel (Dinner) en de spelling van de
-# voetregel staan sinds V2 goed in het bestand. Het haakje blijft staan voor als er
-# ooit weer iets in de bron niet klopt dat we hier moeten rechtzetten.
+# De titel (Dinner) en de spelling van de voetregel zijn in V2 rechtgezet, dus daar staat
+# niets meer.
 CORRECTIES: dict = {}
+
+# Losse woorden die in het ontwerp verkeerd gespeld staan. Ze worden als heel woord
+# vervangen, in de tekst en in de regelval die we bewaren. Dat is nodig omdat een
+# gerecht anders niet terug te vinden is in de gerechtenbibliotheek: wie het goed
+# spelt vindt de verkeerd gespelde versie niet, en krijgt dan onze eigen afbreking
+# in plaats van die van de ontwerper.
+WOORDCORRECTIES = [
+    ('lekkernije', 'lekkernijen'),   # "Dessertbuffet met zoete lekkernije" op pagina 7
+]
+
+
+def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
+    for fout, goed in WOORDCORRECTIES:
+        nieuw = re.sub(rf'\b{re.escape(fout)}\b', goed, tekst)
+        if nieuw != tekst and toegepast is not None:
+            toegepast.add((fout, goed))
+        tekst = nieuw
+    return tekst
 
 # Pagina (1-based) -> pakketnaam. Pagina 9 is een exacte kopie van pagina 8.
 PAKKETTEN = [
@@ -229,7 +246,7 @@ def soort_van(font: str, grootte: float, kleur: str) -> str:
     return 'ingr'
 
 
-def spans_van(page):
+def spans_van(page, toegepast=None):
     """Alle tekstfragmenten met hun exacte positie, font, grootte en kleur."""
     uit = []
     for blok in page.get_text('dict')['blocks']:
@@ -237,7 +254,7 @@ def spans_van(page):
             continue
         for regel in blok['lines']:
             for span in regel['spans']:
-                tekst = ontligatuur(span['text'])
+                tekst = corrigeer_woorden(ontligatuur(span['text']), toegepast)
                 if not tekst.strip():
                     continue
                 font = normaliseer_font(span['font'])
@@ -688,7 +705,8 @@ def alinea_naar_json(alinea, links):
 
 def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
     page = doc[pagina_nr - 1]
-    alles = spans_van(page)
+    woordcorrecties = set()
+    alles = spans_van(page, woordcorrecties)
 
     titel = next((s for s in alles if s['soort'] == 'titel'), None)
     voet = [s for s in alles if s['tekst'].strip() in VOET_REGELS]
@@ -792,6 +810,10 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
                         'grootte': s['grootte'], 'kleur': s['kleur']}
                        for s in sorted(voet, key=lambda s: s['baseline'])],
         },
+        # Wat we bewust anders zetten dan het .ai. controle.mjs draait dit terug
+        # voor de vergelijking, anders meet je je eigen correctie als fout.
+        'correcties': ({'woorden': sorted([list(w) for w in woordcorrecties])}
+                       if woordcorrecties else None),
         'stijl': stijl,
         'opsommingStijl': (opsomming_stijl(ratios, stijl['ingr']['grootte'])
                            if ratios and 'ingr' in stijl else None),
@@ -801,6 +823,117 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
         'afwijkingen': afwijkingen_zoeken(per_kolom, ritme),
         'zetfouten': zetfouten_zoeken(kolommen),
     }
+
+
+def kaders_delen(alles: dict) -> None:
+    """Pagina's met dezelfde kolomindeling delen hun tekstkaders.
+
+    Pagina 7 en 8 zijn dezelfde layout: kolommen op 261, 1352 en 2278. Toch leidde
+    de extractie er twee verschillende kaderbreedtes uit af, omdat elke pagina
+    alleen zijn eigen inhoud te zien kreeg - en in de ene kolom staat nu eenmaal
+    een langere regel dan in de andere. Het kader dat de ontwerper trok is
+    hetzelfde; door de grenzen samen te nemen komen we er dichter bij.
+
+    De ondergrens wordt de langste regel van alle pagina's samen, de bovengrens de
+    scherpste afbreking. Vallen die over elkaar heen, dan zijn het toch niet
+    dezelfde kaders en houdt elke pagina zijn eigen waarde.
+    """
+    groepen = {}
+    for naam, data in alles.items():
+        sleutel = (tuple(rond(k['x'], 0) for k in data['kolommen']),
+                   data['stijl'].get('ingr', {}).get('grootte'))
+        groepen.setdefault(sleutel, []).append(naam)
+
+    for sleutel, namen in groepen.items():
+        if len(namen) < 2:
+            continue
+        for i in range(len(sleutel[0])):
+            kaders = [alles[n]['kolommen'][i]['kader'] for n in namen]
+            onder = max(k['minimaal'] for k in kaders)
+            boven = min(k['maximaal'] for k in kaders)
+            if boven <= onder:
+                print(f'  kolom {i + 1} van {", ".join(namen)}: de kadergrenzen sluiten '
+                      f'elkaar uit ({onder} vs {boven}); elke pagina houdt zijn eigen kader.')
+                continue
+            marge = max(6.0, onder * 0.012)
+            gekozen = onder + marge if onder + marge < boven else (onder + boven) / 2
+            for k in kaders:
+                k['minimaal'] = rond(onder)
+                k['maximaal'] = rond(boven)
+                k['breedte'] = rond(gekozen)
+                k['gedeeldMet'] = [n for n in namen]
+
+
+def gerechtenbibliotheek(alles: dict) -> dict:
+    """Legt vast hoe elke tekst uit de basisontwerpen op het scherm hoort te staan.
+
+    NBC werkt met een vast repertoire: dezelfde gerechten komen in verschillende
+    pakketten terug. Staat een gerecht in een ontwerp, dan is dat de manier waarop
+    het gezet hoort te worden - inclusief de plek waar de regel afbreekt. Die
+    regelval leggen we hier vast, zodat hetzelfde gerecht er in elk pakket precies
+    zo uitziet als de ontwerper het heeft gezet, en niet zoals onze afbreking hem
+    toevallig uitrekent.
+
+    Ook teksten die op een regel passen gaan mee: dat ze niet afbreken is net zo
+    goed een keuze van de ontwerper, en zonder die vastlegging zou een net iets te
+    smal kader ze alsnog in tweeen hakken.
+
+    De sleutel is de soort, het corps en de tekst zonder toevallige spaties; zie
+    tekstsleutel() hieronder en zelfdeInhoud() in template.html, die hetzelfde doen.
+    """
+    uit = {}
+    for naam, data in alles.items():
+        for kolom in data['kolommen']:
+            for alinea in kolom['alineas']:
+                if alinea['soort'] not in ('naam', 'ingr'):
+                    continue
+                grootte = alinea['regels'][0]['runs'][0]['grootte']
+                sleutel = f"{alinea['soort']}|{maat(grootte)}|{tekstsleutel(alinea['tekst'])}"
+                if sleutel in uit:
+                    continue
+                nul = alinea['regels'][0]['baseline']
+                uit[sleutel] = {
+                    'soort': alinea['soort'],
+                    'grootte': grootte,
+                    'tekst': alinea['tekst'],
+                    'bron': naam,
+                    'regels': [{'tekst': ''.join(r['tekst'] for r in regel['runs']).rstrip(),
+                                'offset': rond(regel['baseline'] - nul)}
+                               for regel in alinea['regels']],
+                }
+    return dict(sorted(uit.items()))
+
+
+# Tekens die wel anders gezet worden maar hetzelfde betekenen. Wie een rechte
+# apostrof typt hoort hetzelfde gerecht te vinden als de ontwerper met een
+# typografische apostrof heeft gezet.
+VARIANTEN = str.maketrans({
+    '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+    '\u00b4': "'", '\u0060': "'",
+})
+
+
+def maat(grootte) -> str:
+    """Een corpsgrootte als sleutel, zoals JavaScript hem ook zou schrijven.
+
+    Python maakt van 56.0 de tekst "56.0" en JavaScript "56". Zonder deze stap
+    matcht de helft van de bibliotheek niet - en dan valt de engine stilletjes
+    terug op zijn eigen afbreking.
+    """
+    return f'{float(grootte):g}'
+
+
+def tekstsleutel(tekst: str) -> str:
+    """Tekst vergelijkbaar maken om hem in de bibliotheek terug te vinden.
+
+    Spaties rond het scheidingsteken, de soort apostrof en hoofdletters doen niet
+    mee: dat is zetwerk, geen andere inhoud. Wat er getekend wordt is wel altijd de
+    tekst zoals hij in het ontwerp staat.
+    """
+    t = str(tekst).translate(VARIANTEN).lower()
+    t = re.sub(r'\s*\|\s*', ' | ', t)
+    t = re.sub(r'\s+', ' ', t)
+    return re.sub(r'^\s*\|\s*|\s*\|\s*$', '', t).strip()
 
 
 def main():
@@ -823,9 +956,19 @@ def main():
                          'zijn nodig om opsommingen in elk pakket te kunnen zetten.')
     print(f'Opsomming-maten afgeleid uit {ratios["bron"]}.')
 
+    # Eerst alles uitlezen, dan pas wegschrijven: de tekstkaders en de
+    # gerechtenbibliotheek hebben de pagina's naast elkaar nodig.
+    alles = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
+             for pagina_nr, naam in PAKKETTEN}
+    kaders_delen(alles)
+    bibliotheek = gerechtenbibliotheek(alles)
+    (BASIS / 'gerechten.json').write_text(
+        json.dumps(bibliotheek, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+    print(f'Gerechtenbibliotheek: {len(bibliotheek)} regelvallen vastgelegd.')
+
     overzicht = []
     for pagina_nr, naam in PAKKETTEN:
-        data = pakket_extraheren(doc, pagina_nr, naam, ratios)
+        data = alles[naam]
         pix = maak_achtergrond(pagina_nr)
         pix.save(BASIS / f'{naam}.png')
         # De volledige pagina uit het .ai: hiertegen vergelijkt controle.mjs de render.

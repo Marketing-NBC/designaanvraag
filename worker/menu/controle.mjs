@@ -106,13 +106,14 @@ export async function controleer(namen, uitDir) {
     //           plaats van overgenomen. Dit is wat er gebeurt zodra een gerecht
     //           wijzigt, en het toetst of de kolombreedtes kloppen voor het font
     //           dat wij zetten (Hairline) en niet alleen voor dat van het .ai (Thin).
-    // titelZoalsBron: waar we de titel bewust corrigeren (Diner -> Dinner) zetten
-    // we hem voor de vergelijking terug, anders meet je je eigen correctie als fout.
+    // zoalsBron: wat we bewust anders zetten dan het .ai (een gecorrigeerde titel,
+    // een woord dat in het ontwerp verkeerd gespeld staat) draaien we voor de
+    // vergelijking terug - anders meet je je eigen correctie als fout.
     const basis = laadBasis(pakket)
-    const zoalsBron = Boolean(basis.titel.bronTekst)
-    const kaal = await renderMenu({ pakket, titelZoalsBron: zoalsBron })
-    const rond = await renderMenu({ ...inhoudVanBasis(basis), titel: undefined, titelZoalsBron: zoalsBron })
-    const herbouw = await renderMenu({ pakket, forceerHerberekening: true, titelZoalsBron: zoalsBron })
+    const zoalsBron = Boolean(basis.titel.bronTekst || basis.correcties)
+    const kaal = await renderMenu({ pakket, zoalsBron })
+    const rond = await renderMenu({ ...inhoudVanBasis(basis), titel: undefined, zoalsBron })
+    const herbouw = await renderMenu({ pakket, forceerHerberekening: true, zoalsBron })
     const uitslagKaal = await vergelijk(kaal.png, referentie)
     const uitslagRond = await vergelijk(rond.png, referentie)
     const uitslagHerbouw = await vergelijk(herbouw.png, referentie)
@@ -138,10 +139,14 @@ export async function controleer(namen, uitDir) {
     for (const m of rond.meldingen.regelval) log(`   regelval via invoer: ${m}`)
     for (const m of herbouw.meldingen.regelval) log(`   andere regelval bij herberekening: ${m}`)
     for (const m of herbouw.meldingen.opmaak) log(`   let op: ${m}`)
-    if (zoalsBron) {
-      log(`   titel wordt bewust "${basis.titel.tekst}" gezet waar het .ai "${basis.titel.bronTekst}" zegt; `
-        + 'voor de vergelijking hierboven staat de bron-titel.')
+    if (basis.titel.bronTekst) {
+      log(`   titel wordt bewust "${basis.titel.tekst}" gezet waar het .ai `
+        + `"${basis.titel.bronTekst}" zegt.`)
     }
+    for (const [fout, goed] of basis.correcties?.woorden ?? []) {
+      log(`   "${fout}" uit het .ai wordt bewust als "${goed}" gezet.`)
+    }
+    if (zoalsBron) log('   de vergelijking hierboven draait die correcties terug.')
   }
   return uitslagen
 }
