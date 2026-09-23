@@ -28,6 +28,9 @@ const sleutelVan = (t) => String(t)
   .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
   .trim()
 
+/** Zelfde normalisatie als gerechtsleutel(): waar de streep staat telt niet mee. */
+const gerechtSleutelVan = (t) => sleutelVan(t).replace(/\|/g, ' ').replace(/\s+/g, ' ').trim()
+
 const BASIS_DIR = join(WORKER_DIR, 'menu', 'basis')
 
 /** De fonts die render.mjs kan laden; alles daarbuiten zou stil terugvallen op een standaardfont. */
@@ -341,8 +344,8 @@ test('een basisontwerp levert altijd een bruikbaar scherm', { timeout: 300_000 }
 // en dan ziet hetzelfde gerecht er per pakket anders uit.
 
 test('elke tekst uit de basisontwerpen staat in de bibliotheek', () => {
-  const bibliotheek = laadBibliotheek()
-  assert.ok(Object.keys(bibliotheek).length > 50, 'de bibliotheek is verdacht leeg')
+  const { alineas } = laadBibliotheek()
+  assert.ok(Object.keys(alineas).length > 50, 'de bibliotheek is verdacht leeg')
 
   for (const pakket of alle) {
     const basis = laadBasis(pakket)
@@ -351,22 +354,55 @@ test('elke tekst uit de basisontwerpen staat in de bibliotheek', () => {
         if (!['naam', 'ingr'].includes(alinea.soort)) continue
         const grootte = alinea.regels[0].runs[0].grootte
         const sleutel = `${alinea.soort}|${grootte}|${sleutelVan(alinea.tekst)}`
-        assert.ok(bibliotheek[sleutel],
+        assert.ok(alineas[sleutel],
           `${pakket}: "${alinea.tekst.slice(0, 40)}" staat niet in de bibliotheek`)
       }
     }
   }
 })
 
-test('de bibliotheek bewaart de regelval van de ontwerper', () => {
-  const bibliotheek = laadBibliotheek()
-  // Het dessert van pagina 7 breekt na "met"; dat is hoe het hoort te staan.
-  const dessert = bibliotheek['naam|61.6|dessertbuffet met zoete lekkernijen']
-  assert.ok(dessert, 'het dessert van pagina 7 staat niet in de bibliotheek')
-  assert.deepEqual(dessert.regels.map((r) => r.tekst), ['Dessertbuffet met', 'zoete lekkernijen'])
+test('elk gerecht uit de basisontwerpen staat als geheel in de bibliotheek', () => {
+  const { gerechten } = laadBibliotheek()
+  assert.ok(Object.keys(gerechten).length > 50, 'de bibliotheek is verdacht leeg')
 
-  // En de omschrijving eronder blijft op een regel.
-  const pearls = bibliotheek["ingr|41.8|l'or coffee popping pearls"]
+  for (const pakket of alle) {
+    const basis = laadBasis(pakket)
+    for (const kolom of basis.kolommen) {
+      for (const sectie of kolom.secties) {
+        for (const gerecht of sectie.gerechten) {
+          const naam = kolom.alineas[gerecht.naamAlinea]
+          const omschrijving = gerecht.ingrAlinea == null ? null : kolom.alineas[gerecht.ingrAlinea]
+          // Een opsomming met bullets is een eigen structuur en hoort er niet in.
+          if (omschrijving && omschrijving.soort === 'opsomming') continue
+          const geheel = omschrijving ? `${naam.tekst} | ${omschrijving.tekst}` : naam.tekst
+          const grootte = naam.regels[0].runs[0].grootte
+          assert.ok(gerechten[`${grootte}|${gerechtSleutelVan(geheel)}`],
+            `${pakket}: "${geheel.slice(0, 50)}" staat niet in de bibliotheek`)
+        }
+      }
+    }
+  }
+})
+
+test('de bibliotheek bewaart de regelval van de ontwerper', () => {
+  const { gerechten, alineas } = laadBibliotheek()
+
+  // Het dessert van pagina 7: de naam breekt na "met", de omschrijving eronder
+  // blijft op een regel. Dat is hoe Abel het gezet heeft.
+  const dessert = gerechten["61.6|dessertbuffet met zoete lekkernijen l'or coffee popping pearls"]
+  assert.ok(dessert, 'het dessert van pagina 7 staat niet in de bibliotheek')
+  assert.equal(dessert.naam, 'Dessertbuffet met zoete lekkernijen')
+  assert.deepEqual(dessert.naamRegels.map((r) => r.tekst), ['Dessertbuffet met', 'zoete lekkernijen'])
+  assert.equal(dessert.ingrRegels.length, 1)
+
+  // Dezelfde schotel met de streep op een andere plek is hetzelfde gerecht: de
+  // bibliotheek zegt waar de naam ophoudt, niet degene die hem intypt.
+  const anders = gerechten[
+    `61.6|${gerechtSleutelVan("Dessertbuffet | met zoete lekkernijen | L'OR Coffee Popping Pearls")}`]
+  assert.equal(anders, dessert)
+
+  // En de losse alinea's blijven als vangnet bestaan.
+  const pearls = alineas["ingr|41.8|l'or coffee popping pearls"]
   assert.ok(pearls, 'de omschrijving van pagina 7 staat niet in de bibliotheek')
   assert.equal(pearls.regels.length, 1)
 })
@@ -385,6 +421,29 @@ test('een gerecht uit een ander pakket houdt zijn eigen regelval', { timeout: 12
   assert.deepEqual(meldingen.regelval, [],
     'de bibliotheek is niet gebruikt; de engine heeft zelf afgebroken')
   assert.deepEqual(meldingen.botsingen, [])
+})
+
+test('de streep mag ergens anders staan dan de ontwerper hem zette',
+  { timeout: 120_000 }, async () => {
+  // Abel schrijft "Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls";
+  // iemand anders typt hetzelfde gerecht als "Dessertbuffet | met zoete lekkernijen |
+  // L'OR Coffee Popping Pearls". Dat is dezelfde schotel, en hij hoort er dan ook
+  // precies hetzelfde uit te zien: de bibliotheek weet waar de naam ophoudt.
+  const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
+
+  const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
+  const nagerecht = inhoud.secties[inhoud.secties.length - 1]
+  nagerecht.gerechten = [{
+    naam: 'Dessertbuffet',
+    ingredienten: ['met zoete lekkernijen', "l'or coffee popping pearls"],
+  }]
+  const anders = await renderMenu(inhoud)
+
+  assert.deepEqual(anders.meldingen.regelval, [],
+    'de bibliotheek is niet gebruikt; de engine heeft zelf afgebroken')
+  assert.deepEqual(anders.meldingen.botsingen, [])
+  assert.ok(anders.png.equals(zoalsHetHoort.png),
+    'het scherm ziet er anders uit dan wanneer de streep op de plek van de ontwerper staat')
 })
 
 test('pagina 7 en 8 delen hun tekstkaders', () => {
