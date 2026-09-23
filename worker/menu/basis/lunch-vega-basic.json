@@ -66,6 +66,7 @@
       }
     ]
   },
+  "correcties": null,
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -123,10 +124,14 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 784.85,
-        "minimaal": 775.54,
+        "breedte": 785.36,
+        "minimaal": 776.05,
         "maximaal": 887.86,
-        "handmatigeAfbrekingen": 0
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "lunch-basic",
+          "lunch-vega-basic"
+        ]
       },
       "secties": [
         {
@@ -345,8 +350,12 @@
       "kader": {
         "breedte": 850.9,
         "minimaal": 840.81,
-        "maximaal": 900.81,
-        "handmatigeAfbrekingen": 0
+        "maximaal": 900.8,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "lunch-basic",
+          "lunch-vega-basic"
+        ]
       },
       "secties": [
         {

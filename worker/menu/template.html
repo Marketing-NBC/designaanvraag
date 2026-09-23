@@ -31,6 +31,7 @@
   const basis = gegevens.basis
   const inhoud = gegevens.inhoud || {}
   const merk = gegevens.merk || {}
+  const bibliotheek = gegevens.bibliotheek || {}
   const SVG = 'http://www.w3.org/2000/svg'
 
   const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [] }
@@ -113,13 +114,31 @@
    * inhoud - zonder deze normalisatie zou zoiets de hele regelval laten
    * verspringen. Wat er getekend wordt blijft wel letterlijk het basisontwerp.
    */
+  // Moet gelijk blijven aan tekstsleutel() in basis-extract.py: de soort apostrof
+  // en hoofdletters zijn zetwerk, geen andere inhoud.
+  const tekstsleutel = (t) => String(t)
+    .replace(/[\u2018\u2019\u00b4\u0060]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .toLowerCase()
+    .replace(/\s*\|\s*/g, ' | ')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
+    .trim()
+
   function zelfdeInhoud(a, b) {
-    const schoon = (t) => String(t)
-      .replace(/\s*\|\s*/g, ' | ')
-      .replace(/\s+/g, ' ')
-      .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
-      .trim()
-    return schoon(a) === schoon(b)
+    return tekstsleutel(a) === tekstsleutel(b)
+  }
+
+  /**
+   * Zoekt op hoe deze tekst in de basisontwerpen gezet is.
+   *
+   * NBC werkt met een vast repertoire: hetzelfde gerecht komt in meerdere
+   * pakketten terug. Staat het in een ontwerp, dan is dat de manier waarop het
+   * hoort te staan - inclusief waar de regel afbreekt. Dat weegt zwaarder dan
+   * onze eigen afbreking, die alleen op kaderbreedte kijkt.
+   */
+  function uitBibliotheek(soort, tekst, grootte) {
+    return bibliotheek[`${soort}|${grootte}|${tekstsleutel(tekst)}`] ?? null
   }
 
   /**
@@ -212,8 +231,29 @@
     const stijl = alinea.soort === 'opsomming'
       ? (basis.stijl.ingr || alinea.regels[0].runs[0])
       : alinea.regels[0].runs[0]
-    const stukken = afbreken(nieuweTekst ?? alinea.tekst, stijl.font, stijl.grootte, kader)
+    const tekst = nieuweTekst ?? alinea.tekst
     const afstand = regelafstand(alinea, ritme)
+
+    // Staat deze tekst in een basisontwerp? Dan zetten we hem zoals daar, ook als
+    // hij uit een ander pakket komt.
+    //
+    // Bij forceerHerberekening slaan we de bibliotheek over: die stand toetst juist
+    // of onze eigen afbreking op dezelfde regels uitkomt als de ontwerper. Zou de
+    // bibliotheek daar meedoen, dan bewees die controle niets meer.
+    const bekend = gegevens.forceerHerberekening
+      ? null
+      : uitBibliotheek(alinea.soort === 'opsomming' ? 'ingr' : alinea.soort, tekst, stijl.grootte)
+    if (bekend) {
+      return {
+        regels: bekend.regels.map((r) => [{ tekst: r.tekst, x: 0, font: stijl.font,
+                                            grootte: stijl.grootte, kleur: stijl.kleur }]),
+        offsets: bekend.regels.map((r) => r.offset),
+        uitBasis: false,
+        uitBibliotheek: true,
+      }
+    }
+
+    const stukken = afbreken(tekst, stijl.font, stijl.grootte, kader)
     return {
       regels: stukken.map((t) => [{ tekst: t, x: 0, font: stijl.font, grootte: stijl.grootte, kleur: stijl.kleur }]),
       offsets: stukken.map((_, i) => i * afstand),
@@ -578,7 +618,8 @@
           // uit het ontwerp dat wegvalt) breekt de vaste baselines; vanaf daar
           // telt het ritme van het pakket.
           if (taak.buitenOntwerp) structuurGewijzigd = true
-          const { regels, offsets, uitBasis } = regelsVoor(alinea, nieuweInhoud, kader, ritme)
+          const { regels, offsets, uitBasis, uitBibliotheek: viaBibliotheek } =
+            regelsVoor(alinea, nieuweInhoud, kader, ritme)
           if (!uitBasis) {
             structuurGewijzigd = structuurGewijzigd || regels.length !== alinea.regels.length
             const omschrijving = ((nieuweInhoud && nieuweInhoud.tekst) ?? alinea.tekst).slice(0, 40)
@@ -593,6 +634,9 @@
               meldingen.opmaak.push(
                 `"${omschrijving}" wordt als opsomming met bullets gezet terwijl het `
                 + 'basisontwerp daar gewone ingredienten had. Kijk dit scherm even na.')
+            } else if (viaBibliotheek) {
+              // De regelval komt uit een basisontwerp waar deze tekst al in staat.
+              // Dat is geen afwijking maar juist de bedoeling; niets te melden.
             } else if (regels.length !== alinea.regels.length) {
               meldingen.regelval.push(
                 `"${omschrijving}" valt over ${regels.length} regels, `

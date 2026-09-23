@@ -183,15 +183,54 @@ splitst het verschil op, want niet elk verschil betekent hetzelfde:
 
 ## Hoe de opmaak werkt
 
-Zolang de tekst dezelfde is als in het basisontwerp, worden de regelval én de
-onderlinge afstanden **letterlijk** overgenomen — inclusief de handmatige
-correcties die de ontwerper heeft gemaakt. Het resultaat is dan per definitie
-identiek.
+Voor elke alinea wordt in deze volgorde bepaald hoe hij komt te staan:
 
-Wijkt de tekst af (de opdrachtgever vervangt een gerecht), dan breekt de engine
-die ene alinea opnieuw af binnen het kader van de kolom, en schuift de rest van
-de kolom mee volgens het vaste ritme van dat pakket. De rest van het scherm
-blijft staan waar het stond.
+1. **Staat deze tekst op deze plek in het basisontwerp?** Dan worden de regelval
+   én de onderlinge afstanden letterlijk overgenomen, inclusief de handmatige
+   correcties van de ontwerper. Het resultaat is dan per definitie identiek.
+2. **Staat deze tekst érgens in een basisontwerp?** Dan wordt hij gezet zoals
+   dáár — zie de gerechtenbibliotheek hieronder.
+3. **Anders** breekt de engine de alinea zelf af binnen het kader van de kolom.
+
+Verandert er iets, dan schuift de rest van de kolom mee volgens het vaste ritme
+van dat pakket. De rest van het scherm blijft staan waar het stond.
+
+### De gerechtenbibliotheek
+
+NBC werkt met een vast repertoire: dezelfde gerechten komen in verschillende
+pakketten terug. Staat een gerecht in een ontwerp, dan is dat de manier waarop
+het gezet hoort te worden — **inclusief de plek waar de regel afbreekt**. Dat
+weegt zwaarder dan onze eigen afbreking, die alleen naar kaderbreedte kijkt.
+
+`basis/gerechten.json` legt dat vast: voor elke tekst uit elk basisontwerp de
+regels waarin hij uiteenvalt. Zo ziet het dessert van pagina 7 er in het
+viergangen diner precies zo uit als de ontwerper het op pagina 7 zette:
+
+```
+Dessertbuffet met          ← breekt na "met", niet na "Dessertbuffet"
+zoete lekkernijen
+L'OR Coffee Popping Pearls ← blijft op één regel
+```
+
+Het opzoeken is ongevoelig voor zetwerk dat geen inhoud is: hoofdletters, de
+soort apostrof (`'` of `’`) en spaties rond een `|` doen niet mee. Wat er
+getekend wordt is altijd de tekst zoals hij in het ontwerp staat.
+
+Bij het opnieuw uitrekenen van de regelval (`bij herberekening` in de controle)
+wordt de bibliotheek bewust overgeslagen: die stand toetst juist of onze eigen
+afbreking op dezelfde regels uitkomt.
+
+### Gedeelde tekstkaders
+
+Pagina 7 en 8 zijn dezelfde layout — kolommen op 261, 1352 en 2278. Toch leidde
+de extractie er eerst twee verschillende kaderbreedtes uit af, omdat elke pagina
+alleen zijn eigen inhoud te zien kreeg. Kolom 3 werd daardoor 30 eenheden te smal
+en brak een omschrijving af die in het ontwerp op één regel past.
+
+Pagina's met dezelfde kolomindeling delen nu hun kaders: de ondergrens is de
+langste regel van alle pagina's samen, de bovengrens de scherpste afbreking.
+Sluiten die elkaar uit, dan zijn het toch niet dezelfde kaders en meldt de
+extractie dat; elke pagina houdt dan zijn eigen waarde.
 
 ### Tekst mag nooit over iets anders heen
 
@@ -248,8 +287,19 @@ Het basisontwerp is de norm, maar als er een fout in staat kunnen we er bewust
 van afwijken. Dat gaat via `CORRECTIES` in `basis-extract.py`, zodat het op één
 plek zichtbaar is en blijft staan als het `.ai` opnieuw geëxporteerd wordt.
 
-**Op dit moment staat daar niets in:** de schermtitel (Dinner) en de spelling van
-de voetregel (Dieetwens) zijn in V2 van het bestand rechtgezet. De extractie
+Er zijn twee soorten: `CORRECTIES` voor iets dat per pakket anders moet (nu leeg
+— de schermtitel en de spelling van de voetregel zijn in V2 rechtgezet), en
+`WOORDCORRECTIES` voor een woord dat in het ontwerp verkeerd gespeld staat:
+
+| In het `.ai` | Wat wij zetten | Waar |
+|---|---|---|
+| lekkernije | **lekkernijen** | "Dessertbuffet met zoete lekkernije", pagina 7 |
+
+Zo'n woordcorrectie is niet alleen cosmetisch: zonder die stap is het gerecht
+niet terug te vinden in de gerechtenbibliotheek, want wie het goed spelt vindt de
+verkeerd gespelde versie niet.
+
+De extractie
 bewaart bij een correctie de oorspronkelijke tekst als `titel.bronTekst`; daar
 vergelijkt `controle.mjs` dan mee, anders zou hij onze eigen correctie als fout
 meten. Wordt een correctie overbodig, dan meldt de extractie dat hij weg kan.

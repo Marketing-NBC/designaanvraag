@@ -16,7 +16,17 @@ import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
 import { menuIsBruikbaar } from '../lib/notes.mjs'
-import { renderMenu, laadBasis, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
+import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
+
+/** Zelfde normalisatie als tekstsleutel() in basis-extract.py en template.html. */
+const sleutelVan = (t) => String(t)
+  .replace(/[\u2018\u2019\u00b4\u0060]/g, "'")
+  .replace(/[\u201c\u201d]/g, '"')
+  .toLowerCase()
+  .replace(/\s*\|\s*/g, ' | ')
+  .replace(/\s+/g, ' ')
+  .replace(/^\s*\|\s*|\s*\|\s*$/g, '')
+  .trim()
 
 const BASIS_DIR = join(WORKER_DIR, 'menu', 'basis')
 
@@ -322,4 +332,68 @@ test('een basisontwerp levert altijd een bruikbaar scherm', { timeout: 300_000 }
     assert.equal(menuIsBruikbaar(meldingen), true,
       `${pakket}: ${JSON.stringify(meldingen.botsingen)} ${JSON.stringify(meldingen.overloop)}`)
   }
+})
+
+// ── De gerechtenbibliotheek ──────────────────────────────────────────
+// NBC werkt met een vast repertoire. Staat een gerecht in een basisontwerp, dan
+// is dat de manier waarop het gezet hoort te worden - ook als het in een ander
+// pakket opduikt. Anders zou onze eigen afbreking bepalen waar de regel breekt,
+// en dan ziet hetzelfde gerecht er per pakket anders uit.
+
+test('elke tekst uit de basisontwerpen staat in de bibliotheek', () => {
+  const bibliotheek = laadBibliotheek()
+  assert.ok(Object.keys(bibliotheek).length > 50, 'de bibliotheek is verdacht leeg')
+
+  for (const pakket of alle) {
+    const basis = laadBasis(pakket)
+    for (const kolom of basis.kolommen) {
+      for (const alinea of kolom.alineas) {
+        if (!['naam', 'ingr'].includes(alinea.soort)) continue
+        const grootte = alinea.regels[0].runs[0].grootte
+        const sleutel = `${alinea.soort}|${grootte}|${sleutelVan(alinea.tekst)}`
+        assert.ok(bibliotheek[sleutel],
+          `${pakket}: "${alinea.tekst.slice(0, 40)}" staat niet in de bibliotheek`)
+      }
+    }
+  }
+})
+
+test('de bibliotheek bewaart de regelval van de ontwerper', () => {
+  const bibliotheek = laadBibliotheek()
+  // Het dessert van pagina 7 breekt na "met"; dat is hoe het hoort te staan.
+  const dessert = bibliotheek['naam|61.6|dessertbuffet met zoete lekkernijen']
+  assert.ok(dessert, 'het dessert van pagina 7 staat niet in de bibliotheek')
+  assert.deepEqual(dessert.regels.map((r) => r.tekst), ['Dessertbuffet met', 'zoete lekkernijen'])
+
+  // En de omschrijving eronder blijft op een regel.
+  const pearls = bibliotheek["ingr|41.8|l'or coffee popping pearls"]
+  assert.ok(pearls, 'de omschrijving van pagina 7 staat niet in de bibliotheek')
+  assert.equal(pearls.regels.length, 1)
+})
+
+test('een gerecht uit een ander pakket houdt zijn eigen regelval', { timeout: 120_000 }, async () => {
+  // Het dessert komt uit het driegangen diner; in het viergangen diner is de
+  // kolom net zo breed, dus het hoort er precies zo te staan.
+  const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
+  const nagerecht = inhoud.secties[inhoud.secties.length - 1]
+  nagerecht.gerechten = [{
+    naam: 'Dessertbuffet met zoete lekkernijen',
+    // met een rechte apostrof en in kleine letters: dat is zetwerk, geen andere inhoud
+    ingredienten: ["l'or coffee popping pearls"],
+  }]
+  const { meldingen } = await renderMenu(inhoud)
+  assert.deepEqual(meldingen.regelval, [],
+    'de bibliotheek is niet gebruikt; de engine heeft zelf afgebroken')
+  assert.deepEqual(meldingen.botsingen, [])
+})
+
+test('pagina 7 en 8 delen hun tekstkaders', () => {
+  // Het is dezelfde layout, dus hetzelfde kader. Leidde je dat per pagina af uit
+  // de inhoud die daar toevallig staat, dan werd kolom 3 te smal en brak een
+  // omschrijving af die in het ontwerp op een regel past.
+  const drie = laadBasis('diner-3gangen')
+  const vier = laadBasis('diner-4gangen')
+  assert.deepEqual(drie.kolommen.map((k) => k.x), vier.kolommen.map((k) => k.x))
+  assert.equal(drie.kolommen[2].kader.breedte, vier.kolommen[2].kader.breedte)
+  assert.ok(drie.kolommen[2].kader.gedeeldMet.includes('diner-4gangen'))
 })

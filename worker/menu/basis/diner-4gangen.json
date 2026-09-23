@@ -66,6 +66,7 @@
       }
     ]
   },
+  "correcties": null,
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -126,7 +127,11 @@
         "breedte": 856.51,
         "minimaal": 846.35,
         "maximaal": 1120.22,
-        "handmatigeAfbrekingen": 0
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen"
+        ]
       },
       "secties": [
         {
@@ -489,10 +494,14 @@
     {
       "x": 2278.0,
       "kader": {
-        "breedte": 550.79,
-        "minimaal": 544.26,
+        "breedte": 580.44,
+        "minimaal": 573.56,
         "maximaal": 592.0,
-        "handmatigeAfbrekingen": 0
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen"
+        ]
       },
       "secties": [
         {

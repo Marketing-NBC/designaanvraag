@@ -38,13 +38,27 @@ const VERVANGINGEN = {
 
 const fontVoor = (naam) => VERVANGINGEN[naam] || naam
 
+/** Bestanden in basis/ die geen pakket zijn maar wel .json heten. */
+const GEEN_PAKKET = new Set(['gerechten'])
+
 /** De pakketten waarvoor een bevroren basisontwerp klaarstaat. */
 export function pakketten() {
   if (!existsSync(BASIS_DIR)) return []
   return readdirSync(BASIS_DIR)
     .filter((n) => n.endsWith('.json'))
     .map((n) => n.slice(0, -5))
+    .filter((n) => !GEEN_PAKKET.has(n))
     .sort()
+}
+
+/**
+ * De gerechtenbibliotheek: hoe elke tekst uit de basisontwerpen op het scherm
+ * hoort te staan, inclusief de plek waar de regel afbreekt. Zie
+ * gerechtenbibliotheek() in basis-extract.py.
+ */
+export function laadBibliotheek() {
+  const pad = join(BASIS_DIR, 'gerechten.json')
+  return existsSync(pad) ? JSON.parse(readFileSync(pad, 'utf8')) : {}
 }
 
 export function laadBasis(pakket) {
@@ -130,6 +144,41 @@ function fontsInvoegen(html, families) {
   return html.replace('{{FONTS}}', regels.join('\n'))
 }
 
+/**
+ * Draait de bewuste correcties op het .ai terug: de gecorrigeerde titel en de
+ * woorden die we anders spellen dan de bron. Alleen voor de pixelvergelijking in
+ * controle.mjs; zo blijft die meten wat de opmaak doet en niet wat wij verbeteren.
+ */
+function zetTerugNaarBron(payload) {
+  const basis = payload.basis
+  if (basis.titel.bronTekst) basis.titel.tekst = basis.titel.bronTekst
+
+  const woorden = basis.correcties?.woorden ?? []
+  if (!woorden.length) return
+  const terug = (t) => woorden.reduce(
+    (tekst, [fout, goed]) => tekst.replace(new RegExp(`\\b${goed}\\b`, 'g'), fout), String(t))
+
+  for (const kolom of basis.kolommen) {
+    for (const alinea of kolom.alineas) {
+      alinea.tekst = terug(alinea.tekst)
+      for (const regel of alinea.regels) for (const run of regel.runs) run.tekst = terug(run.tekst)
+    }
+  }
+  for (const item of Object.values(payload.bibliotheek ?? {})) {
+    item.tekst = terug(item.tekst)
+    for (const regel of item.regels) regel.tekst = terug(regel.tekst)
+  }
+}
+
+/** Dezelfde fontvervanging voor de gerechtenbibliotheek. */
+function vervangFontsInBibliotheek(bibliotheek) {
+  const uit = {}
+  for (const [sleutel, item] of Object.entries(bibliotheek)) {
+    uit[sleutel] = item.font ? { ...item, font: fontVoor(item.font) } : item
+  }
+  return uit
+}
+
 /** Past de bewuste fontvervangingen toe op een bevroren basisontwerp. */
 function vervangFonts(basis) {
   const kopie = structuredClone(basis)
@@ -194,6 +243,7 @@ export async function renderMenu(opdracht) {
 
   const payload = {
     basis,
+    bibliotheek: vervangFontsInBibliotheek(laadBibliotheek()),
     achtergrond,
     inhoud: { titel: opdracht.titel, secties: opdracht.secties },
     merk: opdracht.merk || {},
@@ -201,12 +251,10 @@ export async function renderMenu(opdracht) {
     // breken in plaats van de regelval van het basisontwerp over te nemen.
     forceerHerberekening: Boolean(opdracht.forceerHerberekening),
   }
-  // Ook voor controle.mjs: zet de titel terug zoals hij in het .ai staat, zodat
-  // de pixelvergelijking niet struikelt over een bewuste correctie (zie
-  // CORRECTIES in basis-extract.py).
-  if (opdracht.titelZoalsBron && basis.titel.bronTekst) {
-    payload.basis.titel.tekst = basis.titel.bronTekst
-  }
+  // Voor controle.mjs: zet terug wat we bewust anders zetten dan het .ai, zodat de
+  // pixelvergelijking niet over onze eigen correcties struikelt (zie CORRECTIES en
+  // WOORDCORRECTIES in basis-extract.py).
+  if (opdracht.zoalsBron) zetTerugNaarBron(payload)
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   html = html.replace('<script>', '<script>'
     + `window.__MENU__ = ${json};`
