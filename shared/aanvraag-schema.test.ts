@@ -100,3 +100,34 @@ describe('website is optioneel', () => {
     expect(aanvraagSchema.safeParse({ ...valid, website: 'geen website' }).success).toBe(false)
   })
 })
+
+describe('culinaire invulling', () => {
+  // Het menu wordt alleen gevraagd bij een menukaart of menuscherm; het formulier
+  // laat die stap dan zien. Het schema bewaakt dat er niets binnenkomt wat daar
+  // niet bij hoort, want dan zou er een menu staan bij een aanvraag die er niets
+  // mee doet.
+  const menu = 'Op tafel\n\n• Bruschetta-spiezen met seasonal dips'
+
+  it('accepteert een menu bij een menuscherm', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, aanvraag_types: ['menu_scherm'], menu_tekst: menu })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.menu_tekst).toContain('Bruschetta')
+  })
+
+  it('accepteert een menu bij een menukaart print', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, aanvraag_types: ['menukaart_print'], menu_tekst: menu })
+    expect(r.success).toBe(true)
+  })
+
+  it('weigert een menu als er geen menu is aangevraagd', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, menu_tekst: menu })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].path).toEqual(['menu_tekst'])
+  })
+
+  it('laat het veld leeg als er geen menu bij hoort', () => {
+    const r = aanvraagSchema.safeParse(valid)
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.menu_tekst).toBe('')
+  })
+})

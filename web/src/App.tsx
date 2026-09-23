@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { submitPayloadSchema, type SubmitResult } from '../../shared/aanvraag-schema'
-import { DESIGN_MODES, REQUEST_TYPES, type DesignMode, type RequestTypeKey } from '../../shared/request-types'
+import { DESIGN_MODES, REQUEST_TYPES, vraagtOmMenu, type DesignMode, type RequestTypeKey } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { DateField } from './components/DateField'
 import { NameCombobox } from './components/NameCombobox'
@@ -18,7 +18,7 @@ import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
 import { useBijlagen } from './lib/uploads'
-import { STEPS } from './steps'
+import { zichtbareStappen } from './steps'
 
 type Screen =
   | { kind: 'start' }
@@ -57,6 +57,17 @@ export default function App() {
     return s && draftHasContent(s.draft) ? { draft: s.draft, step: s.step } : null
   })
   const reduced = useReducedMotion()
+  // De stappen hangen van de aanvraag af: de vraag over het menu komt er alleen bij
+  // als er een menukaart of menuscherm is gekozen. We hangen alles op aan die ene
+  // booleaan, zodat de callbacks hieronder van een vaste waarde afhangen en niet van
+  // een lijst die elke render opnieuw ontstaat.
+  //
+  // De Boolean() eromheen is geen overbodige versiering: zonder die stap rekent de
+  // React Compiler de uitkomst nog tot de array waar hij uit komt, en dan geldt elke
+  // callback die hem gebruikt als niet-memoiseerbaar.
+  const metMenu = Boolean(vraagtOmMenu(draft.aanvraag_types))
+  const stappen = zichtbareStappen({ metMenu })
+
   const clientRequestId = useRef<string>(crypto.randomUUID())
   const startedAt = useRef<string>(new Date().toISOString())
 
@@ -67,8 +78,8 @@ export default function App() {
   // Autosave zolang de gebruiker in het formulier zit.
   useEffect(() => {
     if (screen.kind === 'step') saveDraft(volledig, screen.index)
-    if (screen.kind === 'review') saveDraft(volledig, STEPS.length - 1)
-  }, [volledig, screen])
+    if (screen.kind === 'review') saveDraft(volledig, zichtbareStappen({ metMenu }).length - 1)
+  }, [volledig, screen, metMenu])
 
   const patch = useCallback((p: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...p }))
@@ -84,29 +95,30 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
   }, [])
 
-  const stepIndex = screen.kind === 'step' ? screen.index : screen.kind === 'review' ? STEPS.length : -1
-  const step = screen.kind === 'step' ? STEPS[screen.index] : null
+  const stepIndex = screen.kind === 'step' ? screen.index : screen.kind === 'review' ? stappen.length : -1
+  const step = screen.kind === 'step' ? (stappen[screen.index] ?? null) : null
 
   const next = useCallback(() => {
     if (screen.kind !== 'step') return
-    const msg = STEPS[screen.index].validate(volledig)
+    const lijst = zichtbareStappen({ metMenu })
+    const msg = lijst[screen.index]?.validate(volledig) ?? null
     if (msg) {
       setError(msg)
       setErrorNonce((n) => n + 1)
       return
     }
-    if (screen.index + 1 < STEPS.length) go({ kind: 'step', index: screen.index + 1 }, 1)
+    if (screen.index + 1 < lijst.length) go({ kind: 'step', index: screen.index + 1 }, 1)
     else go({ kind: 'review' }, 1)
-  }, [screen, volledig, go])
+  }, [screen, volledig, go, metMenu])
 
   const prev = useCallback(() => {
     if (screen.kind === 'step') {
       if (screen.index === 0) go({ kind: 'start' }, -1)
       else go({ kind: 'step', index: screen.index - 1 }, -1)
     } else if (screen.kind === 'review') {
-      go({ kind: 'step', index: STEPS.length - 1 }, -1)
+      go({ kind: 'step', index: zichtbareStappen({ metMenu }).length - 1 }, -1)
     }
-  }, [screen, go])
+  }, [screen, go, metMenu])
 
   const focusPrimary = useCallback(() => {
     window.setTimeout(() => document.querySelector<HTMLButtonElement>('[data-primary-action]')?.focus({ preventScroll: true }), 30)
@@ -152,6 +164,7 @@ export default function App() {
         aanvraag_types: volledig.aanvraag_types,
         anders_tekst: volledig.anders_tekst,
         design_modus: volledig.design_modus ?? undefined,
+        menu_tekst: volledig.menu_tekst,
         omschrijving: volledig.omschrijving,
       },
       client_request_id: clientRequestId.current,
@@ -162,7 +175,7 @@ export default function App() {
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
       const field = String(issue?.path?.[1] ?? '')
-      const idx = STEPS.findIndex((s) => s.id === field || (field === 'anders_tekst' && s.id === 'aanvraag_types'))
+      const idx = zichtbareStappen({ metMenu }).findIndex((s) => s.id === field || (field === 'anders_tekst' && s.id === 'aanvraag_types'))
       if (idx >= 0) {
         go({ kind: 'step', index: idx }, -1)
         setError(issue?.message ?? 'Controleer dit veld.')
@@ -185,7 +198,7 @@ export default function App() {
     } finally {
       setBusy(false)
     }
-  }, [busy, volledig, go, uploads.bezig, uploads.ids])
+  }, [busy, volledig, go, uploads.bezig, uploads.ids, metMenu])
 
   const restart = useCallback(() => {
     clientRequestId.current = crypto.randomUUID()
@@ -224,7 +237,7 @@ export default function App() {
       }
 
       if (screen.kind !== 'step') return
-      const kind = STEPS[screen.index].kind
+      const kind = zichtbareStappen({ metMenu })[screen.index]?.kind
 
       if (e.key === 'Enter') {
         // Open combobox met een actieve optie: laat Headless UI die kiezen. Zonder actieve optie valideren we gewoon.
@@ -274,7 +287,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [screen, next, prev, go, submit, toggleType, patch, focusPrimary])
+  }, [screen, next, prev, go, submit, toggleType, patch, focusPrimary, metMenu])
 
   const variants = useMemo(
     () => ({
@@ -301,7 +314,7 @@ export default function App() {
                   // de opslag en mag gewoon mee.
                   uploads.herstel(resume.draft.bijlagen ?? [])
                   setResume(null)
-                  go({ kind: 'step', index: Math.min(resume.step, STEPS.length - 1) }, 1)
+                  go({ kind: 'step', index: Math.min(resume.step, stappen.length - 1) }, 1)
                 }}
               >
                 Verder
@@ -319,7 +332,7 @@ export default function App() {
             </span>
           </div>
         ) : null}
-        <Start onStart={() => go({ kind: 'step', index: 0 }, 1)} onAanvullen={() => go({ kind: 'aanvulling' }, 1)} stepCount={STEPS.length} />
+        <Start onStart={() => go({ kind: 'step', index: 0 }, 1)} onAanvullen={() => go({ kind: 'aanvulling' }, 1)} stepCount={stappen.length} />
       </>
     )
   }
@@ -332,8 +345,8 @@ export default function App() {
     return <Success result={screen.result} website={screen.draft.website} naam={screen.draft.naam} onRestart={restart} />
   }
 
-  const progress = stepIndex / STEPS.length
-  const counter = screen.kind === 'review' ? `${pad(STEPS.length)} / ${pad(STEPS.length)}` : `${pad(stepIndex + 1)} / ${pad(STEPS.length)}`
+  const progress = stepIndex / stappen.length
+  const counter = screen.kind === 'review' ? `${pad(stappen.length)} / ${pad(stappen.length)}` : `${pad(stepIndex + 1)} / ${pad(stappen.length)}`
   const screenKey = screen.kind === 'review' ? 'review' : `step-${screen.index}`
 
   return (
@@ -341,7 +354,10 @@ export default function App() {
       <AnimatePresence mode="wait" custom={dir} initial={false}>
         <motion.div key={screenKey} custom={dir} variants={variants} initial="initial" animate="animate" exit="exit">
           {screen.kind === 'review' ? (
-            <Review draft={volledig} onEdit={(i) => go({ kind: 'step', index: i }, -1)} onSubmit={() => void submit()} busy={busy} error={submitError} titleId="q-review" />
+            <Review draft={volledig} onEdit={(stepId) => {
+              const i = stappen.findIndex((st) => st.id === stepId)
+              if (i >= 0) go({ kind: 'step', index: i }, -1)
+            }} onSubmit={() => void submit()} busy={busy} error={submitError} titleId="q-review" />
           ) : step ? (
             <Question
               number={screen.index + 1}
@@ -352,7 +368,7 @@ export default function App() {
               warning={step.warn?.(volledig) ?? null}
               goed={step.goed?.(volledig) ?? null}
               titleId={`q-${step.id}`}
-              footer={<PrimaryAction label={screen.index === STEPS.length - 1 ? 'Naar overzicht' : 'Volgende'} onClick={next} />}
+              footer={<PrimaryAction label={screen.index === stappen.length - 1 ? 'Naar overzicht' : 'Volgende'} onClick={next} />}
             >
               {step.kind === 'naam' ? (
                 <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} />
@@ -390,7 +406,21 @@ export default function App() {
               {step.kind === 'single' ? (
                 <ChoiceList cards options={DESIGN_MODES} value={draft.design_modus} onToggle={(k) => patch({ design_modus: k as DesignMode })} />
               ) : null}
-              {step.kind === 'textarea' ? (
+              {step.kind === 'textarea' && step.id === 'menu_tekst' ? (
+                <>
+                  <TextArea
+                    id="f-menu"
+                    value={draft.menu_tekst}
+                    onChange={(v) => patch({ menu_tekst: v })}
+                    maxLength={8000}
+                    placeholder={'Op tafel\n\n\u2022 Bruschetta-spiezen met seasonal dips\n\nVoorgerecht\n\n\u2022 Gerookte hoenderfilet | gel van basilicum en appel | gepofte boekweit'}
+                  />
+                  <span className="hint hint--kbd">
+                    <kbd>Shift</kbd> + <kbd>Enter</kbd> voor een nieuwe regel
+                  </span>
+                </>
+              ) : null}
+              {step.kind === 'textarea' && step.id !== 'menu_tekst' ? (
                 <>
                   <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
                   <span className="hint hint--kbd">
@@ -403,7 +433,7 @@ export default function App() {
         </motion.div>
       </AnimatePresence>
       <span className="sr-only" aria-live="polite">
-        {step ? `Vraag ${stepIndex + 1} van ${STEPS.length}: ${step.title}` : 'Overzicht van je aanvraag'}
+        {step ? `Vraag ${stepIndex + 1} van ${stappen.length}: ${step.title}` : 'Overzicht van je aanvraag'}
       </span>
     </Shell>
   )

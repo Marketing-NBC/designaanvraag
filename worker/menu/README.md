@@ -29,20 +29,59 @@ Nu wordt het ontwerp één keer bevroren en daarna alleen nog gevuld.
 
 ## Hoe het in productie loopt
 
-De collega die de aanvraag indient ziet hier niets van. Het formulier vraagt om
-het pakket en de gerechten, meer niet; de opmaak draait in de worker en alles
-wat daaruit komt landt in Asana, waar Marketing toch al werkt.
+De collega die de aanvraag indient ziet hier niets van. Kiest hij een menukaart
+of een menuscherm, dan komt er één extra stap in het formulier: *"Wat is de
+culinaire invulling?"*. Daar plakt hij het menu zoals hij het van de
+opdrachtgever kreeg. Verder niets — geen pakketkeuze, geen opmaak. De rest draait
+in de worker, en alles wat daaruit komt landt in Asana, waar Marketing toch al
+werkt.
 
 ```
-formulier → aanvragen.menu_inhoud → worker/menu-publiceer.mjs → Asana-taak
-                                                                 ├─ bijlage: menuscherm-<pakket>.png
-                                                                 └─ comment: de meldingen
+formulier → aanvragen.menu_tekst → worker/menu-publiceer.mjs → Asana-taak
+                                    ├─ leest de invulling                ├─ bijlage: menuscherm-<pakket>.png
+                                    └─ zoekt het pakket erbij            └─ comment: de meldingen
 ```
 
 ```
 node worker/menu-publiceer.mjs --aanvraag-id <uuid>
-node worker/menu-publiceer.mjs --data menu.json --dry-run     # niets naar Asana of Supabase
+node worker/menu-publiceer.mjs --tekst menu.txt --dry-run     # niets naar Asana of Supabase
+node worker/menu-publiceer.mjs --data menu.json --dry-run     # met een uitgewerkte inhoud
 ```
+
+### De invulling zoals hij binnenkomt
+
+```
+Invulling menu:
+Op tafel
+
+• Bruschetta-spiezen met seasonal dips
+
+Voorgerecht
+
+• Gerookte hoenderfilet | gel van basilicum en appel | gepofte boekweit
+```
+
+Een regel met een bolletje is een gerecht; alles vóór de eerste `|` is de naam,
+daarachter staan de ingrediënten. Elke andere regel met tekst is een kopje. Lege
+regels en een inleiding als "Invulling menu:" doen niet mee.
+
+Een gerecht met onderdelen (zoals de Tartelettes) schrijf je met een streepje
+eronder, of met een bolletje dat inspringt:
+
+```
+• Tartelettes
+  - Rundertartaar | umamicrème | kwartelei
+  - Tallegio (vega) | romige tallegio | kruidencrunch
+```
+
+**Het pakket hoeft er niet bij.** De kopjes verraden welk basisontwerp het is:
+Op tafel / Voorgerecht / Tussengerecht / Hoofdgerecht / Nagerecht is een
+viergangen diner, zonder Tussengerecht een driegangen. Past het bij geen enkel
+ontwerp, dan stopt de worker en zegt hij dat in Asana. Welk ontwerp is gekozen
+staat altijd bovenaan de comment, want daar hangt de rest van aan.
+
+Staat `menu_inhoud` al ingevuld, dan gaat die voor op de tekst: dat is een
+bewuste correctie met de hand.
 
 De comment noemt per punt wat er aan de hand is, op volgorde van ernst: tekst die
 een blob raakt, tekst die buiten het scherm valt, een opbouw die afwijkt van het
@@ -89,7 +128,7 @@ Invoerformaat:
 ```json
 {
   "pakket": "diner-4gangen",
-  "titel": "Diner",
+  "titel": "Dinner",
   "merk": {
     "logo": "data:image/png;base64,...",
     "logoAchtergrond": "#ffffff",
@@ -139,8 +178,7 @@ splitst het verschil op, want niet elk verschil betekent hetzelfde:
 - **bij herberekening** — hetzelfde ontwerp, maar met de regelval opnieuw
   uitgerekend in plaats van overgenomen. Dit is wat er gebeurt zodra een gerecht
   wijzigt. Zo zie je of de kolombreedtes kloppen voor het font dat wij zetten.
-  Zes van de acht staan op 0,000%; de rest op sub-pixelruis. Alleen Grab & Go
-  wijkt af, en dat staat hieronder uitgelegd.
+  Zes van de acht staan op 0,000%, de rest op sub-pixelruis.
 
 ## Hoe de opmaak werkt
 
@@ -183,11 +221,23 @@ kolommen en minder blobs dan de `-basic`-varianten).
 | `diner-3gangen` | 7 | 3 | 4 | 5 |
 | `diner-4gangen` | 8 | 3 | 5 | 6 |
 
-Pagina 9 is een exacte kopie van pagina 8 en is overgeslagen.
+Pagina 9 is een exacte kopie van pagina 8 en is overgeslagen. De namen staan op
+één plek, in `PAKKETTEN` in `basis-extract.py`.
 
-De namen zijn een aanname op basis van hoe de ontwerpen zich tot elkaar
-verhouden; pas ze aan in `PAKKETTEN` in `basis-extract.py` als ze bij NBC anders
-heten.
+### Correcties op het Illustrator-bestand
+
+Het basisontwerp is de norm, maar waar er een fout in staat wijken we er bewust
+van af. Dat staat in `CORRECTIES` in `basis-extract.py`, zodat het op één plek
+zichtbaar is en blijft staan als het `.ai` opnieuw geëxporteerd wordt:
+
+| Pakket | Wat | In het `.ai` | Wat wij zetten |
+|---|---|---|---|
+| `diner-3gangen`, `diner-4gangen` | schermtitel | Diner | **Dinner** |
+
+De extractie bewaart de oorspronkelijke tekst als `titel.bronTekst`; daar
+vergelijkt `controle.mjs` mee, anders zou hij onze eigen correctie als fout
+meten. Wordt het `.ai` ooit aangepast, dan meldt de extractie dat de correctie
+weg kan.
 
 ## Fonts
 

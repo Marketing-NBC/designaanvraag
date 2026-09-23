@@ -41,3 +41,14 @@ values (
 on conflict (id) do update
   set file_size_limit = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
+
+-- De culinaire invulling zoals de collega hem in het formulier plakt: een kopje per gang met
+-- daaronder de gerechten. De worker leest die tekst uit (worker/menu/menu-tekst.mjs), zoekt het
+-- bijpassende basisontwerp erbij en zet het resultaat in menu_inhoud. Staat menu_inhoud al
+-- ingevuld, dan gaat die voor: dat is een bewuste correctie met de hand.
+alter table public.aanvragen
+  add column if not exists menu_tekst text not null default '';
+
+comment on column public.aanvragen.menu_tekst is
+  'De menu-invulling zoals aangeleverd: kopje per gang, gerechten met een bolletje, '
+  'ingredienten achter een |.';

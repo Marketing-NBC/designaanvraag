@@ -10,7 +10,8 @@
   },
   "achtergrond": "diner-3gangen.png",
   "titel": {
-    "tekst": "Diner",
+    "tekst": "Dinner",
+    "bronTekst": "Diner",
     "x": 259.11,
     "baseline": 344.45,
     "font": "Pockota-Medium",

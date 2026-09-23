@@ -116,9 +116,15 @@ export function renderFailureComment({ website, reason, rerunHint }) {
  * @param {object} p.meldingen     { botsingen, overloop, structuur, regelval, opmaak }
  * @param {string|null} p.sessionUrl
  */
-export function renderMenuComment({ pakket, bestandsnaam, meldingen, sessionUrl }) {
+export function renderMenuComment({ pakket, bestandsnaam, meldingen, invoer, sessionUrl }) {
   const m = meldingen ?? {}
   const punten = []
+
+  // Eerst hoe de invulling is gelezen: welk basisontwerp erbij is gezocht en wat
+  // daarbij opviel. Dat bepaalt alles wat erna komt, dus het hoort bovenaan.
+  for (const t of invoer ?? []) {
+    punten.push(`<li><strong>Invulling:</strong> ${escapeXml(t)}</li>`)
+  }
 
   for (const b of m.botsingen ?? []) {
     punten.push(`<li><strong>Tekst raakt een blob:</strong> ${escapeXml(b.tekst ?? '')} `

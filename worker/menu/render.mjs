@@ -88,6 +88,25 @@ export function inhoudVanBasis(basis) {
   return { pakket: basis.pakket, titel: basis.titel.tekst, secties }
 }
 
+/**
+ * Per pakket de kopjes en het aantal gerechten, om te bepalen welk basisontwerp
+ * bij een aangeleverd menu hoort. Zie kiesPakket in menu-tekst.mjs.
+ */
+export function pakketkenmerken() {
+  return pakketten().map((pakket) => {
+    const basis = laadBasis(pakket)
+    const koppen = []
+    let gerechten = 0
+    for (const kolom of basis.kolommen) {
+      for (const sectie of kolom.secties) {
+        if (sectie.kopAlinea != null) koppen.push(kolom.alineas[sectie.kopAlinea].tekst)
+        gerechten += sectie.gerechten.length
+      }
+    }
+    return { pakket, koppen, gerechten }
+  })
+}
+
 function dataUri(pad, type) {
   return `data:${type};base64,${readFileSync(pad).toString('base64')}`
 }
@@ -181,6 +200,12 @@ export async function renderMenu(opdracht) {
     // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
     // breken in plaats van de regelval van het basisontwerp over te nemen.
     forceerHerberekening: Boolean(opdracht.forceerHerberekening),
+  }
+  // Ook voor controle.mjs: zet de titel terug zoals hij in het .ai staat, zodat
+  // de pixelvergelijking niet struikelt over een bewuste correctie (zie
+  // CORRECTIES in basis-extract.py).
+  if (opdracht.titelZoalsBron && basis.titel.bronTekst) {
+    payload.basis.titel.tekst = basis.titel.bronTekst
   }
   const json = JSON.stringify(payload).replace(/</g, '\\u003c')
   html = html.replace('<script>', '<script>'

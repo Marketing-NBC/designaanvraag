@@ -17,7 +17,8 @@ import { join } from 'node:path'
 import { addComment, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
 import { renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
-import { renderMenu, pakketten } from './menu/render.mjs'
+import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
+import { renderMenu, pakketten, pakketkenmerken } from './menu/render.mjs'
 
 const args = parseArgs()
 const dryRun = Boolean(args['dry-run'])
@@ -27,8 +28,8 @@ if (id && !UUID_RE.test(id)) {
   console.error('Ongeldig aanvraag-id (geen UUID).')
   process.exit(2)
 }
-if (!id && !args.data) {
-  console.error('Geef --aanvraag-id <uuid>, of --data <bestand> met --dry-run.')
+if (!id && !args.data && !args.tekst) {
+  console.error('Geef --aanvraag-id <uuid>, of --data/--tekst <bestand> met --dry-run.')
   process.exit(2)
 }
 
@@ -39,6 +40,8 @@ function veiligeNaam(deel) {
 
 let aanvraag = null
 let inhoud = args.data ? JSON.parse(readFileSync(args.data, 'utf8')) : null
+let ruweTekst = args.tekst ? readFileSync(args.tekst, 'utf8') : null
+const invoerNotities = []
 
 if (id) {
   const { getAanvraag } = await import('./lib/supabase.mjs')
@@ -46,6 +49,29 @@ if (id) {
   // --data wint van wat er in de database staat; zo kun je een scherm opnieuw
   // draaien met aangepaste inhoud zonder eerst de aanvraag bij te werken.
   inhoud = inhoud ?? aanvraag.menu_inhoud ?? null
+  ruweTekst = ruweTekst ?? aanvraag.menu_tekst ?? null
+}
+
+/**
+ * De collega plakt de menu-invulling als tekst in het formulier. Die lezen we
+ * hier uit en leggen we naast de basisontwerpen om te bepalen welk pakket het is.
+ * Staat er al een uitgewerkte menu_inhoud, dan gaat die voor: dat is een bewuste
+ * correctie met de hand.
+ */
+if (!inhoud && ruweTekst && ruweTekst.trim()) {
+  const { secties, opmerkingen } = leesMenuTekst(ruweTekst)
+  if (!secties.length) {
+    await afbreken('De menu-invulling is niet te lezen: er staan geen gerechten in. '
+      + 'Verwacht wordt een kopje per gang en daaronder de gerechten met een bolletje ervoor.')
+  }
+  const keuze = kiesPakket(secties, pakketkenmerken())
+  invoerNotities.push(...opmerkingen)
+  invoerNotities.push(keuze.uitleg)
+  if (!keuze.pakket) {
+    await afbreken(`${keuze.uitleg} Zet het juiste pakket erbij, of pas de kopjes aan. `
+      + `Beschikbaar: ${pakketten().join(', ')}.`)
+  }
+  inhoud = { pakket: keuze.pakket, secties }
 }
 
 /** Meldt de fout in Asana en zet de status, zodat een mislukking nooit stil blijft. */
@@ -70,7 +96,7 @@ async function afbreken(reden, pakket = null) {
 }
 
 if (!inhoud) {
-  await afbreken('Er staat geen menu-inhoud bij deze aanvraag (menu_inhoud is leeg).')
+  await afbreken('Er staat geen menu-invulling bij deze aanvraag.')
 }
 if (!inhoud.pakket) {
   await afbreken('De menu-inhoud noemt geen pakket. '
@@ -102,6 +128,7 @@ const aantalMeldingen = ['botsingen', 'overloop', 'structuur', 'regelval', 'opma
 if (dryRun || !id) {
   const uit = args.out ?? join(outDirFor(inhoud.pakket), bestandsnaam)
   writeFileSync(uit, png)
+  for (const n of invoerNotities) log(`invulling: ${n}`)
   for (const soort of ['botsingen', 'overloop', 'structuur', 'opmaak', 'regelval']) {
     for (const m of meldingen[soort] ?? []) {
       log(`${soort}: ${typeof m === 'string' ? m : JSON.stringify(m)}`)
@@ -127,6 +154,7 @@ await addComment(taskGid, renderMenuComment({
   pakket: inhoud.pakket,
   bestandsnaam,
   meldingen,
+  invoer: invoerNotities,
   sessionUrl: aanvraag.brand_session_url ?? null,
 }))
 log('Asana-comment geplaatst', { meldingen: aantalMeldingen })
@@ -136,6 +164,7 @@ await updateMenu(id, {
   menu_error: null,
   menu_result: {
     pakket: inhoud.pakket,
+    invoer: invoerNotities,
     bestandsnaam,
     asana_gid: bijlage.gid,
     storage_path: opslagpad,

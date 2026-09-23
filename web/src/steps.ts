@@ -1,9 +1,23 @@
 import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
+import { vraagtOmMenu } from '../../shared/request-types'
 import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import type { Draft } from './state'
 
 export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files'
+
+/**
+ * Wat bepaalt welke stappen er zijn. Losse waarden en geen heel concept, zodat de
+ * stappenlijst niet opnieuw berekend wordt bij elke toetsaanslag in een veld.
+ */
+export interface StapContext {
+  /** Er is een menukaart of menuscherm aangevraagd. */
+  metMenu: boolean
+}
+
+export function stapContext(d: Draft): StapContext {
+  return { metMenu: vraagtOmMenu(d.aanvraag_types) }
+}
 
 export interface StepDef {
   id: string
@@ -16,6 +30,8 @@ export interface StepDef {
   warn?: (d: Draft) => string | null
   /** Schouderklopje: hetzelfde plekje als `warn`, maar dan omdat het gôed gaat. */
   goed?: (d: Draft) => string | null
+  /** Stap alleen tonen als dit klopt. Zonder dit is de stap er altijd. */
+  toon?: (ctx: StapContext) => boolean
 }
 
 export const STEPS: StepDef[] = [
@@ -123,6 +139,22 @@ export const STEPS: StepDef[] = [
     },
   },
   {
+    id: 'menu_tekst',
+    kind: 'textarea',
+    // Komt meteen na "Wat wil je aanvragen?", want het hoort bij die keuze.
+    toon: (ctx) => ctx.metMenu,
+    title: 'Wat is de culinaire invulling?',
+    help: 'Plak het menu zoals je het van de opdrachtgever kreeg: een kopje per gang, '
+      + 'daaronder de gerechten met een bolletje ervoor. Achter een streepje (|) komen de '
+      + 'ingredienten. Marketing maakt hier het menuscherm van.',
+    validate: (d) => {
+      if (!vraagtOmMenu(d.aanvraag_types)) return null
+      if (!d.menu_tekst.trim()) return 'Plak de invulling van het menu.'
+      if (d.menu_tekst.length > 8000) return 'Houd het bij maximaal 8000 tekens.'
+      return null
+    },
+  },
+  {
     id: 'design_modus',
     kind: 'single',
     title: 'Volledig custom of standaard designs?',
@@ -136,3 +168,12 @@ export const STEPS: StepDef[] = [
     validate: (d) => (d.omschrijving.length > 3000 ? 'Houd het bij maximaal 3000 tekens.' : null),
   },
 ]
+
+/**
+ * De stappen die deze aanvraag echt doorloopt. Een stap met `toon` valt weg als
+ * die niet van toepassing is; wie geen menukaart of menuscherm aanvraagt, krijgt
+ * de vraag over het menu dus niet te zien.
+ */
+export function zichtbareStappen(ctx: StapContext): StepDef[] {
+  return STEPS.filter((s) => !s.toon || s.toon(ctx))
+}
