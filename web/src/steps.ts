@@ -144,9 +144,7 @@ export const STEPS: StepDef[] = [
     // Komt meteen na "Wat wil je aanvragen?", want het hoort bij die keuze.
     toon: (ctx) => ctx.metMenu,
     title: 'Wat is de culinaire invulling?',
-    help: 'Plak het menu zoals je het van de opdrachtgever kreeg: een kopje per gang, '
-      + 'daaronder de gerechten met een bolletje ervoor. Achter een streepje (|) komen de '
-      + 'ingredienten. Marketing maakt hier het menuscherm van.',
+    // Geen hulptekst: het voorbeeld in het invulveld laat de vorm al zien.
     validate: (d) => {
       if (!vraagtOmMenu(d.aanvraag_types)) return null
       if (!d.menu_tekst.trim()) return 'Plak de invulling van het menu.'
