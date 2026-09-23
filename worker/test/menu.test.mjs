@@ -541,61 +541,74 @@ test('een gerecht dat anders is opgeschreven komt zo op het scherm', { timeout: 
 // Abel het op pagina 10 van het Illustrator-bestand met de hand oploste.
 
 // Pagina 10: hetzelfde viergangendiner als pagina 8, maar met langere gerechten.
-// Abel loste het op door het Voorgerecht naar de linkerkolom te halen. Dit zijn de
-// baselines die hij daar zette; de engine hoort er precies op uit te komen.
+// Abel loste het op door het Voorgerecht naar de linkerkolom te halen. Dit is elke
+// regel zoals hij daar staat - kolom, baseline en tekst - rechtstreeks uit het
+// Illustrator-bestand gemeten. De engine hoort er precies op uit te komen.
+//
+// Twee bewuste afwijkingen: het ontwerp zet "hoenderﬁlet" met een ﬁ-ligatuur (wij
+// schrijven twee letters, anders is het gerecht niet terug te vinden) en er staat
+// L”OR met een dubbel aanhalingsteken, wat via WOORDCORRECTIES L’OR wordt.
 const PAGINA_10 = [
-  [0, 625.68, 'Op tafel'],
-  [0, 786.72, 'Bruschetta spiezen'],
-  [0, 854.92, 'seasonal dips'],
-  [0, 1004.96, 'Voorgerecht'],
-  [0, 1166.00, 'Gerookte hoenderfilet'],
-  [0, 1234.20, 'gel van basilicum en appel'],
-  [0, 1289.20, 'boekweit'],
-  [1, 625.68, 'Tussengerecht'],
-  [1, 786.72, 'Aka-uo Tatsuta'],
-  [1, 928.84, 'zoetzure komkommer'],
-  [1, 983.84, 'ui'],
-  [1, 1133.88, 'Hoofdgerecht'],
-  [1, 1294.92, 'Langzaam gegaarde'],
-  [1, 1368.84, 'Kalfsrollade'],
-  [1, 1437.04, 'parmezaanse roomsaus'],
-  [1, 1547.04, 'frietjes'],
-  [2, 625.68, 'Nagerecht'],
-  [2, 786.72, 'Dessertbuffet met'],
-  [2, 860.64, 'zoete lekkernijen'],
-  [2, 928.84, 'Coffee Popping Pearls'],
+  [261, 625.68, 'Op tafel'],
+  [261, 786.72, 'Bruschetta spiezen'],
+  [261, 854.92, 'seasonal dips'],
+  [261, 1004.96, 'Voorgerecht'],
+  [261, 1166.00, 'Gerookte hoenderfilet'],
+  [261, 1234.20, 'gel van basilicum en appel | gepofte'],
+  [261, 1289.21, 'boekweit | mustard cress'],
+  [1352, 625.67, 'Tussengerecht'],
+  [1352, 786.71, 'Aka-uo Tatsuta'],
+  [1352, 860.63, '(gefrituurde roodbaars)'],
+  [1352, 928.83, 'zoetzure komkommer | rode peper|'],
+  [1352, 983.84, 'rode ui | misosaus'],
+  [1352, 1133.87, 'Hoofdgerecht'],
+  [1352, 1294.91, 'Langzaam gegaarde'],
+  [1352, 1368.83, 'Kalfsrollade'],
+  [1352, 1437.03, 'parmezaanse roomsaus | citroen |'],
+  [1352, 1492.04, 'groene peper | aardappel millefeuille |'],
+  [1352, 1547.05, 'krokante frietjes'],
+  [2278, 625.68, 'Nagerecht'],
+  [2278, 786.72, 'Dessertbuffet met'],
+  [2278, 860.64, 'zoete lekkernijen'],
+  [2278, 928.84, 'L\u2019OR Coffee Popping Pearls'],
 ]
 
-const MENU_PAGINA_10 = [
-  { kop: 'Op tafel', gerechten: [{ naam: 'Bruschetta spiezen', ingredienten: ['seasonal dips'] }] },
-  { kop: 'Voorgerecht', gerechten: [{ naam: 'Gerookte hoenderfilet',
-    ingredienten: ['gel van basilicum en appel', 'gepofte boekweit', 'mustard cress'] }] },
-  { kop: 'Tussengerecht', gerechten: [{ naam: 'Aka-uo Tatsuta (gefrituurde roodbaars)',
-    ingredienten: ['zoetzure komkommer', 'rode peper', 'rode ui', 'misosaus'] }] },
-  { kop: 'Hoofdgerecht', gerechten: [{ naam: 'Langzaam gegaarde Kalfsrollade',
-    ingredienten: ['parmezaanse roomsaus', 'citroen', 'groene peper', 'aardappel millefeuille',
-                   'krokante frietjes'] }] },
-  { kop: 'Nagerecht', gerechten: [{ naam: 'Dessertbuffet met zoete lekkernijen',
-    ingredienten: ["L'OR Coffee Popping Pearls"] }] },
-]
+// Zoals de invulling binnenkomt uit het formulier: de tekst van de traiteur, met
+// andere bewoordingen, hoofdletters en streepjes dan Abel in zijn ontwerp zette.
+const MENU_TEKST_PAGINA_10 = [
+  'Op tafel', '', '\u2022 Bruschetta-spiezen met seasonal dips', '',
+  'Voorgerecht', '',
+  '\u2022 Gerookte hoenderfilet | gel van basilicum en appel | gepofte boekweit | mustard cress', '',
+  'Tussengerecht', '',
+  '\u2022 Aka-uo Tatsuta (gefrituurde roodbaars) | zoetzure komkommer | rode peper | rode ui | misosaus', '',
+  'Hoofdgerecht', '',
+  '\u2022 Langzaam gegaarde kalfsrollade | parmezaanse roomsaus | citroen | groene peper '
+    + '| aardappel millefeuille | krokante frietjes', '',
+  'Nagerecht', '',
+  "\u2022 dessertbuffet \u2013 verschillende zoete lekkernijen met L'OR coffee popping pearls",
+].join('\n')
 
-test('een te lang menu schuift een gang naar een andere kolom', { timeout: 120_000 }, async () => {
-  const { opmaak, meldingen } = await renderMenu({ pakket: 'diner-4gangen', secties: MENU_PAGINA_10 })
+test('een te lang menu levert precies het ontwerp van pagina 10 op',
+  { timeout: 120_000 }, async () => {
+  const { secties } = leesMenuTekst(MENU_TEKST_PAGINA_10)
+  const { opmaak, meldingen } = await renderMenu({ pakket: 'diner-4gangen', secties })
 
   // Het Voorgerecht gaat naar de linkerkolom, de rest blijft staan: 0-0-1-1-2.
   assert.deepEqual(opmaak.verdeling, [0, 0, 1, 1, 2])
-  assert.deepEqual(meldingen.botsingen, [], 'er hoort niets meer over het ontwerp te lopen')
+  assert.deepEqual(meldingen.botsingen, [], 'er hoort niets over het ontwerp te lopen')
   assert.equal(menuIsBruikbaar(meldingen), true)
 
-  // En elke regel staat waar Abel hem met de hand zette.
-  const kolomX = [261, 1352, 2278]
-  for (const [kolom, baseline, stuk] of PAGINA_10) {
-    const gevonden = opmaak.regels.find((r) => r.tekst.includes(stuk))
-    assert.ok(gevonden, `"${stuk}" staat niet op het scherm`)
-    assert.equal(gevonden.x, kolomX[kolom], `"${stuk}" staat in de verkeerde kolom`)
-    assert.ok(Math.abs(gevonden.baseline - baseline) < 0.05,
-      `"${stuk}" staat op ${gevonden.baseline}, Abel zette hem op ${baseline}`)
-  }
+  // Elke regel staat waar Abel hem zette, met de tekst die hij er zette. Niet de
+  // woorden van de invuller dus, maar die van de ontwerper.
+  assert.equal(opmaak.regels.length, PAGINA_10.length,
+    `${opmaak.regels.length} regels, het ontwerp heeft er ${PAGINA_10.length}`)
+  opmaak.regels.forEach((regel, i) => {
+    const [x, baseline, tekst] = PAGINA_10[i]
+    assert.equal(regel.tekst, tekst)
+    assert.equal(regel.x, x, `"${tekst}" staat in de verkeerde kolom`)
+    assert.ok(Math.abs(regel.baseline - baseline) < 0.05,
+      `"${tekst}" staat op ${regel.baseline}, het ontwerp zegt ${baseline}`)
+  })
 })
 
 test('een menu dat wel past houdt de kolommen van het basisontwerp', { timeout: 300_000 }, async () => {
