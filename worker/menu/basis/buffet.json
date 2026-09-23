@@ -41,7 +41,7 @@
     },
     "regels": [
       {
-        "tekst": "Dieetswens of allergie?",
+        "tekst": "Dieetwens of allergie?",
         "x": 2473.96,
         "baseline": 1881.03,
         "font": "AreaNormal-ExtraBold",
@@ -52,7 +52,7 @@
         "tekst": "Laat het ons team weten,",
         "x": 2473.96,
         "baseline": 1938.65,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       },
@@ -60,7 +60,7 @@
         "tekst": "we helpen je graag.",
         "x": 2473.96,
         "baseline": 1991.66,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       }
@@ -78,7 +78,7 @@
       "kleur": "#000000"
     },
     "ingr": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 38.0,
       "kleur": "#000000"
     }
@@ -87,7 +87,7 @@
     "bullet": "•",
     "inspring": 35.99,
     "naam": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 38.0,
       "kleur": "#1d1d1b"
     },
@@ -112,9 +112,9 @@
     "kopBaseline": null
   },
   "spatie": {
-    "38.0": 10.22,
-    "41.8": 11.24,
-    "43.3": 11.65,
+    "38.0": 10.26,
+    "41.8": 11.29,
+    "43.3": 11.69,
     "53.89": 13.26,
     "56.0": 13.78,
     "57.0": 14.02,
@@ -126,9 +126,9 @@
     {
       "x": 241.0,
       "kader": {
-        "breedte": 878.7,
-        "minimaal": 868.28,
-        "maximaal": 881.74,
+        "breedte": 877.86,
+        "minimaal": 867.45,
+        "maximaal": 880.56,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -201,7 +201,7 @@
                 {
                   "tekst": "gedroogde mini vijgjes verse vijgen| spruitjes | ",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -213,7 +213,7 @@
                 {
                   "tekst": "pistache | mesclun",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -249,7 +249,7 @@
                 {
                   "tekst": "appel | gerookte makreel | mierikswortel ",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -261,7 +261,7 @@
                 {
                   "tekst": "creme",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -297,7 +297,7 @@
                 {
                   "tekst": "romaine | wortel | komkommer | gepofte zoete ",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -309,7 +309,7 @@
                 {
                   "tekst": "paprika",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -345,7 +345,7 @@
                 {
                   "tekst": "feta | rozijnen | rode kool | wortel",
                   "x": 0.36,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -477,7 +477,7 @@
                 {
                   "tekst": "zuurkool | gefermenteerde mosterd",
                   "x": 0.24,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -531,7 +531,7 @@
                 {
                   "tekst": "miso boter jus",
                   "x": 0.24,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -567,7 +567,7 @@
                 {
                   "tekst": "gorgonzola | verse vijgen",
                   "x": 0.24,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -580,9 +580,9 @@
     {
       "x": 2464.0,
       "kader": {
-        "breedte": 501.0,
-        "minimaal": 495.0,
-        "maximaal": 538.2,
+        "breedte": 500.47,
+        "minimaal": 494.47,
+        "maximaal": 537.86,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -643,7 +643,7 @@
                 {
                   "tekst": "Oreo crunch | kersen | ",
                   "x": -0.06,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -655,7 +655,7 @@
                 {
                   "tekst": "Tony’s Chocolonely schaaf",
                   "x": -0.06,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }

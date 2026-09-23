@@ -41,7 +41,7 @@
     },
     "regels": [
       {
-        "tekst": "Dieetswens of allergie?",
+        "tekst": "Dieetwens of allergie?",
         "x": 2473.96,
         "baseline": 1881.03,
         "font": "AreaNormal-ExtraBold",
@@ -52,7 +52,7 @@
         "tekst": "Laat het ons team weten,",
         "x": 2473.96,
         "baseline": 1938.65,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       },
@@ -60,7 +60,7 @@
         "tekst": "we helpen je graag.",
         "x": 2473.96,
         "baseline": 1991.66,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 43.3,
         "kleur": "#1d1d1b"
       }
@@ -78,7 +78,7 @@
       "kleur": "#000000"
     },
     "ingr": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 41.8,
       "kleur": "#000000"
     }
@@ -87,7 +87,7 @@
     "bullet": "•",
     "inspring": 39.59,
     "naam": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 41.8,
       "kleur": "#1d1d1b"
     },
@@ -111,8 +111,8 @@
     "kopBaseline": null
   },
   "spatie": {
-    "41.8": 11.24,
-    "43.3": 11.65,
+    "41.8": 11.29,
+    "43.3": 11.69,
     "53.89": 13.26,
     "57.0": 14.02,
     "61.6": 15.15,
@@ -123,9 +123,9 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 785.96,
-        "minimaal": 776.64,
-        "maximaal": 888.93,
+        "breedte": 784.85,
+        "minimaal": 775.54,
+        "maximaal": 887.86,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -198,7 +198,7 @@
                 {
                   "tekst": "belegen kaas | truffelmayonaise | Lollo ",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -210,7 +210,7 @@
                 {
                   "tekst": "Bianca | komkommer | ",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -246,7 +246,7 @@
                 {
                   "tekst": "pikante humus | botersla | tomaat",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -282,7 +282,7 @@
                 {
                   "tekst": "kruidenspread | avocado | rucola | ",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -294,7 +294,7 @@
                 {
                   "tekst": "rauwkost",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -330,7 +330,7 @@
                 {
                   "tekst": "geitenkaas | harissa | romaine (vega)",
                   "x": 0.37,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -414,7 +414,7 @@
                 {
                   "tekst": "rundvlees (halal)",
                   "x": 0.21,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -450,7 +450,7 @@
                 {
                   "tekst": "oesterzwam (vega)",
                   "x": 0.21,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }
@@ -486,7 +486,7 @@
                 {
                   "tekst": "(vega)",
                   "x": 0.21,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
                 }

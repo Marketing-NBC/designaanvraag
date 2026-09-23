@@ -9,7 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { renderNotes } from '../../supabase/functions/_shared/notes.ts'
-import { mergeIntoNotes, renderComment, renderHuisstijlSection, renderMenuComment, renderMenuFailureComment } from '../lib/notes.mjs'
+import { menuIsBruikbaar, mergeIntoNotes, renderComment, renderHuisstijlSection, renderMenuComment, renderMenuFailureComment } from '../lib/notes.mjs'
 
 /** Tags die Asana accepteert in html_notes. */
 const TOEGESTAAN = new Set(['body', 'h1', 'h2', 'strong', 'em', 'u', 's', 'code', 'pre', 'ol', 'ul', 'li', 'a', 'blockquote', 'hr', 'img'])
@@ -102,23 +102,41 @@ test('de comment gebruikt geen img of koppen', () => {
 // kunnen zitten; een losse & of < zou de hele comment laten weigeren.
 
 const menuMeldingen = {
-  botsingen: [{ tekst: 'saus van "rode" ui & kruiden', baseline: 1547.4 }],
+  botsingen: [{ tekst: 'saus van "rode" ui & kruiden', waar: 'de dieetwens-regel', baseline: 1547.4,
+                sectie: 'Hoofdgerecht', gerecht: 'Langzaam gegaarde kalfsrollade' }],
   overloop: ['<Chocoladetrifle> valt onder de onderrand'],
   structuur: ['Sectie "Op tafel" heeft 2 gerechten in het basisontwerp, 3 in de inhoud.'],
   regelval: ['"kip | kimchi & komkommer" valt over 3 regels, het basisontwerp had er 2.'],
   opmaak: ['"Tartelettes" wordt als opsomming gezet <met bullets>'],
 }
 
-test('de menu-comment is geldige XML, ook met rare tekens in de gerechten', () => {
+test('een scherm waar tekst overheen loopt wordt niet goedgekeurd', () => {
+  // Tekst over een blob, de logobalk of de dieetwens-regel mag nooit. Zo'n scherm
+  // gaat niet als resultaat de deur uit; de comment moet daar geen twijfel over
+  // laten en zeggen welke gang ingekort moet worden.
+  assert.equal(menuIsBruikbaar(menuMeldingen), false)
   const html = renderMenuComment({
-    pakket: 'grab-and-go',
-    bestandsnaam: 'menuscherm-grab-and-go.png',
+    pakket: 'diner-4gangen',
+    bestandsnaam: 'NIET-BRUIKBAAR-menuscherm-diner-4gangen.png',
     meldingen: menuMeldingen,
+    invoer: ['De kopjes komen precies overeen met diner-4gangen.'],
     sessionUrl: 'https://claude.ai/code/session_x?a=1&b=2',
   })
   controleerXml(html)
-  assert.ok(html.includes('aandachtspunten'), 'de comment noemt niet hoeveel er mis is')
+  assert.ok(html.includes('kan zo niet gebruikt worden'), html)
+  assert.ok(html.includes('Hoofdgerecht'), 'de comment zegt niet welke gang te lang is')
+  assert.ok(html.includes('Langzaam gegaarde kalfsrollade'))
   assert.ok(!html.includes('<img'), 'Asana weigert img in een comment')
+})
+
+test('alleen afwijkingen zonder botsing blijven een bruikbaar scherm', () => {
+  const meldingen = { botsingen: [], overloop: [], structuur: menuMeldingen.structuur,
+                      regelval: menuMeldingen.regelval, opmaak: menuMeldingen.opmaak }
+  assert.equal(menuIsBruikbaar(meldingen), true)
+  const html = renderMenuComment({ pakket: 'buffet', bestandsnaam: 'x.png', meldingen })
+  controleerXml(html)
+  assert.ok(html.includes('aandachtspunten'), html)
+  assert.ok(!html.includes('kan zo niet gebruikt worden'))
 })
 
 test('een menuscherm zonder meldingen leest als "klaar"', () => {

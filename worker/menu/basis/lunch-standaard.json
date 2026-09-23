@@ -41,7 +41,7 @@
     },
     "regels": [
       {
-        "tekst": "Dieetswens of allergie?",
+        "tekst": "Dieetwens of allergie?",
         "x": 464.45,
         "baseline": 1953.67,
         "font": "AreaNormal-ExtraBold",
@@ -52,7 +52,7 @@
         "tekst": "Laat het ons team weten,",
         "x": 464.45,
         "baseline": 2003.67,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 37.58,
         "kleur": "#1d1d1b"
       },
@@ -60,7 +60,7 @@
         "tekst": "we helpen je graag.",
         "x": 464.45,
         "baseline": 2049.67,
-        "font": "AreaNormal-Thin",
+        "font": "AreaNormal-Hairline",
         "grootte": 37.58,
         "kleur": "#1d1d1b"
       }
@@ -78,7 +78,7 @@
       "kleur": "#000000"
     },
     "ingr": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 38.0,
       "kleur": "#000000"
     }
@@ -87,7 +87,7 @@
     "bullet": "•",
     "inspring": 35.99,
     "naam": {
-      "font": "AreaNormal-Thin",
+      "font": "AreaNormal-Hairline",
       "grootte": 38.0,
       "kleur": "#1d1d1b"
     },
@@ -113,8 +113,8 @@
     "kopBaseline": null
   },
   "spatie": {
-    "37.58": 10.11,
-    "38.0": 10.22,
+    "37.58": 10.15,
+    "38.0": 10.26,
     "46.76": 11.5,
     "56.0": 13.78,
     "57.0": 14.02,
@@ -124,9 +124,9 @@
     {
       "x": 211.0,
       "kader": {
-        "breedte": 668.96,
-        "minimaal": 661.03,
-        "maximaal": 721.03,
+        "breedte": 668.47,
+        "minimaal": 660.54,
+        "maximaal": 720.54,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -212,7 +212,7 @@
                 {
                   "tekst": "hummus | gegrilde groenten (vega)",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -248,7 +248,7 @@
                 {
                   "tekst": "zalm | hüttenkäse",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -284,7 +284,7 @@
                 {
                   "tekst": "pulled chicken | yoghurt Madras",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -338,7 +338,7 @@
                 {
                   "tekst": "tomatenmix | basilicumolie (vega)",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -374,7 +374,7 @@
                 {
                   "tekst": "ricotta | rucola",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -410,7 +410,7 @@
                 {
                   "tekst": "ui | jalapeño",
                   "x": -0.2,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -423,9 +423,9 @@
     {
       "x": 1324.0,
       "kader": {
-        "breedte": 827.47,
-        "minimaal": 817.66,
-        "maximaal": 846.2,
+        "breedte": 826.21,
+        "minimaal": 816.41,
+        "maximaal": 844.46,
         "handmatigeAfbrekingen": 1
       },
       "secties": [
@@ -507,7 +507,7 @@
                 {
                   "tekst": "kip | Koreaanse kimchi-mayonaise | zoetzure ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -519,7 +519,7 @@
                 {
                   "tekst": "rode ui | komkommer",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -555,7 +555,7 @@
                 {
                   "tekst": "avocado | komkommerspread | lente-ui | ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -567,7 +567,7 @@
                 {
                   "tekst": "tomaat (vega)",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -603,7 +603,7 @@
                 {
                   "tekst": "mosterdmayonaise | komkommer | rucola ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -657,7 +657,7 @@
                 {
                   "tekst": "Pittige tomatenbouillon | tortellini | ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -669,7 +669,7 @@
                 {
                   "tekst": "mozzarella | parmezaan | paprika | ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -681,7 +681,7 @@
                 {
                   "tekst": "basilicum | bruschetta’s | tomatenmix |  ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -693,7 +693,7 @@
                 {
                   "tekst": "groene kruidenmix",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -729,7 +729,7 @@
                 {
                   "tekst": "mosterdmayonaise | rundvlees of ",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -741,7 +741,7 @@
                 {
                   "tekst": "oesterzwam (vega)",
                   "x": -0.44,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -754,9 +754,9 @@
     {
       "x": 2596.0,
       "kader": {
-        "breedte": 905.0,
-        "minimaal": 894.27,
-        "maximaal": 915.78,
+        "breedte": 904.01,
+        "minimaal": 893.29,
+        "maximaal": 914.49,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -846,7 +846,7 @@
                 {
                   "tekst": "kip | Koreaanse kimchi-mayonaise | zoetzure ",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -858,7 +858,7 @@
                 {
                   "tekst": "rode ui | komkommer",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -894,7 +894,7 @@
                 {
                   "tekst": "avocado | komkommerspread | lente-ui | tomaat ",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -906,7 +906,7 @@
                 {
                   "tekst": "(vega)",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -942,7 +942,7 @@
                 {
                   "tekst": "Mini punt brioche | gele geslagen room |",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -954,7 +954,7 @@
                 {
                   "tekst": "pistachecrunch | poedersuiker (vega)",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }
@@ -1062,7 +1062,7 @@
                 {
                   "tekst": "Croutons | oliën | vinaigrette | caesardressing |",
                   "x": -0.4,
-                  "font": "AreaNormal-Thin",
+                  "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
                 }

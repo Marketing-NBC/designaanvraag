@@ -90,10 +90,11 @@ anders afbreekt. Is er niets aan de hand, dan staat er één regel dat het scher
 volgens het basisontwerp is opgemaakt.
 
 **Een mislukking blijft nooit stil.** Lukt de opmaak niet — onbekend pakket, geen
-inhoud, een fout in de engine — dan komt er een comment in Asana met de reden en
-gaat `menu_status` op `failed`. De statusvelden (`menu_status`, `menu_inhoud`,
-`menu_result`, `menu_error`) volgen dezelfde vorm als de `brand_*`-velden; zie
-`supabase/migrations/20260922140000_menuschermen.sql`.
+inhoud, een fout in de engine, of tekst die over een vast onderdeel loopt — dan
+komt er een comment in Asana met de reden, gaat `menu_status` op `failed` en
+stopt het script met een foutcode. De statusvelden (`menu_status`, `menu_tekst`,
+`menu_inhoud`, `menu_result`, `menu_error`) volgen dezelfde vorm als de
+`brand_*`-velden; zie `supabase/migrations/20260922140000_menuschermen.sql`.
 
 ### 1. Bevriezen
 
@@ -169,8 +170,8 @@ splitst het verschil op, want niet elk verschil betekent hetzelfde:
 
 - **verplaatst** — tekst staat op een andere plek dan in het basisontwerp. Dit
   hoort 0,000% te zijn en is dat voor alle acht de pakketten.
-- **snit** — dezelfde letter op dezelfde plek, maar iets dunner gezet. Dit is de
-  bewuste keuze voor Hairline; zie *Fonts* hieronder.
+- **snit** — dezelfde letter op dezelfde plek, maar net anders langs de randen.
+  Dit is antialiasing; zie *Fonts* hieronder.
 - **vlakwerk** — de randen van de blobs, op sub-pixelniveau.
 - **via invoer** — hetzelfde ontwerp, maar heen en weer door het invoerformaat.
   Wie het sjabloon ongewijzigd terugstuurt, hoort exact het basisontwerp te
@@ -192,21 +193,38 @@ die ene alinea opnieuw af binnen het kader van de kolom, en schuift de rest van
 de kolom mee volgens het vaste ritme van dat pakket. De rest van het scherm
 blijft staan waar het stond.
 
-### Tekst mag nooit over een blob vallen
+### Tekst mag nooit over iets anders heen
 
-Dat is een harde regel, geen streven. De engine leest het silhouet van de blobs
-uit de achtergrond en controleert elke getekende regel daartegen. Botst er iets,
-dan komt dat als melding terug — de engine gaat *niet* stilletjes de blob
-opzijschuiven of de tekst verkleinen, want dan wijkt het scherm af van het
-basisontwerp zonder dat iemand het merkt.
+Dat is een harde regel, geen streven. Het gaat om de blobs, de logobalk en de
+dieetwens-regel onderaan. De engine leest het silhouet van de blobs uit de
+achtergrond en kent de vaste vakken van de logobalk en de voetregel; elke
+getekende regel wordt daartegen gehouden.
+
+Gebeurt het toch, dan **is het scherm niet af en gaat het niet als resultaat de
+deur uit**. `menu-publiceer.mjs` zet `menu_status` op `failed`, hangt het beeld
+onder de naam `NIET-BRUIKBAAR-menuscherm-<pakket>.png` bij de taak — je moet
+kunnen zien waar het misgaat — en zet er een comment bij die geen twijfel laat:
+
+> **Dit menuscherm kan zo niet gebruikt worden.** De tekst loopt over vaste
+> onderdelen van het ontwerp heen, en dat mag nooit.
+> - **Hoofdgerecht – Langzaam gegaarde kalfsrollade:** "parmezaanse roomsaus |
+>   citroen | groene" loopt over de dieetwens-regel.
+
+De melding noemt de gang én het gerecht, want daar moet iemand iets aan doen.
+De engine schuift de blob *niet* opzij en verkleint de tekst *niet*: dan zou het
+scherm van het basisontwerp afwijken zonder dat iemand het merkt.
+
+De oplossing is redactioneel: kort het gerecht in. Het basisontwerp laat zien
+hoe — een lang gerecht wordt een korte naam met de rest erachter als
+omschrijving:
 
 ```
-botsingen: {"tekst":"zongedroogde tomaat 16 | ...","x0":261,"x1":1135,"baseline":1547}
+• Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls
 ```
 
-Zo'n melding betekent meestal dat het verkeerde pakket is gekozen: voor veel
-gerechten is er een ruimer basisontwerp (de `-standaard`-varianten hebben meer
-kolommen en minder blobs dan de `-basic`-varianten).
+in plaats van alles in de naam. Soms is ook het verkeerde pakket gekozen: de
+`-standaard`-varianten hebben meer kolommen en minder blobs dan de
+`-basic`-varianten.
 
 ## De pakketten
 
@@ -226,26 +244,28 @@ Pagina 9 is een exacte kopie van pagina 8 en is overgeslagen. De namen staan op
 
 ### Correcties op het Illustrator-bestand
 
-Het basisontwerp is de norm, maar waar er een fout in staat wijken we er bewust
-van af. Dat staat in `CORRECTIES` in `basis-extract.py`, zodat het op één plek
-zichtbaar is en blijft staan als het `.ai` opnieuw geëxporteerd wordt:
+Het basisontwerp is de norm, maar als er een fout in staat kunnen we er bewust
+van afwijken. Dat gaat via `CORRECTIES` in `basis-extract.py`, zodat het op één
+plek zichtbaar is en blijft staan als het `.ai` opnieuw geëxporteerd wordt.
 
-| Pakket | Wat | In het `.ai` | Wat wij zetten |
-|---|---|---|---|
-| `diner-3gangen`, `diner-4gangen` | schermtitel | Diner | **Dinner** |
-
-De extractie bewaart de oorspronkelijke tekst als `titel.bronTekst`; daar
-vergelijkt `controle.mjs` mee, anders zou hij onze eigen correctie als fout
-meten. Wordt het `.ai` ooit aangepast, dan meldt de extractie dat de correctie
-weg kan.
+**Op dit moment staat daar niets in:** de schermtitel (Dinner) en de spelling van
+de voetregel (Dieetwens) zijn in V2 van het bestand rechtgezet. De extractie
+bewaart bij een correctie de oorspronkelijke tekst als `titel.bronTekst`; daar
+vergelijkt `controle.mjs` dan mee, anders zou hij onze eigen correctie als fout
+meten. Wordt een correctie overbodig, dan meldt de extractie dat hij weg kan.
 
 ## Fonts
 
-De basisontwerpen zetten de ingrediënten in `AreaNormal-Thin`, maar NBC gebruikt
-daarvoor **Hairline**. Die vervanging staat op één plek, in `VERVANGINGEN` in
-`render.mjs`, en is een bewuste keuze — geen terugval omdat een bestand ontbreekt.
-Dat verschil is precies wat de kolom **snit** in de controle laat zien: de tekst
-is 0,5 tot 2,5% lichter dan in het `.ai`, maar staat op exact dezelfde plek.
+De basisontwerpen gebruiken sinds V2 dezelfde snitten als wij zetten:
+`Pockota-Medium` voor titels en kopjes, `AreaNormal-ExtraBold` voor gerechten,
+`AreaNormal-Hairline` voor ingrediënten en `AreaNormal-HairlineItalic` voor de
+toelichting in een opsomming. De kolom **snit** in de controle is daarmee nog
+maar antialiasing langs de letterranden (0,1 tot 0,7% verschil in inkt), geen
+verschil in gewicht meer.
+
+`VERVANGINGEN` in `render.mjs` staat er nog voor één geval: een ouder
+`.ai`-bestand zet de ingrediënten in `AreaNormal-Thin`. Die naam wordt dan naar
+Hairline gebracht in plaats van de render te laten falen.
 
 Kent de renderer een font niet, dan **faalt de render** met een duidelijke fout.
 Hij valt nooit stilzwijgend op iets anders terug, want dat levert andere breedtes

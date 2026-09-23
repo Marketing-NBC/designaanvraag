@@ -30,18 +30,20 @@ GOUD = (0.965, 0.631, 0.027)
 ROOD = (1.0, 0.0, 0.0)
 ACCENT = '#f6a107'
 
-# Vaste teksten die bij het sjabloon horen, niet bij de menu-inhoud.
-VOET_REGELS = ('Dieetswens of allergie?', 'Laat het ons team weten,', 'we helpen je graag.')
+# Vaste teksten die bij het sjabloon horen, niet bij de menu-inhoud. De spelling van
+# de eerste regel is onderweg gecorrigeerd (Dieetswens -> Dieetwens); allebei blijven
+# staan zodat een ouder bestand ook nog leesbaar is.
+VOET_REGELS = ('Dieetwens of allergie?', 'Dieetswens of allergie?',
+               'Laat het ons team weten,', 'we helpen je graag.')
 LOGO_TEKST = 'Logo opdrachtgever'
 
 # Correcties op het Illustrator-bestand: {pakket: {'titel': (zoals het er staat, zoals het moet)}}.
 # Het basisontwerp is de norm, dus hier staat op een plek wat we er bewust van laten afwijken en
 # waarom. Klopt de bron al, dan meldt de extractie dat de correctie weg kan.
-CORRECTIES = {
-    # De schermtitel is in het .ai per ongeluk Nederlands gespeld; NBC schrijft Dinner.
-    'diner-3gangen': {'titel': ('Diner', 'Dinner')},
-    'diner-4gangen': {'titel': ('Diner', 'Dinner')},
-}
+# Op dit moment is er niets te corrigeren: de titel (Dinner) en de spelling van de
+# voetregel staan sinds V2 goed in het bestand. Het haakje blijft staan voor als er
+# ooit weer iets in de bron niet klopt dat we hier moeten rechtzetten.
+CORRECTIES: dict = {}
 
 # Pagina (1-based) -> pakketnaam. Pagina 9 is een exacte kopie van pagina 8.
 PAKKETTEN = [
