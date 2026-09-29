@@ -65,14 +65,32 @@ Eén commando doet alles, in deze volgorde:
 2. Anders de `menu_tekst` uitlezen: een kopje per gang, daaronder de gerechten met een bolletje,
    ingrediënten achter een `|`.
 3. Het basisontwerp erbij zoeken aan de hand van de kopjes en het aantal gerechten.
-4. Status op `running`, het scherm renderen op 3840×2160.
-5. Controleren of er tekst over een vast onderdeel van het ontwerp loopt.
-6. Het scherm als bijlage bij de Asana-taak hangen, in de opslag zetten, de comment plaatsen en de
+4. **Het logo van de opdrachtgever ophalen** van de subtaak "Menu scherm …" of "Menukaart print …".
+   Hangt daar nog niets, dan stopt het script met exitcode 0 en blijft de aanvraag op `pending`
+   staan; zie stap 2b.
+5. Status op `running`, het scherm renderen op 3840×2160.
+6. Controleren of er tekst over een vast onderdeel van het ontwerp loopt.
+7. Het scherm als bijlage bij de Asana-taak hangen, in de opslag zetten, de comment plaatsen en de
    status op `done` of `failed` zetten.
+
+### Stap 2b: nog geen logo
+
+Rechtsboven op elk scherm staat het logo van de opdrachtgever. Zonder logo staat daar een rode
+plaatshouder, en zo'n scherm hang je niet op. Marketing hangt het logo als bijlage aan de subtaak;
+tot die er is maakt de worker niets.
+
+Dat is **geen mislukking**. Het script zegt het en stopt met exitcode 0, de aanvraag blijft op
+`pending` en een volgende ronde pakt hem alsnog op. Plaats hier geen comment in Asana: de subtaak
+is de herinnering, en een comment bij elke ronde is alleen maar ruis. Meld in je samenvatting dat
+het scherm op het logo wacht.
+
+Hangt er wél iets maar kunnen we er geen logo uit halen — een PDF, een EPS, een `.ai` — dan is dat
+wel een mislukking. Het script zet de aanvraag op `failed` en vraagt in Asana om een PNG, JPG of
+SVG.
 
 | Exitcode | Wat het betekent | Wat je doet |
 |---|---|---|
-| 0 | Het scherm staat bij de taak | Klaar. Geef de laatste regel van de output door in je samenvatting |
+| 0 | Het scherm staat bij de taak, of het wacht nog op het logo | Klaar. Geef de laatste regel van de output door in je samenvatting; die zegt welk van de twee het is |
 | 1 | Het is niet gelukt, of het scherm is onbruikbaar | Staat al in Asana en in `menu_error`. Ga naar stap 3 |
 | 2 | Verkeerd aangeroepen (geen of ongeldige UUID) | Kijk naar het `routine-fire-payload`-blok; draai niet nog eens met een verzonnen id |
 
@@ -111,7 +129,12 @@ node worker/menu-publiceer.mjs --aanvraag-id <uuid> --data menu.json
 ```bash
 node worker/menu-publiceer.mjs --tekst menu.txt --dry-run
 node worker/menu-publiceer.mjs --data menu.json --out scherm.png --dry-run
+node worker/menu-publiceer.mjs --tekst menu.txt --logo logo.png --dry-run
 ```
+
+`--logo` neemt een bestand van schijf in plaats van uit Asana. Zonder `--logo` staat er in een
+dry-run de rode plaatshouder; dat is goed voor het nakijken van de opmaak, maar niet hoe het scherm
+er in productie uitziet.
 
 Geen Asana, geen Supabase: het scherm landt in `worker/out/<pakket>/` en alle meldingen komen in de
 output te staan. Exitcode 1 betekent ook hier: dit scherm zou niet bruikbaar zijn.

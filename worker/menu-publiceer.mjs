@@ -5,6 +5,7 @@
  *   node worker/menu-publiceer.mjs --aanvraag-id <uuid>
  *   node worker/menu-publiceer.mjs --aanvraag-id <uuid> --data menu.json
  *   node worker/menu-publiceer.mjs --data menu.json --out scherm.png --dry-run
+ *   node worker/menu-publiceer.mjs --tekst menu.txt --logo logo.png --dry-run
  *
  * De collega die de aanvraag indient ziet hier niets van. Het scherm komt als
  * bijlage bij de Asana-taak en alles wat de opmaak-engine opmerkt komt daar als
@@ -12,7 +13,7 @@
  * afbreekt dan in het basisontwerp, een opsomming die van vorm wisselt. Marketing
  * werkt in Asana, dus daar hoort het te landen - niet in een logbestand.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { addComment, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
@@ -107,16 +108,44 @@ if (!pakketten().includes(inhoud.pakket)) {
     + `Beschikbaar: ${pakketten().join(', ')}.`, inhoud.pakket)
 }
 
+/**
+ * Het logo van de opdrachtgever. Dat hangt Marketing aan de subtaak "Menuscherm",
+ * en zonder logo maken we het scherm niet: er staat dan een rode plaatshouder waar
+ * het logo hoort, en dat is geen scherm dat je ophangt.
+ *
+ * Nog geen logo is geen mislukking maar een "nog niet". De aanvraag blijft dan op
+ * pending staan en de volgende ronde probeert het opnieuw; de subtaak in Asana is
+ * de herinnering. Hangt er wel iets maar kunnen we er geen logo uit halen - een PDF
+ * bijvoorbeeld - dan is dat wel een mislukking, want daar moet iemand iets aan doen.
+ */
+let merk = inhoud.merk ?? {}
+if (args.logo) {
+  const { logoDataUri } = await import('./menu/logo.mjs')
+  merk = { ...merk, logo: await logoDataUri({ name: args.logo, buffer: readFileSync(args.logo) }) }
+} else if (id && !dryRun && aanvraag?.asana_task_gid && !merk.logo) {
+  const { logoVoorTaak } = await import('./menu/logo.mjs')
+  const uitkomst = await logoVoorTaak(aanvraag.asana_task_gid)
+  if (uitkomst.wacht) {
+    log('nog geen logo; het scherm wacht', { reden: uitkomst.reden })
+    console.log(`${uitkomst.reden} Het menuscherm wordt gemaakt zodra het er staat.`)
+    process.exit(0)
+  }
+  if (!uitkomst.logo) await afbreken(uitkomst.reden, inhoud.pakket)
+  merk = { ...merk, logo: uitkomst.logo }
+  invoerNotities.push(`Logo "${uitkomst.bestandsnaam}" van de subtaak gebruikt.`)
+  invoerNotities.push(...(uitkomst.notities ?? []))
+}
+
 if (id && !dryRun) {
   const { updateMenu } = await import('./lib/supabase.mjs')
   await updateMenu(id, { menu_status: 'running', menu_error: null })
 }
 
-log('menuscherm renderen', { pakket: inhoud.pakket })
+log('menuscherm renderen', { pakket: inhoud.pakket, logo: Boolean(merk.logo) })
 let png
 let meldingen
 try {
-  ({ png, meldingen } = await renderMenu(inhoud))
+  ({ png, meldingen } = await renderMenu({ ...inhoud, merk }))
 } catch (e) {
   await afbreken(`De opmaak liep vast: ${e.message}`, inhoud.pakket)
 }

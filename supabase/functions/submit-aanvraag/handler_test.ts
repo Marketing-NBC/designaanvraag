@@ -2,7 +2,7 @@ import { assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert
 import type { Env } from '../_shared/env.ts'
 import type { AanvraagRow, BijlageRow, Db, NewAanvraag } from '../_shared/db.ts'
 import { HUISSTIJL_MARKER, renderNotes } from '../_shared/notes.ts'
-import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
+import { isMenuSubtaak, subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import { buildCustomFields } from '../_shared/asana.ts'
 import type { TaskInput } from '../_shared/asana.ts'
 import { createHandler, type Deps } from './handler.ts'
@@ -258,8 +258,19 @@ Deno.test('taskTitle, subtaskTitles en notes', () => {
   const a = { ...validAanvraag, website: 'https://www.zorgcongres.nl/', aanvraag_types: ['menu_scherm'] as const, anders_tekst: '' }
   // deno-lint-ignore no-explicit-any
   assertEquals(taskTitle(a as any), 'Menu scherm Zorgcongres 2026 - 20 november 2026 - Noa')
+  // Eén type, dus normaal geen subtaak - maar een menuscherm krijgt er altijd een,
+  // want daar hangt Marketing het logo van de opdrachtgever aan.
   // deno-lint-ignore no-explicit-any
-  assertEquals(subtaskTitles(a as any), [])
+  assertEquals(subtaskTitles(a as any), ['Menu scherm Zorgcongres 2026'])
+  assertEquals(isMenuSubtaak('Menu scherm Zorgcongres 2026'), true)
+  assertEquals(isMenuSubtaak('Vlaggen Zorgcongres 2026'), false)
+  // Zonder menu blijft het zoals het was: bij een enkel type geen subtaken.
+  // deno-lint-ignore no-explicit-any
+  assertEquals(subtaskTitles({ ...a, aanvraag_types: ['vlaggen'] } as any), [])
+  // En bij meerdere types blijft het een subtaak per type, niet twee voor het menu.
+  // deno-lint-ignore no-explicit-any
+  assertEquals(subtaskTitles({ ...a, aanvraag_types: ['vlaggen', 'menu_scherm'] } as any),
+    ['Vlaggen Zorgcongres 2026', 'Menu scherm Zorgcongres 2026'])
   // Eén type "anders" → de vrije tekst als wat.
   // deno-lint-ignore no-explicit-any
   assertEquals(taskTitle({ ...a, aanvraag_types: ['anders'], anders_tekst: 'Roll-up banner' } as any), 'Roll-up banner Zorgcongres 2026 - 20 november 2026 - Noa')

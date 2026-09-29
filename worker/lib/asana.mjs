@@ -35,6 +35,38 @@ export async function uploadAttachment(taskGid, filename, buffer, contentType) {
   return parse(res, `POST attachment ${filename}`)
 }
 
+/** De subtaken van een taak: { gid, name, completed }. */
+export async function getSubtasks(gid) {
+  const res = await fetch(`${API}/tasks/${gid}/subtasks?opt_fields=gid,name,completed`,
+    { headers: headers() })
+  return parse(res, `GET subtasks ${gid}`) ?? []
+}
+
+/** De bijlagen van een taak: { gid, name, resource_subtype, created_at }. */
+export async function getAttachments(gid) {
+  const res = await fetch(
+    `${API}/tasks/${gid}/attachments?opt_fields=gid,name,resource_subtype,created_at`,
+    { headers: headers() })
+  return parse(res, `GET attachments ${gid}`) ?? []
+}
+
+/**
+ * Haalt een bijlage op als buffer.
+ *
+ * Asana geeft een tijdelijke download-link terug die zelf al ondertekend is. Die
+ * link mag je NIET met de Asana-token ophalen: de opslag erachter weigert een
+ * verzoek met een tweede vorm van authenticatie.
+ */
+export async function downloadAttachment(gid) {
+  const res = await fetch(`${API}/attachments/${gid}?opt_fields=gid,name,download_url,size`,
+    { headers: headers() })
+  const info = await parse(res, `GET attachment ${gid}`)
+  if (!info?.download_url) throw new Error(`Bijlage ${gid} heeft geen download-link`)
+  const bestand = await fetch(info.download_url)
+  if (!bestand.ok) throw new Error(`Bijlage "${info.name}" ophalen mislukte (${bestand.status})`)
+  return { ...info, buffer: Buffer.from(await bestand.arrayBuffer()) }
+}
+
 /** Comment op de taak (html_text: alleen tekst, strong/em, a, ul/li; geen img of koppen). */
 export async function addComment(taskGid, htmlText) {
   const res = await fetch(`${API}/tasks/${taskGid}/stories`, {
