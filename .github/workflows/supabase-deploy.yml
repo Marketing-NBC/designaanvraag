@@ -77,11 +77,13 @@ jobs:
           ASANA_PLANNING_PROJECT_GID: ${{ secrets.ASANA_PLANNING_PROJECT_GID }}
           ROUTINE_FIRE_URL: ${{ secrets.ROUTINE_FIRE_URL }}
           ROUTINE_TOKEN: ${{ secrets.ROUTINE_TOKEN }}
+          MENU_ROUTINE_FIRE_URL: ${{ secrets.MENU_ROUTINE_FIRE_URL }}
+          MENU_ROUTINE_TOKEN: ${{ secrets.MENU_ROUTINE_TOKEN }}
           ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
           RATE_SALT: ${{ secrets.RATE_SALT }}
         run: |
           args=()
-          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
+          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN MENU_ROUTINE_FIRE_URL MENU_ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
             v="${!k}"
             if [ -n "$v" ]; then args+=("$k=$v"); echo "  zet $k"; else echo "  overslaan $k (leeg)"; fi
           done

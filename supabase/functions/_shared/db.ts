@@ -85,6 +85,8 @@ export interface Db {
   findByClientRequestId(id: string): Promise<AanvraagRow | null>
   insert(row: NewAanvraag): Promise<AanvraagRow>
   update(id: string, patch: Partial<AanvraagRow>): Promise<void>
+  /** De aanvraag achter een Asana-taak; nodig voor de knop "Genereer nu". */
+  findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
   /** Staat deze naam in de lijst met collega's? Voorkomt dat willekeurige invoer opties aanmaakt. */
@@ -140,6 +142,12 @@ export function createDb(url: string, secretKey: string): Db {
     async update(id, patch) {
       const { error } = await sb.from('aanvragen').update(patch).eq('id', id)
       if (error) throw new Error(`db update: ${error.message}`)
+    },
+    async findByAsanaTaskGid(gid) {
+      const { data, error } = await sb.from('aanvragen').select(ROW_COLUMNS)
+        .eq('asana_task_gid', gid).is('vervallen_op', null).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as AanvraagRow | null) ?? null
     },
     async bumpRateLimit(key, window) {
       const { data, error } = await sb.rpc('bump_rate_limit', { p_key: key, p_window: window })

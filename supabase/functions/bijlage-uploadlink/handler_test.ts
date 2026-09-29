@@ -18,6 +18,8 @@ const env: Env = {
   asanaPlanningProjectGid: null,
   routineFireUrl: null,
   routineToken: null,
+    menuRoutineFireUrl: null,
+    menuRoutineToken: null,
 }
 
 const GROEP = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'

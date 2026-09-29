@@ -319,10 +319,18 @@ Gaat het mis, dan staat de reden in de comment én in `menu_error`; opnieuw prob
 Run now. Heet de bijlage `NIET-BRUIKBAAR-…`, dan loopt er tekst over het ontwerp — dat is geen
 storing maar een te lang gerecht.
 
-**Automatisch starten moet nog gekoppeld worden.** `submit-aanvraag` start op dit moment alleen de
-huisstijl-Routine. Zodra de URL en de token uit stap 2 als secrets klaarstaan, kan de function ook
-deze Routine afvuren bij een aanvraag met een menukaart of menuscherm. Tot die tijd start je hem met
-Run now; het draaiboek werkt verder hetzelfde.
+**De knop in Asana.** Marketing hangt het logo van de opdrachtgever aan de subtaak
+"Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu**. De webhook start dan deze
+routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*. Eenmalig nodig:
+
+1. Actions → **Asana-velden vernieuwen** → Run workflow. Dat maakt het veld `Menuscherm` aan met de
+   opties Genereer nu / Bezig / Klaar / Mislukt, en commit de nieuwe `shared/asana-fields.json`.
+2. Zet de URL en token van de API-trigger van deze routine als GitHub-secrets
+   `MENU_ROUTINE_FIRE_URL` en `MENU_ROUTINE_TOKEN`.
+3. Draai Actions → **Supabase deploy**, zodat de webhook ze krijgt.
+
+Zonder die secrets gebeurt er niets als je op de knop drukt, en zegt de webhook dat ook — hij doet
+niet alsof.
 
 ## Huisstijl van het formulier
 

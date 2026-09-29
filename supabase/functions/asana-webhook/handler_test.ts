@@ -9,7 +9,14 @@ const SECRET = 'geheim'
 const cfg: AsanaFieldsConfig = {
   project: { gid: 'proj1', name: 'Designaanvragen' },
   assignee: { gid: 'abel' },
-  fields: {},
+  fields: {
+    menuscherm: {
+      gid: 'veld-menu',
+      name: 'Menuscherm',
+      type: 'enum',
+      options: { genereer: 'opt-genereer', bezig: 'opt-bezig', klaar_menu: 'opt-klaar', mislukt: 'opt-mislukt' },
+    },
+  },
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
     in_planning: { gid: 'sec-plan' },
@@ -35,6 +42,7 @@ function fakeStore(secrets: string[] = [SECRET]): WebhookStore & { saved: [strin
 function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<string, string[]> = {}) {
   const added: [string, string][] = []
   const posted: [string, string][] = []
+  const gezet: [string, Record<string, unknown>][] = []
   const client: AsanaTaskClient = {
     async getTask(gid) {
       const t = tasks[gid]
@@ -51,22 +59,30 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async addComment(taskGid, html) {
       posted.push([taskGid, html])
     },
-    // De planning-flow raakt geen velden of bijlagen aan; dit is er om aan `AsanaTaskClient` te voldoen.
-    updateCustomFields: () => Promise.resolve([]),
+    async updateCustomFields(taskGid, velden) {
+      gezet.push([taskGid, velden])
+      return []
+    },
     uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
     moveToSection: () => Promise.resolve(),
     heropen: () => Promise.resolve(),
   }
-  return { client, added, posted }
+  return { client, added, posted, gezet }
 }
 
-function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[] } = {}) {
+function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[]; zonderRoutine?: boolean } = {}) {
   const store = fakeStore(opts.secrets)
   const asana = fakeAsana(tasks, opts.comments)
   // Welke taken een aanvraag in onze database hebben; standaard allemaal die in `tasks` staan.
   const bekend = new Set(opts.aanvragen ?? Object.keys(tasks))
   const vervallen: [string, string][] = []
+  const gestart: string[] = []
   const handler = createHandler({
+    startMenu: opts.zonderRoutine ? undefined : (gid) => {
+      if (!bekend.has(gid)) return Promise.resolve(false)
+      gestart.push(gid)
+      return Promise.resolve(true)
+    },
     token: TOKEN,
     store,
     asana: asana.client,
@@ -79,7 +95,7 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Rec
       return Promise.resolve(true)
     },
   })
-  return { handler, store, asana, vervallen }
+  return { handler, store, asana, vervallen, gestart }
 }
 
 async function signed(events: unknown[], secret = SECRET, token = TOKEN): Promise<Request> {
@@ -208,4 +224,55 @@ Deno.test('wijziging én verwijdering in één batch → alleen vervallen, geen 
   const res = await handler(await signed([dueChanged('t1'), verwijderd('t1')]))
   assertEquals((await res.json()).handled, { t1: 'aanvraag vervallen' })
   assertEquals(vervallen.length, 1)
+})
+
+// ── De knop "Genereer nu" ────────────────────────────────────────────
+// Marketing hangt het logo aan de subtaak en zet daarna het veld Menuscherm om.
+// Dat is het startsein; alles daarna gaat vanzelf.
+
+const veldGewijzigd = (gid: string) => ({
+  action: 'changed', resource: { gid, resource_type: 'task' },
+  change: { field: 'custom_fields', action: 'changed' },
+})
+
+Deno.test('het veld op "Genereer nu" start de menu-routine', async () => {
+  const { handler, asana, gestart } = setup({
+    t1: { customFields: { 'veld-menu': { optieGids: ['opt-genereer'], datum: null, tekst: null } } },
+  })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(res.status, 200)
+  assertEquals(gestart, ['t1'])
+  // En het veld gaat meteen op Bezig, zodat je ziet dat het loopt.
+  assertEquals(asana.gezet, [['t1', { 'veld-menu': 'opt-bezig' }]])
+})
+
+Deno.test('een andere waarde in het veld start niets', async () => {
+  for (const optie of ['opt-bezig', 'opt-klaar', 'opt-mislukt']) {
+    const { handler, gestart } = setup({
+      t1: { customFields: { 'veld-menu': { optieGids: [optie], datum: null, tekst: null } } },
+    })
+    await handler(await signed([veldGewijzigd('t1')]))
+    assertEquals(gestart, [], `${optie} hoort niets te starten`)
+  }
+})
+
+Deno.test('een afgeronde taak mag alsnog een menuscherm krijgen', async () => {
+  // De knop staat los van de planning-flow: het scherm wordt vaak pas gemaakt als
+  // het ontwerpwerk al afgevinkt is.
+  const { handler, gestart } = setup({
+    t1: { completed: true, customFields: { 'veld-menu': { optieGids: ['opt-genereer'], datum: null, tekst: null } } },
+  })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(gestart, ['t1'])
+})
+
+Deno.test('zonder ingestelde routine blijft het niet stil', async () => {
+  const { handler, asana, gestart } = setup({
+    t1: { customFields: { 'veld-menu': { optieGids: ['opt-genereer'], datum: null, tekst: null } } },
+  }, { zonderRoutine: true })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  const body = await res.json()
+  assertEquals(gestart, [])
+  assertEquals(asana.gezet, [], 'op Bezig zetten terwijl er niets loopt is misleidend')
+  assertMatch(JSON.stringify(body), /Routine is niet ingesteld/)
 })

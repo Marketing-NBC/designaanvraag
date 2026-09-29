@@ -1,5 +1,5 @@
 import { json } from '../_shared/cors.ts'
-import type { AsanaFieldsConfig, AsanaTaskClient } from '../_shared/asana.ts'
+import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
 
 /**
@@ -28,6 +28,12 @@ export interface Deps {
    * aanvraag in het zoekscherm staan en loopt een collega vast op een taak die niet meer bestaat.
    */
   markeerVervallen(asanaTaskGid: string, moment: Date): Promise<boolean>
+  /**
+   * Start het maken van het menuscherm voor de aanvraag achter deze taak. Geeft
+   * false als er geen aanvraag bij hoort. Ontbreekt de functie, dan is de Routine
+   * niet ingesteld en zeggen we dat in plaats van stil niets te doen.
+   */
+  startMenu?(asanaTaskGid: string): Promise<boolean>
   now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
@@ -83,10 +89,48 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const planningGid = deps.planningProjectGid ?? cfg.planning_project?.gid ?? null
   const planningName = cfg.planning_project?.name ?? 'de werkplanning'
 
+  /**
+   * De knop "Genereer nu".
+   *
+   * Marketing hangt het logo aan de subtaak en zet daarna het veld Menuscherm op
+   * "Genereer nu". Dat is het enige wat ze hoeven doen: wij starten de Routine die
+   * het scherm maakt, en zetten het veld meteen op "Bezig" zodat je ziet dat het
+   * loopt en tweemaal klikken niets extra's doet. De Routine zet hem daarna op
+   * Klaar of Mislukt.
+   */
+  async function handleMenuknop(t: AsanaTask): Promise<string | null> {
+    const veld = cfg.fields?.menuscherm
+    if (!veld?.gid) return null
+    const gekozen = t.customFields?.[veld.gid]?.optieGids ?? []
+    const genereer = veld.options?.genereer
+    if (!genereer || !gekozen.includes(genereer)) return null
+
+    if (!deps.startMenu) return 'menuscherm gevraagd, maar de Routine is niet ingesteld'
+    const gestart = await deps.startMenu(t.gid)
+    if (!gestart) return 'menuscherm gevraagd, maar geen aanvraag bij deze taak'
+
+    const bezig = veld.options?.bezig
+    if (bezig) {
+      try {
+        await asana.updateCustomFields(t.gid, { [veld.gid]: bezig })
+      } catch (e) {
+        log('warn', 'menuscherm-veld op Bezig zetten mislukt',
+          { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+    return 'menuscherm gestart'
+  }
+
   async function handleTask(gid: string): Promise<string> {
     const t = await asana.getTask(gid)
     const ours = t.memberships.find((m) => m.project === projectGid)
     if (!ours) return 'niet in ons project'
+
+    // De knop staat los van de planning-flow: een menuscherm mag ook gemaakt worden
+    // als de taak al afgerond is of nog geen vervaldatum heeft.
+    const menu = await handleMenuknop(t)
+    if (menu) return menu
+
     if (t.completed) return 'afgerond'
     const section = ours.section
 
