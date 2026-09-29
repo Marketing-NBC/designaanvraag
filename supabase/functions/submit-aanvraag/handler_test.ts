@@ -20,6 +20,8 @@ const env: Env = {
   asanaPlanningProjectGid: null,
   routineFireUrl: 'https://routine',
   routineToken: 'tok',
+  menuRoutineFireUrl: null,
+  menuRoutineToken: null,
 }
 
 function fakeDb() {
@@ -37,6 +39,7 @@ function fakeDb() {
       rows.set(full.id, full)
       return full
     },
+    findByAsanaTaskGid: () => Promise.resolve(null),
     async update(id, patch) {
       const r = rows.get(id)
       if (!r) throw new Error('rij niet gevonden')

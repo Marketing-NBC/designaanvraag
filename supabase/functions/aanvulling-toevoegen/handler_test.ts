@@ -18,6 +18,8 @@ const env: Env = {
   asanaPlanningProjectGid: null,
   routineFireUrl: null,
   routineToken: null,
+    menuRoutineFireUrl: null,
+    menuRoutineToken: null,
 }
 
 /** Eigen mapping met herkenbare gids, zodat een assertie leest als de bedoeling. */
@@ -90,6 +92,7 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     findById: (id) => Promise.resolve(row && row.id === id ? row : null),
     zoekOpEvent: () => Promise.resolve([]),
     markeerVervallen: () => Promise.resolve(false),
+    findByAsanaTaskGid: () => Promise.resolve(null),
     async findAanvullingByClientRequestId(id) {
       return aanvullingen.find((a) => a.client_request_id === id) ?? null
     },

@@ -13,6 +13,9 @@ export interface Env {
   asanaPlanningProjectGid: string | null
   routineFireUrl: string | null
   routineToken: string | null
+  /** De Routine die het menuscherm maakt; apart, want dat is een ander draaiboek. */
+  menuRoutineFireUrl: string | null
+  menuRoutineToken: string | null
 }
 
 const DEFAULT_ORIGINS = ['https://marketing-nbc.github.io', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:4173']
@@ -48,6 +51,8 @@ export function readEnv(): Env {
     asanaPlanningProjectGid: opt('ASANA_PLANNING_PROJECT_GID'),
     routineFireUrl: opt('ROUTINE_FIRE_URL'),
     routineToken: opt('ROUTINE_TOKEN'),
+    menuRoutineFireUrl: opt('MENU_ROUTINE_FIRE_URL'),
+    menuRoutineToken: opt('MENU_ROUTINE_TOKEN'),
   }
 }
 

@@ -16,6 +16,8 @@ const env: Env = {
   asanaPlanningProjectGid: null,
   routineFireUrl: null,
   routineToken: null,
+    menuRoutineFireUrl: null,
+    menuRoutineToken: null,
 }
 
 const treffer: GevondenAanvraag = {
