@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { bruikbaarAlsLogo, kiesLogo, logoDataUri } from '../menu/logo.mjs'
+import { blobKleuren } from '../menu/kleuren.mjs'
 import { isMenuSubtaak, MENU_SUBTAAK_NAMEN, subtaskTitles } from '../../shared/asana-title.ts'
 
 const NBC_LOGO = join(WORKER_DIR, '..', 'web', 'src', 'assets', 'brand', 'nbc-logo-color-black.png')
@@ -74,4 +75,46 @@ test('een menu-aanvraag krijgt altijd de subtaak waar het logo aan hangt', () =>
   assert.deepEqual(namen, ['Menu scherm Deloitte'])
   assert.ok(namen.every(isMenuSubtaak), 'de worker moet zijn eigen subtaak terugvinden')
   assert.ok(MENU_SUBTAAK_NAMEN.length >= 2, 'menukaart en menuscherm horen er allebei in')
+})
+
+// ── De blobs in de kleuren van de opdrachtgever ──────────────────────
+// Ongeveer een op de vijf wil dat. De kleuren komen uit de huisstijl-brief die de
+// andere Routine al van de website van de opdrachtgever heeft gehaald.
+
+const brief = (...kleuren) => ({ colors: kleuren })
+
+test('de hoofdkleur gaat boven, de volgende eronder', () => {
+  const keuze = blobKleuren(brief(
+    { hex: '#00a3e0', role: 'accent', name: 'lichtblauw' },
+    { hex: '#5b2d8e', role: 'primary', name: 'paars' },
+  ))
+  assert.equal(keuze.boven, '#5b2d8e', 'primary hoort bovenaan te staan')
+  assert.equal(keuze.onder, '#00a3e0')
+  assert.match(keuze.uitleg, /paars/, 'de comment moet de kleuren noemen om na te kijken')
+})
+
+test('wit en zwart zijn geen blobkleuren', () => {
+  // Achtergrond en tekst staan altijd in een huisstijl-brief, maar een witte blob
+  // valt weg tegen het scherm en een zwarte maakt er een gat van.
+  const keuze = blobKleuren(brief(
+    { hex: '#ffffff', role: 'background' },
+    { hex: '#111111', role: 'text' },
+    { hex: '#5b2d8e', role: 'primary' },
+  ))
+  assert.ok(keuze.reden, 'met een kleur is er geen verloop te maken')
+  assert.match(keuze.reden, /één bruikbare kleur/)
+})
+
+test('een bijna-witte merkkleur telt ook niet mee', () => {
+  const keuze = blobKleuren(brief(
+    { hex: '#fdfdfd', role: 'primary' },
+    { hex: '#020202', role: 'secondary' },
+  ))
+  assert.ok(keuze.reden)
+  assert.match(keuze.reden, /geen kleur/)
+})
+
+test('zonder huisstijl-brief blijft het bij de NBC-kleuren', () => {
+  assert.ok(blobKleuren(null).reden)
+  assert.ok(blobKleuren({}).reden)
 })

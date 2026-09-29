@@ -6,6 +6,7 @@
  *   node worker/menu-publiceer.mjs --aanvraag-id <uuid> --data menu.json
  *   node worker/menu-publiceer.mjs --data menu.json --out scherm.png --dry-run
  *   node worker/menu-publiceer.mjs --tekst menu.txt --logo logo.png --dry-run
+ *   node worker/menu-publiceer.mjs --aanvraag-id <uuid> --kleuren opdrachtgever
  *
  * De collega die de aanvraag indient ziet hier niets van. Het scherm komt als
  * bijlage bij de Asana-taak en alles wat de opmaak-engine opmerkt komt daar als
@@ -136,6 +137,23 @@ if (args.logo) {
   invoerNotities.push(...(uitkomst.notities ?? []))
 }
 
+/**
+ * De blobs. Standaard de NBC-huisstijl; koos Marketing in Asana voor de kleuren van
+ * de opdrachtgever, dan halen we die uit de huisstijl-brief die de andere Routine
+ * al heeft gemaakt. Lukt dat niet, dan gaat het scherm gewoon door in de NBC-kleuren
+ * - dat is een verschil in smaak, geen fout - maar het wordt wel gemeld.
+ */
+if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgever') {
+  const { blobKleuren } = await import('./menu/kleuren.mjs')
+  const keuze = blobKleuren(aanvraag?.brand_result ?? null)
+  if (keuze.reden) {
+    invoerNotities.push(`${keuze.reden} De blobs blijven in de NBC-huisstijl.`)
+  } else {
+    merk = { ...merk, blobBoven: keuze.boven, blobOnder: keuze.onder }
+    invoerNotities.push(keuze.uitleg)
+  }
+}
+
 if (id && !dryRun) {
   const { updateMenu } = await import('./lib/supabase.mjs')
   await updateMenu(id, { menu_status: 'running', menu_error: null })
@@ -209,6 +227,7 @@ await updateMenu(id, {
   menu_result: {
     pakket: inhoud.pakket,
     invoer: invoerNotities,
+    blobs: merk.blobBoven ? { boven: merk.blobBoven, onder: merk.blobOnder } : 'nbc',
     bruikbaar,
     bestandsnaam,
     asana_gid: bijlage.gid,

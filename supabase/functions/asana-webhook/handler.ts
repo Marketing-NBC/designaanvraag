@@ -33,7 +33,7 @@ export interface Deps {
    * false als er geen aanvraag bij hoort. Ontbreekt de functie, dan is de Routine
    * niet ingesteld en zeggen we dat in plaats van stil niets te doen.
    */
-  startMenu?(asanaTaskGid: string): Promise<boolean>
+  startMenu?(asanaTaskGid: string, kleuren: 'nbc' | 'opdrachtgever'): Promise<boolean>
   now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
@@ -102,11 +102,15 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const veld = cfg.fields?.menuscherm
     if (!veld?.gid) return null
     const gekozen = t.customFields?.[veld.gid]?.optieGids ?? []
-    const genereer = veld.options?.genereer
-    if (!genereer || !gekozen.includes(genereer)) return null
+    // Twee knoppen, een verschil: met of zonder de kleuren van de opdrachtgever.
+    // De blobs zijn standaard de NBC-huisstijl en dat blijft de gewone gang.
+    const kleuren = veld.options?.genereer && gekozen.includes(veld.options.genereer) ? 'nbc'
+      : veld.options?.genereer_kleur && gekozen.includes(veld.options.genereer_kleur)
+        ? 'opdrachtgever' : null
+    if (!kleuren) return null
 
     if (!deps.startMenu) return 'menuscherm gevraagd, maar de Routine is niet ingesteld'
-    const gestart = await deps.startMenu(t.gid)
+    const gestart = await deps.startMenu(t.gid, kleuren)
     if (!gestart) return 'menuscherm gevraagd, maar geen aanvraag bij deze taak'
 
     const bezig = veld.options?.bezig
@@ -118,7 +122,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
       }
     }
-    return 'menuscherm gestart'
+    return `menuscherm gestart (${kleuren})`
   }
 
   async function handleTask(gid: string): Promise<string> {
