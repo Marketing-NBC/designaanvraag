@@ -196,6 +196,36 @@ Voor elke alinea wordt in deze volgorde bepaald hoe hij komt te staan:
 Verandert er iets, dan schuift de rest van de kolom mee volgens het vaste ritme
 van dat pakket. De rest van het scherm blijft staan waar het stond.
 
+### Het logo van de opdrachtgever
+
+Rechtsboven staat een balk met het logo van de opdrachtgever. Zolang dat er niet is
+staat er een rode plaatshouder met "Logo opdrachtgever" — herkenbaar fout, zodat zo'n
+scherm nooit per ongeluk wordt opgehangen.
+
+Marketing hangt het logo als bijlage aan de subtaak **"Menu scherm …"** of
+**"Menukaart print …"** van het evenement. Die subtaak maakt `submit-aanvraag` altijd
+aan zodra iemand een menukaart of menuscherm aanvraagt, ook als het de enige aanvraag
+is; zonder die plek is er niets om het logo aan te hangen.
+
+Waarom bij de subtaak en niet bij de hoofdtaak: aan de hoofdtaak hangen ook de
+bestanden die de collega bij zijn aanvraag meestuurde — een briefing, een plattegrond,
+een foto. De subtaak is een lege plek die maar voor één ding bedoeld is.
+
+| Situatie | Wat er gebeurt |
+|---|---|
+| Nog geen bijlage | De worker wacht. Status blijft `pending`, geen comment, geen mislukking. |
+| Een PNG, JPG, GIF, WEBP of SVG | Die wordt gezet. Staat er "logo" in de naam, dan wint die; anders de nieuwste. |
+| Meerdere afbeeldingen | De gekozen bijlage staat bij naam in de comment. |
+| Een PDF, EPS of `.ai` | Mislukking, met de vraag om een PNG, JPG of SVG. Drukwerkbestanden kan de browser niet zetten. |
+
+Een raster breder dan 2000 pixels wordt verkleind voordat het de pagina in gaat — de
+balk is 791 breed op een 4K-scherm, dus meer is alleen maar gewicht. Een SVG gaat
+ongemoeid mee.
+
+Het logo wordt in de balk gepast met behoud van verhouding (`xMidYMid meet`), met een
+marge van 6% opzij en 9% boven en onder. Een liggend logo vult dus de hoogte, een
+vierkant de breedte, en beide staan gecentreerd.
+
 ### Gangen stromen door de kolommen
 
 De gangen staan niet vast aan een kolom. Ze lopen door, zoals tekst door gekoppelde

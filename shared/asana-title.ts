@@ -1,5 +1,5 @@
 import type { Aanvraag } from './aanvraag-schema.ts'
-import { requestTypeLabel } from './request-types.ts'
+import { MENU_TYPES, requestTypeLabel } from './request-types.ts'
 
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
 
@@ -29,8 +29,30 @@ export function taskTitle(a: TitleInput): string {
   return `${wat} ${a.event.trim()} - ${formatDateShortNl(a.event_datum)} - ${a.naam.trim()}`.slice(0, 250)
 }
 
-/** Bij meer dan één type: een subtaak per type ("Torenscherm Deloitte"). Anders geen subtaken. */
+/**
+ * De namen waarop de worker de menu-subtaak herkent: "Menu scherm …",
+ * "Menukaart print …". Daar hangt Marketing het logo van de opdrachtgever aan, en
+ * zonder logo maakt de worker geen scherm — er staat dan een rode plaatshouder waar
+ * het logo hoort. Afgeleid van de aanvraagtypes zelf, zodat een hernoemd type niet
+ * stilletjes de koppeling breekt.
+ */
+export const MENU_SUBTAAK_NAMEN: readonly string[] = MENU_TYPES.map((k) => requestTypeLabel(k))
+
+/** Begint deze subtaaknaam met een van de menu-namen? */
+export function isMenuSubtaak(naam: string): boolean {
+  return MENU_SUBTAAK_NAMEN.some((n) => String(naam ?? '').startsWith(n))
+}
+
+/**
+ * Bij meer dan één type: een subtaak per type ("Torenscherm Deloitte").
+ *
+ * Een menukaart of menuscherm krijgt er altijd een, ook als het de enige aanvraag
+ * is. Die subtaak is de vaste plek voor het logo van de opdrachtgever; zonder die
+ * plek is er niets om het aan te hangen en kan de worker niet beginnen.
+ */
 export function subtaskTitles(a: TitleInput): string[] {
-  if (a.aanvraag_types.length < 2) return []
-  return a.aanvraag_types.map((k) => `${typeLabel(k, a.anders_tekst)} ${a.event.trim()}`.slice(0, 250))
+  const nodig = a.aanvraag_types.length > 1
+    ? a.aanvraag_types
+    : a.aanvraag_types.filter((k) => MENU_TYPES.includes(k))
+  return nodig.map((k) => `${typeLabel(k, a.anders_tekst)} ${a.event.trim()}`.slice(0, 250))
 }
