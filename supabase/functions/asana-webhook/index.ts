@@ -19,12 +19,12 @@ const menuRoutine = env.menuRoutineFireUrl && env.menuRoutineToken
  * webhook dat; stil laten lopen zou betekenen dat iemand zit te wachten op een
  * scherm dat nooit komt.
  */
-async function startMenu(asanaTaskGid: string): Promise<boolean> {
+async function startMenu(asanaTaskGid: string, kleuren: 'nbc' | 'opdrachtgever'): Promise<boolean> {
   const aanvraag = await db.findByAsanaTaskGid(asanaTaskGid)
   if (!aanvraag || !menuRoutine) return false
-  await db.update(aanvraag.id, { menu_status: 'pending', menu_error: null })
+  await db.update(aanvraag.id, { menu_status: 'pending', menu_error: null, menu_kleuren: kleuren })
   const { sessionUrl } = await menuRoutine.fire(`aanvraag_id=${aanvraag.id}`)
-  console.log('menu-routine gestart', JSON.stringify({ id: aanvraag.id, sessionUrl }))
+  console.log('menu-routine gestart', JSON.stringify({ id: aanvraag.id, kleuren, sessionUrl }))
   return true
 }
 

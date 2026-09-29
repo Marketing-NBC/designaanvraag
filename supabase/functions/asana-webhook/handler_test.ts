@@ -14,7 +14,8 @@ const cfg: AsanaFieldsConfig = {
       gid: 'veld-menu',
       name: 'Menuscherm',
       type: 'enum',
-      options: { genereer: 'opt-genereer', bezig: 'opt-bezig', klaar_menu: 'opt-klaar', mislukt: 'opt-mislukt' },
+      options: { genereer: 'opt-genereer', genereer_kleur: 'opt-genereer-kleur',
+                 bezig: 'opt-bezig', klaar_menu: 'opt-klaar', mislukt: 'opt-mislukt' },
     },
   },
   sections: {
@@ -78,9 +79,9 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Rec
   const vervallen: [string, string][] = []
   const gestart: string[] = []
   const handler = createHandler({
-    startMenu: opts.zonderRoutine ? undefined : (gid) => {
+    startMenu: opts.zonderRoutine ? undefined : (gid, kleuren) => {
       if (!bekend.has(gid)) return Promise.resolve(false)
-      gestart.push(gid)
+      gestart.push(`${gid}:${kleuren}`)
       return Promise.resolve(true)
     },
     token: TOKEN,
@@ -241,7 +242,7 @@ Deno.test('het veld op "Genereer nu" start de menu-routine', async () => {
   })
   const res = await handler(await signed([veldGewijzigd('t1')]))
   assertEquals(res.status, 200)
-  assertEquals(gestart, ['t1'])
+  assertEquals(gestart, ['t1:nbc'])
   // En het veld gaat meteen op Bezig, zodat je ziet dat het loopt.
   assertEquals(asana.gezet, [['t1', { 'veld-menu': 'opt-bezig' }]])
 })
@@ -263,7 +264,15 @@ Deno.test('een afgeronde taak mag alsnog een menuscherm krijgen', async () => {
     t1: { completed: true, customFields: { 'veld-menu': { optieGids: ['opt-genereer'], datum: null, tekst: null } } },
   })
   await handler(await signed([veldGewijzigd('t1')]))
-  assertEquals(gestart, ['t1'])
+  assertEquals(gestart, ['t1:nbc'])
+})
+
+Deno.test('de tweede knop vraagt om de kleuren van de opdrachtgever', async () => {
+  const { handler, gestart } = setup({
+    t1: { customFields: { 'veld-menu': { optieGids: ['opt-genereer-kleur'], datum: null, tekst: null } } },
+  })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(gestart, ['t1:opdrachtgever'])
 })
 
 Deno.test('zonder ingestelde routine blijft het niet stil', async () => {

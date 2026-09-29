@@ -320,7 +320,9 @@ Run now. Heet de bijlage `NIET-BRUIKBAAR-…`, dan loopt er tekst over het ontwe
 storing maar een te lang gerecht.
 
 **De knop in Asana.** Marketing hangt het logo van de opdrachtgever aan de subtaak
-"Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu**. De webhook start dan deze
+"Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu** — of op
+**Genereer nu (kleuren opdrachtgever)** als de blobs mee moeten kleuren met de huisstijl van de
+opdrachtgever. De webhook start dan deze
 routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*. Eenmalig nodig:
 
 1. Actions → **Asana-velden vernieuwen** → Run workflow. Dat maakt het veld `Menuscherm` aan met de

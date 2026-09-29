@@ -226,6 +226,31 @@ Het logo wordt in de balk gepast met behoud van verhouding (`xMidYMid meet`), me
 marge van 6% opzij en 9% boven en onder. Een liggend logo vult dus de hoogte, een
 vierkant de breedte, en beide staan gecentreerd.
 
+### Blobs in de kleuren van de opdrachtgever
+
+De blobs zijn standaard oranje-naar-teal: de NBC-huisstijl. Ongeveer een op de vijf
+opdrachtgevers wil ze in zijn eigen kleuren. Marketing kiest dat in Asana met het veld
+**Menuscherm**: "Genereer nu" houdt de huisstijl, "Genereer nu (kleuren opdrachtgever)"
+laat ze meekleuren. Die keuze komt in `aanvragen.menu_kleuren` terecht.
+
+De kleuren komen uit `brand_result`, de huisstijl-brief die de andere Routine al van de
+website van de opdrachtgever heeft gehaald. De hoofdkleur (`primary`) wordt de bovenste
+blob, de volgende de onderste, zodat er verloop in blijft. De rollen `background` en
+`text` doen niet mee — dat zijn de kleuren van papier en inkt — en een kleur die bijna
+wit of bijna zwart is valt af: een witte blob verdwijnt tegen het scherm en een zwarte
+maakt er een gat van.
+
+Blijven er minder dan twee bruikbare kleuren over, dan gaat het scherm gewoon door in
+de NBC-huisstijl. Dat is een verschil in smaak, geen fout — maar het wordt wel gemeld.
+
+**Welke kleuren gekozen zijn staat altijd in de Asana-comment.** Een merkkleur die op
+een website prima werkt kan als vlak van twee meter breed heel anders uitpakken, dus
+hier hoort iemand naar te kijken.
+
+Het herkleuren zelf raakt de vorm niet aan: `hertint()` rekent per pixel terug hoe
+dekkend hij is en waar hij in het verloop zit, en bouwt hem op in de twee nieuwe
+kleuren. Vorm, verloop en randen blijven exact die uit het Illustrator-bestand.
+
 ### Gangen stromen door de kolommen
 
 De gangen staan niet vast aan een kolom. Ze lopen door, zoals tekst door gekoppelde
