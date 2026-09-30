@@ -226,28 +226,38 @@ Het logo wordt in de balk gepast met behoud van verhouding (`xMidYMid meet`), me
 marge van 6% opzij en 9% boven en onder. Een liggend logo vult dus de hoogte, een
 vierkant de breedte, en beide staan gecentreerd.
 
-### Blobs in de kleuren van de opdrachtgever
+### Het scherm in de kleuren van de opdrachtgever
 
-De blobs zijn standaard oranje-naar-teal: de NBC-huisstijl. Ongeveer een op de vijf
-opdrachtgevers wil ze in zijn eigen kleuren. Marketing kiest dat in Asana met het veld
+Standaard is alles NBC: de blobs oranje-naar-teal, de kopjes en het bestek-icoon in
+het NBC-oranje. Ongeveer een op de vijf opdrachtgevers wil zijn eigen kleuren. Marketing kiest dat in Asana met het veld
 **Menuscherm**: "Genereer nu" houdt de huisstijl, "Genereer nu (kleuren opdrachtgever)"
 laat ze meekleuren. Die keuze komt in `aanvragen.menu_kleuren` terecht.
 
 De kleuren komen uit `brand_result`, de huisstijl-brief die de andere Routine al van de
-website van de opdrachtgever heeft gehaald. De hoofdkleur (`primary`) wordt de bovenste
-blob, de volgende de onderste, zodat er verloop in blijft. De rollen `background` en
-`text` doen niet mee — dat zijn de kleuren van papier en inkt — en een kleur die bijna
-wit of bijna zwart is valt af: een witte blob verdwijnt tegen het scherm en een zwarte
-maakt er een gat van.
+website van de opdrachtgever heeft gehaald. Er worden er twee dingen uit gekozen:
 
-Blijven er minder dan twee bruikbare kleuren over, dan gaat het scherm gewoon door in
+- **De blobs.** De hoofdkleur (`primary`) wordt de bovenste, de volgende de onderste,
+  zodat er verloop in blijft.
+- **Het accent**, waarin de kopjes en het bestek-icoon staan. Daar gaat de rol `accent`
+  voor: die is bedoeld om mee te benadrukken, en dat is precies wat een kopje doet.
+
+De rollen `background` en `text` doen nergens aan mee — dat zijn de kleuren van papier
+en inkt — en een kleur die bijna wit of bijna zwart is valt af als blob: een witte blob
+verdwijnt tegen het scherm en een zwarte maakt er een gat van.
+
+Voor het accent geldt een strengere eis: een kopje moet leesbaar blijven op wit. Het
+NBC-oranje zelf zit op een helderheid van 169, dus heel streng hoeft het niet, maar
+boven de 200 wordt het onleesbaar. Is geen enkele merkkleur donker genoeg, dan blijven
+de kopjes en het icoon NBC-oranje terwijl de blobs wél meekleuren.
+
+Blijven er minder dan twee bruikbare kleuren over, dan gaat het scherm helemaal door in
 de NBC-huisstijl. Dat is een verschil in smaak, geen fout — maar het wordt wel gemeld.
 
 **Welke kleuren gekozen zijn staat altijd in de Asana-comment.** Een merkkleur die op
 een website prima werkt kan als vlak van twee meter breed heel anders uitpakken, dus
 hier hoort iemand naar te kijken.
 
-Het herkleuren zelf raakt de vorm niet aan: `hertint()` rekent per pixel terug hoe
+Het herkleuren van de blobs raakt de vorm niet aan: `hertint()` rekent per pixel terug hoe
 dekkend hij is en waar hij in het verloop zit, en bouwt hem op in de twee nieuwe
 kleuren. Vorm, verloop en randen blijven exact die uit het Illustrator-bestand.
 

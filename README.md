@@ -321,8 +321,8 @@ storing maar een te lang gerecht.
 
 **De knop in Asana.** Marketing hangt het logo van de opdrachtgever aan de subtaak
 "Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu** — of op
-**Genereer nu (kleuren opdrachtgever)** als de blobs mee moeten kleuren met de huisstijl van de
-opdrachtgever. De webhook start dan deze
+**Genereer nu (kleuren opdrachtgever)** als het scherm mee moet kleuren met de huisstijl van de
+opdrachtgever — blobs, kopjes en het bestek-icoon. De webhook start dan deze
 routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*. Eenmalig nodig:
 
 1. Actions → **Asana-velden vernieuwen** → Run workflow. Dat maakt het veld `Menuscherm` aan met de
