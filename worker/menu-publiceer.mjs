@@ -138,18 +138,20 @@ if (args.logo) {
 }
 
 /**
- * De blobs. Standaard de NBC-huisstijl; koos Marketing in Asana voor de kleuren van
- * de opdrachtgever, dan halen we die uit de huisstijl-brief die de andere Routine
- * al heeft gemaakt. Lukt dat niet, dan gaat het scherm gewoon door in de NBC-kleuren
- * - dat is een verschil in smaak, geen fout - maar het wordt wel gemeld.
+ * De kleuren. Standaard de NBC-huisstijl; koos Marketing in Asana voor de kleuren
+ * van de opdrachtgever, dan halen we die uit de huisstijl-brief die de andere
+ * Routine al heeft gemaakt: de blobs en het accent waarin de kopjes en het
+ * bestek-icoon staan. Lukt dat niet, dan gaat het scherm gewoon door in de
+ * NBC-kleuren - dat is een verschil in smaak, geen fout - maar het wordt gemeld.
  */
 if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgever') {
-  const { blobKleuren } = await import('./menu/kleuren.mjs')
-  const keuze = blobKleuren(aanvraag?.brand_result ?? null)
+  const { merkKleuren } = await import('./menu/kleuren.mjs')
+  const keuze = merkKleuren(aanvraag?.brand_result ?? null)
   if (keuze.reden) {
-    invoerNotities.push(`${keuze.reden} De blobs blijven in de NBC-huisstijl.`)
+    invoerNotities.push(`${keuze.reden} Het scherm blijft in de NBC-huisstijl.`)
   } else {
-    merk = { ...merk, blobBoven: keuze.boven, blobOnder: keuze.onder }
+    merk = { ...merk, blobBoven: keuze.boven, blobOnder: keuze.onder,
+             ...(keuze.accent ? { accent: keuze.accent } : {}) }
     invoerNotities.push(keuze.uitleg)
   }
 }
@@ -227,7 +229,9 @@ await updateMenu(id, {
   menu_result: {
     pakket: inhoud.pakket,
     invoer: invoerNotities,
-    blobs: merk.blobBoven ? { boven: merk.blobBoven, onder: merk.blobOnder } : 'nbc',
+    kleuren: merk.blobBoven
+      ? { boven: merk.blobBoven, onder: merk.blobOnder, accent: merk.accent ?? null }
+      : 'nbc',
     bruikbaar,
     bestandsnaam,
     asana_gid: bijlage.gid,
