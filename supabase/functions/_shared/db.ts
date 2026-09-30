@@ -17,6 +17,14 @@ export interface AanvraagRow {
   brand_status: 'pending' | 'running' | 'done' | 'failed' | 'overgeslagen'
   brand_error: string | null
   brand_session_url: string | null
+  /**
+   * Het menuscherm. Dezelfde vorm als brand_*, met één verschil: de worker doet het
+   * werk, dus de function schrijft hier alleen als Marketing op de knop drukt.
+   */
+  menu_status: 'pending' | 'running' | 'done' | 'failed'
+  menu_error: string | null
+  /** Welke kleuren de blobs en de kopjes krijgen; gezet vanuit het veld in Asana. */
+  menu_kleuren: 'nbc' | 'opdrachtgever'
   /** Gezet toen de Asana-taak werd verwijderd; de aanvraag telt dan niet meer mee. */
   vervallen_op: string | null
 }
@@ -115,7 +123,7 @@ export interface Db {
   markeerBijlage(id: string, patch: Partial<BijlageRow> & { fout?: string | null; asana_url?: string | null }): Promise<void>
 }
 
-const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, vervallen_op'
+const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
 const DETAIL_COLUMNS = `${ROW_COLUMNS}, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
 const ZOEK_COLUMNS = 'id, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'

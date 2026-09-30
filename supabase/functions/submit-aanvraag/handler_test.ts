@@ -35,7 +35,7 @@ function fakeDb() {
       return null
     },
     async insert(row) {
-      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null, vervallen_op: null }
+      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null, menu_status: 'pending' as const, menu_error: null, menu_kleuren: 'nbc' as const, vervallen_op: null }
       rows.set(full.id, full)
       return full
     },
