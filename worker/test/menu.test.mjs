@@ -13,7 +13,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { WORKER_DIR } from '../lib/config.mjs'
+import { REPO_DIR, WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
 import { menuIsBruikbaar } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
@@ -266,6 +266,32 @@ test('een opsomming kan naar een pakket dat er zelf geen heeft', { timeout: 120_
   assert.deepEqual(meldingen.overloop, [])
   assert.equal(meldingen.opmaak.length, 1, 'de wissel van ingredienten naar bullets hoort gemeld')
   assert.match(meldingen.opmaak[0], /opsomming met bullets/)
+})
+
+test('de pakkettenlijst voor het formulier loopt gelijk met de ontwerpen',
+  { timeout: 30_000 }, async () => {
+  // Het formulier laat de aanvrager een pakket kiezen en toont wat erin zit. Loopt
+  // die lijst achter op de basisontwerpen, dan kiest hij iets anders dan er op het
+  // scherm komt - en dat merk je pas als het scherm er is.
+  const { gerechtregel } = await import('../menu/pakketten-export.mjs')
+  const data = JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten.json'), 'utf8'))
+  assert.deepEqual(data.pakketten.map((p) => p.pakket).sort(), [...pakketten()].sort(),
+    'shared/menu-pakketten.json is niet bijgewerkt; draai worker/menu/pakketten-export.mjs')
+  for (const p of data.pakketten) {
+    assert.ok(p.naam, `${p.pakket} heeft geen naam voor de aanvrager`)
+    assert.deepEqual(p.secties, inhoudVanBasis(laadBasis(p.pakket)).secties,
+      `${p.pakket} wijkt af van het basisontwerp`)
+  }
+  // Elk gerecht uit elk pakket moet in de keuzelijst staan, anders kan de aanvrager
+  // het nergens mee wisselen.
+  const bekend = new Set(data.gerechten.map(gerechtregel))
+  for (const p of data.pakketten) {
+    for (const s of p.secties) {
+      for (const g of s.gerechten) {
+        assert.ok(bekend.has(gerechtregel(g)), `"${g.naam}" uit ${p.pakket} mist in de keuzelijst`)
+      }
+    }
+  }
 })
 
 test('een onbekend pakket geeft een duidelijke fout', () => {
