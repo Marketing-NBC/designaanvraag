@@ -308,11 +308,12 @@ hij delen.
 
 Een proefrit van begin tot eind:
 
-1. Dien via het formulier een aanvraag in met **Menu scherm** aangevinkt en plak een menu in de stap
-   "Wat is de culinaire invulling?". Het voorbeeld in het veld laat de vorm zien.
+1. Dien via het formulier een aanvraag in met **Menu scherm** aangevinkt. Bij "Welk pakket is het?"
+   kies je er een; daarna staat het hele menu er en kun je gerechten weghalen, wisselen of
+   toevoegen.
 2. Zoek de aanvraag op in Supabase → Table editor → `aanvragen`, nieuwste bovenaan, en kopieer de
-   `id`. Controleer meteen dat `menu_tekst` gevuld is: zo niet, dan is de migratie of de function
-   niet uitgerold.
+   `id`. Controleer meteen dat `menu_pakket` en `menu_inhoud` gevuld zijn: zo niet, dan is de
+   migratie of de function niet uitgerold.
 3. Kijk in de Asana-taak of het kopje **Menu** in de beschrijving staat.
 4. Run now op deze routine met tekst `aanvraag_id=<die uuid>`.
 5. Terug in Asana: er hoort een bijlage `menuscherm-<pakket>.png` te staan met een comment eronder.
@@ -358,7 +359,8 @@ Table editor → `aanvragen`. Kolommen `asana_task_url`, `brand_status` (`pendin
 staan in Storage → `brand-assets/<aanvraag-id>/`.
 
 Voor een menuscherm zijn het dezelfde vier: `menu_status`, `menu_error`, `menu_result` (pakket,
-bestandsnaam en alle meldingen van de opmaak-engine) en `menu_tekst` (de invulling zoals de collega
-hem plakte). Het scherm zelf staat in Storage → `menuschermen/<aanvraag-id>/`. Let op: `menu_status`
+bestandsnaam en alle meldingen van de opmaak-engine), `menu_pakket` (het aangeklikte pakket),
+`menu_inhoud` (het menu als structuur, dat is wat de engine gebruikt) en `menu_tekst` (dezelfde
+invulling als leesbare tekst, voor de taakbeschrijving). Het scherm zelf staat in Storage → `menuschermen/<aanvraag-id>/`. Let op: `menu_status`
 staat standaard op `pending`, ook bij een aanvraag zonder menu — dat betekent alleen "er is niets
 mee gedaan".
