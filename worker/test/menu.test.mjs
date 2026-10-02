@@ -498,6 +498,25 @@ test('de streep mag ergens anders staan dan de ontwerper hem zette',
 // voor zalm, dan lijkt dat gerecht voor 90% op de versie uit het ontwerp en zou
 // er tonijn op het scherm komen. Daarom telt dekking en niet gelijkenis.
 
+test('een woord mag aan elkaar of los geschreven staan', () => {
+  // Het ontwerp zet "miso boter jus" waar de bibliotheek "misoboterjus" schrijft, en
+  // "Volkoren punt" tegenover "Volkorenpunt". Dezelfde schotel, dus dat mag beide
+  // kanten op samenvallen.
+  assert.equal(overtollig('misoboterjus', 'miso boter jus'), 0)
+  assert.equal(overtollig('miso boter jus', 'misoboterjus'), 0)
+  assert.equal(overtollig('volkorenpunt', 'Volkoren punt'), 0)
+  assert.equal(overtollig('mierikswortelcr\u00e8me', 'mierikswortel creme'), 0)
+})
+
+test('samenvoegen mag niet van twee gerechten een gerecht maken', () => {
+  // De woorden moeten naast elkaar staan en in dezelfde volgorde, anders zou
+  // "kroket oesterzwam" ineens "oesterzwamkroket" zijn - twee verschillende broodjes.
+  assert.equal(overtollig('broodje oesterzwamkroket', 'Broodje kroket oesterzwam'), null)
+  // En korte woorden doen niet mee, net als bij een tikfout: "u i" is geen manier
+  // om "ui" te schrijven, en zo zou elk kort ingredient overal in passen.
+  assert.equal(overtollig('rode ui', 'rode u i'), null)
+})
+
 test('de krulapostrof uit Word is dezelfde als die in de bibliotheek', () => {
   // Outlook en Word maken van ' vanzelf een ’. De sleutel in de bibliotheek wordt
   // genormaliseerd, dus de losse woorden moeten dat ook: anders valt "Tony’s" uiteen

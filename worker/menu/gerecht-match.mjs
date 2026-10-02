@@ -88,12 +88,57 @@ export function tikfout(a, b) {
  * Hoeveel woorden staan er extra in `getypt` bovenop alles wat `bron` noemt?
  * null betekent: er ontbreekt een woord uit bron, dus dit is een ander gerecht.
  */
+/**
+ * Hetzelfde woord, aan de ene kant aan elkaar en aan de andere kant los. De
+ * ontwerper zet "miso boter jus" waar de bibliotheek "misoboterjus" schrijft, en
+ * "Volkoren punt" tegenover "Volkorenpunt". Dat is dezelfde schotel, dus dat mag
+ * samenvallen - maar alleen als de woorden naast elkaar staan en in dezelfde
+ * volgorde, anders zou "kroket oesterzwam" ineens "oesterzwamkroket" zijn.
+ *
+ * Korte woorden doen niet mee, om dezelfde reden als bij tikfout(): "u i" is geen
+ * manier om "ui" te schrijven, en zo zou elk kort ingredient overal in passen.
+ *
+ * Geeft terug hoeveel woorden er vanaf `vanaf` zijn opgegaan in `doel`, of 0.
+ */
+function samenvoeging(lijst, vanaf, doel) {
+  if (doel.length < 5) return 0
+  let samen = ''
+  for (let n = 0; n < 3 && vanaf + n < lijst.length; n++) {
+    samen += lijst[vanaf + n]
+    if (samen.length > doel.length + 1) break
+    if (n > 0 && tikfout(doel, samen)) return n + 1
+  }
+  return 0
+}
+
 export function overtollig(bron, getypt) {
   const over = woorden(getypt)
-  for (const w of woorden(bron)) {
-    const i = over.findIndex((g) => tikfout(w, g))
-    if (i === -1) return null
-    over.splice(i, 1)
+  const bronwoorden = woorden(bron)
+  for (let b = 0; b < bronwoorden.length; b++) {
+    const w = bronwoorden[b]
+    const los = over.findIndex((g) => tikfout(w, g))
+    if (los !== -1) {
+      over.splice(los, 1)
+      continue
+    }
+    // Niet als los woord gevonden: staat het er misschien als twee of drie?
+    let samen = 0
+    for (let j = 0; j < over.length && !samen; j++) {
+      samen = samenvoeging(over, j, w)
+      if (samen) over.splice(j, samen)
+    }
+    if (samen) continue
+    // Of staat het hier juist los en aan de andere kant aan elkaar?
+    let gevonden = false
+    for (let j = 0; j < over.length && !gevonden; j++) {
+      const n = samenvoeging(bronwoorden, b, over[j])
+      if (n) {
+        over.splice(j, 1)
+        b += n - 1
+        gevonden = true
+      }
+    }
+    if (!gevonden) return null
   }
   return over.length
 }
