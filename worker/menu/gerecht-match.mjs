@@ -53,7 +53,13 @@ export function gerechtsleutel(t) {
 const STOPWOORDEN = new Set(['met', 'van', 'en', 'de', 'het', 'in', 'op', 'of', 'la'])
 
 export function woorden(tekst) {
-  return String(tekst).toLowerCase()
+  // Dezelfde normalisatie als tekstsleutel, anders valt een gerecht uit elkaar waar
+  // het in de bibliotheek aan elkaar staat: "Tony's" met een krulapostrof werd
+  // "tony" + "s" en vond de sleutel "tony's" niet meer. Word en Outlook zetten dat
+  // krulletje vanzelf, dus dat overkomt iedereen die iets inplakt.
+  let t = String(tekst)
+  for (const [van, naar] of VARIANTEN) t = t.replace(van, naar)
+  return t.toLowerCase()
     .split(/[^a-z0-9à-ÿ']+/)
     .filter((w) => w && !STOPWOORDEN.has(w))
 }
@@ -82,20 +88,91 @@ export function tikfout(a, b) {
  * Hoeveel woorden staan er extra in `getypt` bovenop alles wat `bron` noemt?
  * null betekent: er ontbreekt een woord uit bron, dus dit is een ander gerecht.
  */
+/**
+ * Hetzelfde woord, aan de ene kant aan elkaar en aan de andere kant los. De
+ * ontwerper zet "miso boter jus" waar de bibliotheek "misoboterjus" schrijft, en
+ * "Volkoren punt" tegenover "Volkorenpunt". Dat is dezelfde schotel, dus dat mag
+ * samenvallen - maar alleen als de woorden naast elkaar staan en in dezelfde
+ * volgorde, anders zou "kroket oesterzwam" ineens "oesterzwamkroket" zijn.
+ *
+ * Korte woorden doen niet mee, om dezelfde reden als bij tikfout(): "u i" is geen
+ * manier om "ui" te schrijven, en zo zou elk kort ingredient overal in passen.
+ *
+ * Geeft terug hoeveel woorden er vanaf `vanaf` zijn opgegaan in `doel`, of 0.
+ */
+function samenvoeging(lijst, vanaf, doel) {
+  if (doel.length < 5) return 0
+  let samen = ''
+  for (let n = 0; n < 3 && vanaf + n < lijst.length; n++) {
+    samen += lijst[vanaf + n]
+    if (samen.length > doel.length + 1) break
+    if (n > 0 && tikfout(doel, samen)) return n + 1
+  }
+  return 0
+}
+
 export function overtollig(bron, getypt) {
   const over = woorden(getypt)
-  for (const w of woorden(bron)) {
-    const i = over.findIndex((g) => tikfout(w, g))
-    if (i === -1) return null
-    over.splice(i, 1)
+  const bronwoorden = woorden(bron)
+  for (let b = 0; b < bronwoorden.length; b++) {
+    const w = bronwoorden[b]
+    const los = over.findIndex((g) => tikfout(w, g))
+    if (los !== -1) {
+      over.splice(los, 1)
+      continue
+    }
+    // Niet als los woord gevonden: staat het er misschien als twee of drie?
+    let samen = 0
+    for (let j = 0; j < over.length && !samen; j++) {
+      samen = samenvoeging(over, j, w)
+      if (samen) over.splice(j, samen)
+    }
+    if (samen) continue
+    // Of staat het hier juist los en aan de andere kant aan elkaar?
+    let gevonden = false
+    for (let j = 0; j < over.length && !gevonden; j++) {
+      const n = samenvoeging(bronwoorden, b, over[j])
+      if (n) {
+        over.splice(j, 1)
+        b += n - 1
+        gevonden = true
+      }
+    }
+    if (!gevonden) return null
   }
   return over.length
 }
 
 // Hoeveel woorden er extra mogen staan, als deel van het gerecht uit het ontwerp.
 // Zonder die grens zou "Burrata | tomatenmix | truffelolie" blijven hangen aan het
-// losse gerecht "Burrata": alle woorden daarvan staan er immers in.
+// losse gerecht "Burrata": alle woorden daarvan staan er immers in. Bij een kort
+// gerecht mag er altijd minstens een woord bij, anders zou "Pinsa | provolone |
+// tomatenchutney" het ontwerp-gerecht "Provolone | tomatenchutney" niet vinden.
+// Een woord te veel is context; een woord te weinig is een ander gerecht, en daar
+// gaat de dekking hierboven over.
 const RUIS = 0.4
+const RUIS_MINIMAAL = 1
+
+/**
+ * Namen die de ontwerper afkort en de bibliotheek voluit schrijft. Dat is geen
+ * tikfout en geen ander gerecht: hetzelfde broodje, twee schrijfwijzen, en de
+ * dekkingsregel kan ze niet aan elkaar knopen omdat "wit" te kort is om als
+ * verschrijving van "witte" te mogen tellen. Op het scherm wint het ontwerp, dus
+ * vertalen we de bibliotheeknaam naar die van de ontwerper.
+ *
+ * Houd deze lijst kort en letterlijk. Elke regel hier is een plek waar het ontwerp
+ * en de bibliotheek uit elkaar lopen; als er veel bijkomen is dat een teken dat er
+ * iets anders mis is.
+ */
+const ALIASSEN = [
+  [/\bwitte baguette\b/gi, 'Wit'],
+]
+
+function viaAlias(tekst) {
+  let t = String(tekst)
+  for (const [van, naar] of ALIASSEN) t = t.replace(van, naar)
+  return t
+}
 
 /**
  * Zoekt het gerecht uit de bibliotheek dat hier is ingetypt.
@@ -106,6 +183,7 @@ const RUIS = 0.4
  * @returns {{sleutel: string, gerecht: object}|null}
  */
 export function zoekGerecht(getypt, gerechten, grootte) {
+  getypt = viaAlias(getypt)
   const voorvoegsel = `${grootte}|`
   const sleutel = voorvoegsel + gerechtsleutel(getypt)
   if (gerechten[sleutel]) return { sleutel, gerecht: gerechten[sleutel], letterlijk: true }
@@ -115,7 +193,7 @@ export function zoekGerecht(getypt, gerechten, grootte) {
     if (!k.startsWith(voorvoegsel)) continue
     const bron = k.slice(voorvoegsel.length)
     const extra = overtollig(bron, getypt)
-    if (extra === null || extra > woorden(bron).length * RUIS) continue
+    if (extra === null || extra > Math.max(RUIS_MINIMAAL, woorden(bron).length * RUIS)) continue
     treffers.push({ extra, sleutel: k, gerecht })
   }
   if (!treffers.length) return null

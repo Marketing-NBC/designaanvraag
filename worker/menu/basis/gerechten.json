@@ -1,31 +1,31 @@
 {
   "gerechten": {
-    "56|broodje kroket oesterzwam": {
-      "naam": "Broodje kroket",
+    "56|boneless short ribs misoboterjus": {
+      "naam": "Boneless short ribs",
       "ingredienten": [
-        "oesterzwam"
+        "misoboterjus"
       ],
-      "bron": "lunch-vega-standaard",
+      "bron": "buffet",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
-          "tekst": "Broodje kroket",
+          "tekst": "Boneless short ribs",
           "offset": 0.0
         }
       ],
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "oesterzwam",
+          "tekst": "misoboterjus",
           "offset": 0.0
         }
       ]
     },
-    "56|broodje kroket of vegakroket mosterdmayonaise rundvlees of oesterzwam (vega)": {
+    "56|broodje kroket of vegakroket mosterdmayonaise rundvlees (halal) of oesterzwam (vega)": {
       "naam": "Broodje kroket of vegakroket",
       "ingredienten": [
         "mosterdmayonaise",
-        "rundvlees of oesterzwam (vega)"
+        "rundvlees (halal) of oesterzwam (vega)"
       ],
       "bron": "lunch-standaard",
       "naamGrootte": 56.0,
@@ -38,7 +38,7 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "mosterdmayonaise | rundvlees of",
+          "tekst": "mosterdmayonaise | rundvlees (halal) of",
           "offset": 0.0
         },
         {
@@ -47,47 +47,61 @@
         }
       ]
     },
-    "56|bruschettaspiezen met seasonal dips (vega)": {
-      "naam": "Bruschettaspiezen met seasonal dips (vega)",
-      "ingredienten": [],
-      "bron": "grab-and-go",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Bruschettaspiezen met",
-          "offset": 0.0
-        },
-        {
-          "tekst": "seasonal dips (vega)",
-          "offset": 67.2
-        }
+    "56|broodje oesterzwamkroket oesterzwam": {
+      "naam": "Broodje oesterzwamkroket",
+      "ingredienten": [
+        "oesterzwam"
       ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
-    "56|burrata": {
-      "naam": "Burrata",
-      "ingredienten": [],
       "bron": "lunch-vega-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
-          "tekst": "Burrata",
+          "tekst": "Broodje oesterzwamkroket",
           "offset": 0.0
         }
       ],
-      "ingrGrootte": null,
-      "ingrRegels": null
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "oesterzwam",
+          "offset": 0.0
+        }
+      ]
     },
-    "56|burrata gedroogde mini vijgjes verse vijgen spruitjes pistache mesclun": {
+    "56|bruschettaspiezen met seasonal dips (vega)": {
+      "naam": "Bruschettaspiezen met seasonal dips",
+      "ingredienten": [
+        "(vega)"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Bruschettaspiezen",
+          "offset": 0.0
+        },
+        {
+          "tekst": "met seasonal dips",
+          "offset": 67.2
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "(vega)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|burrata gedroogde mini vijgen spruitjes pistache mesclun": {
       "naam": "Burrata",
       "ingredienten": [
-        "gedroogde mini vijgjes verse vijgen",
+        "gedroogde mini vijgen",
         "spruitjes",
         "pistache",
         "mesclun"
       ],
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
@@ -98,12 +112,12 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "gedroogde mini vijgjes verse vijgen| spruitjes |",
+          "tekst": "gedroogde mini vijgen | spruitjes | pistache |",
           "offset": 0.0
         },
         {
-          "tekst": "pistache | mesclun",
-          "offset": 50.01
+          "tekst": "mesclun",
+          "offset": 50.5
         }
       ]
     },
@@ -151,44 +165,6 @@
         }
       ]
     },
-    "56|caesar (kip) croutons oliën vinaigrette caesardressing": {
-      "naam": "Caesar (kip)",
-      "ingredienten": [
-        "Croutons",
-        "oliën",
-        "vinaigrette",
-        "caesardressing"
-      ],
-      "bron": "lunch-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Caesar (kip)",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 38.0,
-      "ingrRegels": [
-        {
-          "tekst": "Croutons | oliën | vinaigrette | caesardressing |",
-          "offset": 0.0
-        }
-      ]
-    },
-    "56|caprese (vega)": {
-      "naam": "Caprese (vega)",
-      "ingredienten": [],
-      "bron": "lunch-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Caprese (vega)",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
     "56|chocoladetrifle oreo crunch kersen tony's chocolonely schaaf": {
       "naam": "Chocoladetrifle",
       "ingredienten": [
@@ -216,10 +192,33 @@
         }
       ]
     },
-    "56|dutch prime beef ravigotesaus kruidencrunch limoen": {
+    "56|coq au vin zilver uitjes rode wijn winterpeen": {
+      "naam": "Coq au vin",
+      "ingredienten": [
+        "zilver uitjes",
+        "rode wijn",
+        "winterpeen"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Coq au vin",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "zilver uitjes | rode wijn | winterpeen",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|dutch prime beef ravigote kruidencrunch limoen": {
       "naam": "Dutch prime beef",
       "ingredienten": [
-        "ravigotesaus",
+        "ravigote",
         "kruidencrunch",
         "limoen"
       ],
@@ -234,32 +233,32 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "ravigotesaus | kruidencrunch | limoen",
+          "tekst": "ravigote | kruidencrunch | limoen",
           "offset": 0.0
         }
       ]
     },
-    "56|fregola (vegan)": {
-      "naam": "Fregola (vegan)",
+    "56|fruitsalade": {
+      "naam": "Fruitsalade",
       "ingredienten": [],
       "bron": "lunch-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
-          "tekst": "Fregola (vegan)",
+          "tekst": "Fruitsalade",
           "offset": 0.0
         }
       ],
       "ingrGrootte": null,
       "ingrRegels": null
     },
-    "56|gebakken brioche rilette van eend rode -uienchutney gele -uienrelish vennecress": {
+    "56|gebakken brioche rilette van eend rode-uienchutney gele-uienrelish vene cress": {
       "naam": "Gebakken brioche",
       "ingredienten": [
         "rilette van eend",
-        "rode -uienchutney",
-        "gele -uienrelish",
-        "vennecress"
+        "rode-uienchutney",
+        "gele-uienrelish",
+        "vene cress"
       ],
       "bron": "grab-and-go",
       "naamGrootte": 56.0,
@@ -272,22 +271,47 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "rilette van eend | rode -uienchutney |",
+          "tekst": "rilette van eend | rode-uienchutney |",
           "offset": 0.0
         },
         {
-          "tekst": "gele -uienrelish | vennecress",
+          "tekst": "gele-uienrelish | vene cress",
           "offset": 50.01
         }
       ]
     },
-    "56|greek yoghurt bar kip koreaanse kimchi-mayonaise zoetzure rode ui komkommer": {
+    "56|gebrande zalm zuurkool gefermenteerde mosterd": {
+      "naam": "Gebrande zalm",
+      "ingredienten": [
+        "zuurkool",
+        "gefermenteerde mosterd"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Gebrande zalm",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "zuurkool | gefermenteerde mosterd",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|greek yoghurt bar griekse yoghurt kwark fruit fruitcompotes muesli granola havermout": {
       "naam": "Greek Yoghurt Bar",
       "ingredienten": [
-        "kip",
-        "Koreaanse kimchi-mayonaise",
-        "zoetzure rode ui",
-        "komkommer"
+        "Griekse yoghurt",
+        "kwark",
+        "fruit",
+        "fruitcompotes",
+        "muesli",
+        "granola",
+        "havermout"
       ],
       "bron": "lunch-standaard",
       "naamGrootte": 56.0,
@@ -300,47 +324,17 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "kip | Koreaanse kimchi-mayonaise | zoetzure",
+          "tekst": "Griekse yoghurt | kwark | fruit | fruitcompotes |",
           "offset": 0.0
         },
         {
-          "tekst": "rode ui | komkommer",
+          "tekst": "muesli | granola | havermout",
           "offset": 50.01
         }
       ]
     },
-    "56|greek yoghurt bar kwark fruit fruitcompotes muesli granola havermout": {
-      "naam": "Greek Yoghurt Bar",
-      "ingredienten": [
-        "kwark",
-        "fruit",
-        "fruitcompotes",
-        "muesli",
-        "granola",
-        "havermout"
-      ],
-      "bron": "lunch-vega-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Greek Yoghurt Bar",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 38.0,
-      "ingrRegels": [
-        {
-          "tekst": "kwark | fruit | fruitcompotes | muesli | granola |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "havermout",
-          "offset": 50.01
-        }
-      ]
-    },
-    "56|grip 'n dip coq au vin tomatencrunch gerookte bietenmayonaise": {
-      "naam": "Grip ‘n dip",
+    "56|grip 'n dip fries coq au vin tomatencrunch gerookte bietenmayonaise": {
+      "naam": "Grip ’n dip fries",
       "ingredienten": [
         "coq au vin",
         "tomatencrunch",
@@ -350,7 +344,7 @@
       "naamGrootte": 56.0,
       "naamRegels": [
         {
-          "tekst": "Grip ‘n dip",
+          "tekst": "Grip ’n dip fries",
           "offset": 0.0
         }
       ],
@@ -389,6 +383,20 @@
         }
       ]
     },
+    "56|krokante parmezaan piepers": {
+      "naam": "Krokante parmezaan piepers",
+      "ingredienten": [],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Krokante parmezaan piepers",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
+    },
     "56|meergranen avocado komkommerspread lente-ui tomaat": {
       "naam": "Meergranen",
       "ingredienten": [
@@ -408,12 +416,8 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "avocado | komkommerspread | lente-ui |",
+          "tekst": "avocado | komkommerspread | lente-ui | tomaat",
           "offset": 0.0
-        },
-        {
-          "tekst": "tomaat",
-          "offset": 50.01
         }
       ]
     },
@@ -448,7 +452,7 @@
     "56|minestrone bar pittige tomatenbouillon tortellini mozzarella parmezaan paprika basilicum bruschetta's tomatenmix groene kruidenmix": {
       "naam": "Minestrone Bar",
       "ingredienten": [
-        "Pittige tomatenbouillon",
+        "pittige tomatenbouillon",
         "tortellini",
         "mozzarella",
         "parmezaan",
@@ -469,7 +473,7 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "Pittige tomatenbouillon | tortellini |",
+          "tekst": "pittige tomatenbouillon | tortellini |",
           "offset": 0.0
         },
         {
@@ -482,7 +486,7 @@
         },
         {
           "tekst": "groene kruidenmix",
-          "offset": 150.02
+          "offset": 150.03
         }
       ]
     },
@@ -508,20 +512,6 @@
         }
       ]
     },
-    "56|niçoise (vis)": {
-      "naam": "Niçoise (vis)",
-      "ingredienten": [],
-      "bron": "lunch-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Niçoise (vis)",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
     "56|pompoen feta rozijnen rode kool wortel": {
       "naam": "Pompoen",
       "ingredienten": [
@@ -530,7 +520,7 @@
         "rode kool",
         "wortel"
       ],
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
@@ -543,45 +533,6 @@
         {
           "tekst": "feta | rozijnen | rode kool | wortel",
           "offset": 0.0
-        }
-      ]
-    },
-    "56|pompoen gedroogde mini vijgjes verse vijgen spruitjes pistache mesclun appel gerookte makreel mierikswortel creme feta rode kool wortel": {
-      "naam": "Pompoen",
-      "ingredienten": [
-        "gedroogde mini vijgjes",
-        "verse vijgen",
-        "spruitjes",
-        "pistache",
-        "mesclun",
-        "appel",
-        "gerookte makreel",
-        "mierikswortel creme",
-        "feta",
-        "rode kool",
-        "wortel"
-      ],
-      "bron": "lunch-vega-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Pompoen",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 38.0,
-      "ingrRegels": [
-        {
-          "tekst": "gedroogde mini vijgjes | verse vijgen | spruitjes |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "pistache | mesclun | appel | gerookte makreel |",
-          "offset": 50.01
-        },
-        {
-          "tekst": "mierikswortel creme | feta | rode kool | wortel",
-          "offset": 100.02
         }
       ]
     },
@@ -603,6 +554,28 @@
       "ingrRegels": [
         {
           "tekst": "gedroogde Italiaanse ham | saliebotersaus",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|pompoenrisotto gorgonzola verse vijgen": {
+      "naam": "Pompoenrisotto",
+      "ingredienten": [
+        "gorgonzola",
+        "verse vijgen"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pompoenrisotto",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "gorgonzola | verse vijgen",
           "offset": 0.0
         }
       ]
@@ -629,7 +602,7 @@
       ]
     },
     "56|pão de queijo braziliaanse kaasballetjes piri piri-dip": {
-      "naam": "Pão de Queijo",
+      "naam": "Pão de queijo",
       "ingredienten": [
         "Braziliaanse kaasballetjes",
         "piri piri-dip"
@@ -638,7 +611,7 @@
       "naamGrootte": 56.0,
       "naamRegels": [
         {
-          "tekst": "Pão de Queijo",
+          "tekst": "Pão de queijo",
           "offset": 0.0
         }
       ],
@@ -650,28 +623,14 @@
         }
       ]
     },
-    "56|rode bieten": {
-      "naam": "Rode bieten",
-      "ingredienten": [],
-      "bron": "lunch-vega-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Rode bieten",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
-    "56|rode bieten appel gerookte makreel mierikswortel creme": {
+    "56|rode bieten appel gerookte makreel mierikswortelcrème": {
       "naam": "Rode bieten",
       "ingredienten": [
         "appel",
         "gerookte makreel",
-        "mierikswortel creme"
+        "mierikswortelcrème"
       ],
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
@@ -682,12 +641,53 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "appel | gerookte makreel | mierikswortel",
+          "tekst": "appel | gerookte makreel | mierikswortelcrème",
           "offset": 0.0
-        },
+        }
+      ]
+    },
+    "56|rode bieten appel gerookte makreel mierikswortelcréme": {
+      "naam": "Rode bieten",
+      "ingredienten": [
+        "appel",
+        "gerookte makreel",
+        "mierikswortelcréme"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
         {
-          "tekst": "creme",
-          "offset": 50.01
+          "tekst": "Rode bieten",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "appel | gerookte makreel | mierikswortelcréme",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|rode bieten tortilla hummus gegrilde groenten": {
+      "naam": "Rode bieten tortilla",
+      "ingredienten": [
+        "hummus",
+        "gegrilde groenten"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Rode bieten tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "hummus | gegrilde groenten",
+          "offset": 0.0
         }
       ]
     },
@@ -717,7 +717,7 @@
       "naam": "Schiacciata toscana",
       "ingredienten": [
         "burrata",
-        "Parmezaan",
+        "parmezaan",
         "tomatensalsa"
       ],
       "bron": "grab-and-go",
@@ -731,7 +731,29 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "burrata | Parmezaan | tomatensalsa",
+          "tekst": "burrata | parmezaan | tomatensalsa",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|spinazie tortilla hüttenkäse gedroogde tomaat": {
+      "naam": "Spinazie tortilla",
+      "ingredienten": [
+        "hüttenkäse",
+        "gedroogde tomaat"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Spinazie tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "hüttenkäse | gedroogde tomaat",
           "offset": 0.0
         }
       ]
@@ -761,7 +783,7 @@
     "56|sweet buns mini punt brioche gele geslagen room pistachecrunch poedersuiker": {
       "naam": "Sweet Buns",
       "ingredienten": [
-        "Mini punt brioche",
+        "mini punt brioche",
         "gele geslagen room",
         "pistachecrunch",
         "poedersuiker"
@@ -777,7 +799,7 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "Mini punt brioche | gele geslagen room |",
+          "tekst": "mini punt brioche | gele geslagen room |",
           "offset": 0.0
         },
         {
@@ -789,7 +811,7 @@
     "56|sweet buns mini punt brioche gele geslagen room pistachecrunch poedersuiker (vega)": {
       "naam": "Sweet Buns",
       "ingredienten": [
-        "Mini punt brioche",
+        "mini punt brioche",
         "gele geslagen room",
         "pistachecrunch",
         "poedersuiker (vega)"
@@ -805,7 +827,7 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "Mini punt brioche | gele geslagen room |",
+          "tekst": "mini punt brioche | gele geslagen room |",
           "offset": 0.0
         },
         {
@@ -822,7 +844,7 @@
         "komkommer",
         "gepofte zoete paprika"
       ],
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "naamGrootte": 56.0,
       "naamRegels": [
         {
@@ -833,11 +855,11 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "romaine | wortel | komkommer | gepofte",
+          "tekst": "romaine | wortel | komkommer | gepofte zoete",
           "offset": 0.0
         },
         {
-          "tekst": "zoete paprika",
+          "tekst": "paprika",
           "offset": 50.01
         }
       ]
@@ -861,48 +883,6 @@
         {
           "tekst": "ui | jalapeño",
           "offset": 0.0
-        }
-      ]
-    },
-    "56|vers fruit": {
-      "naam": "Vers fruit",
-      "ingredienten": [],
-      "bron": "lunch-vega-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Vers fruit",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
-    "56|vers fruit avocado komkommerspread lente-ui tomaat (vega)": {
-      "naam": "Vers fruit",
-      "ingredienten": [
-        "avocado",
-        "komkommerspread",
-        "lente-ui",
-        "tomaat (vega)"
-      ],
-      "bron": "lunch-standaard",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Vers fruit",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 38.0,
-      "ingrRegels": [
-        {
-          "tekst": "avocado | komkommerspread | lente-ui | tomaat",
-          "offset": 0.0
-        },
-        {
-          "tekst": "(vega)",
-          "offset": 50.01
         }
       ]
     },
@@ -950,12 +930,12 @@
         }
       ]
     },
-    "56|winterburger rode -ui chutney rode koolsla chili -paprikasaus": {
+    "56|winterburger rode-ui chutney rode koolsla chili-paprikasaus": {
       "naam": "Winterburger",
       "ingredienten": [
-        "rode -ui chutney",
+        "rode-ui chutney",
         "rode koolsla",
-        "chili -paprikasaus"
+        "chili-paprikasaus"
       ],
       "bron": "grab-and-go",
       "naamGrootte": 56.0,
@@ -968,14 +948,28 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "rode -ui chutney | rode koolsla |",
+          "tekst": "rode-ui chutney | rode koolsla |",
           "offset": 0.0
         },
         {
-          "tekst": "chili -paprikasaus",
+          "tekst": "chili-paprikasaus",
           "offset": 50.01
         }
       ]
+    },
+    "56|winterse rattatouille": {
+      "naam": "Winterse rattatouille",
+      "ingredienten": [],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Winterse rattatouille",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
     },
     "56|wit gegrilde halloumi koreaanse kimchi-mayonaise zoetzure rode ui komkommer": {
       "naam": "Wit",
@@ -996,16 +990,12 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "gegrilde halloumi | Koreaanse",
+          "tekst": "gegrilde halloumi | Koreaanse kimchi-mayonaise",
           "offset": 0.0
         },
         {
-          "tekst": "kimchi-mayonaise | zoetzure rode ui |",
+          "tekst": "| zoetzure rode ui | komkommer",
           "offset": 50.01
-        },
-        {
-          "tekst": "komkommer",
-          "offset": 100.02
         }
       ]
     },
@@ -1123,33 +1113,26 @@
         }
       ]
     },
-    "61.6|boneless short ribs miso boter jus": {
-      "naam": "Boneless short ribs",
-      "ingredienten": [
-        "miso boter jus"
-      ],
-      "bron": "buffet",
+    "61.6|bospaddenstoelensoep": {
+      "naam": "Bospaddenstoelensoep",
+      "ingredienten": [],
+      "bron": "lunch-vega-basic",
       "naamGrootte": 61.6,
       "naamRegels": [
         {
-          "tekst": "Boneless short ribs",
+          "tekst": "Bospaddenstoelensoep",
           "offset": 0.0
         }
       ],
-      "ingrGrootte": 41.8,
-      "ingrRegels": [
-        {
-          "tekst": "miso boter jus",
-          "offset": 0.0
-        }
-      ]
+      "ingrGrootte": null,
+      "ingrRegels": null
     },
     "61.6|bospaddenstoelensoep (vega)": {
       "naam": "Bospaddenstoelensoep",
       "ingredienten": [
         "(vega)"
       ],
-      "bron": "lunch-vega-basic",
+      "bron": "lunch-basic",
       "naamGrootte": 61.6,
       "naamRegels": [
         {
@@ -1161,6 +1144,27 @@
       "ingrRegels": [
         {
           "tekst": "(vega)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|broodje oesterzwamkroket oesterzwam": {
+      "naam": "Broodje oesterzwamkroket",
+      "ingredienten": [
+        "oesterzwam"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Broodje oesterzwamkroket",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "oesterzwam",
           "offset": 0.0
         }
       ]
@@ -1287,7 +1291,7 @@
         "kersen",
         "Tony’s Chocolonely schaaf"
       ],
-      "bron": "diner-4gangen",
+      "bron": "diner-3gangen",
       "naamGrootte": 61.6,
       "naamRegels": [
         {
@@ -1307,26 +1311,12 @@
         }
       ]
     },
-    "61.6|coq au vin": {
-      "naam": "Coq au vin",
-      "ingredienten": [],
-      "bron": "buffet",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Coq au vin",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
-    },
     "61.6|dessertbuffet met zoete lekkernijen l'or coffee popping pearls": {
       "naam": "Dessertbuffet met zoete lekkernijen",
       "ingredienten": [
         "L’OR Coffee Popping Pearls"
       ],
-      "bron": "diner-3gangen",
+      "bron": "diner-4gangen p10",
       "naamGrootte": 61.6,
       "naamRegels": [
         {
@@ -1346,12 +1336,12 @@
         }
       ]
     },
-    "61.6|gebakken brioche rilette van eend gele -uienrelish venne cress": {
+    "61.6|gebakken brioche rilette van eend gele-uienrelish vene cress": {
       "naam": "Gebakken brioche",
       "ingredienten": [
         "rilette van eend",
-        "gele -uienrelish",
-        "venne cress"
+        "gele-uienrelish",
+        "vene cress"
       ],
       "bron": "diner-3gangen",
       "naamGrootte": 61.6,
@@ -1364,34 +1354,12 @@
       "ingrGrootte": 41.8,
       "ingrRegels": [
         {
-          "tekst": "rilette van eend | gele -uienrelish |",
+          "tekst": "rilette van eend | gele-uienrelish |",
           "offset": 0.0
         },
         {
-          "tekst": "venne cress",
+          "tekst": "vene cress",
           "offset": 55.0
-        }
-      ]
-    },
-    "61.6|gebrande zalm zuurkool gefermenteerde mosterd": {
-      "naam": "Gebrande zalm",
-      "ingredienten": [
-        "zuurkool",
-        "gefermenteerde mosterd"
-      ],
-      "bron": "buffet",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Gebrande zalm",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 41.8,
-      "ingrRegels": [
-        {
-          "tekst": "zuurkool | gefermenteerde mosterd",
-          "offset": 0.0
         }
       ]
     },
@@ -1421,20 +1389,6 @@
           "offset": 55.01
         }
       ]
-    },
-    "61.6|krokante parmezaan piepers": {
-      "naam": "Krokante parmezaan piepers",
-      "ingredienten": [],
-      "bron": "buffet",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Krokante parmezaan piepers",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
     },
     "61.6|langzaam gegaarde kalfsrollade parmezaanse roomsaus citroen groene peper aardappel millefeuille krokante frietjes": {
       "naam": "Langzaam gegaarde Kalfsrollade",
@@ -1473,6 +1427,29 @@
         }
       ]
     },
+    "61.6|meergranen stokkie geitenkaas harissa romaine": {
+      "naam": "Meergranen stokkie",
+      "ingredienten": [
+        "geitenkaas",
+        "harissa",
+        "romaine"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Meergranen stokkie",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "geitenkaas | harissa | romaine",
+          "offset": 0.0
+        }
+      ]
+    },
     "61.6|meergranen stokkie geitenkaas harissa romaine (vega)": {
       "naam": "Meergranen stokkie",
       "ingredienten": [
@@ -1496,28 +1473,6 @@
         }
       ]
     },
-    "61.6|pompoen risotto gorgonzola verse vijgen": {
-      "naam": "Pompoen risotto",
-      "ingredienten": [
-        "gorgonzola",
-        "verse vijgen"
-      ],
-      "bron": "buffet",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Pompoen risotto",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 41.8,
-      "ingrRegels": [
-        {
-          "tekst": "gorgonzola | verse vijgen",
-          "offset": 0.0
-        }
-      ]
-    },
     "61.6|pompoenravioli gedroogde italiaanse ham saliebotersaus": {
       "naam": "Pompoenravioli",
       "ingredienten": [
@@ -1536,27 +1491,6 @@
       "ingrRegels": [
         {
           "tekst": "gedroogde Italiaanse ham | saliebotersaus",
-          "offset": 0.0
-        }
-      ]
-    },
-    "61.6|rode curry-kokossoep (vega)": {
-      "naam": "Rode curry-kokossoep",
-      "ingredienten": [
-        "(vega)"
-      ],
-      "bron": "lunch-basic",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Rode curry-kokossoep",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 41.8,
-      "ingrRegels": [
-        {
-          "tekst": "(vega)",
           "offset": 0.0
         }
       ]
@@ -1589,8 +1523,8 @@
         }
       ]
     },
-    "61.6|volkoren punt belegen kaas truffelmayonaise lollo bianca komkommer": {
-      "naam": "Volkoren punt",
+    "61.6|volkorenpunt belegen kaas truffelmayonaise lollo bianca komkommer": {
+      "naam": "Volkorenpunt",
       "ingredienten": [
         "belegen kaas",
         "truffelmayonaise",
@@ -1601,7 +1535,7 @@
       "naamGrootte": 61.6,
       "naamRegels": [
         {
-          "tekst": "Volkoren punt",
+          "tekst": "Volkorenpunt",
           "offset": 0.0
         }
       ],
@@ -1612,53 +1546,38 @@
           "offset": 0.0
         },
         {
-          "tekst": "Bianca | komkommer |",
+          "tekst": "Bianca | komkommer",
           "offset": 55.0
         }
       ]
     },
-    "61.6|volkoren punt belegen kaas truffelmayonaise lollo bianca komkommer (vega)": {
-      "naam": "Volkoren punt",
+    "61.6|volkorenpunt belegen kaas truffelmayonaise lollo bianca komkommer (vega)": {
+      "naam": "Volkorenpunt",
       "ingredienten": [
         "belegen kaas",
         "truffelmayonaise",
         "Lollo Bianca",
-        "komkommer",
-        "(vega)"
+        "komkommer (vega)"
       ],
       "bron": "lunch-basic",
       "naamGrootte": 61.6,
       "naamRegels": [
         {
-          "tekst": "Volkoren punt",
+          "tekst": "Volkorenpunt",
           "offset": 0.0
         }
       ],
       "ingrGrootte": 41.8,
       "ingrRegels": [
         {
-          "tekst": "belegen kaas | truffelmayonaise | Lollo",
+          "tekst": "belegen kaas | truffelmayonaise |",
           "offset": 0.0
         },
         {
-          "tekst": "Bianca | komkommer | (vega)",
+          "tekst": "Lollo Bianca | komkommer (vega)",
           "offset": 55.0
         }
       ]
-    },
-    "61.6|winterse rattatouille": {
-      "naam": "Winterse rattatouille",
-      "ingredienten": [],
-      "bron": "buffet",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Winterse rattatouille",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": null,
-      "ingrRegels": null
     },
     "61.6|witte sesambol achterham kruidenspread botersla tomaat": {
       "naam": "Witte sesambol",
@@ -1688,10 +1607,10 @@
         }
       ]
     },
-    "61.6|witte sesambol pikante humus botersla tomaat": {
+    "61.6|witte sesambol pikante hummus botersla tomaat": {
       "naam": "Witte sesambol",
       "ingredienten": [
-        "pikante humus",
+        "pikante hummus",
         "botersla",
         "tomaat"
       ],
@@ -1706,7 +1625,7 @@
       "ingrGrootte": 41.8,
       "ingrRegels": [
         {
-          "tekst": "pikante humus | botersla | tomaat",
+          "tekst": "pikante hummus | botersla | tomaat",
           "offset": 0.0
         }
       ]
@@ -1743,19 +1662,39 @@
     }
   },
   "alineas": {
-    "ingr|38|appel | gerookte makreel | mierikswortel creme": {
+    "ingr|38|(vega)": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "appel | gerookte makreel | mierikswortel creme",
+      "tekst": "(vega)",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "appel | gerookte makreel | mierikswortel",
+          "tekst": "(vega)",
           "offset": 0.0
-        },
+        }
+      ]
+    },
+    "ingr|38|appel | gerookte makreel | mierikswortelcrème": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "appel | gerookte makreel | mierikswortelcrème",
+      "bron": "lunch-standaard",
+      "regels": [
         {
-          "tekst": "creme",
-          "offset": 50.01
+          "tekst": "appel | gerookte makreel | mierikswortelcrème",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|appel | gerookte makreel | mierikswortelcréme": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "appel | gerookte makreel | mierikswortelcréme",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "appel | gerookte makreel | mierikswortelcréme",
+          "offset": 0.0
         }
       ]
     },
@@ -1766,12 +1705,8 @@
       "bron": "lunch-vega-standaard",
       "regels": [
         {
-          "tekst": "avocado | komkommerspread | lente-ui |",
+          "tekst": "avocado | komkommerspread | lente-ui | tomaat",
           "offset": 0.0
-        },
-        {
-          "tekst": "tomaat",
-          "offset": 50.01
         }
       ]
     },
@@ -1818,11 +1753,11 @@
     "ingr|38|burrata | parmezaan | tomatensalsa": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "burrata | Parmezaan | tomatensalsa",
+      "tekst": "burrata | parmezaan | tomatensalsa",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "burrata | Parmezaan | tomatensalsa",
+          "tekst": "burrata | parmezaan | tomatensalsa",
           "offset": 0.0
         }
       ]
@@ -1843,23 +1778,11 @@
         }
       ]
     },
-    "ingr|38|croutons | oliën | vinaigrette | caesardressing": {
-      "soort": "ingr",
-      "grootte": 38.0,
-      "tekst": "Croutons | oliën | vinaigrette | caesardressing |",
-      "bron": "lunch-standaard",
-      "regels": [
-        {
-          "tekst": "Croutons | oliën | vinaigrette | caesardressing |",
-          "offset": 0.0
-        }
-      ]
-    },
     "ingr|38|feta | rozijnen | rode kool | wortel": {
       "soort": "ingr",
       "grootte": 38.0,
       "tekst": "feta | rozijnen | rode kool | wortel",
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "regels": [
         {
           "tekst": "feta | rozijnen | rode kool | wortel",
@@ -1895,39 +1818,19 @@
         }
       ]
     },
-    "ingr|38|gedroogde mini vijgjes verse vijgen | spruitjes | pistache | mesclun": {
+    "ingr|38|gedroogde mini vijgen | spruitjes | pistache | mesclun": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "gedroogde mini vijgjes verse vijgen| spruitjes | pistache | mesclun",
-      "bron": "grab-and-go",
+      "tekst": "gedroogde mini vijgen | spruitjes | pistache | mesclun",
+      "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "gedroogde mini vijgjes verse vijgen| spruitjes |",
+          "tekst": "gedroogde mini vijgen | spruitjes | pistache |",
           "offset": 0.0
         },
         {
-          "tekst": "pistache | mesclun",
-          "offset": 50.01
-        }
-      ]
-    },
-    "ingr|38|gedroogde mini vijgjes | verse vijgen | spruitjes | pistache | mesclun | appel | gerookte makreel | mierikswortel creme | feta | rode kool | wortel": {
-      "soort": "ingr",
-      "grootte": 38.0,
-      "tekst": "gedroogde mini vijgjes | verse vijgen | spruitjes | pistache | mesclun | appel | gerookte makreel | mierikswortel creme | feta | rode kool | wortel",
-      "bron": "lunch-vega-standaard",
-      "regels": [
-        {
-          "tekst": "gedroogde mini vijgjes | verse vijgen | spruitjes |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "pistache | mesclun | appel | gerookte makreel |",
-          "offset": 50.01
-        },
-        {
-          "tekst": "mierikswortel creme | feta | rode kool | wortel",
-          "offset": 100.02
+          "tekst": "mesclun",
+          "offset": 50.5
         }
       ]
     },
@@ -1938,16 +1841,52 @@
       "bron": "lunch-vega-standaard",
       "regels": [
         {
-          "tekst": "gegrilde halloumi | Koreaanse",
+          "tekst": "gegrilde halloumi | Koreaanse kimchi-mayonaise",
           "offset": 0.0
         },
         {
-          "tekst": "kimchi-mayonaise | zoetzure rode ui |",
+          "tekst": "| zoetzure rode ui | komkommer",
           "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|gorgonzola | verse vijgen": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "gorgonzola | verse vijgen",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "gorgonzola | verse vijgen",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|griekse yoghurt | kwark | fruit | fruitcompotes | muesli | granola | havermout": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "Griekse yoghurt | kwark | fruit | fruitcompotes | muesli | granola | havermout",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Griekse yoghurt | kwark | fruit | fruitcompotes |",
+          "offset": 0.0
         },
         {
-          "tekst": "komkommer",
-          "offset": 100.02
+          "tekst": "muesli | granola | havermout",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|hummus | gegrilde groenten": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "hummus | gegrilde groenten",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "hummus | gegrilde groenten",
+          "offset": 0.0
         }
       ]
     },
@@ -1959,6 +1898,18 @@
       "regels": [
         {
           "tekst": "hummus | gegrilde groenten (vega)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|hüttenkäse | gedroogde tomaat": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "hüttenkäse | gedroogde tomaat",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "hüttenkäse | gedroogde tomaat",
           "offset": 0.0
         }
       ]
@@ -1979,30 +1930,14 @@
         }
       ]
     },
-    "ingr|38|kwark | fruit | fruitcompotes | muesli | granola | havermout": {
-      "soort": "ingr",
-      "grootte": 38.0,
-      "tekst": "kwark | fruit | fruitcompotes | muesli | granola | havermout",
-      "bron": "lunch-vega-standaard",
-      "regels": [
-        {
-          "tekst": "kwark | fruit | fruitcompotes | muesli | granola |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "havermout",
-          "offset": 50.01
-        }
-      ]
-    },
     "ingr|38|mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "Mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker",
+      "tekst": "mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker",
       "bron": "lunch-vega-standaard",
       "regels": [
         {
-          "tekst": "Mini punt brioche | gele geslagen room |",
+          "tekst": "mini punt brioche | gele geslagen room |",
           "offset": 0.0
         },
         {
@@ -2014,16 +1949,28 @@
     "ingr|38|mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker (vega)": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "Mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker (vega)",
+      "tekst": "mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker (vega)",
       "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "Mini punt brioche | gele geslagen room |",
+          "tekst": "mini punt brioche | gele geslagen room |",
           "offset": 0.0
         },
         {
           "tekst": "pistachecrunch | poedersuiker (vega)",
           "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|misoboterjus": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "misoboterjus",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "misoboterjus",
+          "offset": 0.0
         }
       ]
     },
@@ -2039,14 +1986,14 @@
         }
       ]
     },
-    "ingr|38|mosterdmayonaise | rundvlees of oesterzwam (vega)": {
+    "ingr|38|mosterdmayonaise | rundvlees (halal) of oesterzwam (vega)": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "mosterdmayonaise | rundvlees of oesterzwam (vega)",
+      "tekst": "mosterdmayonaise | rundvlees (halal) of oesterzwam (vega)",
       "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "mosterdmayonaise | rundvlees of",
+          "tekst": "mosterdmayonaise | rundvlees (halal) of",
           "offset": 0.0
         },
         {
@@ -2086,11 +2033,11 @@
     "ingr|38|pittige tomatenbouillon | tortellini | mozzarella | parmezaan | paprika | basilicum | bruschetta's | tomatenmix | groene kruidenmix": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "Pittige tomatenbouillon | tortellini | mozzarella | parmezaan | paprika | basilicum | bruschetta’s | tomatenmix | groene kruidenmix",
+      "tekst": "pittige tomatenbouillon | tortellini | mozzarella | parmezaan | paprika | basilicum | bruschetta’s | tomatenmix | groene kruidenmix",
       "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "Pittige tomatenbouillon | tortellini |",
+          "tekst": "pittige tomatenbouillon | tortellini |",
           "offset": 0.0
         },
         {
@@ -2103,7 +2050,7 @@
         },
         {
           "tekst": "groene kruidenmix",
-          "offset": 150.02
+          "offset": 150.03
         }
       ]
     },
@@ -2119,14 +2066,14 @@
         }
       ]
     },
-    "ingr|38|ravigotesaus | kruidencrunch | limoen": {
+    "ingr|38|ravigote | kruidencrunch | limoen": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "ravigotesaus | kruidencrunch | limoen",
+      "tekst": "ravigote | kruidencrunch | limoen",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "ravigotesaus | kruidencrunch | limoen",
+          "tekst": "ravigote | kruidencrunch | limoen",
           "offset": 0.0
         }
       ]
@@ -2143,34 +2090,34 @@
         }
       ]
     },
-    "ingr|38|rilette van eend | rode -uienchutney | gele -uienrelish | vennecress": {
+    "ingr|38|rilette van eend | rode-uienchutney | gele-uienrelish | vene cress": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "rilette van eend | rode -uienchutney | gele -uienrelish | vennecress",
+      "tekst": "rilette van eend | rode-uienchutney | gele-uienrelish | vene cress",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "rilette van eend | rode -uienchutney |",
+          "tekst": "rilette van eend | rode-uienchutney |",
           "offset": 0.0
         },
         {
-          "tekst": "gele -uienrelish | vennecress",
+          "tekst": "gele-uienrelish | vene cress",
           "offset": 50.01
         }
       ]
     },
-    "ingr|38|rode -ui chutney | rode koolsla | chili -paprikasaus": {
+    "ingr|38|rode-ui chutney | rode koolsla | chili-paprikasaus": {
       "soort": "ingr",
       "grootte": 38.0,
-      "tekst": "rode -ui chutney | rode koolsla | chili -paprikasaus",
+      "tekst": "rode-ui chutney | rode koolsla | chili-paprikasaus",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "rode -ui chutney | rode koolsla |",
+          "tekst": "rode-ui chutney | rode koolsla |",
           "offset": 0.0
         },
         {
-          "tekst": "chili -paprikasaus",
+          "tekst": "chili-paprikasaus",
           "offset": 50.01
         }
       ]
@@ -2179,14 +2126,14 @@
       "soort": "ingr",
       "grootte": 38.0,
       "tekst": "romaine | wortel | komkommer | gepofte zoete paprika",
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "romaine | wortel | komkommer | gepofte",
+          "tekst": "romaine | wortel | komkommer | gepofte zoete",
           "offset": 0.0
         },
         {
-          "tekst": "zoete paprika",
+          "tekst": "paprika",
           "offset": 50.01
         }
       ]
@@ -2251,6 +2198,30 @@
         }
       ]
     },
+    "ingr|38|zilver uitjes | rode wijn | winterpeen": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "zilver uitjes | rode wijn | winterpeen",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "zilver uitjes | rode wijn | winterpeen",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|zuurkool | gefermenteerde mosterd": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "zuurkool | gefermenteerde mosterd",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "zuurkool | gefermenteerde mosterd",
+          "offset": 0.0
+        }
+      ]
+    },
     "ingr|41.8|(vega)": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2282,7 +2253,7 @@
     "ingr|41.8|belegen kaas | truffelmayonaise | lollo bianca | komkommer": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer |",
+      "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer",
       "bron": "lunch-vega-basic",
       "regels": [
         {
@@ -2290,23 +2261,23 @@
           "offset": 0.0
         },
         {
-          "tekst": "Bianca | komkommer |",
+          "tekst": "Bianca | komkommer",
           "offset": 55.0
         }
       ]
     },
-    "ingr|41.8|belegen kaas | truffelmayonaise | lollo bianca | komkommer | (vega)": {
+    "ingr|41.8|belegen kaas | truffelmayonaise | lollo bianca | komkommer (vega)": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer | (vega)",
+      "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer (vega)",
       "bron": "lunch-basic",
       "regels": [
         {
-          "tekst": "belegen kaas | truffelmayonaise | Lollo",
+          "tekst": "belegen kaas | truffelmayonaise |",
           "offset": 0.0
         },
         {
-          "tekst": "Bianca | komkommer | (vega)",
+          "tekst": "Lollo Bianca | komkommer (vega)",
           "offset": 55.0
         }
       ]
@@ -2339,6 +2310,18 @@
         }
       ]
     },
+    "ingr|41.8|geitenkaas | harissa | romaine": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "geitenkaas | harissa | romaine",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "geitenkaas | harissa | romaine",
+          "offset": 0.0
+        }
+      ]
+    },
     "ingr|41.8|geitenkaas | harissa | romaine (vega)": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2364,18 +2347,6 @@
         {
           "tekst": "boekweit | mustard cress",
           "offset": 55.01
-        }
-      ]
-    },
-    "ingr|41.8|gorgonzola | verse vijgen": {
-      "soort": "ingr",
-      "grootte": 41.8,
-      "tekst": "gorgonzola | verse vijgen",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "gorgonzola | verse vijgen",
-          "offset": 0.0
         }
       ]
     },
@@ -2411,7 +2382,7 @@
       "soort": "ingr",
       "grootte": 41.8,
       "tekst": "L’OR Coffee Popping Pearls",
-      "bron": "diner-3gangen",
+      "bron": "diner-4gangen p10",
       "regels": [
         {
           "tekst": "L’OR Coffee Popping Pearls",
@@ -2419,14 +2390,14 @@
         }
       ]
     },
-    "ingr|41.8|miso boter jus": {
+    "ingr|41.8|oesterzwam": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "miso boter jus",
-      "bron": "buffet",
+      "tekst": "oesterzwam",
+      "bron": "lunch-vega-basic",
       "regels": [
         {
-          "tekst": "miso boter jus",
+          "tekst": "oesterzwam",
           "offset": 0.0
         }
       ]
@@ -2447,7 +2418,7 @@
       "soort": "ingr",
       "grootte": 41.8,
       "tekst": "Oreo crunch | kersen | Tony’s Chocolonely schaaf",
-      "bron": "diner-4gangen",
+      "bron": "diner-3gangen",
       "regels": [
         {
           "tekst": "Oreo crunch | kersen |",
@@ -2479,30 +2450,30 @@
         }
       ]
     },
-    "ingr|41.8|pikante humus | botersla | tomaat": {
+    "ingr|41.8|pikante hummus | botersla | tomaat": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "pikante humus | botersla | tomaat",
+      "tekst": "pikante hummus | botersla | tomaat",
       "bron": "lunch-vega-basic",
       "regels": [
         {
-          "tekst": "pikante humus | botersla | tomaat",
+          "tekst": "pikante hummus | botersla | tomaat",
           "offset": 0.0
         }
       ]
     },
-    "ingr|41.8|rilette van eend | gele -uienrelish | venne cress": {
+    "ingr|41.8|rilette van eend | gele-uienrelish | vene cress": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "rilette van eend | gele -uienrelish | venne cress",
+      "tekst": "rilette van eend | gele-uienrelish | vene cress",
       "bron": "diner-3gangen",
       "regels": [
         {
-          "tekst": "rilette van eend | gele -uienrelish |",
+          "tekst": "rilette van eend | gele-uienrelish |",
           "offset": 0.0
         },
         {
-          "tekst": "venne cress",
+          "tekst": "vene cress",
           "offset": 55.0
         }
       ]
@@ -2579,26 +2550,14 @@
         }
       ]
     },
-    "ingr|41.8|zuurkool | gefermenteerde mosterd": {
-      "soort": "ingr",
-      "grootte": 41.8,
-      "tekst": "zuurkool | gefermenteerde mosterd",
+    "naam|56|boneless short ribs": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Boneless short ribs",
       "bron": "buffet",
       "regels": [
         {
-          "tekst": "zuurkool | gefermenteerde mosterd",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|56|broodje kroket": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Broodje kroket",
-      "bron": "lunch-vega-standaard",
-      "regels": [
-        {
-          "tekst": "Broodje kroket",
+          "tekst": "Boneless short ribs",
           "offset": 0.0
         }
       ]
@@ -2615,18 +2574,30 @@
         }
       ]
     },
-    "naam|56|bruschettaspiezen met seasonal dips (vega)": {
+    "naam|56|broodje oesterzwamkroket": {
       "soort": "naam",
       "grootte": 56.0,
-      "tekst": "Bruschettaspiezen met seasonal dips (vega)",
+      "tekst": "Broodje oesterzwamkroket",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "Broodje oesterzwamkroket",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|bruschettaspiezen met seasonal dips": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Bruschettaspiezen met seasonal dips",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "Bruschettaspiezen met",
+          "tekst": "Bruschettaspiezen",
           "offset": 0.0
         },
         {
-          "tekst": "seasonal dips (vega)",
+          "tekst": "met seasonal dips",
           "offset": 67.2
         }
       ]
@@ -2643,30 +2614,6 @@
         }
       ]
     },
-    "naam|56|caesar (kip)": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Caesar (kip)",
-      "bron": "lunch-standaard",
-      "regels": [
-        {
-          "tekst": "Caesar (kip)",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|56|caprese (vega)": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Caprese (vega)",
-      "bron": "lunch-standaard",
-      "regels": [
-        {
-          "tekst": "Caprese (vega)",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|56|chocoladetrifle": {
       "soort": "naam",
       "grootte": 56.0,
@@ -2675,6 +2622,18 @@
       "regels": [
         {
           "tekst": "Chocoladetrifle",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|coq au vin": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Coq au vin",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Coq au vin",
           "offset": 0.0
         }
       ]
@@ -2691,14 +2650,14 @@
         }
       ]
     },
-    "naam|56|fregola (vegan)": {
+    "naam|56|fruitsalade": {
       "soort": "naam",
       "grootte": 56.0,
-      "tekst": "Fregola (vegan)",
+      "tekst": "Fruitsalade",
       "bron": "lunch-standaard",
       "regels": [
         {
-          "tekst": "Fregola (vegan)",
+          "tekst": "Fruitsalade",
           "offset": 0.0
         }
       ]
@@ -2715,6 +2674,18 @@
         }
       ]
     },
+    "naam|56|gebrande zalm": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Gebrande zalm",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Gebrande zalm",
+          "offset": 0.0
+        }
+      ]
+    },
     "naam|56|greek yoghurt bar": {
       "soort": "naam",
       "grootte": 56.0,
@@ -2727,14 +2698,14 @@
         }
       ]
     },
-    "naam|56|grip 'n dip": {
+    "naam|56|grip 'n dip fries": {
       "soort": "naam",
       "grootte": 56.0,
-      "tekst": "Grip ‘n dip",
+      "tekst": "Grip ’n dip fries",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "Grip ‘n dip",
+          "tekst": "Grip ’n dip fries",
           "offset": 0.0
         }
       ]
@@ -2747,6 +2718,18 @@
       "regels": [
         {
           "tekst": "Kaas",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|krokante parmezaan piepers": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Krokante parmezaan piepers",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Krokante parmezaan piepers",
           "offset": 0.0
         }
       ]
@@ -2787,23 +2770,11 @@
         }
       ]
     },
-    "naam|56|niçoise (vis)": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Niçoise (vis)",
-      "bron": "lunch-standaard",
-      "regels": [
-        {
-          "tekst": "Niçoise (vis)",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|56|pompoen": {
       "soort": "naam",
       "grootte": 56.0,
       "tekst": "Pompoen",
-      "bron": "lunch-vega-standaard",
+      "bron": "lunch-standaard",
       "regels": [
         {
           "tekst": "Pompoen",
@@ -2823,6 +2794,18 @@
         }
       ]
     },
+    "naam|56|pompoenrisotto": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pompoenrisotto",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Pompoenrisotto",
+          "offset": 0.0
+        }
+      ]
+    },
     "naam|56|provolone": {
       "soort": "naam",
       "grootte": 56.0,
@@ -2838,11 +2821,11 @@
     "naam|56|pão de queijo": {
       "soort": "naam",
       "grootte": 56.0,
-      "tekst": "Pão de Queijo",
+      "tekst": "Pão de queijo",
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "Pão de Queijo",
+          "tekst": "Pão de queijo",
           "offset": 0.0
         }
       ]
@@ -2851,7 +2834,7 @@
       "soort": "naam",
       "grootte": 56.0,
       "tekst": "Rode bieten",
-      "bron": "lunch-vega-standaard",
+      "bron": "lunch-standaard",
       "regels": [
         {
           "tekst": "Rode bieten",
@@ -2923,7 +2906,7 @@
       "soort": "naam",
       "grootte": 56.0,
       "tekst": "Thaise kip",
-      "bron": "grab-and-go",
+      "bron": "lunch-standaard",
       "regels": [
         {
           "tekst": "Thaise kip",
@@ -2939,18 +2922,6 @@
       "regels": [
         {
           "tekst": "Tuna melt",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|56|vers fruit": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Vers fruit",
-      "bron": "lunch-standaard",
-      "regels": [
-        {
-          "tekst": "Vers fruit",
           "offset": 0.0
         }
       ]
@@ -2975,6 +2946,18 @@
       "regels": [
         {
           "tekst": "Winterburger",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|winterse rattatouille": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Winterse rattatouille",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Winterse rattatouille",
           "offset": 0.0
         }
       ]
@@ -3023,7 +3006,7 @@
       "soort": "naam",
       "grootte": 61.6,
       "tekst": "Boneless short ribs",
-      "bron": "buffet",
+      "bron": "diner-3gangen",
       "regels": [
         {
           "tekst": "Boneless short ribs",
@@ -3035,7 +3018,7 @@
       "soort": "naam",
       "grootte": 61.6,
       "tekst": "Bospaddenstoelensoep",
-      "bron": "lunch-vega-basic",
+      "bron": "lunch-basic",
       "regels": [
         {
           "tekst": "Bospaddenstoelensoep",
@@ -3095,22 +3078,10 @@
       "soort": "naam",
       "grootte": 61.6,
       "tekst": "Chocoladetrifle",
-      "bron": "diner-4gangen",
+      "bron": "diner-3gangen",
       "regels": [
         {
           "tekst": "Chocoladetrifle",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|61.6|coq au vin": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Coq au vin",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "Coq au vin",
           "offset": 0.0
         }
       ]
@@ -3119,7 +3090,7 @@
       "soort": "naam",
       "grootte": 61.6,
       "tekst": "Dessertbuffet met zoete lekkernijen",
-      "bron": "diner-3gangen",
+      "bron": "diner-4gangen p10",
       "regels": [
         {
           "tekst": "Dessertbuffet met",
@@ -3143,18 +3114,6 @@
         }
       ]
     },
-    "naam|61.6|gebrande zalm": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Gebrande zalm",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "Gebrande zalm",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|61.6|gerookte hoenderfilet": {
       "soort": "naam",
       "grootte": 61.6,
@@ -3163,18 +3122,6 @@
       "regels": [
         {
           "tekst": "Gerookte hoenderfilet",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|61.6|krokante parmezaan piepers": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Krokante parmezaan piepers",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "Krokante parmezaan piepers",
           "offset": 0.0
         }
       ]
@@ -3207,18 +3154,6 @@
         }
       ]
     },
-    "naam|61.6|pompoen risotto": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Pompoen risotto",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "Pompoen risotto",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|61.6|pompoenravioli": {
       "soort": "naam",
       "grootte": 61.6,
@@ -3227,18 +3162,6 @@
       "regels": [
         {
           "tekst": "Pompoenravioli",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|61.6|rode curry-kokossoep": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Rode curry-kokossoep",
-      "bron": "lunch-basic",
-      "regels": [
-        {
-          "tekst": "Rode curry-kokossoep",
           "offset": 0.0
         }
       ]
@@ -3255,26 +3178,14 @@
         }
       ]
     },
-    "naam|61.6|volkoren punt": {
+    "naam|61.6|volkorenpunt": {
       "soort": "naam",
       "grootte": 61.6,
-      "tekst": "Volkoren punt",
+      "tekst": "Volkorenpunt",
       "bron": "lunch-basic",
       "regels": [
         {
-          "tekst": "Volkoren punt",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|61.6|winterse rattatouille": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Winterse rattatouille",
-      "bron": "buffet",
-      "regels": [
-        {
-          "tekst": "Winterse rattatouille",
+          "tekst": "Volkorenpunt",
           "offset": 0.0
         }
       ]

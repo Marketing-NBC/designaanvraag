@@ -66,11 +66,15 @@ node worker/menu-publiceer.mjs --aanvraag-id <uuid>
 
 Eén commando doet alles, in deze volgorde:
 
-1. De aanvraag ophalen. Staat er een uitgewerkte `menu_inhoud`, dan gaat die voor — dat is een
-   bewuste correctie met de hand.
-2. Anders de `menu_tekst` uitlezen: een kopje per gang, daaronder de gerechten met een bolletje,
+1. De aanvraag ophalen. Normaal staat `menu_inhoud` gevuld: dat is wat de aanvrager in het
+   formulier heeft aangeklikt, als structuur. Die gaat altijd voor.
+2. Staat die er niet (een aanvraag van voor het keuzescherm, of met de hand aangeleverd), dan de
+   `menu_tekst` uitlezen: een kopje per gang, daaronder de gerechten met een bolletje,
    ingrediënten achter een `|`.
-3. Het basisontwerp erbij zoeken aan de hand van de kopjes en het aantal gerechten.
+3. Het basisontwerp erbij zoeken. Staat `menu_pakket` gevuld, dan is dat het pakket en wordt er
+   niets geraden; wijken de kopjes daarvan af, dan komt dat als melding mee. Alleen zonder dat
+   veld leidt het script het pakket af uit de kopjes — en dat is niet zonder risico: haal een
+   broodje uit de Basic Lunch en het raden komt uit op de vega-versie.
 4. **Het logo van de opdrachtgever ophalen** van de subtaak "Menu scherm …" of "Menukaart print …".
    Hangt daar nog niets, dan stopt het script met exitcode 0 en blijft de aanvraag op `pending`
    staan; zie stap 2b.

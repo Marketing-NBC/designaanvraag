@@ -1,7 +1,7 @@
 {
   "pakket": "lunch-vega-standaard",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 3
   },
   "canvas": {
@@ -104,9 +104,9 @@
     "overgang": {
       "kop->naam": 146.4,
       "naam->ingr": 62.0,
-      "ingr->naam": 117.2,
+      "ingr->naam": 127.2,
       "ingr->kop": 136.4,
-      "naam->naam": 87.98
+      "naam->naam": 139.22
     },
     "regelafstand": {
       "ingr": 50.01
@@ -128,8 +128,12 @@
       "kader": {
         "breedte": 704.15,
         "minimaal": 695.8,
-        "maximaal": 755.8,
-        "handmatigeAfbrekingen": 0
+        "maximaal": 720.54,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "lunch-standaard",
+          "lunch-vega-standaard"
+        ]
       },
       "secties": [
         {
@@ -169,7 +173,7 @@
           "tekst": "Spaanse tortilla’s",
           "regels": [
             {
-              "baseline": 534.63,
+              "baseline": 532.53,
               "runs": [
                 {
                   "tekst": "Spaanse tortilla’s",
@@ -187,7 +191,7 @@
           "tekst": "Rode bieten tortilla",
           "regels": [
             {
-              "baseline": 681.03,
+              "baseline": 678.93,
               "runs": [
                 {
                   "tekst": "Rode bieten tortilla",
@@ -202,13 +206,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "hummus | gegrilde groenten (vega)",
+          "tekst": "hummus | gegrilde groenten",
           "regels": [
             {
-              "baseline": 743.03,
+              "baseline": 740.93,
               "runs": [
                 {
-                  "tekst": "hummus | gegrilde groenten (vega)",
+                  "tekst": "hummus | gegrilde groenten",
                   "x": -0.2,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -223,7 +227,7 @@
           "tekst": "Spinazie tortilla",
           "regels": [
             {
-              "baseline": 860.23,
+              "baseline": 868.13,
               "runs": [
                 {
                   "tekst": "Spinazie tortilla",
@@ -238,13 +242,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "zalm | hüttenkäse",
+          "tekst": "hüttenkäse | gedroogde tomaat",
           "regels": [
             {
-              "baseline": 922.23,
+              "baseline": 930.13,
               "runs": [
                 {
-                  "tekst": "zalm | hüttenkäse",
+                  "tekst": "hüttenkäse | gedroogde tomaat",
                   "x": -0.2,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -259,7 +263,7 @@
           "tekst": "Volkoren tortilla",
           "regels": [
             {
-              "baseline": 1039.43,
+              "baseline": 1057.33,
               "runs": [
                 {
                   "tekst": "Volkoren tortilla",
@@ -277,7 +281,7 @@
           "tekst": "belegen komijnkaas | yoghurt Madras",
           "regels": [
             {
-              "baseline": 1101.43,
+              "baseline": 1119.33,
               "runs": [
                 {
                   "tekst": "belegen komijnkaas | yoghurt Madras",
@@ -295,7 +299,7 @@
           "tekst": "Pinsa’s",
           "regels": [
             {
-              "baseline": 1237.83,
+              "baseline": 1255.73,
               "runs": [
                 {
                   "tekst": "Pinsa’s",
@@ -313,7 +317,7 @@
           "tekst": "Burrata",
           "regels": [
             {
-              "baseline": 1384.23,
+              "baseline": 1402.13,
               "runs": [
                 {
                   "tekst": "Burrata",
@@ -331,7 +335,7 @@
           "tekst": "tomatenmix | basilicumolie",
           "regels": [
             {
-              "baseline": 1446.23,
+              "baseline": 1464.13,
               "runs": [
                 {
                   "tekst": "tomatenmix | basilicumolie",
@@ -349,7 +353,7 @@
           "tekst": "Provolone",
           "regels": [
             {
-              "baseline": 1563.43,
+              "baseline": 1591.33,
               "runs": [
                 {
                   "tekst": "Provolone",
@@ -367,7 +371,7 @@
           "tekst": "tomatenchutney",
           "regels": [
             {
-              "baseline": 1625.43,
+              "baseline": 1653.33,
               "runs": [
                 {
                   "tekst": "tomatenchutney",
@@ -383,11 +387,11 @@
       ]
     },
     {
-      "x": 1329.0,
+      "x": 1324.0,
       "kader": {
-        "breedte": 786.22,
-        "minimaal": 776.9,
-        "maximaal": 813.35,
+        "breedte": 910.88,
+        "minimaal": 900.08,
+        "maximaal": 919.88,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -428,11 +432,11 @@
           "tekst": "Stokkies",
           "regels": [
             {
-              "baseline": 553.35,
+              "baseline": 532.53,
               "runs": [
                 {
                   "tekst": "Stokkies",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "Pockota-Medium",
                   "grootte": 72.0,
                   "kleur": "#f6a107"
@@ -446,11 +450,11 @@
           "tekst": "Wit",
           "regels": [
             {
-              "baseline": 699.75,
+              "baseline": 678.93,
               "runs": [
                 {
                   "tekst": "Wit",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
                   "kleur": "#000000"
@@ -464,11 +468,11 @@
           "tekst": "gegrilde halloumi | Koreaanse kimchi-mayonaise | zoetzure rode ui | komkommer",
           "regels": [
             {
-              "baseline": 761.75,
+              "baseline": 740.93,
               "runs": [
                 {
-                  "tekst": "gegrilde halloumi | Koreaanse ",
-                  "x": 0.22,
+                  "tekst": "gegrilde halloumi | Koreaanse kimchi-mayonaise ",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -476,23 +480,11 @@
               ]
             },
             {
-              "baseline": 811.76,
+              "baseline": 790.94,
               "runs": [
                 {
-                  "tekst": "kimchi-mayonaise | zoetzure rode ui | ",
-                  "x": 0.22,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 861.77,
-              "runs": [
-                {
-                  "tekst": "komkommer",
-                  "x": 0.22,
+                  "tekst": "| zoetzure rode ui | komkommer",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -506,11 +498,11 @@
           "tekst": "Meergranen",
           "regels": [
             {
-              "baseline": 978.95,
+              "baseline": 918.13,
               "runs": [
                 {
                   "tekst": "Meergranen",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
                   "kleur": "#000000"
@@ -524,23 +516,11 @@
           "tekst": "avocado | komkommerspread | lente-ui | tomaat",
           "regels": [
             {
-              "baseline": 1040.95,
+              "baseline": 980.13,
               "runs": [
                 {
-                  "tekst": "avocado | komkommerspread | lente-ui | ",
-                  "x": 0.22,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 1090.96,
-              "runs": [
-                {
-                  "tekst": "tomaat",
-                  "x": 0.22,
+                  "tekst": "avocado | komkommerspread | lente-ui | tomaat ",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -554,11 +534,11 @@
           "tekst": "Kaas",
           "regels": [
             {
-              "baseline": 1208.15,
+              "baseline": 1107.33,
               "runs": [
                 {
                   "tekst": "Kaas",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
                   "kleur": "#000000"
@@ -572,11 +552,11 @@
           "tekst": "mosterdmayonaise | komkommer | rucola",
           "regels": [
             {
-              "baseline": 1270.15,
+              "baseline": 1169.33,
               "runs": [
                 {
                   "tekst": "mosterdmayonaise | komkommer | rucola ",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -590,11 +570,11 @@
           "tekst": "Warme items",
           "regels": [
             {
-              "baseline": 1406.55,
+              "baseline": 1305.73,
               "runs": [
                 {
                   "tekst": "Warme items",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "Pockota-Medium",
                   "grootte": 72.0,
                   "kleur": "#f6a107"
@@ -608,11 +588,11 @@
           "tekst": "Minestrone Bar",
           "regels": [
             {
-              "baseline": 1552.95,
+              "baseline": 1452.13,
               "runs": [
                 {
                   "tekst": "Minestrone Bar",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
                   "kleur": "#000000"
@@ -623,14 +603,14 @@
         },
         {
           "soort": "ingr",
-          "tekst": "Pittige tomatenbouillon | tortellini | mozzarella | parmezaan | paprika | basilicum | bruschetta’s | tomatenmix | groene kruidenmix",
+          "tekst": "pittige tomatenbouillon | tortellini | mozzarella | parmezaan | paprika | basilicum | bruschetta’s | tomatenmix | groene kruidenmix",
           "regels": [
             {
-              "baseline": 1614.95,
+              "baseline": 1514.13,
               "runs": [
                 {
-                  "tekst": "Pittige tomatenbouillon | tortellini | ",
-                  "x": 0.22,
+                  "tekst": "pittige tomatenbouillon | tortellini | mozzarella | ",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -638,11 +618,11 @@
               ]
             },
             {
-              "baseline": 1664.96,
+              "baseline": 1564.14,
               "runs": [
                 {
-                  "tekst": "mozzarella | parmezaan | paprika | ",
-                  "x": 0.22,
+                  "tekst": "parmezaan | paprika | basilicum | bruschetta’s | ",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -650,23 +630,11 @@
               ]
             },
             {
-              "baseline": 1714.97,
+              "baseline": 1614.15,
               "runs": [
                 {
-                  "tekst": "basilicum | bruschetta’s | tomatenmix |  ",
-                  "x": 0.22,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 1764.98,
-              "runs": [
-                {
-                  "tekst": "groene kruidenmix",
-                  "x": 0.22,
+                  "tekst": "tomatenmix |  groene kruidenmix",
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -677,14 +645,14 @@
         },
         {
           "soort": "naam",
-          "tekst": "Broodje kroket",
+          "tekst": "Broodje oesterzwamkroket",
           "regels": [
             {
-              "baseline": 1911.35,
+              "baseline": 1741.33,
               "runs": [
                 {
-                  "tekst": "Broodje kroket",
-                  "x": 0.22,
+                  "tekst": "Broodje oesterzwamkroket",
+                  "x": -0.44,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
                   "kleur": "#000000"
@@ -698,11 +666,11 @@
           "tekst": "oesterzwam",
           "regels": [
             {
-              "baseline": 1973.35,
+              "baseline": 1803.33,
               "runs": [
                 {
                   "tekst": "oesterzwam",
-                  "x": 0.22,
+                  "x": -0.44,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
                   "kleur": "#000000"
@@ -716,10 +684,14 @@
     {
       "x": 2596.0,
       "kader": {
-        "breedte": 894.78,
-        "minimaal": 884.17,
-        "maximaal": 1053.23,
-        "handmatigeAfbrekingen": 0
+        "breedte": 879.96,
+        "minimaal": 869.53,
+        "maximaal": 989.31,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "lunch-standaard",
+          "lunch-vega-standaard"
+        ]
       },
       "secties": [
         {
@@ -744,15 +716,15 @@
           "gerechten": [
             {
               "naamAlinea": 7,
-              "ingrAlinea": null
-            },
-            {
-              "naamAlinea": 8,
-              "ingrAlinea": null
+              "ingrAlinea": 8
             },
             {
               "naamAlinea": 9,
               "ingrAlinea": 10
+            },
+            {
+              "naamAlinea": 11,
+              "ingrAlinea": 12
             }
           ]
         }
@@ -796,13 +768,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "kwark | fruit | fruitcompotes | muesli | granola | havermout",
+          "tekst": "Griekse yoghurt | kwark | fruit | fruitcompotes | muesli | granola | havermout",
           "regels": [
             {
               "baseline": 740.93,
               "runs": [
                 {
-                  "tekst": "kwark | fruit | fruitcompotes | muesli | granola | ",
+                  "tekst": "Griekse yoghurt | kwark | fruit | fruitcompotes | ",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -814,7 +786,7 @@
               "baseline": 790.94,
               "runs": [
                 {
-                  "tekst": "havermout",
+                  "tekst": "muesli | granola | havermout",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -826,13 +798,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Vers fruit",
+          "tekst": "Fruitsalade",
           "regels": [
             {
-              "baseline": 908.13,
+              "baseline": 918.13,
               "runs": [
                 {
-                  "tekst": "Vers fruit",
+                  "tekst": "Fruitsalade",
                   "x": -0.4,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
@@ -847,7 +819,7 @@
           "tekst": "Sweet Buns",
           "regels": [
             {
-              "baseline": 1037.33,
+              "baseline": 1057.35,
               "runs": [
                 {
                   "tekst": "Sweet Buns",
@@ -862,13 +834,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "Mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker",
+          "tekst": "mini punt brioche | gele geslagen room | pistachecrunch | poedersuiker",
           "regels": [
             {
-              "baseline": 1099.33,
+              "baseline": 1119.33,
               "runs": [
                 {
-                  "tekst": "Mini punt brioche | gele geslagen room |",
+                  "tekst": "mini punt brioche | gele geslagen room |",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -877,10 +849,10 @@
               ]
             },
             {
-              "baseline": 1149.34,
+              "baseline": 1169.34,
               "runs": [
                 {
-                  "tekst": "pistachecrunch | poedersuiker",
+                  "tekst": "pistachecrunch | poedersuiker ",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -892,13 +864,13 @@
         },
         {
           "soort": "kop",
-          "tekst": "Salade specials bar",
+          "tekst": "Salade Bar",
           "regels": [
             {
-              "baseline": 1285.73,
+              "baseline": 1305.73,
               "runs": [
                 {
-                  "tekst": "Salade specials bar",
+                  "tekst": "Salade Bar",
                   "x": -0.4,
                   "font": "Pockota-Medium",
                   "grootte": 72.0,
@@ -913,7 +885,7 @@
           "tekst": "Burrata",
           "regels": [
             {
-              "baseline": 1440.93,
+              "baseline": 1452.13,
               "runs": [
                 {
                   "tekst": "Burrata",
@@ -927,11 +899,41 @@
           ]
         },
         {
+          "soort": "ingr",
+          "tekst": "gedroogde mini vijgen | spruitjes | pistache | mesclun",
+          "regels": [
+            {
+              "baseline": 1502.13,
+              "runs": [
+                {
+                  "tekst": "gedroogde mini vijgen | spruitjes | pistache | ",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#1d1d1b"
+                }
+              ]
+            },
+            {
+              "baseline": 1552.63,
+              "runs": [
+                {
+                  "tekst": "mesclun",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#1d1d1b"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "soort": "naam",
           "tekst": "Rode bieten",
           "regels": [
             {
-              "baseline": 1528.91,
+              "baseline": 1679.33,
               "runs": [
                 {
                   "tekst": "Rode bieten",
@@ -945,11 +947,29 @@
           ]
         },
         {
+          "soort": "ingr",
+          "tekst": "appel | gerookte makreel | mierikswortelcréme",
+          "regels": [
+            {
+              "baseline": 1729.33,
+              "runs": [
+                {
+                  "tekst": "appel | gerookte makreel | mierikswortelcréme",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#1d1d1b"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "soort": "naam",
           "tekst": "Pompoen",
           "regels": [
             {
-              "baseline": 1616.89,
+              "baseline": 1856.53,
               "runs": [
                 {
                   "tekst": "Pompoen",
@@ -964,41 +984,17 @@
         },
         {
           "soort": "ingr",
-          "tekst": "gedroogde mini vijgjes | verse vijgen | spruitjes | pistache | mesclun | appel | gerookte makreel | mierikswortel creme | feta | rode kool | wortel",
+          "tekst": "feta | rozijnen | rode kool | wortel",
           "regels": [
             {
-              "baseline": 1678.93,
+              "baseline": 1906.53,
               "runs": [
                 {
-                  "tekst": "gedroogde mini vijgjes | verse vijgen | spruitjes | ",
+                  "tekst": "feta | rozijnen | rode kool | wortel",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 1728.94,
-              "runs": [
-                {
-                  "tekst": "pistache | mesclun | appel | gerookte makreel | ",
-                  "x": -0.4,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 1778.95,
-              "runs": [
-                {
-                  "tekst": "mierikswortel creme | feta | rode kool | wortel",
-                  "x": -0.4,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
+                  "kleur": "#1d1d1b"
                 }
               ]
             }
@@ -1009,28 +1005,28 @@
   ],
   "afwijkingen": [
     {
-      "kolom": 2,
-      "na": "groene kruidenmix",
-      "voor": "Broodje kroket",
-      "overgang": "ingr->naam",
-      "gemeten": 146.37,
-      "ritme": 117.2
+      "kolom": 3,
+      "na": "Burrata",
+      "voor": "gedroogde mini vijgen | spruitjes | pist",
+      "overgang": "naam->ingr",
+      "gemeten": 50.0,
+      "ritme": 62.0
     },
     {
       "kolom": 3,
-      "na": "Vers fruit",
-      "voor": "Sweet Buns",
-      "overgang": "naam->naam",
-      "gemeten": 129.2,
-      "ritme": 87.98
+      "na": "Rode bieten",
+      "voor": "appel | gerookte makreel | mierikswortel",
+      "overgang": "naam->ingr",
+      "gemeten": 50.0,
+      "ritme": 62.0
     },
     {
       "kolom": 3,
-      "na": "Salade specials bar",
-      "voor": "Burrata",
-      "overgang": "kop->naam",
-      "gemeten": 155.2,
-      "ritme": 146.4
+      "na": "Pompoen",
+      "voor": "feta | rozijnen | rode kool | wortel",
+      "overgang": "naam->ingr",
+      "gemeten": 50.0,
+      "ritme": 62.0
     }
   ],
   "zetfouten": []

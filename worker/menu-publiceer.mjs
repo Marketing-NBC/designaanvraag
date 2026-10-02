@@ -66,14 +66,35 @@ if (!inhoud && ruweTekst && ruweTekst.trim()) {
     await afbreken('De menu-invulling is niet te lezen: er staan geen gerechten in. '
       + 'Verwacht wordt een kopje per gang en daaronder de gerechten met een bolletje ervoor.')
   }
-  const keuze = kiesPakket(secties, pakketkenmerken())
   invoerNotities.push(...opmerkingen)
-  invoerNotities.push(keuze.uitleg)
-  if (!keuze.pakket) {
-    await afbreken(`${keuze.uitleg} Zet het juiste pakket erbij, of pas de kopjes aan. `
+
+  // Het formulier laat de aanvrager het pakket aanklikken, dus meestal weten we het
+  // gewoon. Alleen bij een aanvraag van voor het keuzescherm, of bij een menu dat met
+  // de hand is aangeleverd, moeten we het nog afleiden uit de kopjes. Dat afleiden is
+  // niet zonder risico: haal een broodje uit de Basic Lunch en de gok komt uit op de
+  // vega-versie. Wat is aangeklikt gaat daarom altijd voor.
+  const gekozen = args.pakket ?? aanvraag?.menu_pakket ?? ''
+  if (gekozen && !pakketten().includes(gekozen)) {
+    await afbreken(`Onbekend pakket "${gekozen}" bij deze aanvraag. `
       + `Beschikbaar: ${pakketten().join(', ')}.`)
   }
-  inhoud = { pakket: keuze.pakket, secties }
+  if (gekozen) {
+    invoerNotities.push(`Pakket "${gekozen}" komt uit het formulier.`)
+    const gok = kiesPakket(secties, pakketkenmerken())
+    if (gok.pakket && gok.pakket !== gekozen) {
+      invoerNotities.push(`Op de kopjes alleen zou het "${gok.pakket}" lijken; `
+        + 'de keuze uit het formulier gaat voor.')
+    }
+  } else {
+    const keuze = kiesPakket(secties, pakketkenmerken())
+    invoerNotities.push(keuze.uitleg)
+    if (!keuze.pakket) {
+      await afbreken(`${keuze.uitleg} Zet het juiste pakket erbij, of pas de kopjes aan. `
+        + `Beschikbaar: ${pakketten().join(', ')}.`)
+    }
+    inhoud = { pakket: keuze.pakket, secties }
+  }
+  inhoud = inhoud ?? { pakket: gekozen, secties }
 }
 
 /** Meldt de fout in Asana en zet de status, zodat een mislukking nooit stil blijft. */

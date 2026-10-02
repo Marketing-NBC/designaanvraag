@@ -1,7 +1,7 @@
 {
   "pakket": "diner-4gangen",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 8
   },
   "canvas": {
@@ -10,7 +10,7 @@
   },
   "achtergrond": "diner-4gangen.png",
   "titel": {
-    "tekst": "Dinner",
+    "tekst": "Diner",
     "x": 259.11,
     "baseline": 344.45,
     "font": "Pockota-Medium",
@@ -27,7 +27,7 @@
       "tekst": "Logo opdrachtgever",
       "font": "AreaNormal-ExtraBold",
       "grootte": 57.0,
-      "baseline": 242.94,
+      "baseline": 242.95,
       "x": 2189.22
     }
   },
@@ -130,7 +130,8 @@
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
           "diner-3gangen",
-          "diner-4gangen"
+          "diner-4gangen",
+          "walking-dinner"
         ]
       },
       "secties": [
@@ -341,13 +342,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele -uienrelish | venne cress",
+          "tekst": "rilette van eend | gele-uienrelish | vene cress",
           "regels": [
             {
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele -uienrelish | ",
+                  "tekst": "rilette van eend | gele-uienrelish | ",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -359,7 +360,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "venne cress",
+                  "tekst": "vene cress",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -494,13 +495,14 @@
     {
       "x": 2278.0,
       "kader": {
-        "breedte": 580.44,
-        "minimaal": 573.56,
+        "breedte": 550.79,
+        "minimaal": 544.26,
         "maximaal": 592.0,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
           "diner-3gangen",
-          "diner-4gangen"
+          "diner-4gangen",
+          "walking-dinner"
         ]
       },
       "secties": [

@@ -32,6 +32,25 @@ export function normalizeUrl(input: string): string | null {
   return url.toString()
 }
 
+/** Een gerecht zoals het formulier het doorgeeft: een naam, en hoe het verder luidt. */
+const gerechtSchema = z.object({
+  naam: z.string().trim().min(1).max(200),
+  ingredienten: z.array(z.string().trim().max(200)).max(20).optional(),
+  onderdelen: z.array(z.object({
+    naam: z.string().trim().min(1).max(200),
+    toelichting: z.array(z.string().trim().max(200)).max(20).optional(),
+  })).max(20).optional(),
+})
+
+/** De culinaire invulling als structuur: het pakket met zijn onderdelen en gerechten. */
+const menuInhoudSchema = z.object({
+  pakket: z.string().trim().min(1).max(60),
+  secties: z.array(z.object({
+    kop: z.string().trim().max(200).nullable(),
+    gerechten: z.array(gerechtSchema).max(60),
+  })).max(20),
+})
+
 export const aanvraagSchema = z
   .object({
     naam: z.string().trim().min(1, 'Kies je naam').max(80),
@@ -63,6 +82,15 @@ export const aanvraagSchema = z
      * en maakt er het menuscherm van; zie worker/menu/menu-tekst.mjs.
      */
     menu_tekst: z.string().trim().max(8000, 'Maximaal 8000 tekens').default(''),
+    // Welk pakket de aanvrager koos. Het formulier weet dat, dus hoeft de worker het
+    // niet meer uit de kopjes af te leiden - en kan hij zeggen dat het niet klopt in
+    // plaats van er een te gokken.
+    menu_pakket: z.string().trim().max(60).default(''),
+    // Hetzelfde menu als structuur. menu_tekst blijft ernaast staan omdat dat in de
+    // taakbeschrijving komt en leesbaar moet zijn; dit is wat de opmaak-engine
+    // gebruikt. Tekst alleen is niet genoeg: de opsomming met bollletjes van de
+    // Tartelettes overleeft een rondje door platte tekst niet.
+    menu_inhoud: menuInhoudSchema.nullable().default(null),
   })
   .superRefine((a, ctx) => {
     if (a.deadline > a.event_datum) {

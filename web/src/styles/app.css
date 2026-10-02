@@ -360,3 +360,61 @@ input, textarea, button { font-family: inherit; }
   transition: background var(--dur-fast), color var(--dur-fast);
 }
 .bijlage__wis:hover { background: var(--bg-elev); color: var(--fg-primary); }
+
+/* Culinaire invulling: het gekozen pakket met zijn gerechten */
+.menu { display: grid; gap: 22px; max-width: 680px; }
+.menu__kop {
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);
+}
+.menu__pakket { font: 600 20px/1.2 var(--font-body); color: var(--fg-primary); }
+.menu__telling { font: 400 15px/1.2 var(--font-body); color: var(--fg-secondary); }
+.menu__wissel {
+  margin-left: auto; border: none; background: transparent; cursor: pointer;
+  font: 400 15px/1.2 var(--font-body); color: var(--fg-secondary);
+  text-decoration: underline; text-underline-offset: 3px; padding: 4px;
+}
+.menu__wissel:hover { color: var(--fg-primary); }
+.menu__sectie { display: grid; gap: 6px; }
+.menu__sectiekop {
+  font: 600 15px/1.2 var(--font-body); color: var(--fg-secondary);
+  text-transform: uppercase; letter-spacing: 0.06em; margin: 0;
+}
+.menu__lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+
+.gerecht {
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
+  padding: 4px 4px 4px 12px; border-radius: var(--r-sm);
+}
+.gerecht:hover { background: var(--nbc-stone-50); }
+.gerecht__tekst { flex: 1; font: 400 17px/1.35 var(--font-body); color: var(--fg-primary); }
+.gerecht__tekst--eigen { color: var(--fg-primary); }
+.gerecht__nieuw {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;
+  font: 400 13px/1 var(--font-body); color: var(--nbc-orange, #f6a107);
+  white-space: nowrap;
+}
+.gerecht__nieuw svg { width: 14px; height: 14px; }
+.gerecht__knop {
+  border: none; background: transparent; cursor: pointer; border-radius: var(--r-pill);
+  font: 400 14px/1 var(--font-body); color: var(--fg-secondary);
+  padding: 8px 10px; opacity: 0; transition: opacity var(--dur-fast);
+}
+.gerecht:hover .gerecht__knop, .gerecht__knop:focus-visible { opacity: 1; }
+.gerecht__knop:hover { background: var(--nbc-stone-100); color: var(--fg-primary); }
+.gerecht__knop--weg { display: grid; place-items: center; padding: 8px; }
+.gerecht__knop svg { width: 16px; height: 16px; }
+.gerecht--nieuw:hover { background: transparent; }
+.gerecht__toevoegen {
+  border: none; background: transparent; cursor: pointer; padding: 8px 0;
+  font: 400 15px/1.2 var(--font-body); color: var(--fg-secondary);
+}
+.gerecht__toevoegen:hover { color: var(--fg-primary); }
+.gerecht__kiezer { flex: 1; display: flex; align-items: center; gap: 8px; position: relative; }
+.gerecht__kiezer .field { font-size: 17px; padding: 10px 14px; }
+.combo__opt--eigen { color: var(--fg-secondary); }
+.combo__opt--eigen svg { opacity: 1; width: 16px; height: 16px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gerecht__knop { transition: none; }
+}

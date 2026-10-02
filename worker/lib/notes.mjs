@@ -146,6 +146,16 @@ export function renderMenuComment({ pakket, bestandsnaam, meldingen, invoer, ses
     blokkades.push(`<li>${escapeXml(t)}</li>`)
   }
 
+  // Een gerecht dat we niet kennen staat bovenaan de aandachtspunten. Het scherm is
+  // er niet onbruikbaar van, maar de belofte vervalt wel: bij een bekend gerecht
+  // staat het er zoals de ontwerper het zette, bij dit gerecht is het onze eigen
+  // afbreking. Daar moet iemand naar kijken.
+  const onbekend = m.onbekend ?? []
+  for (const t of onbekend) {
+    punten.push(`<li><strong>Niet in de gerechtenbibliotheek:</strong> "${escapeXml(t)}". `
+      + 'Dit gerecht is door ons afgebroken, niet door de ontwerper.</li>')
+  }
+
   // Daarna hoe de invulling is gelezen: welk basisontwerp erbij is gezocht en wat
   // daarbij opviel. Dat bepaalt alles wat erna komt.
   for (const t of invoer ?? []) {
@@ -175,11 +185,21 @@ export function renderMenuComment({ pakket, bestandsnaam, meldingen, invoer, ses
   }
 
   const aandachtspunten = `${punten.length} aandachtspunt${punten.length === 1 ? '' : 'en'}`
-  const kop = punten.length === 0
-    ? `Menuscherm <strong>${escapeXml(pakket)}</strong> is opgemaakt volgens het basisontwerp `
+  let kop
+  if (onbekend.length) {
+    // Dit is het enige aandachtspunt dat in de openingszin hoort: het zegt iets over
+    // de inhoud, niet over de opmaak, en alleen iemand van Marketing kan erover
+    // oordelen.
+    kop = `Menuscherm <strong>${escapeXml(pakket)}</strong> staat als bijlage, maar `
+      + `${onbekend.length === 1 ? 'er staat een gerecht op' : `er staan ${onbekend.length} gerechten op`} `
+      + 'dat we niet kennen'
+  } else if (punten.length === 0) {
+    kop = `Menuscherm <strong>${escapeXml(pakket)}</strong> is opgemaakt volgens het basisontwerp `
       + 'en staat als bijlage'
-    : `Menuscherm <strong>${escapeXml(pakket)}</strong> staat als bijlage, `
+  } else {
+    kop = `Menuscherm <strong>${escapeXml(pakket)}</strong> staat als bijlage, `
       + `maar er ${punten.length === 1 ? 'is' : 'zijn'} ${aandachtspunten}`
+  }
 
   return `<body>${kop} (<em>${escapeXml(bestandsnaam)}</em>).`
     + (punten.length ? `<ul>${punten.join('')}</ul>` : '')

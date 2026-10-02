@@ -13,11 +13,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { WORKER_DIR } from '../lib/config.mjs'
+import { REPO_DIR, WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
-import { menuIsBruikbaar } from '../lib/notes.mjs'
+import { menuIsBruikbaar, renderMenuComment } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
-import { zoekGerecht } from '../menu/gerecht-match.mjs'
+import { overtollig, woorden, zoekGerecht } from '../menu/gerecht-match.mjs'
 
 /** Zelfde normalisatie als tekstsleutel() in basis-extract.py en template.html. */
 const sleutelVan = (t) => String(t)
@@ -182,14 +182,74 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
   const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
   const tartelettes = inhoud.secties[0].gerechten[0]
   assert.ok(Array.isArray(tartelettes.onderdelen), 'Tartelettes komt niet als opsomming terug')
-  tartelettes.onderdelen.push({ naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcreme'] })
+  tartelettes.onderdelen.push({ naam: 'Gerookte paling' })
 
   const { meldingen } = await renderMenu(inhoud)
   assert.deepEqual(meldingen.botsingen, [], 'de langere opsomming raakt een blob')
   assert.deepEqual(meldingen.overloop, [])
   // De alinea wordt langer, en dat hoort gemeld te worden.
   assert.equal(meldingen.regelval.length, 1)
-  assert.match(meldingen.regelval[0], /6 regels/)
+  assert.match(meldingen.regelval[0], /5 regels/)
+})
+
+test('past een onderdeel er niet meer bij, dan wordt dat gemeld', { timeout: 120_000 }, async () => {
+  // De eerste kolom van Grab & Go zit vol: sinds "Bruschettaspiezen met seasonal
+  // dips (vega)" over drie regels loopt is er nog ruimte voor een kale naam, niet
+  // voor een naam met een toelichting erbij. Dan hoort het scherm niet stilletjes
+  // door te lopen maar als onbruikbaar terug te komen.
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  inhoud.secties[0].gerechten[0].onderdelen.push({
+    naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcr\u00e8me'] })
+
+  const { meldingen } = await renderMenu(inhoud)
+  assert.equal(meldingen.overloop.length, 1)
+  assert.match(meldingen.overloop[0], /onder de onderrand/)
+  assert.ok(!menuIsBruikbaar(meldingen), 'zo\u2019n scherm mag nooit goedgekeurd worden')
+})
+
+test('er kan een onderdeel uit een opsomming, en de rest schuift op',
+  { timeout: 120_000 }, async () => {
+  // Abel: "Het kan zijn dat daar bijvoorbeeld Rundertartaar wordt weggehaald of
+  // gewijzigd. Dan moet het wel blijven kloppen." Taleggio hoort dan op de regel
+  // te komen waar Rundertartaar stond, met zijn cursieve toelichting eronder, en
+  // alles daaronder schuift een gerecht omhoog.
+  const ontwerp = await renderMenu(inhoudVanBasis(laadBasis('grab-and-go')))
+  const eerste = (r) => r.opmaak.regels.find((x) => /^.?Rundertartaar|^.?Taleggio/.test(x.tekst))
+  const plek = eerste(ontwerp).baseline
+
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  const tartelettes = inhoud.secties[0].gerechten[0]
+  tartelettes.onderdelen = tartelettes.onderdelen.filter((o) => !/Rundertartaar/i.test(o.naam))
+
+  const zonder = await renderMenu(inhoud)
+  assert.deepEqual(zonder.meldingen.botsingen, [])
+  assert.deepEqual(zonder.meldingen.overloop, [])
+  const regels = zonder.opmaak.regels.map((r) => r.tekst)
+  assert.ok(!regels.some((t) => /Rundertartaar|umamicr/i.test(t)),
+    'het weggehaalde onderdeel staat er nog')
+  assert.equal(eerste(zonder).baseline, plek,
+    'Taleggio staat niet op de regel waar Rundertartaar stond')
+  const toelichting = zonder.opmaak.regels.find((r) => /romige taleggio/i.test(r.tekst))
+  assert.ok(toelichting && toelichting.baseline > plek, 'de toelichting volgt niet op zijn naam')
+})
+
+test('een onderdeel van een opsomming mag veranderen', { timeout: 120_000 }, async () => {
+  // Wisselt de keuken van product, dan hoort alleen die regel mee te veranderen en
+  // de rest op zijn plek te blijven staan.
+  const ontwerp = await renderMenu(inhoudVanBasis(laadBasis('grab-and-go')))
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  const tartelettes = inhoud.secties[0].gerechten[0]
+  tartelettes.onderdelen[0] = { naam: 'Zalmtartaar', toelichting: ['dillecr\u00e8me', 'kwartelei'] }
+
+  const anders = await renderMenu(inhoud)
+  assert.deepEqual(anders.meldingen.botsingen, [])
+  assert.deepEqual(anders.meldingen.overloop, [])
+  const zelfde = (r, t) => r.opmaak.regels.find((x) => x.tekst === t)
+  for (const t of ['Tartelettes', '\u2022Taleggio (vega)', 'P\u00e3o de Queijo']) {
+    assert.equal(zelfde(anders, t)?.baseline, zelfde(ontwerp, t)?.baseline,
+      `"${t}" is verschoven terwijl alleen het eerste onderdeel veranderde`)
+  }
+  assert.ok(anders.opmaak.regels.some((r) => /Zalmtartaar/.test(r.tekst)))
 })
 
 test('een opsomming kan naar een pakket dat er zelf geen heeft', { timeout: 120_000 }, async () => {
@@ -206,6 +266,79 @@ test('een opsomming kan naar een pakket dat er zelf geen heeft', { timeout: 120_
   assert.deepEqual(meldingen.overloop, [])
   assert.equal(meldingen.opmaak.length, 1, 'de wissel van ingredienten naar bullets hoort gemeld')
   assert.match(meldingen.opmaak[0], /opsomming met bullets/)
+})
+
+test('de pakkettenlijst voor het formulier loopt gelijk met de ontwerpen',
+  { timeout: 30_000 }, async () => {
+  // Het formulier laat de aanvrager een pakket kiezen en toont wat erin zit. Loopt
+  // die lijst achter op de basisontwerpen, dan kiest hij iets anders dan er op het
+  // scherm komt - en dat merk je pas als het scherm er is.
+  const { gerechtregel } = await import('../menu/pakketten-export.mjs')
+  const data = JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten.json'), 'utf8'))
+  assert.deepEqual(data.pakketten.map((p) => p.pakket).sort(), [...pakketten()].sort(),
+    'shared/menu-pakketten.json is niet bijgewerkt; draai worker/menu/pakketten-export.mjs')
+  for (const p of data.pakketten) {
+    assert.ok(p.naam, `${p.pakket} heeft geen naam voor de aanvrager`)
+    assert.deepEqual(p.secties, inhoudVanBasis(laadBasis(p.pakket)).secties,
+      `${p.pakket} wijkt af van het basisontwerp`)
+  }
+  // Elk gerecht uit elk pakket moet in de keuzelijst staan, anders kan de aanvrager
+  // het nergens mee wisselen.
+  const bekend = new Set(data.gerechten.map(gerechtregel))
+  for (const p of data.pakketten) {
+    for (const s of p.secties) {
+      for (const g of s.gerechten) {
+        assert.ok(bekend.has(gerechtregel(g)), `"${g.naam}" uit ${p.pakket} mist in de keuzelijst`)
+      }
+    }
+  }
+})
+
+test('een gerecht buiten de bibliotheek wordt gemeld, niet geweigerd',
+  { timeout: 120_000 }, async () => {
+  // Abel: "Ik wil dan wel een waarschuwing duidelijk krijgen, dat er een gerecht bij
+  // is dat niet in het bibliotheek staat." Het scherm komt er wel - het is geen fout
+  // om iets nieuws te serveren - maar de belofte vervalt: dit gerecht is door ons
+  // afgebroken en niet door de ontwerper.
+  const inhoud = inhoudVanBasis(laadBasis('lunch-basic'))
+  inhoud.secties[0].gerechten[1] = { naam: 'Broodje kaantjes', ingredienten: ['appelstroop', 'bosui'] }
+
+  const { meldingen } = await renderMenu(inhoud)
+  assert.deepEqual(meldingen.onbekend, ['Broodje kaantjes | appelstroop | bosui'])
+  assert.deepEqual(meldingen.botsingen, [])
+  assert.ok(menuIsBruikbaar(meldingen), 'een nieuw gerecht maakt het scherm niet onbruikbaar')
+
+  // En het hoort in de openingszin van de comment te staan, niet onderaan een lijst.
+  const comment = renderMenuComment({
+    pakket: 'lunch-basic', bestandsnaam: 'menuscherm-lunch-basic.png', meldingen, invoer: [],
+  })
+  assert.match(comment, /gerecht op dat we niet kennen/)
+  assert.match(comment, /Niet in de gerechtenbibliotheek/)
+})
+
+test('een bekend gerecht levert geen waarschuwing op', { timeout: 120_000 }, async () => {
+  const { meldingen } = await renderMenu(inhoudVanBasis(laadBasis('lunch-basic')))
+  assert.deepEqual(meldingen.onbekend ?? [], [])
+  const comment = renderMenuComment({
+    pakket: 'lunch-basic', bestandsnaam: 'x.png', meldingen, invoer: [],
+  })
+  assert.match(comment, /opgemaakt volgens het basisontwerp/)
+})
+
+test('wat het formulier doorgeeft komt er precies uit', { timeout: 300_000 }, async () => {
+  // Het formulier stuurt het menu als structuur, niet als tekst. Dat is geen detail:
+  // door platte tekst overleeft de opsomming van de Tartelettes het niet - de
+  // bolletjes en de cursieve toelichting vallen weg. Elk pakket moet er dus uit
+  // komen zoals de ontwerper het zette, ook als er niets aan gewijzigd is.
+  const data = JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten.json'), 'utf8'))
+  for (const p of data.pakketten) {
+    const uitOntwerp = await renderMenu(inhoudVanBasis(laadBasis(p.pakket)))
+    const viaFormulier = await renderMenu({ pakket: p.pakket, secties: p.secties })
+    assert.ok(viaFormulier.png.equals(uitOntwerp.png),
+      `${p.pakket} ziet er anders uit via het formulier dan via het basisontwerp`)
+    assert.deepEqual(viaFormulier.meldingen.onbekend ?? [], [],
+      `${p.pakket} levert een gerecht op dat de engine niet terugvindt`)
+  }
 })
 
 test('een onbekend pakket geeft een duidelijke fout', () => {
@@ -426,17 +559,17 @@ test('een gerecht uit een ander pakket houdt zijn eigen regelval', { timeout: 12
 
 test('de streep mag ergens anders staan dan de ontwerper hem zette',
   { timeout: 120_000 }, async () => {
-  // Abel schrijft "Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls";
-  // iemand anders typt hetzelfde gerecht als "Dessertbuffet | met zoete lekkernijen |
-  // L'OR Coffee Popping Pearls". Dat is dezelfde schotel, en hij hoort er dan ook
-  // precies hetzelfde uit te zien: de bibliotheek weet waar de naam ophoudt.
+  // Abel schrijft "Chocoladetrifle | Oreo crunch | kersen | Tony's Chocolonely
+  // schaaf"; iemand anders typt hetzelfde gerecht als "Chocoladetrifle Oreo crunch |
+  // kersen | Tony's Chocolonely schaaf". Dat is dezelfde schotel, en hij hoort er dan
+  // ook precies hetzelfde uit te zien: de bibliotheek weet waar de naam ophoudt.
   const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
 
   const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
   const nagerecht = inhoud.secties[inhoud.secties.length - 1]
   nagerecht.gerechten = [{
-    naam: 'Dessertbuffet',
-    ingredienten: ['met zoete lekkernijen', "l'or coffee popping pearls"],
+    naam: 'Chocoladetrifle Oreo crunch',
+    ingredienten: ['kersen', 'tony’s chocolonely schaaf'],
   }]
   const anders = await renderMenu(inhoud)
 
@@ -452,6 +585,54 @@ test('de streep mag ergens anders staan dan de ontwerper hem zette',
 // opschrijft. Zoeken op gelijkenis is hier levensgevaarlijk: wisselt NBC tonijn
 // voor zalm, dan lijkt dat gerecht voor 90% op de versie uit het ontwerp en zou
 // er tonijn op het scherm komen. Daarom telt dekking en niet gelijkenis.
+
+test('de bibliotheeknaam vindt het gerecht uit het ontwerp', () => {
+  // Abel kort af waar de bibliotheek voluit schrijft: "Wit" tegenover "Witte
+  // baguette", "Burrata" tegenover "Pinsa | burrata". Wie het uit de bibliotheek
+  // overtypt hoort toch het broodje van de ontwerper te krijgen.
+  const { gerechten } = laadBibliotheek()
+  const vindt = (tekst) => zoekGerecht(tekst, gerechten, 56)?.sleutel
+  assert.match(vindt('Witte baguette | kip | Koreaanse kimchi-mayonaise | zoetzure rode ui | komkommer'),
+    /\|wit kip/)
+  assert.match(vindt('Pinsa | burrata | tomatenmix | basilicumolie (vega)'), /\|burrata tomatenmix/)
+  assert.match(vindt('Pinsa | provolone | tomatenchutney'), /\|provolone tomatenchutney/)
+  assert.match(vindt('Baguette kaas | mosterdmayonaise | komkommer | rucola'), /\|kaas mosterdmayonaise/)
+})
+
+test('een woord erbij mag, een ander product niet', () => {
+  // Een kort gerecht mag altijd een woord extra hebben - anders vindt "Pinsa |
+  // provolone | tomatenchutney" het ontwerp niet. Maar twee woorden erbij is een
+  // ander gerecht, en dan houden we onze handen ervan af.
+  const { gerechten } = laadBibliotheek()
+  assert.equal(zoekGerecht('Burrata | tomatenmix | truffelolie', gerechten, 56), null)
+})
+
+test('een woord mag aan elkaar of los geschreven staan', () => {
+  // Het ontwerp zet "miso boter jus" waar de bibliotheek "misoboterjus" schrijft, en
+  // "Volkoren punt" tegenover "Volkorenpunt". Dezelfde schotel, dus dat mag beide
+  // kanten op samenvallen.
+  assert.equal(overtollig('misoboterjus', 'miso boter jus'), 0)
+  assert.equal(overtollig('miso boter jus', 'misoboterjus'), 0)
+  assert.equal(overtollig('volkorenpunt', 'Volkoren punt'), 0)
+  assert.equal(overtollig('mierikswortelcr\u00e8me', 'mierikswortel creme'), 0)
+})
+
+test('samenvoegen mag niet van twee gerechten een gerecht maken', () => {
+  // De woorden moeten naast elkaar staan en in dezelfde volgorde, anders zou
+  // "kroket oesterzwam" ineens "oesterzwamkroket" zijn - twee verschillende broodjes.
+  assert.equal(overtollig('broodje oesterzwamkroket', 'Broodje kroket oesterzwam'), null)
+  // En korte woorden doen niet mee, net als bij een tikfout: "u i" is geen manier
+  // om "ui" te schrijven, en zo zou elk kort ingredient overal in passen.
+  assert.equal(overtollig('rode ui', 'rode u i'), null)
+})
+
+test('de krulapostrof uit Word is dezelfde als die in de bibliotheek', () => {
+  // Outlook en Word maken van ' vanzelf een ’. De sleutel in de bibliotheek wordt
+  // genormaliseerd, dus de losse woorden moeten dat ook: anders valt "Tony’s" uiteen
+  // in "tony" en "s" en is het gerecht ineens onvindbaar.
+  assert.deepEqual(woorden('Tony’s Chocolonely'), woorden("Tony's Chocolonely"))
+  assert.equal(overtollig("tony's chocolonely schaaf", 'Tony’s Chocolonely schaaf'), 0)
+})
 
 test('een gerecht dat anders geformuleerd is wordt herkend', () => {
   const { gerechten } = laadBibliotheek()
@@ -521,10 +702,10 @@ test('geen enkele verhaspeling levert het verkeerde gerecht op', () => {
 test('een gerecht dat anders is opgeschreven komt zo op het scherm', { timeout: 120_000 }, async () => {
   // Het hele pad: iemand typt het dessert zoals de traiteur het stuurt, in een
   // adem, zonder streepje. Op het scherm hoort het te staan zoals Abel het zette
-  // - naam op twee regels, de pearls op hun eigen regel eronder.
+  // - de naam op zijn eigen regel, de ingredienten eronder afgebroken na "kersen |".
   const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
   const nagerecht = inhoud.secties[inhoud.secties.length - 1]
-  nagerecht.gerechten = [{ naam: "dessertbuffet – verschillende zoete lekkernijen met L'OR coffee popping pearls" }]
+  nagerecht.gerechten = [{ naam: "chocoladetrifle – met oreo crunch, kersen en Tony’s Chocolonely schaaf" }]
   const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
   const anders = await renderMenu(inhoud)
 

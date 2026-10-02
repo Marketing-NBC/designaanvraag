@@ -1,7 +1,7 @@
 {
   "pakket": "diner-3gangen",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 7
   },
   "canvas": {
@@ -10,7 +10,7 @@
   },
   "achtergrond": "diner-3gangen.png",
   "titel": {
-    "tekst": "Dinner",
+    "tekst": "Diner",
     "x": 259.11,
     "baseline": 344.45,
     "font": "Pockota-Medium",
@@ -66,14 +66,7 @@
       }
     ]
   },
-  "correcties": {
-    "woorden": [
-      [
-        "lekkernije",
-        "lekkernijen"
-      ]
-    ]
-  },
+  "correcties": null,
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -115,8 +108,7 @@
       "ingr->kop": 150.04
     },
     "regelafstand": {
-      "ingr": 55.0,
-      "naam": 73.92
+      "ingr": 55.0
     },
     "kopBaseline": null
   },
@@ -138,7 +130,8 @@
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
           "diner-3gangen",
-          "diner-4gangen"
+          "diner-4gangen",
+          "walking-dinner"
         ]
       },
       "secties": [
@@ -278,7 +271,7 @@
       "kader": {
         "breedte": 783.35,
         "minimaal": 774.06,
-        "maximaal": 824.26,
+        "maximaal": 786.61,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -340,13 +333,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele -uienrelish | venne cress",
+          "tekst": "rilette van eend | gele-uienrelish | vene cress",
           "regels": [
             {
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele -uienrelish | ",
+                  "tekst": "rilette van eend | gele-uienrelish | ",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -358,7 +351,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "venne cress",
+                  "tekst": "vene cress",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -439,13 +432,14 @@
     {
       "x": 2278.0,
       "kader": {
-        "breedte": 580.44,
-        "minimaal": 573.56,
+        "breedte": 550.79,
+        "minimaal": 544.26,
         "maximaal": 592.0,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
           "diner-3gangen",
-          "diner-4gangen"
+          "diner-4gangen",
+          "walking-dinner"
         ]
       },
       "secties": [
@@ -480,25 +474,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Dessertbuffet met zoete lekkernijen",
+          "tekst": "Chocoladetrifle",
           "regels": [
             {
               "baseline": 786.72,
               "runs": [
                 {
-                  "tekst": "Dessertbuffet met",
-                  "x": 0.28,
-                  "font": "AreaNormal-ExtraBold",
-                  "grootte": 61.6,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 860.64,
-              "runs": [
-                {
-                  "tekst": "zoete lekkernijen",
+                  "tekst": "Chocoladetrifle",
                   "x": 0.28,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
@@ -510,13 +492,25 @@
         },
         {
           "soort": "ingr",
-          "tekst": "L’OR Coffee Popping Pearls",
+          "tekst": "Oreo crunch | kersen | Tony’s Chocolonely schaaf",
           "regels": [
             {
-              "baseline": 928.84,
+              "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "L’OR Coffee Popping Pearls",
+                  "tekst": "Oreo crunch | kersen | ",
+                  "x": 0.28,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "Tony’s Chocolonely schaaf",
                   "x": 0.28,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
