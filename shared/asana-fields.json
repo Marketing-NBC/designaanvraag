@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-01T11:00:26.825Z",
+  "generated_at": "2026-10-02T09:14:04.037Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -69,6 +69,18 @@
       "options": {
         "ja": "1218470779252852",
         "nee": "1218470779252853"
+      }
+    },
+    "menuscherm": {
+      "gid": "1219094964193587",
+      "name": "Menuscherm",
+      "type": "enum",
+      "options": {
+        "genereer": "1219094964193588",
+        "genereer_kleur": "1219094964193589",
+        "bezig": "1219094964193590",
+        "klaar_menu": "1219094964193591",
+        "mislukt": "1219094964193592"
       }
     }
   },
