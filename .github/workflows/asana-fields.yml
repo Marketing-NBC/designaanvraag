@@ -1,7 +1,8 @@
 name: Asana-velden vernieuwen
 
-# Leest het Asana-project van Marketing uit (custom fields, opties, assignee) en commit shared/asana-fields.json.
-# Draai dit na het aanmaken/hernoemen van velden in Asana. Vereist secret ASANA_PAT.
+# Maakt in Asana de velden aan die nog ontbreken (uit scripts/asana-velden.mjs), leest daarna het
+# project uit (custom fields, opties, assignee) en commit shared/asana-fields.json. Draai dit na elke
+# wijziging aan de velden - ook als je er in de code een bij hebt bedacht. Vereist secret ASANA_PAT.
 
 on:
   workflow_dispatch:
@@ -9,6 +10,10 @@ on:
       project:
         description: 'Link of GID van het Asana-project van Marketing'
         required: true
+      aanmaken:
+        description: 'Ontbrekende velden en opties in Asana aanmaken'
+        type: boolean
+        default: true
       assignee:
         description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
         required: false
@@ -29,6 +34,7 @@ jobs:
     env:
       ASANA_PAT: ${{ secrets.ASANA_PAT }}
       PROJECT_INPUT: ${{ inputs.project }}
+      AANMAKEN_INPUT: ${{ inputs.aanmaken }}
       ASSIGNEE_INPUT: ${{ inputs.assignee }}
       PLANNING_INPUT: ${{ inputs.planning }}
     steps:
@@ -36,10 +42,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Velden uitlezen
+      - name: Velden aanmaken en uitlezen
         run: |
           [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
-          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --aanmaken "${AANMAKEN_INPUT:-true}" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT"
           node scripts/sync-shared.mjs
       - name: Committen
         id: commit

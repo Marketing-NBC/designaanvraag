@@ -92,6 +92,9 @@ async function afbreken(reden, pakket = null) {
     } catch (e) {
       log('Asana-comment mislukt', { error: e.message })
     }
+    // De knop staat op Bezig sinds de webhook hem startte; laat hem niet zo staan.
+    const { zetKnop } = await import('./menu/knop.mjs')
+    await zetKnop(aanvraag.asana_task_gid, 'mislukt')
   }
   console.error(reden)
   process.exit(1)
@@ -240,6 +243,11 @@ await updateMenu(id, {
     meldingen,
   },
 })
+
+// De knop in Asana terug van Bezig naar Klaar of Mislukt, zodat Marketing in het bord
+// ziet waar het scherm staat zonder de taak open te klikken.
+const { zetKnop } = await import('./menu/knop.mjs')
+await zetKnop(taskGid, bruikbaar ? 'klaar_menu' : 'mislukt')
 
 log('klaar', { id, taskGid, pakket: inhoud.pakket, meldingen: aantalMeldingen, bruikbaar })
 if (!bruikbaar) {

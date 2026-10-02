@@ -39,6 +39,12 @@ node worker/check.mjs
 Playwright en sharp. `check.mjs` controleert of Supabase bereikbaar is en of de Asana-token echt
 werkt — niet alleen of de variabelen bestaan, want een ongeldige token bestaat ook.
 
+Het veld **Menuscherm** op de taak zet het script zelf terug: van *Bezig* naar *Klaar* als het
+scherm bruikbaar is, en naar *Mislukt* als het dat niet is of als het helemaal niet lukte. Bij het
+wachten op een logo blijft het op *Bezig* staan — er is dan nog niets af. Je hoeft daar niets aan te
+doen; staat er in de output `knop niet gezet`, dan is het veld in Asana nog niet aangemaakt en hoort
+de workflow "Asana-velden vernieuwen" te draaien. Meld dat in je samenvatting.
+
 | Exitcode | Wat het betekent | Wat je doet |
 |---|---|---|
 | 0 | Alles in orde | Door naar stap 2 |

@@ -23,7 +23,7 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
 | `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink` en `asana-webhook` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
-| `scripts/` | `asana-setup.mjs` (Asana-project + velden aanmaken), `asana-fields.mjs` (velden uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
+| `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
 ## Lokaal draaien
 
@@ -93,10 +93,13 @@ nieuwe token aan (Account preferences → Access Tokens, naam bijvoorbeeld
      neemt de leden over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
      `shared/asana-fields.json`. Opnieuw draaien is veilig: bestaande onderdelen worden hergebruikt.
    - **Bestaand project gebruiken:** Actions → **Asana-velden vernieuwen** → Run workflow, met de link
-     naar het project en de naam van de designer (assignee). Leest project-gid, assignee en custom
-     fields uit en commit `shared/asana-fields.json`.
+     naar het project en de naam van de designer (assignee). Met "Ontbrekende velden aanmaken" aan
+     (standaard) maakt die workflow eerst de velden en opties aan die nog niet in Asana staan, en
+     leest daarna project-gid, assignee en custom fields uit in `shared/asana-fields.json`.
 3. Kloppen de veldnamen niet? Pas `scripts/asana-field-map.json` aan (links onze sleutel,
-   rechts de naam in Asana) en draai "Asana-velden vernieuwen" opnieuw.
+   rechts de naam in Asana) en draai "Asana-velden vernieuwen" opnieuw. Een veld dat erbij komt
+   hoort ook in `FIELD_SPECS` in `scripts/asana-velden.mjs`; staat het daar niet, dan zegt
+   `npm run test:worker` dat meteen.
 4. Push naar `main` (of Supabase deploy handmatig) zodat de function de nieuwe mapping krijgt.
 
 Custom fields vereisen Asana Starter of hoger; zonder velden maakt de function nog steeds taken, met
@@ -325,8 +328,10 @@ storing maar een te lang gerecht.
 opdrachtgever — blobs, kopjes en het bestek-icoon. De webhook start dan deze
 routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*. Eenmalig nodig:
 
-1. Actions → **Asana-velden vernieuwen** → Run workflow. Dat maakt het veld `Menuscherm` aan met de
-   opties Genereer nu / Bezig / Klaar / Mislukt, en commit de nieuwe `shared/asana-fields.json`.
+1. Actions → **Asana-velden vernieuwen** → Run workflow, met "Ontbrekende velden aanmaken" aan.
+   Dat maakt het veld `Menuscherm` aan met de opties Genereer nu / Genereer nu (kleuren
+   opdrachtgever) / Bezig / Klaar / Mislukt, en commit de nieuwe `shared/asana-fields.json`.
+   Check daarna in de samenvatting van de run dat `menuscherm` bij "Velden gekoppeld" staat.
 2. Zet de URL en token van de API-trigger van deze routine als GitHub-secrets
    `MENU_ROUTINE_FIRE_URL` en `MENU_ROUTINE_TOKEN`.
 3. Draai Actions → **Supabase deploy**, zodat de webhook ze krijgt.
