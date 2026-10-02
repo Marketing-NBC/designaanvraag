@@ -14,7 +14,7 @@ import { Success } from './components/Success'
 import { TextArea, TextField } from './components/TextField'
 import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
-import { naarInhoud, naarTekst } from './lib/menu'
+import { PAKKETTEN, naarInhoud, naarTekst, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
@@ -264,10 +264,22 @@ export default function App() {
         return
       }
 
-      if ((kind === 'multi' || kind === 'single') && !typing && !e.metaKey && !e.ctrlKey) {
+      // De pakketkeuze toont dezelfde letters als de andere keuzeschermen, dus moeten
+      // die toetsen daar ook werken - anders belooft de kaart iets wat niet gebeurt.
+      const metLetters = kind === 'multi' || kind === 'single'
+        || (kind === 'menu' && !draft.menu.pakket)
+      if (metLetters && !typing && !e.metaKey && !e.ctrlKey) {
         const letter = e.key.toUpperCase()
         const i = LETTERS.indexOf(letter)
         if (letter.length === 1 && i >= 0) {
+          if (kind === 'menu') {
+            const pakket = PAKKETTEN[i]
+            if (pakket) {
+              e.preventDefault()
+              patch({ menu: uitPakket(pakket.pakket) })
+            }
+            return
+          }
           const options = kind === 'multi' ? REQUEST_TYPES : DESIGN_MODES
           const opt = options[i]
           if (opt) {

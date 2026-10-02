@@ -114,6 +114,18 @@ export function naarTekst(menu: MenuKeuze): string {
 const PER_REGEL = new Map(ALLE_GERECHTEN.map((g) => [regelVan(g), g]))
 
 /**
+ * Het gerecht achter een regel. Staat het niet in het repertoire, dan is de naam
+ * alles tot de eerste streep en is de rest ingredient - zo leest de opmaak-engine
+ * losse tekst ook, dus zo ziet de aanvrager het straks ook op het scherm.
+ */
+export function gerechtVan(regel: string): Gerecht {
+  const bekend = PER_REGEL.get(regel)
+  if (bekend) return bekend
+  const [naam, ...rest] = regel.split('|').map((d) => d.trim())
+  return rest.length ? { naam, ingredienten: rest } : { naam }
+}
+
+/**
  * Het menu als structuur, zoals de opmaak-engine het het liefst krijgt.
  *
  * Tekst is goed genoeg voor acht van de negen pakketten, maar niet voor Grab & Go:
@@ -130,14 +142,7 @@ export function naarInhoud(menu: MenuKeuze) {
       .filter((s) => s.gerechten.length)
       .map((s) => ({
         kop: s.kop,
-        gerechten: s.gerechten.map((regel) => {
-          const bekend = PER_REGEL.get(regel)
-          if (bekend) return bekend
-          // Zelf ingetypt: de naam is alles tot de eerste streep, de rest zijn
-          // ingredienten. Zo leest de engine losse tekst ook.
-          const [naam, ...rest] = regel.split('|').map((d) => d.trim())
-          return rest.length ? { naam, ingredienten: rest } : { naam }
-        }),
+        gerechten: s.gerechten.map(gerechtVan),
       })),
   }
 }
