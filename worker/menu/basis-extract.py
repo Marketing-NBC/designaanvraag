@@ -24,7 +24,11 @@ import pymupdf
 
 HIER = Path(__file__).resolve().parent
 BASIS = HIER / 'basis'
-BRON = BASIS / 'bron' / 'Flexibele-template-designs.ai'
+BRON = BASIS / 'bron' / 'Flexibele-template-designs-V4.ai'
+# De vorige versie blijft staan voor de voorbeeldpagina hieronder: die zit niet meer
+# in V4, en de manier waarop de ontwerper daar de kolommen heeft opgelost is precies
+# wat de doorstroom-regels moeten blijven halen.
+VOORBEELD_BRON = BASIS / 'bron' / 'Flexibele-template-designs.ai'
 
 GOUD = (0.965, 0.631, 0.027)
 ROOD = (1.0, 0.0, 0.0)
@@ -63,13 +67,7 @@ def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
         tekst = nieuw
     return tekst
 
-# Pagina (1-based) -> pakketnaam. Pagina 9 is een exacte kopie van pagina 8.
-#
-# Pagina 10 is geen pakket maar een voorbeeld: hetzelfde viergangendiner als
-# pagina 8, maar met langere gerechten, en met de hand opgelost door het
-# Voorgerecht naar de linkerkolom te halen. Daar is de doorstroom over de
-# kolommen op gebouwd; de test in worker/test/menu.test.mjs legt de uitkomst
-# van de engine naast de baselines die daar staan.
+# Pagina (1-based) -> pakketnaam, in V4.
 PAKKETTEN = [
     (1, 'lunch-standaard'),
     (2, 'lunch-basic'),
@@ -79,6 +77,7 @@ PAKKETTEN = [
     (6, 'buffet'),
     (7, 'diner-3gangen'),
     (8, 'diner-4gangen'),
+    (9, 'walking-dinner'),
 ]
 
 # Pagina's die geen pakket zijn maar wel laten zien hoe een gerecht gezet hoort te
@@ -86,6 +85,13 @@ PAKKETTEN = [
 # geometrie, geen eigen pakket. Zo staat een gerecht dat de ontwerper ergens heeft
 # uitgewerkt overal hetzelfde op het scherm, ook als die pagina zelf nooit gebruikt
 # wordt.
+#
+# Pagina 10 van de vorige versie is zo'n pagina: hetzelfde viergangendiner als
+# pagina 8, maar met langere gerechten, met de hand opgelost door het Voorgerecht
+# naar de linkerkolom te halen. Daar is de doorstroom over de kolommen op gebouwd;
+# de test in worker/test/menu.test.mjs legt de uitkomst van de engine naast de
+# baselines die daar staan. In V4 staat die pagina niet meer, dus hij komt uit
+# VOORBEELD_BRON.
 VOORBEELDEN = [
     (10, 'diner-4gangen p10'),
 ]
@@ -1042,7 +1048,8 @@ def main():
     kaders_delen(alles)
     # De voorbeeldpagina's delen hun tekstkaders niet: dat zijn geen pakketten, en
     # hun kolommen staan net ergens anders. Hun gerechten tellen wel mee.
-    voorbeelden = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
+    voorbeeld_doc = pymupdf.open(VOORBEELD_BRON)
+    voorbeelden = {naam: pakket_extraheren(voorbeeld_doc, pagina_nr, naam, ratios)
                    for pagina_nr, naam in VOORBEELDEN}
     bibliotheek = gerechtenbibliotheek({**alles, **voorbeelden})
     (BASIS / 'gerechten.json').write_text(
@@ -1068,10 +1075,10 @@ def main():
               f'{len(data["afwijkingen"]):2d}x ritme-afwijking  '
               f'{len(data["zetfouten"])}x zetfout')
 
-    print('\nPagina 9 is een exacte kopie van pagina 8 en is overgeslagen.')
+    print()
     for pagina_nr, naam in VOORBEELDEN:
-        print(f'Pagina {pagina_nr} is geen pakket; alleen zijn gerechten gaan de '
-              f'bibliotheek in (als "{naam}").')
+        print(f'Pagina {pagina_nr} van {VOORBEELD_BRON.name} is geen pakket; alleen zijn '
+              f'gerechten gaan de bibliotheek in (als "{naam}").')
     return overzicht
 
 

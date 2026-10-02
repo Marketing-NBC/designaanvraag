@@ -1,14 +1,14 @@
 {
-  "pakket": "diner-3gangen",
+  "pakket": "walking-dinner",
   "bron": {
     "bestand": "Flexibele-template-designs-V4.ai",
-    "pagina": 7
+    "pagina": 9
   },
   "canvas": {
     "breedte": 3840,
     "hoogte": 2160
   },
-  "achtergrond": "diner-3gangen.png",
+  "achtergrond": "walking-dinner.png",
   "titel": {
     "tekst": "Diner",
     "x": 259.11,
@@ -159,7 +159,7 @@
               "runs": [
                 {
                   "tekst": "Op tafel",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
                   "kleur": "#f6a107"
@@ -177,7 +177,7 @@
               "runs": [
                 {
                   "tekst": "Zuurdesembrood",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -195,7 +195,7 @@
               "runs": [
                 {
                   "tekst": "roomboter | fleur de sel | limoen | olijven | ",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -207,7 +207,7 @@
               "runs": [
                 {
                   "tekst": "zongedroogde tomaat | curry dip",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -225,7 +225,7 @@
               "runs": [
                 {
                   "tekst": "Tasteful gift",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -243,7 +243,7 @@
               "runs": [
                 {
                   "tekst": "Tonijntartaar | mierikswortel | affilla cress | ",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -255,7 +255,7 @@
               "runs": [
                 {
                   "tekst": "uiencrumble",
-                  "x": 0.36,
+                  "x": 0.37,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -269,10 +269,10 @@
     {
       "x": 1352.0,
       "kader": {
-        "breedte": 783.35,
-        "minimaal": 774.06,
-        "maximaal": 824.26,
-        "handmatigeAfbrekingen": 0
+        "breedte": 875.19,
+        "minimaal": 864.81,
+        "maximaal": 977.59,
+        "handmatigeAfbrekingen": 1
       },
       "secties": [
         {
@@ -292,18 +292,27 @@
               "ingrAlinea": 5
             }
           ]
+        },
+        {
+          "kopAlinea": 6,
+          "gerechten": [
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            }
+          ]
         }
       ],
       "alineas": [
         {
           "soort": "kop",
-          "tekst": "Voorgerecht",
+          "tekst": "Tussengerecht 1",
           "regels": [
             {
               "baseline": 625.68,
               "runs": [
                 {
-                  "tekst": "Voorgerecht",
+                  "tekst": "Tussengerecht 1",
                   "x": 0.09,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
@@ -363,10 +372,64 @@
         },
         {
           "soort": "kop",
-          "tekst": "Hoofdgerecht",
+          "tekst": "Tussengerecht 2",
           "regels": [
             {
               "baseline": 1059.96,
+              "runs": [
+                {
+                  "tekst": "Tussengerecht 2",
+                  "x": 0.09,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pompoenravioli",
+          "regels": [
+            {
+              "baseline": 1221.0,
+              "runs": [
+                {
+                  "tekst": "Pompoenravioli",
+                  "x": 0.09,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "gedroogde Italiaanse ham | saliebotersaus",
+          "regels": [
+            {
+              "baseline": 1289.2,
+              "runs": [
+                {
+                  "tekst": "gedroogde Italiaanse ham | saliebotersaus",
+                  "x": 0.09,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Hoofdgerecht",
+          "regels": [
+            {
+              "baseline": 1439.24,
               "runs": [
                 {
                   "tekst": "Hoofdgerecht",
@@ -384,7 +447,7 @@
           "tekst": "Boneless short ribs",
           "regels": [
             {
-              "baseline": 1221.0,
+              "baseline": 1600.28,
               "runs": [
                 {
                   "tekst": "Boneless short ribs",
@@ -402,7 +465,7 @@
           "tekst": "crème van winterpeen | spaghetti van pastinaak | sticky hoisin",
           "regels": [
             {
-              "baseline": 1289.2,
+              "baseline": 1668.48,
               "runs": [
                 {
                   "tekst": "crème van winterpeen | spaghetti van ",
@@ -414,7 +477,7 @@
               ]
             },
             {
-              "baseline": 1344.2,
+              "baseline": 1723.48,
               "runs": [
                 {
                   "tekst": "pastinaak | sticky hoisin",

@@ -17,7 +17,7 @@ import { WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
 import { menuIsBruikbaar } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
-import { zoekGerecht } from '../menu/gerecht-match.mjs'
+import { overtollig, woorden, zoekGerecht } from '../menu/gerecht-match.mjs'
 
 /** Zelfde normalisatie als tekstsleutel() in basis-extract.py en template.html. */
 const sleutelVan = (t) => String(t)
@@ -426,17 +426,17 @@ test('een gerecht uit een ander pakket houdt zijn eigen regelval', { timeout: 12
 
 test('de streep mag ergens anders staan dan de ontwerper hem zette',
   { timeout: 120_000 }, async () => {
-  // Abel schrijft "Dessertbuffet met zoete lekkernijen | L'OR Coffee Popping Pearls";
-  // iemand anders typt hetzelfde gerecht als "Dessertbuffet | met zoete lekkernijen |
-  // L'OR Coffee Popping Pearls". Dat is dezelfde schotel, en hij hoort er dan ook
-  // precies hetzelfde uit te zien: de bibliotheek weet waar de naam ophoudt.
+  // Abel schrijft "Chocoladetrifle | Oreo crunch | kersen | Tony's Chocolonely
+  // schaaf"; iemand anders typt hetzelfde gerecht als "Chocoladetrifle Oreo crunch |
+  // kersen | Tony's Chocolonely schaaf". Dat is dezelfde schotel, en hij hoort er dan
+  // ook precies hetzelfde uit te zien: de bibliotheek weet waar de naam ophoudt.
   const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
 
   const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
   const nagerecht = inhoud.secties[inhoud.secties.length - 1]
   nagerecht.gerechten = [{
-    naam: 'Dessertbuffet',
-    ingredienten: ['met zoete lekkernijen', "l'or coffee popping pearls"],
+    naam: 'Chocoladetrifle Oreo crunch',
+    ingredienten: ['kersen', 'tony’s chocolonely schaaf'],
   }]
   const anders = await renderMenu(inhoud)
 
@@ -452,6 +452,14 @@ test('de streep mag ergens anders staan dan de ontwerper hem zette',
 // opschrijft. Zoeken op gelijkenis is hier levensgevaarlijk: wisselt NBC tonijn
 // voor zalm, dan lijkt dat gerecht voor 90% op de versie uit het ontwerp en zou
 // er tonijn op het scherm komen. Daarom telt dekking en niet gelijkenis.
+
+test('de krulapostrof uit Word is dezelfde als die in de bibliotheek', () => {
+  // Outlook en Word maken van ' vanzelf een ’. De sleutel in de bibliotheek wordt
+  // genormaliseerd, dus de losse woorden moeten dat ook: anders valt "Tony’s" uiteen
+  // in "tony" en "s" en is het gerecht ineens onvindbaar.
+  assert.deepEqual(woorden('Tony’s Chocolonely'), woorden("Tony's Chocolonely"))
+  assert.equal(overtollig("tony's chocolonely schaaf", 'Tony’s Chocolonely schaaf'), 0)
+})
 
 test('een gerecht dat anders geformuleerd is wordt herkend', () => {
   const { gerechten } = laadBibliotheek()
@@ -521,10 +529,10 @@ test('geen enkele verhaspeling levert het verkeerde gerecht op', () => {
 test('een gerecht dat anders is opgeschreven komt zo op het scherm', { timeout: 120_000 }, async () => {
   // Het hele pad: iemand typt het dessert zoals de traiteur het stuurt, in een
   // adem, zonder streepje. Op het scherm hoort het te staan zoals Abel het zette
-  // - naam op twee regels, de pearls op hun eigen regel eronder.
+  // - de naam op zijn eigen regel, de ingredienten eronder afgebroken na "kersen |".
   const inhoud = inhoudVanBasis(laadBasis('diner-3gangen'))
   const nagerecht = inhoud.secties[inhoud.secties.length - 1]
-  nagerecht.gerechten = [{ naam: "dessertbuffet – verschillende zoete lekkernijen met L'OR coffee popping pearls" }]
+  nagerecht.gerechten = [{ naam: "chocoladetrifle – met oreo crunch, kersen en Tony’s Chocolonely schaaf" }]
   const zoalsHetHoort = await renderMenu(inhoudVanBasis(laadBasis('diner-3gangen')))
   const anders = await renderMenu(inhoud)
 

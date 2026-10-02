@@ -53,7 +53,13 @@ export function gerechtsleutel(t) {
 const STOPWOORDEN = new Set(['met', 'van', 'en', 'de', 'het', 'in', 'op', 'of', 'la'])
 
 export function woorden(tekst) {
-  return String(tekst).toLowerCase()
+  // Dezelfde normalisatie als tekstsleutel, anders valt een gerecht uit elkaar waar
+  // het in de bibliotheek aan elkaar staat: "Tony's" met een krulapostrof werd
+  // "tony" + "s" en vond de sleutel "tony's" niet meer. Word en Outlook zetten dat
+  // krulletje vanzelf, dus dat overkomt iedereen die iets inplakt.
+  let t = String(tekst)
+  for (const [van, naar] of VARIANTEN) t = t.replace(van, naar)
+  return t.toLowerCase()
     .split(/[^a-z0-9à-ÿ']+/)
     .filter((w) => w && !STOPWOORDEN.has(w))
 }

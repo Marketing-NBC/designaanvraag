@@ -1,7 +1,7 @@
 {
   "pakket": "grab-and-go",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V4.ai",
     "pagina": 5
   },
   "canvas": {
@@ -129,8 +129,8 @@
     {
       "x": 198.0,
       "kader": {
-        "breedte": 732.4,
-        "minimaal": 723.72,
+        "breedte": 746.4,
+        "minimaal": 737.55,
         "maximaal": 775.09,
         "handmatigeAfbrekingen": 3
       },
@@ -217,7 +217,7 @@
         },
         {
           "soort": "opsomming",
-          "tekst": "•Rundertartaar umamicrème | kwartelei •Tallegio (vega) romige tallegio (kaasvulling) | kruidencrunch",
+          "tekst": "•Rundertartaar umamicrème | kwartelei •Taleggio (vega) romige taleggio (kaasvulling) | kruidencrunch",
           "onderdelen": [
             {
               "naam": "Rundertartaar",
@@ -227,9 +227,9 @@
               ]
             },
             {
-              "naam": "Tallegio (vega)",
+              "naam": "Taleggio (vega)",
               "toelichting": [
-                "romige tallegio (kaasvulling)",
+                "romige taleggio (kaasvulling)",
                 "kruidencrunch"
               ]
             }
@@ -277,7 +277,7 @@
                   "kleur": "#1d1d1b"
                 },
                 {
-                  "tekst": "Tallegio (vega)",
+                  "tekst": "Taleggio (vega)",
                   "x": 36.29,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -289,7 +289,7 @@
               "baseline": 1001.15,
               "runs": [
                 {
-                  "tekst": "romige tallegio (kaasvulling) | kruidencrunch",
+                  "tekst": "romige taleggio (kaasvulling) | kruidencrunch",
                   "x": 36.3,
                   "font": "AreaNormal-HairlineItalic",
                   "grootte": 32.0,

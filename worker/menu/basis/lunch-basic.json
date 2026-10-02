@@ -1,7 +1,7 @@
 {
   "pakket": "lunch-basic",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V4.ai",
     "pagina": 2
   },
   "canvas": {
@@ -126,7 +126,7 @@
         "breedte": 785.36,
         "minimaal": 776.05,
         "maximaal": 887.86,
-        "handmatigeAfbrekingen": 0,
+        "handmatigeAfbrekingen": 1,
         "gedeeldMet": [
           "lunch-basic",
           "lunch-vega-basic"
@@ -200,7 +200,7 @@
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "belegen kaas | truffelmayonaise | Lollo ",
+                  "tekst": "belegen kaas | truffelmayonaise | ",
                   "x": 0.36,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -212,7 +212,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "Bianca | komkommer | (vega)",
+                  "tekst": "Lollo Bianca | komkommer | (vega)",
                   "x": 0.36,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -468,13 +468,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Rode curry-kokossoep",
+          "tekst": "Bospaddenstoelensoep",
           "regels": [
             {
               "baseline": 1180.96,
               "runs": [
                 {
-                  "tekst": "Rode curry-kokossoep",
+                  "tekst": "Bospaddenstoelensoep",
                   "x": 0.21,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
@@ -492,7 +492,7 @@
               "baseline": 1249.16,
               "runs": [
                 {
-                  "tekst": "(vega)",
+                  "tekst": "(vega) ",
                   "x": 0.21,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,

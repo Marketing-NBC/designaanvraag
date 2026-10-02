@@ -1,7 +1,7 @@
 {
   "pakket": "lunch-vega-basic",
   "bron": {
-    "bestand": "Flexibele-template-designs.ai",
+    "bestand": "Flexibele-template-designs-V4.ai",
     "pagina": 4
   },
   "canvas": {
@@ -368,10 +368,6 @@
             {
               "naamAlinea": 3,
               "ingrAlinea": 4
-            },
-            {
-              "naamAlinea": 5,
-              "ingrAlinea": 6
             }
           ]
         }
@@ -397,46 +393,10 @@
         },
         {
           "soort": "naam",
-          "tekst": "Broodje rundvleeskroket",
-          "regels": [
-            {
-              "baseline": 786.72,
-              "runs": [
-                {
-                  "tekst": "Broodje rundvleeskroket",
-                  "x": 0.21,
-                  "font": "AreaNormal-ExtraBold",
-                  "grootte": 61.6,
-                  "kleur": "#000000"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "soort": "ingr",
-          "tekst": "rundvlees (halal)",
-          "regels": [
-            {
-              "baseline": 854.92,
-              "runs": [
-                {
-                  "tekst": "rundvlees (halal)",
-                  "x": 0.21,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 41.8,
-                  "kleur": "#000000"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "soort": "naam",
           "tekst": "Broodje oesterzwamkroket",
           "regels": [
             {
-              "baseline": 983.84,
+              "baseline": 786.72,
               "runs": [
                 {
                   "tekst": "Broodje oesterzwamkroket",
@@ -454,7 +414,7 @@
           "tekst": "oesterzwam (vega)",
           "regels": [
             {
-              "baseline": 1052.04,
+              "baseline": 854.92,
               "runs": [
                 {
                   "tekst": "oesterzwam (vega)",
@@ -472,7 +432,7 @@
           "tekst": "Bospaddenstoelensoep",
           "regels": [
             {
-              "baseline": 1180.96,
+              "baseline": 983.84,
               "runs": [
                 {
                   "tekst": "Bospaddenstoelensoep",
@@ -490,7 +450,7 @@
           "tekst": "(vega)",
           "regels": [
             {
-              "baseline": 1249.16,
+              "baseline": 1052.04,
               "runs": [
                 {
                   "tekst": "(vega)",
