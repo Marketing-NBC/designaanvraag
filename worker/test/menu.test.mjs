@@ -192,6 +192,51 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
   assert.match(meldingen.regelval[0], /6 regels/)
 })
 
+test('er kan een onderdeel uit een opsomming, en de rest schuift op',
+  { timeout: 120_000 }, async () => {
+  // Abel: "Het kan zijn dat daar bijvoorbeeld Rundertartaar wordt weggehaald of
+  // gewijzigd. Dan moet het wel blijven kloppen." Taleggio hoort dan op de regel
+  // te komen waar Rundertartaar stond, met zijn cursieve toelichting eronder, en
+  // alles daaronder schuift een gerecht omhoog.
+  const ontwerp = await renderMenu(inhoudVanBasis(laadBasis('grab-and-go')))
+  const eerste = (r) => r.opmaak.regels.find((x) => /^.?Rundertartaar|^.?Taleggio/.test(x.tekst))
+  const plek = eerste(ontwerp).baseline
+
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  const tartelettes = inhoud.secties[0].gerechten[0]
+  tartelettes.onderdelen = tartelettes.onderdelen.filter((o) => !/Rundertartaar/i.test(o.naam))
+
+  const zonder = await renderMenu(inhoud)
+  assert.deepEqual(zonder.meldingen.botsingen, [])
+  assert.deepEqual(zonder.meldingen.overloop, [])
+  const regels = zonder.opmaak.regels.map((r) => r.tekst)
+  assert.ok(!regels.some((t) => /Rundertartaar|umamicr/i.test(t)),
+    'het weggehaalde onderdeel staat er nog')
+  assert.equal(eerste(zonder).baseline, plek,
+    'Taleggio staat niet op de regel waar Rundertartaar stond')
+  const toelichting = zonder.opmaak.regels.find((r) => /romige taleggio/i.test(r.tekst))
+  assert.ok(toelichting && toelichting.baseline > plek, 'de toelichting volgt niet op zijn naam')
+})
+
+test('een onderdeel van een opsomming mag veranderen', { timeout: 120_000 }, async () => {
+  // Wisselt de keuken van product, dan hoort alleen die regel mee te veranderen en
+  // de rest op zijn plek te blijven staan.
+  const ontwerp = await renderMenu(inhoudVanBasis(laadBasis('grab-and-go')))
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  const tartelettes = inhoud.secties[0].gerechten[0]
+  tartelettes.onderdelen[0] = { naam: 'Zalmtartaar', toelichting: ['dillecr\u00e8me', 'kwartelei'] }
+
+  const anders = await renderMenu(inhoud)
+  assert.deepEqual(anders.meldingen.botsingen, [])
+  assert.deepEqual(anders.meldingen.overloop, [])
+  const zelfde = (r, t) => r.opmaak.regels.find((x) => x.tekst === t)
+  for (const t of ['Tartelettes', '\u2022Taleggio (vega)', 'P\u00e3o de Queijo']) {
+    assert.equal(zelfde(anders, t)?.baseline, zelfde(ontwerp, t)?.baseline,
+      `"${t}" is verschoven terwijl alleen het eerste onderdeel veranderde`)
+  }
+  assert.ok(anders.opmaak.regels.some((r) => /Zalmtartaar/.test(r.tekst)))
+})
+
 test('een opsomming kan naar een pakket dat er zelf geen heeft', { timeout: 120_000 }, async () => {
   const inhoud = inhoudVanBasis(laadBasis('diner-4gangen'))
   inhoud.secties[0].gerechten[1] = {
