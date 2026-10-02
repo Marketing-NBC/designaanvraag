@@ -15,7 +15,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO_DIR, WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
-import { menuIsBruikbaar } from '../lib/notes.mjs'
+import { menuIsBruikbaar, renderMenuComment } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
 import { overtollig, woorden, zoekGerecht } from '../menu/gerecht-match.mjs'
 
@@ -291,6 +291,53 @@ test('de pakkettenlijst voor het formulier loopt gelijk met de ontwerpen',
         assert.ok(bekend.has(gerechtregel(g)), `"${g.naam}" uit ${p.pakket} mist in de keuzelijst`)
       }
     }
+  }
+})
+
+test('een gerecht buiten de bibliotheek wordt gemeld, niet geweigerd',
+  { timeout: 120_000 }, async () => {
+  // Abel: "Ik wil dan wel een waarschuwing duidelijk krijgen, dat er een gerecht bij
+  // is dat niet in het bibliotheek staat." Het scherm komt er wel - het is geen fout
+  // om iets nieuws te serveren - maar de belofte vervalt: dit gerecht is door ons
+  // afgebroken en niet door de ontwerper.
+  const inhoud = inhoudVanBasis(laadBasis('lunch-basic'))
+  inhoud.secties[0].gerechten[1] = { naam: 'Broodje kaantjes', ingredienten: ['appelstroop', 'bosui'] }
+
+  const { meldingen } = await renderMenu(inhoud)
+  assert.deepEqual(meldingen.onbekend, ['Broodje kaantjes | appelstroop | bosui'])
+  assert.deepEqual(meldingen.botsingen, [])
+  assert.ok(menuIsBruikbaar(meldingen), 'een nieuw gerecht maakt het scherm niet onbruikbaar')
+
+  // En het hoort in de openingszin van de comment te staan, niet onderaan een lijst.
+  const comment = renderMenuComment({
+    pakket: 'lunch-basic', bestandsnaam: 'menuscherm-lunch-basic.png', meldingen, invoer: [],
+  })
+  assert.match(comment, /gerecht op dat we niet kennen/)
+  assert.match(comment, /Niet in de gerechtenbibliotheek/)
+})
+
+test('een bekend gerecht levert geen waarschuwing op', { timeout: 120_000 }, async () => {
+  const { meldingen } = await renderMenu(inhoudVanBasis(laadBasis('lunch-basic')))
+  assert.deepEqual(meldingen.onbekend ?? [], [])
+  const comment = renderMenuComment({
+    pakket: 'lunch-basic', bestandsnaam: 'x.png', meldingen, invoer: [],
+  })
+  assert.match(comment, /opgemaakt volgens het basisontwerp/)
+})
+
+test('wat het formulier doorgeeft komt er precies uit', { timeout: 300_000 }, async () => {
+  // Het formulier stuurt het menu als structuur, niet als tekst. Dat is geen detail:
+  // door platte tekst overleeft de opsomming van de Tartelettes het niet - de
+  // bolletjes en de cursieve toelichting vallen weg. Elk pakket moet er dus uit
+  // komen zoals de ontwerper het zette, ook als er niets aan gewijzigd is.
+  const data = JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten.json'), 'utf8'))
+  for (const p of data.pakketten) {
+    const uitOntwerp = await renderMenu(inhoudVanBasis(laadBasis(p.pakket)))
+    const viaFormulier = await renderMenu({ pakket: p.pakket, secties: p.secties })
+    assert.ok(viaFormulier.png.equals(uitOntwerp.png),
+      `${p.pakket} ziet er anders uit via het formulier dan via het basisontwerp`)
+    assert.deepEqual(viaFormulier.meldingen.onbekend ?? [], [],
+      `${p.pakket} levert een gerecht op dat de engine niet terugvindt`)
   }
 })
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   PAKKETTEN, ALLE_GERECHTEN, aantalGerechten, eigenGerechten, isBekend,
-  naarTekst, pakketVan, regelVan, uitPakket, wijzigingen,
+  naarInhoud, naarTekst, pakketVan, regelVan, uitPakket, wijzigingen,
 } from './menu'
 
 describe('de pakketten voor het formulier', () => {
@@ -59,6 +59,27 @@ describe('de pakketten voor het formulier', () => {
     const leeg = uitPakket('lunch-basic')
     leeg.secties[1].gerechten = []
     expect(naarTekst(leeg)).not.toContain('Warme items')
+  })
+
+  it('geeft het menu als structuur door, met de opsomming intact', () => {
+    // De Tartelettes van Grab & Go zijn een kopje met gerechten eronder. Door platte
+    // tekst overleeft dat niet, dus moet het als structuur mee.
+    const inhoud = naarInhoud(uitPakket('grab-and-go'))!
+    const tartelettes = inhoud.secties.flatMap((s) => s.gerechten)
+      .find((g) => g.naam === 'Tartelettes') as { onderdelen?: unknown[] } | undefined
+    expect(tartelettes?.onderdelen).toHaveLength(2)
+  })
+
+  it('maakt van een zelf getypt gerecht een naam met ingredienten', () => {
+    const menu = uitPakket('lunch-basic')
+    menu.secties[0].gerechten.push('Broodje kaantjes | appelstroop | bosui')
+    const inhoud = naarInhoud(menu)!
+    const eigen = inhoud.secties[0].gerechten.at(-1)!
+    expect(eigen.naam).toBe('Broodje kaantjes')
+    expect((eigen as { ingredienten?: string[] }).ingredienten).toEqual(['appelstroop', 'bosui'])
+    // En een leeg onderdeel hoort er niet in te staan.
+    menu.secties[1].gerechten = []
+    expect(naarInhoud(menu)!.secties).toHaveLength(1)
   })
 
   it('biedt elk gerecht uit elk pakket aan om mee te wisselen', () => {

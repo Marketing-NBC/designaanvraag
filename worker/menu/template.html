@@ -36,7 +36,12 @@
   const bekendeAlineas = bibliotheek.alineas || {}
   const SVG = 'http://www.w3.org/2000/svg'
 
-  const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [] }
+  const meldingen = { botsingen: [], overloop: [], structuur: [], regelval: [], opmaak: [],
+                      onbekend: [] }
+  // Wat uitGerechtenbibliotheek opmerkt, op gerecht. De verdeling over de kolommen
+  // wordt een paar keer geprobeerd, dus zonder sleutel zou elke melding zich
+  // herhalen zodra een gang moest opschuiven.
+  const perGerecht = new Map()
   window.__RESULTAAT__ = meldingen
 
   const el = (naam, attrs = {}) => {
@@ -138,13 +143,19 @@
   function uitGerechtenbibliotheek(naam, ingredienten, grootte) {
     const geheel = [naam, ingredienten].filter(Boolean).join(' | ')
     const gevonden = zoekGerecht(geheel, bekendeGerechten, grootte)
-    if (!gevonden) return null
+    if (!gevonden) {
+      // Dit gerecht kennen we niet. Het komt er wel op, maar dan met onze eigen
+      // afbreking in plaats van die van de ontwerper - en dat is precies wat
+      // Marketing moet weten voordat het scherm de deur uit gaat.
+      perGerecht.set(geheel, ['onbekend', geheel])
+      return null
+    }
     if (!gevonden.letterlijk) {
       // Wat er op het scherm komt is nu de tekst van de ontwerper en niet die van
       // de invuller. Dat hoort zo, maar Marketing moet het wel kunnen nakijken.
       const gezet = [gevonden.gerecht.naam, ...gevonden.gerecht.ingredienten].join(' | ')
-      meldingen.opmaak.push(`"${geheel}" is gezet zoals het in het basisontwerp `
-        + `staat: "${gezet}".`)
+      perGerecht.set(geheel, ['opmaak', `"${geheel}" is gezet zoals het in het basisontwerp `
+        + `staat: "${gezet}".`])
     }
     return gevonden.gerecht
   }
@@ -898,6 +909,7 @@
     await fontsLaden()
     const grenzen = img ? achtergrondVerwerken(img) : null
     bouw(grenzen)
+    for (const [soort, tekst] of perGerecht.values()) meldingen[soort].push(tekst)
     return meldingen
   })()
 })()

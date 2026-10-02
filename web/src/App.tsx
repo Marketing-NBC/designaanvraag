@@ -14,7 +14,7 @@ import { Success } from './components/Success'
 import { TextArea, TextField } from './components/TextField'
 import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
-import { naarTekst } from './lib/menu'
+import { naarInhoud, naarTekst } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
@@ -168,6 +168,7 @@ export default function App() {
         design_modus: volledig.design_modus ?? undefined,
         menu_tekst: naarTekst(volledig.menu),
         menu_pakket: volledig.menu.pakket ?? '',
+        menu_inhoud: naarInhoud(volledig.menu),
         omschrijving: volledig.omschrijving,
       },
       client_request_id: clientRequestId.current,

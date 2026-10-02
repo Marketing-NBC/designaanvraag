@@ -109,3 +109,35 @@ export function naarTekst(menu: MenuKeuze): string {
   }
   return delen.join('\n').trim()
 }
+
+/** Het gerecht achter een regel, of null als niemand het kent. */
+const PER_REGEL = new Map(ALLE_GERECHTEN.map((g) => [regelVan(g), g]))
+
+/**
+ * Het menu als structuur, zoals de opmaak-engine het het liefst krijgt.
+ *
+ * Tekst is goed genoeg voor acht van de negen pakketten, maar niet voor Grab & Go:
+ * de Tartelettes zijn daar een kopje met gerechten eronder, en dat overleeft een
+ * rondje door platte tekst niet - de bolletjes en de cursieve toelichting gaan
+ * verloren. Daarom sturen we wat de aanvrager aanklikte en laten we de engine
+ * niets meer terugparseren.
+ */
+export function naarInhoud(menu: MenuKeuze) {
+  if (!menu.pakket) return null
+  return {
+    pakket: menu.pakket,
+    secties: menu.secties
+      .filter((s) => s.gerechten.length)
+      .map((s) => ({
+        kop: s.kop,
+        gerechten: s.gerechten.map((regel) => {
+          const bekend = PER_REGEL.get(regel)
+          if (bekend) return bekend
+          // Zelf ingetypt: de naam is alles tot de eerste streep, de rest zijn
+          // ingredienten. Zo leest de engine losse tekst ook.
+          const [naam, ...rest] = regel.split('|').map((d) => d.trim())
+          return rest.length ? { naam, ingredienten: rest } : { naam }
+        }),
+      })),
+  }
+}
