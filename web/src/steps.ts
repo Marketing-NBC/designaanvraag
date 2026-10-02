@@ -2,9 +2,10 @@ import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-sche
 import { vraagtOmMenu } from '../../shared/request-types'
 import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
+import { aantalGerechten, eigenGerechten } from './lib/menu'
 import type { Draft } from './state'
 
-export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files'
+export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
 
 /**
  * Wat bepaalt welke stappen er zijn. Losse waarden en geen heel concept, zodat de
@@ -139,17 +140,27 @@ export const STEPS: StepDef[] = [
     },
   },
   {
-    id: 'menu_tekst',
-    kind: 'textarea',
+    id: 'menu',
+    kind: 'menu',
     // Komt meteen na "Wat wil je aanvragen?", want het hoort bij die keuze.
     toon: (ctx) => ctx.metMenu,
-    title: 'Wat is de culinaire invulling?',
-    // Geen hulptekst: het voorbeeld in het invulveld laat de vorm al zien.
+    title: 'Welk pakket is het?',
+    help: 'Kies het pakket; je ziet daarna wat erin zit en kunt gerechten weghalen, '
+      + 'wisselen of toevoegen.',
     validate: (d) => {
       if (!vraagtOmMenu(d.aanvraag_types)) return null
-      if (!d.menu_tekst.trim()) return 'Plak de invulling van het menu.'
-      if (d.menu_tekst.length > 8000) return 'Houd het bij maximaal 8000 tekens.'
+      if (!d.menu.pakket) return 'Kies een pakket.'
+      if (!aantalGerechten(d.menu)) return 'Er staat geen enkel gerecht meer in het menu.'
       return null
+    },
+    // Een gerecht dat niet in het repertoire staat mag, maar Marketing moet er even
+    // naar kijken: de opmaak is dan niet die van de ontwerper.
+    warn: (d) => {
+      const eigen = eigenGerechten(d.menu)
+      if (!eigen.length) return null
+      return eigen.length === 1
+        ? `"${eigen[0]}" staat niet in de gerechtenlijst. Marketing kijkt daarnaar.`
+        : `${eigen.length} gerechten staan niet in de gerechtenlijst. Marketing kijkt daarnaar.`
     },
   },
   {

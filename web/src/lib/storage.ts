@@ -1,6 +1,8 @@
 import type { Draft } from '../state'
 
-const KEY = 'nbc-designaanvraag:draft:v1'
+// v2: de culinaire invulling is een keuze geworden in plaats van een lap tekst,
+// dus een concept van voor die tijd kunnen we niet meer herstellen.
+const KEY = 'nbc-designaanvraag:draft:v2'
 const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 3 // 3 dagen
 
 interface Stored {

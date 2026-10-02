@@ -4,6 +4,7 @@ import { submitPayloadSchema, type SubmitResult } from '../../shared/aanvraag-sc
 import { DESIGN_MODES, REQUEST_TYPES, vraagtOmMenu, type DesignMode, type RequestTypeKey } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { DateField } from './components/DateField'
+import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
 import { PrimaryAction, Question } from './components/Question'
 import { Review } from './components/Review'
@@ -13,6 +14,7 @@ import { Success } from './components/Success'
 import { TextArea, TextField } from './components/TextField'
 import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
+import { naarTekst } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
@@ -164,7 +166,8 @@ export default function App() {
         aanvraag_types: volledig.aanvraag_types,
         anders_tekst: volledig.anders_tekst,
         design_modus: volledig.design_modus ?? undefined,
-        menu_tekst: volledig.menu_tekst,
+        menu_tekst: naarTekst(volledig.menu),
+        menu_pakket: volledig.menu.pakket ?? '',
         omschrijving: volledig.omschrijving,
       },
       client_request_id: clientRequestId.current,
@@ -406,21 +409,10 @@ export default function App() {
               {step.kind === 'single' ? (
                 <ChoiceList cards options={DESIGN_MODES} value={draft.design_modus} onToggle={(k) => patch({ design_modus: k as DesignMode })} />
               ) : null}
-              {step.kind === 'textarea' && step.id === 'menu_tekst' ? (
-                <>
-                  <TextArea
-                    id="f-menu"
-                    value={draft.menu_tekst}
-                    onChange={(v) => patch({ menu_tekst: v })}
-                    maxLength={8000}
-                    placeholder={'Op tafel\n\n\u2022 Bruschetta-spiezen met seasonal dips\n\nVoorgerecht\n\n\u2022 Gerookte hoenderfilet | gel van basilicum en appel | gepofte boekweit'}
-                  />
-                  <span className="hint hint--kbd">
-                    <kbd>Shift</kbd> + <kbd>Enter</kbd> voor een nieuwe regel
-                  </span>
-                </>
+              {step.kind === 'menu' ? (
+                <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />
               ) : null}
-              {step.kind === 'textarea' && step.id !== 'menu_tekst' ? (
+              {step.kind === 'textarea' ? (
                 <>
                   <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
                   <span className="hint hint--kbd">

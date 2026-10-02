@@ -63,6 +63,10 @@ export const aanvraagSchema = z
      * en maakt er het menuscherm van; zie worker/menu/menu-tekst.mjs.
      */
     menu_tekst: z.string().trim().max(8000, 'Maximaal 8000 tekens').default(''),
+    // Welk pakket de aanvrager koos. Het formulier weet dat, dus hoeft de worker het
+    // niet meer uit de kopjes af te leiden - en kan hij zeggen dat het niet klopt in
+    // plaats van er een te gokken.
+    menu_pakket: z.string().trim().max(60).default(''),
   })
   .superRefine((a, ctx) => {
     if (a.deadline > a.event_datum) {
