@@ -145,8 +145,34 @@ export function overtollig(bron, getypt) {
 
 // Hoeveel woorden er extra mogen staan, als deel van het gerecht uit het ontwerp.
 // Zonder die grens zou "Burrata | tomatenmix | truffelolie" blijven hangen aan het
-// losse gerecht "Burrata": alle woorden daarvan staan er immers in.
+// losse gerecht "Burrata": alle woorden daarvan staan er immers in. Bij een kort
+// gerecht mag er altijd minstens een woord bij, anders zou "Pinsa | provolone |
+// tomatenchutney" het ontwerp-gerecht "Provolone | tomatenchutney" niet vinden.
+// Een woord te veel is context; een woord te weinig is een ander gerecht, en daar
+// gaat de dekking hierboven over.
 const RUIS = 0.4
+const RUIS_MINIMAAL = 1
+
+/**
+ * Namen die de ontwerper afkort en de bibliotheek voluit schrijft. Dat is geen
+ * tikfout en geen ander gerecht: hetzelfde broodje, twee schrijfwijzen, en de
+ * dekkingsregel kan ze niet aan elkaar knopen omdat "wit" te kort is om als
+ * verschrijving van "witte" te mogen tellen. Op het scherm wint het ontwerp, dus
+ * vertalen we de bibliotheeknaam naar die van de ontwerper.
+ *
+ * Houd deze lijst kort en letterlijk. Elke regel hier is een plek waar het ontwerp
+ * en de bibliotheek uit elkaar lopen; als er veel bijkomen is dat een teken dat er
+ * iets anders mis is.
+ */
+const ALIASSEN = [
+  [/\bwitte baguette\b/gi, 'Wit'],
+]
+
+function viaAlias(tekst) {
+  let t = String(tekst)
+  for (const [van, naar] of ALIASSEN) t = t.replace(van, naar)
+  return t
+}
 
 /**
  * Zoekt het gerecht uit de bibliotheek dat hier is ingetypt.
@@ -157,6 +183,7 @@ const RUIS = 0.4
  * @returns {{sleutel: string, gerecht: object}|null}
  */
 export function zoekGerecht(getypt, gerechten, grootte) {
+  getypt = viaAlias(getypt)
   const voorvoegsel = `${grootte}|`
   const sleutel = voorvoegsel + gerechtsleutel(getypt)
   if (gerechten[sleutel]) return { sleutel, gerecht: gerechten[sleutel], letterlijk: true }
@@ -166,7 +193,7 @@ export function zoekGerecht(getypt, gerechten, grootte) {
     if (!k.startsWith(voorvoegsel)) continue
     const bron = k.slice(voorvoegsel.length)
     const extra = overtollig(bron, getypt)
-    if (extra === null || extra > woorden(bron).length * RUIS) continue
+    if (extra === null || extra > Math.max(RUIS_MINIMAAL, woorden(bron).length * RUIS)) continue
     treffers.push({ extra, sleutel: k, gerecht })
   }
   if (!treffers.length) return null

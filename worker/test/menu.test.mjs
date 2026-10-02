@@ -513,6 +513,27 @@ test('de streep mag ergens anders staan dan de ontwerper hem zette',
 // voor zalm, dan lijkt dat gerecht voor 90% op de versie uit het ontwerp en zou
 // er tonijn op het scherm komen. Daarom telt dekking en niet gelijkenis.
 
+test('de bibliotheeknaam vindt het gerecht uit het ontwerp', () => {
+  // Abel kort af waar de bibliotheek voluit schrijft: "Wit" tegenover "Witte
+  // baguette", "Burrata" tegenover "Pinsa | burrata". Wie het uit de bibliotheek
+  // overtypt hoort toch het broodje van de ontwerper te krijgen.
+  const { gerechten } = laadBibliotheek()
+  const vindt = (tekst) => zoekGerecht(tekst, gerechten, 56)?.sleutel
+  assert.match(vindt('Witte baguette | kip | Koreaanse kimchi-mayonaise | zoetzure rode ui | komkommer'),
+    /\|wit kip/)
+  assert.match(vindt('Pinsa | burrata | tomatenmix | basilicumolie (vega)'), /\|burrata tomatenmix/)
+  assert.match(vindt('Pinsa | provolone | tomatenchutney'), /\|provolone tomatenchutney/)
+  assert.match(vindt('Baguette kaas | mosterdmayonaise | komkommer | rucola'), /\|kaas mosterdmayonaise/)
+})
+
+test('een woord erbij mag, een ander product niet', () => {
+  // Een kort gerecht mag altijd een woord extra hebben - anders vindt "Pinsa |
+  // provolone | tomatenchutney" het ontwerp niet. Maar twee woorden erbij is een
+  // ander gerecht, en dan houden we onze handen ervan af.
+  const { gerechten } = laadBibliotheek()
+  assert.equal(zoekGerecht('Burrata | tomatenmix | truffelolie', gerechten, 56), null)
+})
+
 test('een woord mag aan elkaar of los geschreven staan', () => {
   // Het ontwerp zet "miso boter jus" waar de bibliotheek "misoboterjus" schrijft, en
   // "Volkoren punt" tegenover "Volkorenpunt". Dezelfde schotel, dus dat mag beide
