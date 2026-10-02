@@ -76,3 +76,16 @@ export async function addComment(taskGid, htmlText) {
   })
   return parse(res, `POST story ${taskGid}`)
 }
+
+/**
+ * Zet custom fields op een taak: { "<veld-gid>": "<optie-gid of waarde>" }.
+ * Zo zet de worker de knop "Menuscherm" zelf op Klaar of Mislukt als hij klaar is.
+ */
+export async function updateCustomFields(gid, waarden) {
+  const res = await fetch(`${API}/tasks/${gid}`, {
+    method: 'PUT',
+    headers: headers({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ data: { custom_fields: waarden } }),
+  })
+  return parse(res, `PUT task ${gid} (velden)`)
+}
