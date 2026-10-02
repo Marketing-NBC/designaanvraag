@@ -1,7 +1,7 @@
 {
   "pakket": "walking-dinner",
   "bron": {
-    "bestand": "Flexibele-template-designs-V4.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 9
   },
   "canvas": {
@@ -342,13 +342,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele -uienrelish | venne cress",
+          "tekst": "rilette van eend | gele-uienrelish | vene cress",
           "regels": [
             {
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele -uienrelish | ",
+                  "tekst": "rilette van eend | gele-uienrelish | ",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -360,7 +360,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "venne cress",
+                  "tekst": "vene cress",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,

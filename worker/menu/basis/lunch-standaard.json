@@ -1,7 +1,7 @@
 {
   "pakket": "lunch-standaard",
   "bron": {
-    "bestand": "Flexibele-template-designs-V4.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 1
   },
   "canvas": {
@@ -759,8 +759,8 @@
     {
       "x": 2596.0,
       "kader": {
-        "breedte": 877.09,
-        "minimaal": 866.69,
+        "breedte": 879.96,
+        "minimaal": 869.53,
         "maximaal": 989.31,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
@@ -877,13 +877,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Vers fruit",
+          "tekst": "Fruitsalade",
           "regels": [
             {
               "baseline": 908.13,
               "runs": [
                 {
-                  "tekst": "Vers fruit",
+                  "tekst": "Fruitsalade",
                   "x": -0.4,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
@@ -943,13 +943,13 @@
         },
         {
           "soort": "kop",
-          "tekst": "Salade specials bar",
+          "tekst": "Salade Bar",
           "regels": [
             {
               "baseline": 1285.73,
               "runs": [
                 {
-                  "tekst": "Salade specials bar",
+                  "tekst": "Salade Bar",
                   "x": -0.4,
                   "font": "Pockota-Medium",
                   "grootte": 72.0,
@@ -1027,13 +1027,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "appel | gerookte makreel | mierikswortecréme",
+          "tekst": "appel | gerookte makreel | mierikswortelcrème",
           "regels": [
             {
               "baseline": 1664.93,
               "runs": [
                 {
-                  "tekst": "appel | gerookte makreel | mierikswortecréme",
+                  "tekst": "appel | gerookte makreel | mierikswortelcrème",
                   "x": -0.4,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -1133,7 +1133,7 @@
   "afwijkingen": [
     {
       "kolom": 3,
-      "na": "Salade specials bar",
+      "na": "Salade Bar",
       "voor": "Burrata",
       "overgang": "kop->naam",
       "gemeten": 129.2,
@@ -1158,14 +1158,14 @@
     {
       "kolom": 3,
       "na": "Rode bieten",
-      "voor": "appel | gerookte makreel | mierikswortec",
+      "voor": "appel | gerookte makreel | mierikswortel",
       "overgang": "naam->ingr",
       "gemeten": 50.0,
       "ritme": 62.0
     },
     {
       "kolom": 3,
-      "na": "appel | gerookte makreel | mierikswortec",
+      "na": "appel | gerookte makreel | mierikswortel",
       "voor": "Thaise kip",
       "overgang": "ingr->naam",
       "gemeten": 100.0,

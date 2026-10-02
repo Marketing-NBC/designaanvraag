@@ -1,7 +1,7 @@
 {
   "pakket": "lunch-basic",
   "bron": {
-    "bestand": "Flexibele-template-designs-V4.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 2
   },
   "canvas": {
@@ -176,13 +176,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Volkoren punt",
+          "tekst": "Volkorenpunt",
           "regels": [
             {
               "baseline": 786.72,
               "runs": [
                 {
-                  "tekst": "Volkoren punt",
+                  "tekst": "Volkorenpunt",
                   "x": 0.36,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
@@ -194,7 +194,7 @@
         },
         {
           "soort": "ingr",
-          "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer | (vega)",
+          "tekst": "belegen kaas | truffelmayonaise | Lollo Bianca | komkommer (vega)",
           "regels": [
             {
               "baseline": 854.92,
@@ -212,7 +212,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "Lollo Bianca | komkommer | (vega)",
+                  "tekst": "Lollo Bianca | komkommer (vega)",
                   "x": 0.36,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -474,7 +474,7 @@
               "baseline": 1180.96,
               "runs": [
                 {
-                  "tekst": "Bospaddenstoelensoep",
+                  "tekst": "Bospaddenstoelensoep ",
                   "x": 0.21,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,

@@ -182,14 +182,29 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
   const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
   const tartelettes = inhoud.secties[0].gerechten[0]
   assert.ok(Array.isArray(tartelettes.onderdelen), 'Tartelettes komt niet als opsomming terug')
-  tartelettes.onderdelen.push({ naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcreme'] })
+  tartelettes.onderdelen.push({ naam: 'Gerookte paling' })
 
   const { meldingen } = await renderMenu(inhoud)
   assert.deepEqual(meldingen.botsingen, [], 'de langere opsomming raakt een blob')
   assert.deepEqual(meldingen.overloop, [])
   // De alinea wordt langer, en dat hoort gemeld te worden.
   assert.equal(meldingen.regelval.length, 1)
-  assert.match(meldingen.regelval[0], /6 regels/)
+  assert.match(meldingen.regelval[0], /5 regels/)
+})
+
+test('past een onderdeel er niet meer bij, dan wordt dat gemeld', { timeout: 120_000 }, async () => {
+  // De eerste kolom van Grab & Go zit vol: sinds "Bruschettaspiezen met seasonal
+  // dips (vega)" over drie regels loopt is er nog ruimte voor een kale naam, niet
+  // voor een naam met een toelichting erbij. Dan hoort het scherm niet stilletjes
+  // door te lopen maar als onbruikbaar terug te komen.
+  const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+  inhoud.secties[0].gerechten[0].onderdelen.push({
+    naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcr\u00e8me'] })
+
+  const { meldingen } = await renderMenu(inhoud)
+  assert.equal(meldingen.overloop.length, 1)
+  assert.match(meldingen.overloop[0], /onder de onderrand/)
+  assert.ok(!menuIsBruikbaar(meldingen), 'zo\u2019n scherm mag nooit goedgekeurd worden')
 })
 
 test('er kan een onderdeel uit een opsomming, en de rest schuift op',

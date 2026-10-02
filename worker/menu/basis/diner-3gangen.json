@@ -1,7 +1,7 @@
 {
   "pakket": "diner-3gangen",
   "bron": {
-    "bestand": "Flexibele-template-designs-V4.ai",
+    "bestand": "Flexibele-template-designs-V6.ai",
     "pagina": 7
   },
   "canvas": {
@@ -271,7 +271,7 @@
       "kader": {
         "breedte": 783.35,
         "minimaal": 774.06,
-        "maximaal": 824.26,
+        "maximaal": 786.61,
         "handmatigeAfbrekingen": 0
       },
       "secties": [
@@ -333,13 +333,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele -uienrelish | venne cress",
+          "tekst": "rilette van eend | gele-uienrelish | vene cress",
           "regels": [
             {
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele -uienrelish | ",
+                  "tekst": "rilette van eend | gele-uienrelish | ",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -351,7 +351,7 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "venne cress",
+                  "tekst": "vene cress",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,

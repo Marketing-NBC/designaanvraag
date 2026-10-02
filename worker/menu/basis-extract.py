@@ -24,7 +24,7 @@ import pymupdf
 
 HIER = Path(__file__).resolve().parent
 BASIS = HIER / 'basis'
-BRON = BASIS / 'bron' / 'Flexibele-template-designs-V4.ai'
+BRON = BASIS / 'bron' / 'Flexibele-template-designs-V6.ai'
 # De vorige versie blijft staan voor de voorbeeldpagina hieronder: die zit niet meer
 # in V4, en de manier waarop de ontwerper daar de kolommen heeft opgelost is precies
 # wat de doorstroom-regels moeten blijven halen.
@@ -56,6 +56,9 @@ CORRECTIES: dict = {}
 WOORDCORRECTIES = [
     ('lekkernije', 'lekkernijen'),   # "Dessertbuffet met zoete lekkernije" op pagina 7
     ('L”OR', 'L’OR'),                # een dubbel aanhalingsteken op pagina 10
+    # Een openend aanhalingsteken waar een weglatingsapostrof hoort. De bibliotheek
+    # schrijft het goed, dus zonder deze correctie is het gerecht niet terug te vinden.
+    ('Grip ‘n dip fries', 'Grip ’n dip fries'),
 ]
 
 
