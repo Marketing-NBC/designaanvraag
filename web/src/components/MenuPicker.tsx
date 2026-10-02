@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { ChoiceList } from './ChoiceList'
 import { Icon } from './Icon'
 import {
-  ALLE_GERECHTEN, PAKKETTEN, type MenuKeuze, aantalGerechten, isBekend,
+  ALLE_GERECHTEN, PAKKETTEN, type MenuKeuze, aantalGerechten, gerechtVan, isBekend,
   leegMenu, pakketVan, regelVan, uitPakket,
 } from '../lib/menu'
 
@@ -74,6 +74,36 @@ function GerechtKiezer({ waarde, onKies, onAnnuleer }: {
   )
 }
 
+/**
+ * Een gerecht zoals het op het scherm komt te staan: de naam op zijn eigen regel,
+ * de ingredienten daaronder. Abel: "Ik wil dat de gerechten zo staan zoals op de
+ * schermen." Dat is niet alleen mooier - zo zie je bij het kiezen al wat je straks
+ * krijgt, in plaats van een regel met strepen die nergens zo staat.
+ */
+function Gerechtregel({ regel }: { regel: string }) {
+  const g = gerechtVan(regel)
+  return (
+    <>
+      <span className="gerecht__naam">{g.naam}</span>
+      {g.ingredienten?.length ? (
+        <span className="gerecht__ingredienten">{g.ingredienten.join(' | ')}</span>
+      ) : null}
+      {g.onderdelen?.length ? (
+        <span className="gerecht__onderdelen">
+          {g.onderdelen.map((o) => (
+            <span className="gerecht__onderdeel" key={o.naam}>
+              <span className="gerecht__bullet">{o.naam}</span>
+              {o.toelichting?.length ? (
+                <span className="gerecht__toelichting">{o.toelichting.join(' | ')}</span>
+              ) : null}
+            </span>
+          ))}
+        </span>
+      ) : null}
+    </>
+  )
+}
+
 interface Props {
   menu: MenuKeuze
   onChange: (menu: MenuKeuze) => void
@@ -84,11 +114,10 @@ export function MenuPicker({ menu, onChange }: Props) {
   const [open, setOpen] = useState<string | null>(null)
 
   if (!menu.pakket) {
-    const opties = PAKKETTEN.map((p) => {
-      const n = p.secties.reduce((t, s) => t + s.gerechten.length, 0)
-      const onderdelen = p.secties.filter((s) => s.kop).map((s) => s.kop).join(' · ')
-      return { key: p.pakket, label: p.naam, description: `${n} gerechten${onderdelen ? ` — ${onderdelen}` : ''}` }
-    })
+    // Alleen de naam op de kaart: de onderdelen staan een scherm later toch al, en
+    // een kaart met een rij kopjes eronder leest als een opsomming die je moet lezen
+    // in plaats van een knop die je aanklikt.
+    const opties = PAKKETTEN.map((p) => ({ key: p.pakket, label: p.naam }))
     return (
       <ChoiceList
         cards
@@ -132,8 +161,8 @@ export function MenuPicker({ menu, onChange }: Props) {
                   />
                 ) : (
                   <>
-                    <span className={`gerecht__tekst${isBekend(regel) ? '' : ' gerecht__tekst--eigen'}`}>
-                      {regel}
+                    <span className="gerecht__tekst">
+                      <Gerechtregel regel={regel} />
                       {isBekend(regel) ? null : (
                         <span className="gerecht__nieuw">
                           <Icon name="alert" /> niet uit de lijst
