@@ -603,11 +603,27 @@
     const logoGroep = document.getElementById('logobalk')
     if (lb) {
       if (merk.logo) {
-        logoGroep.appendChild(el('rect', { x: lb.x, y: lb.y, width: lb.breedte, height: lb.hoogte,
+        // Het vak komt van buiten: render.mjs rekent het uit op de werkelijke ruimte
+        // van dit ontwerp - de blobrand en de hoogste tekstregel - en op de maat van
+        // het bijgesneden logo. Zie menu/logo-plaatsing.mjs. Zonder dat vak valt hij
+        // terug op het vak uit het basisontwerp.
+        const vak = gegevens.logoVak || { x: lb.x + lb.breedte * 0.06, y: lb.y + lb.hoogte * 0.09,
+                                          breedte: lb.breedte * 0.88, hoogte: lb.hoogte * 0.82 }
+        // Eerst het vak leegvegen. In de achtergrondplaat van sommige ontwerpen staat
+        // het logo van de ontwerper meegebakken - bij lunch-standaard het NBC-logo -
+        // en dat moet weg voordat het logo van de opdrachtgever erop komt. We dekken
+        // zowel het vak uit het ontwerp als onze eigen plek af; allebei liggen ze
+        // boven de tekst en links van de blob, dus wit is hier veilig.
+        const dek = {
+          x: Math.min(lb.x, vak.x), y: Math.min(lb.y, vak.y),
+          x1: Math.max(lb.x + lb.breedte, vak.x + vak.breedte),
+          y1: Math.max(lb.y + lb.hoogte, vak.y + vak.hoogte),
+        }
+        logoGroep.appendChild(el('rect', { x: dek.x, y: dek.y, width: dek.x1 - dek.x,
+                                           height: dek.y1 - dek.y,
                                            fill: merk.logoAchtergrond || '#ffffff' }))
         logoGroep.appendChild(el('image', {
-          href: merk.logo, x: lb.x + lb.breedte * 0.06, y: lb.y + lb.hoogte * 0.09,
-          width: lb.breedte * 0.88, height: lb.hoogte * 0.82,
+          href: merk.logo, x: vak.x, y: vak.y, width: vak.breedte, height: vak.hoogte,
           preserveAspectRatio: 'xMidYMid meet',
         }))
       } else {

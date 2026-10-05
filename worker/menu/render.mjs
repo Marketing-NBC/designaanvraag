@@ -1,7 +1,9 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
+import sharp from 'sharp'
 import { chromiumExecutable, REPO_DIR, WORKER_DIR, parseArgs, log } from '../lib/config.mjs'
+import { BOVEN_MARGE, plaatsLogo } from './logo-plaatsing.mjs'
 
 const MENU_DIR = join(WORKER_DIR, 'menu')
 const BASIS_DIR = join(MENU_DIR, 'basis')
@@ -243,6 +245,57 @@ function gebruikteFonts(basis) {
  *   forceerHerberekening  alleen voor controle.mjs; zie payload hieronder
  * @returns {Promise<{png: Buffer, meldingen: object, fonts: string[]}>}
  */
+/**
+ * Hoeveel ruimte heeft het logo op dit basisontwerp?
+ *
+ * Twee dingen begrenzen hem: de rechterblob en de hoogste tekstregel. De blobrand
+ * lezen we uit de achtergrondplaat - per beeldrij van rechts naar links tot de kleur
+ * ophoudt - want die rand verschilt per ontwerp en per hoogte.
+ */
+async function logoRuimte(basis) {
+  let eersteTekst = Infinity
+  const kolommen = []
+  for (const kol of basis.kolommen ?? []) {
+    let boven = Infinity
+    for (const a of kol.alineas ?? []) {
+      for (const r of a.regels ?? []) {
+        boven = Math.min(boven, r.baseline - (r.runs?.[0]?.grootte ?? 0))
+      }
+    }
+    if (!Number.isFinite(boven)) continue
+    const breed = kol.kader?.maximaal ?? kol.kader?.breedte ?? 0
+    kolommen.push({ x0: kol.x, x1: kol.x + breed, boven })
+    eersteTekst = Math.min(eersteTekst, boven)
+  }
+  if (!Number.isFinite(eersteTekst)) eersteTekst = 560
+
+  const { data, info } = await sharp(join(BASIS_DIR, basis.achtergrond))
+    .ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const gekleurd = (p) => data[p] < 243 || data[p + 1] < 243 || data[p + 2] < 243
+  let blobRand = info.width
+  for (let y = BOVEN_MARGE; y < Math.min(info.height, Math.round(eersteTekst)); y += 4) {
+    const rij = y * info.width
+    // Alleen rijen waar de blob tot aan de rechterrand komt; raakt hij die rij niet,
+    // dan valt er ook niets te begrenzen.
+    if (!gekleurd((rij + info.width - 1) * 4)) continue
+    let x = info.width - 1
+    while (x >= 0 && gekleurd((rij + x) * 4)) x--
+    blobRand = Math.min(blobRand, x + 1)
+  }
+  return { blobRand, eersteTekst, kolommen }
+}
+
+/** De maat van het logo, uit de meegegeven meting of anders uit de data-URI zelf. */
+async function logoMaat(merk) {
+  if (merk?.logoBeeld?.breedte && merk?.logoBeeld?.hoogte) {
+    return { breedte: merk.logoBeeld.breedte, hoogte: merk.logoBeeld.hoogte }
+  }
+  const m = /^data:[^;]+;base64,(.*)$/s.exec(String(merk?.logo ?? ''))
+  if (!m) return null
+  const maat = await sharp(Buffer.from(m[1], 'base64')).metadata().catch(() => null)
+  return maat?.width && maat?.height ? { breedte: maat.width, hoogte: maat.height } : null
+}
+
 export async function renderMenu(opdracht) {
   const basis = vervangFonts(laadBasis(opdracht.pakket))
   const families = gebruikteFonts(basis)
@@ -258,10 +311,15 @@ export async function renderMenu(opdracht) {
     achtergrond,
     inhoud: { titel: opdracht.titel, secties: opdracht.secties },
     merk: opdracht.merk || {},
+    logoVak: null,
     // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
     // breken in plaats van de regelval van het basisontwerp over te nemen.
     forceerHerberekening: Boolean(opdracht.forceerHerberekening),
   }
+  // Waar het logo komt te staan, uitgerekend op de werkelijke ruimte van dit ontwerp.
+  const maat = await logoMaat(payload.merk)
+  if (maat) payload.logoVak = plaatsLogo(maat, await logoRuimte(basis))
+
   // Voor controle.mjs: zet terug wat we bewust anders zetten dan het .ai, zodat de
   // pixelvergelijking niet over onze eigen correcties struikelt (zie CORRECTIES en
   // WOORDCORRECTIES in basis-extract.py).
@@ -281,7 +339,7 @@ export async function renderMenu(opdracht) {
     // elke regel met zijn baseline. Daar kan een test op toetsen.
     const opmaak = await page.evaluate(() => window.__OPMAAK__ ?? null)
     const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 3840, height: 2160 } })
-    return { png, meldingen, opmaak, fonts: families }
+    return { png, meldingen, opmaak, fonts: families, logoVak: payload.logoVak }
   } finally {
     await browser.close()
   }
