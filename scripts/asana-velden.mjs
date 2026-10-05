@@ -91,6 +91,21 @@ export const FIELD_SPECS = [
       ['mislukt', 'red'],
     ],
   },
+  {
+    key: 'huisstijl',
+    type: 'enum',
+    description:
+      'De knop waarmee je de huisstijl van de opdrachtgever opnieuw laat ophalen. Zet hem op '
+      + '"Haal opnieuw op" als het de eerste keer is misgelukt, of als de website inmiddels is '
+      + 'veranderd. De rest zet zichzelf: Bezig zodra het begonnen is, Klaar of Mislukt als het '
+      + 'af is. Wat er gevonden is komt als comment en bijlagen bij deze taak te staan.',
+    options: [
+      ['opnieuw', 'purple'],
+      ['bezig', 'yellow'],
+      ['klaar_huisstijl', 'green'],
+      ['mislukt', 'red'],
+    ],
+  },
 ]
 
 /** De veldsleutels uit asana-field-map.json; de rest van dat bestand is geen veld. */

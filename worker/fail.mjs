@@ -24,5 +24,9 @@ if (aanvraag.asana_task_gid) {
   } catch (e) {
     log('Asana-comment mislukt', { error: e.message })
   }
+  // De knop op Mislukt, zodat hij niet op Bezig blijft staan en Marketing hem opnieuw
+  // kan proberen zodra de oorzaak weg is.
+  const { zetKnop } = await import('./lib/asana-knop.mjs')
+  await zetKnop(aanvraag.asana_task_gid, 'huisstijl', 'mislukt')
 }
 console.log(`Aanvraag ${id} gemarkeerd als mislukt: ${reason}`)

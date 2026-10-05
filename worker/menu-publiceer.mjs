@@ -115,8 +115,8 @@ async function afbreken(reden, pakket = null) {
       log('Asana-comment mislukt', { error: e.message })
     }
     // De knop staat op Bezig sinds de webhook hem startte; laat hem niet zo staan.
-    const { zetKnop } = await import('./menu/knop.mjs')
-    await zetKnop(aanvraag.asana_task_gid, 'mislukt')
+    const { zetKnop } = await import('./lib/asana-knop.mjs')
+    await zetKnop(aanvraag.asana_task_gid, 'menuscherm', 'mislukt')
   }
   console.error(reden)
   process.exit(1)
@@ -180,7 +180,7 @@ if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgeve
   let keuze = null
   if (aanvraag?.asana_task_gid) {
     try {
-      const { veldTekst } = await import('./menu/knop.mjs')
+      const { veldTekst } = await import('./lib/asana-knop.mjs')
       keuze = handmatigeKleuren(veldTekst(await getTask(aanvraag.asana_task_gid), 'menukleuren'))
     } catch (e) {
       // Het veld niet kunnen lezen mag nooit het scherm kosten: dan de huisstijl.
@@ -302,8 +302,8 @@ await updateMenu(id, {
 
 // De knop in Asana terug van Bezig naar Klaar of Mislukt, zodat Marketing in het bord
 // ziet waar het scherm staat zonder de taak open te klikken.
-const { zetKnop } = await import('./menu/knop.mjs')
-await zetKnop(taskGid, bruikbaar ? 'klaar_menu' : 'mislukt')
+const { zetKnop } = await import('./lib/asana-knop.mjs')
+await zetKnop(taskGid, 'menuscherm', bruikbaar ? 'klaar_menu' : 'mislukt')
 
 log('klaar', { id, taskGid, pakket: inhoud.pakket, meldingen: aantalMeldingen, bruikbaar })
 if (!bruikbaar) {

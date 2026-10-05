@@ -11,6 +11,11 @@ const db = createDb(env.supabaseUrl, env.supabaseSecretKey)
 const menuRoutine = env.menuRoutineFireUrl && env.menuRoutineToken
   ? createRoutineClient(env.menuRoutineFireUrl, env.menuRoutineToken)
   : null
+// Dezelfde Routine die bij het indienen van een aanvraag draait; opnieuw ophalen is
+// precies hetzelfde draaiboek, alleen op een ander moment gestart.
+const brandRoutine = env.routineFireUrl && env.routineToken
+  ? createRoutineClient(env.routineFireUrl, env.routineToken)
+  : null
 
 /**
  * De knop "Genereer nu" in Asana. We zoeken de aanvraag bij de taak, zetten hem
@@ -28,11 +33,27 @@ async function startMenu(asanaTaskGid: string, kleuren: 'nbc' | 'opdrachtgever')
   return true
 }
 
+/**
+ * De knop "Haal opnieuw op". Mislukte de huisstijl de eerste keer, dan stond de
+ * aanvraag op `failed` en kon Marketing daar niets mee; nu zetten we hem terug op
+ * `running` en start dezelfde Routine opnieuw. De oude foutmelding gaat weg, anders
+ * blijft die staan bij een poging die misschien wel lukt.
+ */
+async function startHuisstijl(asanaTaskGid: string): Promise<boolean> {
+  const aanvraag = await db.findByAsanaTaskGid(asanaTaskGid)
+  if (!aanvraag || !brandRoutine) return false
+  const { sessionUrl } = await brandRoutine.fire(`aanvraag_id=${aanvraag.id}`)
+  await db.update(aanvraag.id, { brand_status: 'running', brand_error: null, brand_session_url: sessionUrl })
+  console.log('huisstijl-routine opnieuw gestart', JSON.stringify({ id: aanvraag.id, sessionUrl }))
+  return true
+}
+
 const handler = createHandler({
   token: await webhookToken(env.asanaPat),
   store: createWebhookStore(env.supabaseUrl, env.supabaseSecretKey),
   markeerVervallen: (gid, moment) => db.markeerVervallen(gid, moment),
   startMenu: menuRoutine ? startMenu : undefined,
+  startHuisstijl: brandRoutine ? startHuisstijl : undefined,
   asana: createAsanaTaskClient(env.asanaPat),
   cfg: asanaFields,
   planningProjectGid: env.asanaPlanningProjectGid,

@@ -34,6 +34,12 @@ export interface Deps {
    * niet ingesteld en zeggen we dat in plaats van stil niets te doen.
    */
   startMenu?(asanaTaskGid: string, kleuren: 'nbc' | 'opdrachtgever'): Promise<boolean>
+  /**
+   * Haalt de huisstijl van de opdrachtgever opnieuw op. Mislukt die de eerste keer -
+   * een site die traag is, een bestand dat niet laadt - dan kon Marketing daar niets
+   * mee; nu is het een knop.
+   */
+  startHuisstijl?(asanaTaskGid: string): Promise<boolean>
   now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
@@ -125,6 +131,33 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     return `menuscherm gestart (${kleuren})`
   }
 
+  /**
+   * De knop "Huisstijl" op "Haal opnieuw op". Zelfde gang als bij het menuscherm:
+   * wij starten de Routine en zetten het veld meteen op "Bezig", zodat je ziet dat het
+   * loopt en tweemaal klikken niets extra's doet.
+   */
+  async function handleHuisstijlknop(t: AsanaTask): Promise<string | null> {
+    const veld = cfg.fields?.huisstijl
+    if (!veld?.gid || !veld.options?.opnieuw) return null
+    const gekozen = t.customFields?.[veld.gid]?.optieGids ?? []
+    if (!gekozen.includes(veld.options.opnieuw)) return null
+
+    if (!deps.startHuisstijl) return 'huisstijl gevraagd, maar de Routine is niet ingesteld'
+    const gestart = await deps.startHuisstijl(t.gid)
+    if (!gestart) return 'huisstijl gevraagd, maar geen aanvraag bij deze taak'
+
+    const bezig = veld.options?.bezig
+    if (bezig) {
+      try {
+        await asana.updateCustomFields(t.gid, { [veld.gid]: bezig })
+      } catch (e) {
+        log('warn', 'huisstijl-veld op Bezig zetten mislukt',
+          { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+    return 'huisstijl opnieuw gestart'
+  }
+
   async function handleTask(gid: string): Promise<string> {
     const t = await asana.getTask(gid)
     const ours = t.memberships.find((m) => m.project === projectGid)
@@ -134,6 +167,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // als de taak al afgerond is of nog geen vervaldatum heeft.
     const menu = await handleMenuknop(t)
     if (menu) return menu
+    const huisstijl = await handleHuisstijlknop(t)
+    if (huisstijl) return huisstijl
 
     if (t.completed) return 'afgerond'
     const section = ours.section

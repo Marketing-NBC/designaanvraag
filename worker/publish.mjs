@@ -109,5 +109,11 @@ await updateAanvraag(id, {
   brand_error: null,
   brand_result: { brief, assets, notes_updated: notesUpdated, extracted_at: signals.extracted_at, fallback: signals.fallback, title: signals.title, final_url: signals.final_url },
 })
+// De knop "Huisstijl" terugzetten. Marketing kan hem op "Haal opnieuw op" hebben
+// gezet; dan staat hij nu op Bezig en moet iemand hem weer vrijgeven. Lukt dat niet,
+// dan is dat een melding en geen reden om een geslaagde publicatie te laten mislukken.
+const { zetKnop } = await import('./lib/asana-knop.mjs')
+await zetKnop(taskGid, 'huisstijl', 'klaar_huisstijl')
+
 log('klaar', { id, taskGid, assets: assets.length, notesUpdated })
 console.log(`Gepubliceerd naar Asana-taak ${taskGid} (${aanvraag.asana_task_url ?? ''}).`)

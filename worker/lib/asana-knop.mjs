@@ -1,20 +1,21 @@
 /**
- * De velden van het menuscherm in Asana: de knop terugzetten en "Menukleuren" uitlezen.
+ * De knoppen in Asana waarmee Marketing werk start, en de tekstvelden ernaast.
  *
- * Marketing zet het veld op "Genereer nu"; de webhook zet het op "Bezig" en start deze
- * worker. Daarna moet iemand hem ook weer op Klaar of Mislukt zetten, anders blijft er
- * "Bezig" staan bij een taak waar het scherm al lang bij hangt. Dat doen we hier, aan
- * het eind van de rit.
+ * Twee knoppen werken hetzelfde: "Menuscherm" maakt een menuscherm, "Huisstijl" haalt
+ * de huisstijl opnieuw op. Marketing zet hem op de startstand; de webhook zet hem op
+ * "Bezig" en start de Routine. Daarna moet iemand hem ook weer op Klaar of Mislukt
+ * zetten, anders blijft er "Bezig" staan bij een taak waar het werk al lang af is. Dat
+ * doet de worker hier, aan het eind van de rit.
  *
- * De gids van het veld en van de opties staan in shared/asana-fields.json, uitgelezen
+ * De gids van de velden en van de opties staan in shared/asana-fields.json, uitgelezen
  * door de workflow "Asana-velden vernieuwen". Staan ze er niet - het veld is nieuw, de
- * workflow is nog niet gedraaid - dan gebeurt er niets. Een menuscherm dat verder klaar
- * is mag nooit stranden op een knop.
+ * workflow is nog niet gedraaid - dan gebeurt er niets. Werk dat verder klaar is mag
+ * nooit stranden op een knop.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { updateCustomFields } from '../lib/asana.mjs'
-import { log, REPO_DIR } from '../lib/config.mjs'
+import { updateCustomFields } from './asana.mjs'
+import { log, REPO_DIR } from './config.mjs'
 
 const CONFIG = join(REPO_DIR, 'shared', 'asana-fields.json')
 
@@ -31,39 +32,41 @@ export function veldconfig(pad = CONFIG) {
  * De waarde voor updateCustomFields, of null met de reden waarom het niet kan.
  *
  * @param {object|null} cfg  de inhoud van shared/asana-fields.json
- * @param {'genereer'|'genereer_kleur'|'bezig'|'klaar_menu'|'mislukt'} optie
+ * @param {'menuscherm'|'huisstijl'} sleutel  welk veld
+ * @param {string} optie  de stand, bv. 'bezig' of 'mislukt'
  */
-export function knopWaarde(cfg, optie) {
-  const veld = cfg?.fields?.menuscherm
+export function knopWaarde(cfg, sleutel, optie) {
+  const veld = cfg?.fields?.[sleutel]
+  const naam = veld?.name ?? sleutel
   if (!veld?.gid) {
-    return { reden: 'Het veld "Menuscherm" staat niet in shared/asana-fields.json; '
+    return { reden: `Het veld "${naam}" staat niet in shared/asana-fields.json; `
       + 'draai de workflow "Asana-velden vernieuwen".' }
   }
   const gid = veld.options?.[optie]
   if (!gid) {
-    return { reden: `Het veld "Menuscherm" heeft geen optie "${optie}"; `
+    return { reden: `Het veld "${naam}" heeft geen optie "${optie}"; `
       + 'draai de workflow "Asana-velden vernieuwen" om de opties aan te vullen.' }
   }
   return { waarde: { [veld.gid]: gid } }
 }
 
 /**
- * Zet de knop op een optie. Geeft true terug als dat gelukt is; een mislukking wordt
+ * Zet een knop op een stand. Geeft true terug als dat gelukt is; een mislukking wordt
  * gelogd en niet doorgegeven, want dit is nooit de hoofdzaak.
  */
-export async function zetKnop(taskGid, optie, cfg = veldconfig()) {
+export async function zetKnop(taskGid, sleutel, optie, cfg = veldconfig()) {
   if (!taskGid) return false
-  const { waarde, reden } = knopWaarde(cfg, optie)
+  const { waarde, reden } = knopWaarde(cfg, sleutel, optie)
   if (!waarde) {
-    log('knop niet gezet', { optie, reden })
+    log('knop niet gezet', { veld: sleutel, optie, reden })
     return false
   }
   try {
     await updateCustomFields(taskGid, waarde)
-    log('knop gezet', { optie })
+    log('knop gezet', { veld: sleutel, optie })
     return true
   } catch (e) {
-    log('knop zetten mislukt', { optie, error: e.message })
+    log('knop zetten mislukt', { veld: sleutel, optie, error: e.message })
     return false
   }
 }
