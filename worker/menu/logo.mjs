@@ -26,8 +26,8 @@ const BEELDSOORTEN = {
   svg: 'image/svg+xml',
 }
 
-// Ruim boven wat een logo nodig heeft (de balk is 791 breed op een 4K-scherm),
-// maar klein genoeg om niet met een foto van 8 MB de pagina in te gaan.
+// Ruim boven wat een logo nodig heeft (het staat op hoogstens zo'n 1200 pixels op een
+// 4K-scherm), maar klein genoeg om niet met een foto van 8 MB de pagina in te gaan.
 const MAX_BREEDTE = 2000
 
 const extensie = (naam) => String(naam).toLowerCase().split('.').pop()
@@ -59,17 +59,56 @@ export function kiesLogo(bijlagen) {
  * Een te groot beeld wordt verkleind; een SVG blijft zoals hij is.
  */
 export async function logoDataUri(bijlage) {
+  return (await logoBeeld(bijlage)).uri
+}
+
+/**
+ * Het logo als data-URI, met de maat waarop het scherm hem moet zetten.
+ *
+ * De marge rondom gaat eraf. Wie een logo exporteert laat daar vaak witruimte in
+ * staan, en zonder bijsnijden telt die marge mee als logo: het beeld wordt dan
+ * kleiner naarmate iemand ruimer heeft geexporteerd. Dat is geen keuze van de
+ * ontwerper maar een toevalligheid van het bestand.
+ *
+ * Een SVG snijden we niet bij - daar zit geen rasterrand in om te meten, en de
+ * viewBox is meestal al strak. De maten komen dan uit de viewBox zelf.
+ *
+ * @returns {{uri, breedte, hoogte, vector, bron}}
+ */
+export async function logoBeeld(bijlage) {
   const soort = BEELDSOORTEN[extensie(bijlage.name)]
   if (!soort) throw new Error(`"${bijlage.name}" is geen afbeelding die wij kunnen zetten.`)
-  let buffer = bijlage.buffer
-  if (soort !== 'image/svg+xml') {
-    const info = await sharp(buffer).metadata()
-    if (info.width > MAX_BREEDTE) {
-      buffer = await sharp(buffer).resize({ width: MAX_BREEDTE }).png().toBuffer()
-      return `data:image/png;base64,${buffer.toString('base64')}`
+
+  if (soort === 'image/svg+xml') {
+    const maat = await sharp(bijlage.buffer).metadata().catch(() => null)
+    return {
+      uri: `data:${soort};base64,${bijlage.buffer.toString('base64')}`,
+      breedte: maat?.width ?? 1, hoogte: maat?.height ?? 1, vector: true,
+      bron: { breedte: maat?.width ?? 0, hoogte: maat?.height ?? 0 },
     }
   }
-  return `data:${soort};base64,${buffer.toString('base64')}`
+
+  const oorspronkelijk = await sharp(bijlage.buffer).metadata()
+  let beeld = sharp(bijlage.buffer).trim({ threshold: 6 })
+  let buffer = await beeld.png().toBuffer().catch(() => null)
+  // Een logo dat helemaal uit een kleur bestaat snijdt sharp tot niets weg; dan
+  // houden we het bestand zoals het was.
+  if (!buffer) buffer = await sharp(bijlage.buffer).png().toBuffer()
+  let maat = await sharp(buffer).metadata()
+  if (!maat.width || !maat.height) {
+    buffer = await sharp(bijlage.buffer).png().toBuffer()
+    maat = await sharp(buffer).metadata()
+  }
+  if (maat.width > MAX_BREEDTE) {
+    buffer = await sharp(buffer).resize({ width: MAX_BREEDTE }).png().toBuffer()
+    maat = await sharp(buffer).metadata()
+  }
+  return {
+    uri: `data:image/png;base64,${buffer.toString('base64')}`,
+    breedte: maat.width, hoogte: maat.height, vector: false,
+    bron: { breedte: maat.width, hoogte: maat.height,
+            voorBijsnijden: { breedte: oorspronkelijk.width, hoogte: oorspronkelijk.height } },
+  }
 }
 
 /**
@@ -102,9 +141,9 @@ export async function logoVoorTaak(taakGid) {
   }
 
   const bestand = await downloadAttachment(logo.gid)
-  const uri = await logoDataUri(bestand)
+  const beeld = await logoBeeld(bestand)
   const notities = []
   if (meerdere) notities.push(`Er hingen meer afbeeldingen aan "${subtaak.name}"; `
     + `"${logo.name}" is gebruikt.`)
-  return { logo: uri, wacht: false, subtaak, bestandsnaam: logo.name, notities }
+  return { logo: beeld.uri, beeld, wacht: false, subtaak, bestandsnaam: logo.name, notities }
 }

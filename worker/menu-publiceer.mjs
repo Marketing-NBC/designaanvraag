@@ -146,8 +146,9 @@ if (!pakketten().includes(inhoud.pakket)) {
  */
 let merk = inhoud.merk ?? {}
 if (args.logo) {
-  const { logoDataUri } = await import('./menu/logo.mjs')
-  merk = { ...merk, logo: await logoDataUri({ name: args.logo, buffer: readFileSync(args.logo) }) }
+  const { logoBeeld } = await import('./menu/logo.mjs')
+  const beeld = await logoBeeld({ name: args.logo, buffer: readFileSync(args.logo) })
+  merk = { ...merk, logo: beeld.uri, logoBeeld: beeld }
 } else if (id && !dryRun && aanvraag?.asana_task_gid && !merk.logo) {
   const { logoVoorTaak } = await import('./menu/logo.mjs')
   const uitkomst = await logoVoorTaak(aanvraag.asana_task_gid)
@@ -157,7 +158,7 @@ if (args.logo) {
     process.exit(0)
   }
   if (!uitkomst.logo) await afbreken(uitkomst.reden, inhoud.pakket)
-  merk = { ...merk, logo: uitkomst.logo }
+  merk = { ...merk, logo: uitkomst.logo, logoBeeld: uitkomst.beeld }
   invoerNotities.push(`Logo "${uitkomst.bestandsnaam}" van de subtaak gebruikt.`)
   invoerNotities.push(...(uitkomst.notities ?? []))
 }
@@ -208,10 +209,26 @@ if (id && !dryRun) {
 log('menuscherm renderen', { pakket: inhoud.pakket, logo: Boolean(merk.logo) })
 let png
 let meldingen
+let logoVak
 try {
-  ({ png, meldingen } = await renderMenu({ ...inhoud, merk }))
+  ({ png, meldingen, logoVak } = await renderMenu({ ...inhoud, merk }))
 } catch (e) {
   await afbreken(`De opmaak liep vast: ${e.message}`, inhoud.pakket)
+}
+
+// Het scherm is 3840 pixels breed en wordt van dichtbij bekeken. Een logo dat daarvoor
+// opgeblazen moest worden ziet er zacht uit; dat zie je pas als je het naast een scherp
+// logo legt, dus het hoort in de comment en niet alleen in het beeld.
+if (logoVak && merk.logoBeeld) {
+  const { scherptewaarschuwing } = await import('./menu/logo-plaatsing.mjs')
+  const waarschuwing = scherptewaarschuwing({
+    bron: merk.logoBeeld.bron, plaatsing: logoVak, vector: merk.logoBeeld.vector,
+  })
+  if (waarschuwing) invoerNotities.push(waarschuwing)
+  if (logoVak.krap) {
+    invoerNotities.push('Het logo paste niet op zijn volle maat naast de blob en boven de '
+      + 'tekst; het staat zo groot als er ruimte was.')
+  }
 }
 
 // Tekst die over een blob, de logobalk of de dieetwens-regel loopt maakt het scherm
