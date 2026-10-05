@@ -46,7 +46,7 @@ screenshots en verzamelt logo-kandidaten, kleuren en fonts in `worker/out/<uuid>
 | Bestand | Inhoud |
 |---|---|
 | `signals.json` | Alle gemeten signalen (kleuren met aandeel en rol, fonts per rol, logo-kandidaten met score) |
-| `hero.png`, `header.png`, `page.png` | Viewport, header (2×) en volledige pagina |
+| `hero.png`, `header.png`, `page.png` | Viewport, header (2×) en de bovenste 4000 px van de pagina |
 | `logo-<i>.view.png` / `logo-<i>.dark.png` | Elke logo-kandidaat op wit en op donker |
 | `logo-<i>.svg` / `.png` / `.shot.png` | Origineel en element-screenshot |
 
@@ -58,7 +58,8 @@ Faalt het script zelf (exit-code ≠ 0)? Probeer het **één keer** opnieuw. Faa
 ## Stap 3: kijken en de brief schrijven
 
 Bekijk met de Read-tool minimaal: `hero.png`, `header.png`, `page.png` en van elke logo-kandidaat
-`logo-<i>.view.png` (en `.dark.png` als het logo licht is). Lees `signals.json`.
+`logo-<i>.view.png` (en `.dark.png` als het logo licht is). Lees `signals.json`. Ontbreekt
+`page.png`, dan staat in `warnings` waarom; dat is een gemiste illustratie, geen gemiste meting.
 
 Schrijf `worker/out/<uuid>/brand-brief.json` volgens `shared/brand-brief-schema.ts`:
 

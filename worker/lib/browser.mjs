@@ -332,19 +332,62 @@ export async function openSite(url, { viewport = { width: 1440, height: 900 }, t
   return { page, context, browser, dom, finalUrl: page.url(), status, consent, stylingOk }
 }
 
+/**
+ * De paginascreenshot is een overzichtsplaatje: hij wordt niet gemeten, alleen bekeken.
+ * Daarom knippen we hem af op deze maat (CSS-pixels), en wel *in de browser*: met `clip`
+ * maakt Playwright alleen dat stuk, zodat er nooit een buffer van tientallen megapixels
+ * uit komt. Op zo'n buffer liep sharp eerder stuk ('Input image exceeds pixel limit').
+ */
+export const PAGINA_MAX = { breedte: 2000, hoogte: 4000 }
+
+/**
+ * sharp weigert standaard beeld boven ~268 megapixel. Met de clip hierboven blijven we daar
+ * ruim onder; deze ruimere grens is het vangnet voor een pagina die alsnog groeit terwijl
+ * de screenshot wordt gemaakt.
+ */
+const RUIM = { limitInputPixels: 2_000_000_000 }
+
+/** Hoe groot is het document, in CSS-pixels? */
+async function documentMaat(page) {
+  return await page.evaluate(() => {
+    const d = document.documentElement
+    const b = document.body
+    return {
+      breedte: Math.max(d?.scrollWidth ?? 0, b?.scrollWidth ?? 0, window.innerWidth || 0, 1),
+      hoogte: Math.max(d?.scrollHeight ?? 0, b?.scrollHeight ?? 0, window.innerHeight || 0, 1),
+    }
+  })
+}
+
+/** Welk stuk van de pagina vragen we op? Nooit meer dan PAGINA_MAX, nooit meer dan er is. */
+export function paginaClip(maat, max = PAGINA_MAX) {
+  const begrens = (waarde, grens) => Math.min(Math.max(1, Math.floor(waarde || 0)), grens)
+  return { x: 0, y: 0, width: begrens(maat?.breedte, max.breedte), height: begrens(maat?.hoogte, max.hoogte) }
+}
+
 export async function screenshots(page, outDir, sharp) {
   const { join } = await import('node:path')
+  const uit = { waarschuwingen: [] }
   const heroBuf = await page.screenshot({ type: 'png' })
-  await sharp(heroBuf).resize({ width: 1440 }).png().toFile(join(outDir, 'hero.png'))
+  await sharp(heroBuf, RUIM).resize({ width: 1440 }).png().toFile(join(outDir, 'hero.png'))
+  uit.hero = 'hero.png'
   const headerBuf = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 1440, height: 180 } })
-  await sharp(headerBuf).resize({ width: 1800 }).png().toFile(join(outDir, 'header.png'))
-  const fullBuf = await page.screenshot({ type: 'png', fullPage: true })
-  const meta = await sharp(fullBuf).metadata()
-  const maxH = 4000 * 2
-  let full = sharp(fullBuf)
-  if ((meta.height ?? 0) > maxH) full = full.extract({ left: 0, top: 0, width: meta.width, height: maxH })
-  await full.resize({ width: 1200 }).png().toFile(join(outDir, 'page.png'))
-  return { hero: 'hero.png', header: 'header.png', page: 'page.png', heroBuf }
+  await sharp(headerBuf, RUIM).resize({ width: 1800 }).png().toFile(join(outDir, 'header.png'))
+  uit.header = 'header.png'
+  // Een pagina die bij elke scroll blijft aangroeien (lazy loading, een eindeloze feed) kan
+  // tijdens het maken van de screenshot veel hoger worden dan hij bij het meten was. Dit
+  // plaatje is sierwerk, dus het mag de hele extractie niet meeslepen als dat misgaat.
+  try {
+    const clip = paginaClip(await documentMaat(page))
+    const fullBuf = await page.screenshot({ type: 'png', fullPage: true, clip })
+    await sharp(fullBuf, RUIM).resize({ width: 1200 }).png().toFile(join(outDir, 'page.png'))
+    uit.page = 'page.png'
+  } catch (e) {
+    const melding = String(e?.message ?? e).split('\n')[0]
+    log('paginascreenshot mislukt', { error: melding })
+    uit.waarschuwingen.push(`Geen overzichtsscreenshot van de hele pagina (${melding}); hero en header zijn er wel.`)
+  }
+  return { ...uit, heroBuf }
 }
 
 /** Element-screenshot van een logo-kandidaat op 2× met transparante achtergrond. */
