@@ -67,6 +67,24 @@ const rang = (lijst, rol) => {
 const omschrijf = (k) => (k.name ? `${k.hex} (${k.name})` : k.hex)
 
 /**
+ * Valt er iets te melden over een kleur als blob? Eén plek voor beide routes - de
+ * opgehaalde huisstijl en het veld "Menukleuren" - want eerder stond hier twee keer
+ * iets anders, en dan leest dezelfde kleur de ene keer als "heel donker" en de andere
+ * keer als "bijna zwart".
+ *
+ * Donker is geen fout: een merk met een diep marineblauw hoort zo op het scherm. Het
+ * wordt wel een zwaarder vlak dan het NBC-ontwerp laat zien, dus dat zeggen we. Bijna
+ * wit is het enige dat echt misgaat: dan staat er niets.
+ */
+function blobWaarschuwing(hex) {
+  if (bruikbaar(hex)) return null
+  return helderheid(hex) >= 235
+    ? 'Let op: die kleur is bijna wit, dus de blobs vallen weg tegen het scherm.'
+    : 'Let op: die kleur is heel donker, dus de blobs worden een zwaarder vlak dan in het '
+      + 'NBC-ontwerp.'
+}
+
+/**
  * Kiest de kleuren voor het scherm uit een huisstijl-brief.
  *
  * Neemt zowel de brief zelf als de hele `aanvragen.brand_result` aan. Dat laatste is
@@ -113,9 +131,8 @@ export function merkKleuren(bron) {
   if (basis.role !== 'primary' && !kleuren.some((k) => k.role === 'primary')) {
     delen.push('In de huisstijl staat geen hoofdkleur, vandaar die keuze.')
   }
-  if (!bruikbaar(basis.hex)) {
-    delen.push('Let op: die kleur is heel donker, dus de blobs worden een zwaar vlak.')
-  }
+  const waarschuwing = blobWaarschuwing(basis.hex)
+  if (waarschuwing) delen.push(waarschuwing)
   if (hoofd && hoofd !== basis) {
     delen.push(`De hoofdkleur ${omschrijf(hoofd)} is bijna wit; daarmee zouden de blobs `
       + 'wegvallen tegen het scherm, dus die is overgeslagen.')
@@ -177,11 +194,8 @@ export function handmatigeKleuren(veld) {
   if (gevonden.length > 3) {
     delen.push(`Er stonden ${gevonden.length} kleuren in het veld; de eerste drie zijn gebruikt.`)
   }
-  if (!bruikbaar(basis)) {
-    delen.push(helderheid(basis) >= 235
-      ? 'Let op: die basiskleur is bijna wit, dus de blobs vallen weg tegen het scherm.'
-      : 'Let op: die basiskleur is bijna zwart, dus de blobs worden een gat in het scherm.')
-  }
+  const waarschuwing = blobWaarschuwing(basis)
+  if (waarschuwing) delen.push(waarschuwing)
   if (!leesbaarOpWit(accent)) {
     delen.push('Let op: de kleur van de kopjes is licht, dus die kunnen op het witte scherm '
       + 'zwak uitvallen.')
@@ -192,4 +206,31 @@ export function handmatigeKleuren(veld) {
   }
 
   return { basis, accent, tekst, uitleg: delen.join(' ') }
+}
+
+// ── Van een keuze naar wat de engine krijgt ──────────────────────────
+
+/**
+ * Zet de gekozen kleuren op het merk-object dat naar de opmaak-engine gaat.
+ *
+ * Dit staat hier apart omdat er precies op deze overgang iets wegviel: de tekstkleur
+ * werd gekozen, stond in de Asana-comment, en kwam nooit bij de engine aan omdat het
+ * doorgeven ervan in menu-publiceer.mjs ontbrak. Een keuze die gemeld wordt maar niet
+ * gezet is erger dan een keuze die niet kan, want aan de comment is niets te zien.
+ * Als functie is het te toetsen, en dat gebeurt ook.
+ */
+export function merkMetKleuren(merk, keuze) {
+  return {
+    ...merk,
+    blobKleur: keuze.basis,
+    accent: keuze.accent,
+    ...(keuze.tekst ? { tekstkleur: keuze.tekst } : {}),
+  }
+}
+
+/** Wat er over de kleuren in menu_result wordt vastgelegd. */
+export function kleurenVerslag(merk) {
+  return merk.blobKleur
+    ? { basis: merk.blobKleur, accent: merk.accent ?? null, tekst: merk.tekstkleur ?? null }
+    : 'nbc'
 }
