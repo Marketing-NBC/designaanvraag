@@ -19,6 +19,7 @@ import { join } from 'node:path'
 import { addComment, getTask, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
 import { menuIsBruikbaar, renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
+import { kleurenVerslag } from './menu/kleuren.mjs'
 import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
 import { renderMenu, pakketten, pakketkenmerken } from './menu/render.mjs'
 
@@ -174,7 +175,7 @@ if (args.logo) {
  * smaak, geen fout - maar het wordt gemeld.
  */
 if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgever') {
-  const { merkKleuren, handmatigeKleuren } = await import('./menu/kleuren.mjs')
+  const { merkKleuren, handmatigeKleuren, merkMetKleuren } = await import('./menu/kleuren.mjs')
   let keuze = null
   if (aanvraag?.asana_task_gid) {
     try {
@@ -194,7 +195,7 @@ if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgeve
     invoerNotities.push(`${keuze.reden} Het scherm blijft in de NBC-huisstijl. Wil je toch een `
       + 'eigen kleur, zet dan een hexcode in het veld "Menukleuren" van de taak.')
   } else {
-    merk = { ...merk, blobKleur: keuze.basis, accent: keuze.accent }
+    merk = merkMetKleuren(merk, keuze)
     invoerNotities.push(keuze.uitleg)
   }
 }
@@ -272,9 +273,7 @@ await updateMenu(id, {
   menu_result: {
     pakket: inhoud.pakket,
     invoer: invoerNotities,
-    kleuren: merk.blobKleur
-      ? { basis: merk.blobKleur, accent: merk.accent ?? null }
-      : 'nbc',
+    kleuren: kleurenVerslag(merk),
     bruikbaar,
     bestandsnaam,
     asana_gid: bijlage.gid,

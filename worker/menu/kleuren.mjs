@@ -207,3 +207,30 @@ export function handmatigeKleuren(veld) {
 
   return { basis, accent, tekst, uitleg: delen.join(' ') }
 }
+
+// ── Van een keuze naar wat de engine krijgt ──────────────────────────
+
+/**
+ * Zet de gekozen kleuren op het merk-object dat naar de opmaak-engine gaat.
+ *
+ * Dit staat hier apart omdat er precies op deze overgang iets wegviel: de tekstkleur
+ * werd gekozen, stond in de Asana-comment, en kwam nooit bij de engine aan omdat het
+ * doorgeven ervan in menu-publiceer.mjs ontbrak. Een keuze die gemeld wordt maar niet
+ * gezet is erger dan een keuze die niet kan, want aan de comment is niets te zien.
+ * Als functie is het te toetsen, en dat gebeurt ook.
+ */
+export function merkMetKleuren(merk, keuze) {
+  return {
+    ...merk,
+    blobKleur: keuze.basis,
+    accent: keuze.accent,
+    ...(keuze.tekst ? { tekstkleur: keuze.tekst } : {}),
+  }
+}
+
+/** Wat er over de kleuren in menu_result wordt vastgelegd. */
+export function kleurenVerslag(merk) {
+  return merk.blobKleur
+    ? { basis: merk.blobKleur, accent: merk.accent ?? null, tekst: merk.tekstkleur ?? null }
+    : 'nbc'
+}

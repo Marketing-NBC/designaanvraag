@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { bruikbaarAlsLogo, kiesLogo, logoDataUri } from '../menu/logo.mjs'
-import { handmatigeKleuren, merkKleuren } from '../menu/kleuren.mjs'
+import { handmatigeKleuren, kleurenVerslag, merkKleuren, merkMetKleuren } from '../menu/kleuren.mjs'
 import { veldTekst } from '../menu/knop.mjs'
 import { isMenuSubtaak, MENU_SUBTAAK_NAMEN, subtaskTitles } from '../../shared/asana-title.ts'
 
@@ -260,4 +260,35 @@ test('het veld wordt in Asana op gid gevonden, en anders op naam', () => {
   assert.equal(veldTekst({ custom_fields: [{ gid: '123', text_value: '' }] }, 'menukleuren', cfg), null)
   assert.equal(veldTekst({ custom_fields: [] }, 'menukleuren', cfg), null)
   assert.equal(veldTekst(null, 'menukleuren', cfg), null)
+})
+
+test('elke gekozen kleur komt ook bij de engine aan', () => {
+  // Dit ging mis: de tekstkleur werd gekozen, stond in de Asana-comment, en kwam nooit
+  // bij de engine aan omdat menu-publiceer.mjs hem niet doorgaf. De schermen kwamen
+  // terug met zwarte tekst terwijl de comment iets anders beloofde.
+  const keuze = handmatigeKleuren('#0b1f35, #f7941e, #0b1f35')
+  const merk = merkMetKleuren({ logo: 'data:image/png;base64,xx' }, keuze)
+
+  assert.equal(merk.blobKleur, '#0b1f35')
+  assert.equal(merk.accent, '#f7941e')
+  assert.equal(merk.tekstkleur, '#0b1f35')
+  assert.equal(merk.logo, 'data:image/png;base64,xx', 'het logo mag er niet afvallen')
+
+  // En in het algemeen: wat de kiezer teruggeeft, hoort de engine te bereiken. Zo valt
+  // een kleur die er later bijkomt ook niet stilletjes weg.
+  const gezet = new Set(Object.values(merk))
+  for (const [sleutel, waarde] of Object.entries(keuze)) {
+    if (sleutel === 'uitleg' || !waarde) continue
+    assert.ok(gezet.has(waarde), `${sleutel} (${waarde}) komt niet bij de engine aan`)
+  }
+})
+
+test('wat er gezet is, wordt ook vastgelegd', () => {
+  // menu_result is waar later op terug te kijken is welke kleuren een scherm kreeg.
+  const merk = merkMetKleuren({}, handmatigeKleuren('#0b1f35, #f7941e, #1d1d1b'))
+  assert.deepEqual(kleurenVerslag(merk),
+    { basis: '#0b1f35', accent: '#f7941e', tekst: '#1d1d1b' })
+  assert.deepEqual(kleurenVerslag(merkMetKleuren({}, handmatigeKleuren('#0b1f35'))),
+    { basis: '#0b1f35', accent: '#0b1f35', tekst: null })
+  assert.equal(kleurenVerslag({ logo: 'x' }), 'nbc', 'zonder blobkleur is het gewoon NBC')
 })
