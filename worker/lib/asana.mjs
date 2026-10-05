@@ -13,7 +13,7 @@ async function parse(res, what) {
 }
 
 export async function getTask(gid) {
-  const res = await fetch(`${API}/tasks/${gid}?opt_fields=gid,name,html_notes,notes,permalink_url`, { headers: headers() })
+  const res = await fetch(`${API}/tasks/${gid}?opt_fields=gid,name,html_notes,notes,permalink_url,custom_fields.gid,custom_fields.name,custom_fields.text_value`, { headers: headers() })
   return parse(res, `GET task ${gid}`)
 }
 

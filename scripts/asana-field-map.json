@@ -1,5 +1,5 @@
 {
-  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig). Onder sections staan de bord-kolommen (sleutel → naam in Asana). Het veld \"menuscherm\" is de knop waarmee Marketing een menuscherm laat maken: zet hem op \"Genereer nu\" zodra het logo aan de subtaak hangt, of op \"Genereer nu (kleuren opdrachtgever)\" als de blobs mee moeten kleuren. De worker zet hem daarna zelf op Bezig, Klaar of Mislukt.",
+  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig). Onder sections staan de bord-kolommen (sleutel → naam in Asana). Het veld \"menuscherm\" is de knop waarmee Marketing een menuscherm laat maken: zet hem op \"Genereer nu\" zodra het logo aan de subtaak hangt, of op \"Genereer nu (kleuren opdrachtgever)\" als de blobs mee moeten kleuren. De worker zet hem daarna zelf op Bezig, Klaar of Mislukt. Het veld \"menukleuren\" is optioneel: staat daar een hexcode, dan gebruikt het menuscherm die in plaats van de automatisch opgehaalde huisstijl.",
   "eventdatum": "Eventdatum",
   "deadline": "Deadline",
   "aanvrager": "Aanvrager",
@@ -9,6 +9,7 @@
   "schijf": "Schijf",
   "spoed": "Spoed",
   "menuscherm": "Menuscherm",
+  "menukleuren": "Menukleuren",
   "sections": {
     "nieuwe_aanvragen": "Nieuwe aanvragen",
     "feedback": "Feedback",

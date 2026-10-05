@@ -52,6 +52,15 @@ export const FIELD_SPECS = [
   { key: 'website', type: 'text', description: 'Website van de opdrachtgever of het event (bron voor de huisstijl).' },
   { key: 'schijf', type: 'text', description: 'Locatie op de G-schijf met meer informatie of bestaande designs.' },
   {
+    key: 'menukleuren',
+    type: 'text',
+    description:
+      'Welke kleur het menuscherm krijgt, als je hem zelf wil bepalen. Eén hexcode voor de blobs '
+      + '(#5b2d8e), of twee voor de blobs en de kopjes (#5b2d8e, #ff6600). Wat hier staat wint van '
+      + 'de huisstijl die automatisch is opgehaald. Werkt samen met "Genereer nu (kleuren '
+      + 'opdrachtgever)"; laat het leeg om de opgehaalde huisstijl te gebruiken.',
+  },
+  {
     key: 'spoed',
     type: 'enum',
     description: 'Minder dan 10 werkdagen tussen de aanvraag en het event. Wordt automatisch gezet bij het indienen.',

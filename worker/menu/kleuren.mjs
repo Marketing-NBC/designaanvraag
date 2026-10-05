@@ -106,3 +106,58 @@ export function merkKleuren(bron) {
 
   return { basis: basis.hex, accent: accent.hex, uitleg: delen.join(' ') }
 }
+
+// ── Kleuren die Marketing zelf intikt ────────────────────────────────
+
+/** Maakt er #rrggbb van, of null. Accepteert ook zonder hekje en in drie tekens. */
+function hex(stuk) {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(stuk ?? '').trim())
+  if (!m) return null
+  const h = m[1].toLowerCase()
+  return `#${h.length === 3 ? [...h].map((c) => c + c).join('') : h}`
+}
+
+/**
+ * De kleuren uit het Asana-veld "Menukleuren".
+ *
+ * Niet elke opdrachtgever heeft een website waar een huisstijl uit te halen valt, en
+ * soms bevalt de gevonden kleur gewoon niet. Dan tikt Marketing hem hier in: één
+ * hexcode voor de blobs, of twee voor de blobs en de kopjes.
+ *
+ * Wat hier staat is een opdracht, geen suggestie: te licht of te donker weigeren we
+ * niet, want hoe het eruitziet beoordeelt degene die het intikte. We zeggen het wel.
+ *
+ * @param {string|null} tekst  de inhoud van het veld
+ * @returns {{basis, accent, uitleg}|{reden: string}|null}  null als het veld leeg is
+ */
+export function handmatigeKleuren(tekst) {
+  const ruw = String(tekst ?? '').trim()
+  if (!ruw) return null
+  const stukken = ruw.split(/[\s,;/|]+/).filter(Boolean)
+  const gevonden = stukken.map(hex).filter(Boolean)
+  if (!gevonden.length) {
+    return { reden: `In het veld "Menukleuren" staat "${ruw.slice(0, 60)}", en daar zit geen `
+      + 'hexkleur in (zoiets als #5b2d8e).' }
+  }
+
+  const [basis, tweede] = gevonden
+  const accent = tweede ?? basis
+  const delen = [`De blobs worden één vlak in ${basis}, zoals ingevuld bij "Menukleuren".`]
+  delen.push(accent === basis
+    ? 'De kopjes en het bestek-icoon krijgen dezelfde kleur.'
+    : `De kopjes en het bestek-icoon worden ${accent}.`)
+  if (gevonden.length > 2) {
+    delen.push(`Er stonden ${gevonden.length} kleuren in het veld; de eerste twee zijn gebruikt.`)
+  }
+  if (!bruikbaar(basis)) {
+    delen.push(helderheid(basis) >= 235
+      ? 'Let op: die basiskleur is bijna wit, dus de blobs vallen weg tegen het scherm.'
+      : 'Let op: die basiskleur is bijna zwart, dus de blobs worden een gat in het scherm.')
+  }
+  if (!leesbaarOpWit(accent)) {
+    delen.push('Let op: de kleur van de kopjes is licht, dus die kunnen op het witte scherm '
+      + 'zwak uitvallen.')
+  }
+
+  return { basis, accent, uitleg: delen.join(' ') }
+}

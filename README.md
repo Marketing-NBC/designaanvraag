@@ -327,7 +327,14 @@ storing maar een te lang gerecht.
 "Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu** — of op
 **Genereer nu (kleuren opdrachtgever)** als het scherm mee moet kleuren met de huisstijl van de
 opdrachtgever — blobs, kopjes en het bestek-icoon. De webhook start dan deze
-routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*. Eenmalig nodig:
+routine; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of *Mislukt*.
+
+De blobs worden dan één vlak in de hoofdkleur van de opdrachtgever en de kopjes krijgen de
+accentkleur; het verloop oranje-naar-teal hoort bij NBC en komt alleen op een NBC-scherm. Welke
+kleuren dat zijn komt uit de automatisch opgehaalde huisstijl — tenzij er een hexcode staat in het
+veld **Menukleuren** (`#5b2d8e`, of `#5b2d8e, #ff6600` voor blobs plus kopjes). Dat veld wint, en
+is de plek voor een opdrachtgever zonder bruikbare website of voor een gevonden kleur die niet
+bevalt. Eenmalig nodig:
 
 1. Actions → **Asana-velden vernieuwen** → Run workflow, met "Ontbrekende velden aanmaken" aan.
    Dat maakt het veld `Menuscherm` aan met de opties Genereer nu / Genereer nu (kleuren

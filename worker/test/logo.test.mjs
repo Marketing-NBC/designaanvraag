@@ -11,7 +11,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { bruikbaarAlsLogo, kiesLogo, logoDataUri } from '../menu/logo.mjs'
-import { merkKleuren } from '../menu/kleuren.mjs'
+import { handmatigeKleuren, merkKleuren } from '../menu/kleuren.mjs'
+import { veldTekst } from '../menu/knop.mjs'
 import { isMenuSubtaak, MENU_SUBTAAK_NAMEN, subtaskTitles } from '../../shared/asana-title.ts'
 
 const NBC_LOGO = join(WORKER_DIR, '..', 'web', 'src', 'assets', 'brand', 'nbc-logo-color-black.png')
@@ -161,4 +162,71 @@ test('de kleuren worden gevonden in wat er echt in de database staat', () => {
   assert.equal(keuze.reden, undefined, 'brand_result hoort gewoon te werken')
   assert.equal(keuze.basis, '#5b2d8e')
   assert.equal(keuze.accent, '#00a3e0')
+})
+
+// ── Kleuren die Marketing zelf intikt ────────────────────────────────
+// Niet elke opdrachtgever heeft een website waar een huisstijl uit te halen valt. Dan
+// tikt Marketing de kleur in het Asana-veld "Menukleuren", en die wint van wat er
+// automatisch gevonden is.
+
+test('een leeg veld betekent: gewoon de opgehaalde huisstijl', () => {
+  for (const leeg of [null, undefined, '', '   ']) assert.equal(handmatigeKleuren(leeg), null, JSON.stringify(leeg))
+})
+
+test('één hexcode kleurt de blobs en de kopjes', () => {
+  const keuze = handmatigeKleuren('#5b2d8e')
+  assert.equal(keuze.basis, '#5b2d8e')
+  assert.equal(keuze.accent, '#5b2d8e')
+})
+
+test('twee hexcodes: de eerste de blobs, de tweede de kopjes', () => {
+  // Hoe iemand ze scheidt mag niet uitmaken; een hekje vergeten ook niet.
+  for (const tekst of ['#5b2d8e, #ff6600', '5b2d8e #ff6600', '#5B2D8E/#FF6600', '#5b2d8e; #ff6600']) {
+    const keuze = handmatigeKleuren(tekst)
+    assert.equal(keuze.basis, '#5b2d8e', tekst)
+    assert.equal(keuze.accent, '#ff6600', tekst)
+  }
+  // De korte schrijfwijze van drie tekens hoort ook te werken.
+  assert.equal(handmatigeKleuren('#abc').basis, '#aabbcc')
+})
+
+test('een kleur die niet kan wordt gezet, maar wel gemeld', () => {
+  // Wat hier staat is een opdracht van iemand die het scherm zelf nakijkt. Weigeren is
+  // dan betuttelend; stil doorgaan is erger, want een witte blob zie je niet.
+  const wit = handmatigeKleuren('#ffffff')
+  assert.equal(wit.basis, '#ffffff')
+  assert.match(wit.uitleg, /vallen weg tegen het scherm/)
+  assert.match(handmatigeKleuren('#000000').uitleg, /gat in het scherm/)
+  assert.match(handmatigeKleuren('#5b2d8e #ffe600').uitleg, /zwak uitvallen/)
+})
+
+test('staat er geen kleur in het veld, dan zegt de melding wat er wel stond', () => {
+  const keuze = handmatigeKleuren('donkerblauw graag')
+  assert.ok(keuze.reden)
+  assert.match(keuze.reden, /donkerblauw graag/)
+  assert.match(keuze.reden, /#5b2d8e/, 'laat zien hoe het wel moet')
+})
+
+test('het veld wordt in Asana op gid gevonden, en anders op naam', () => {
+  const cfg = { fields: { menukleuren: { gid: '123', name: 'Menukleuren', type: 'text' } } }
+  const taak = { custom_fields: [
+    { gid: '999', name: 'Website', text_value: 'nbc.nl' },
+    { gid: '123', name: 'Menukleuren', text_value: ' #5b2d8e ' },
+  ] }
+  assert.equal(veldTekst(taak, 'menukleuren', cfg), '#5b2d8e', 'spaties eromheen horen weg')
+
+  // Is de velden-workflow nog niet gedraaid, dan staat de gid er nog niet. Op naam
+  // terugvallen scheelt een scherm dat zonder reden in NBC-kleuren uitkomt - ook als er
+  // helemaal geen configuratie is, want onze sleutel is de veldnaam in kleine letters.
+  assert.equal(veldTekst(taak, 'menukleuren', { fields: { menukleuren: { name: 'Menukleuren' } } }), '#5b2d8e')
+  assert.equal(veldTekst(taak, 'menukleuren', { fields: {} }), '#5b2d8e')
+  assert.equal(veldTekst(taak, 'menukleuren', null), '#5b2d8e')
+
+  // Een taak van een project waar het veld niet op staat, levert niets op.
+  assert.equal(veldTekst({ custom_fields: [{ gid: '999', name: 'Website', text_value: 'nbc.nl' }] }, 'menukleuren', cfg), null)
+
+  // Leeg veld, geen veld, geen taak: allemaal gewoon niets.
+  assert.equal(veldTekst({ custom_fields: [{ gid: '123', text_value: '' }] }, 'menukleuren', cfg), null)
+  assert.equal(veldTekst({ custom_fields: [] }, 'menukleuren', cfg), null)
+  assert.equal(veldTekst(null, 'menukleuren', cfg), null)
 })

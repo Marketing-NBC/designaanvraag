@@ -79,8 +79,10 @@ Eén commando doet alles, in deze volgorde:
    Hangt daar nog niets, dan stopt het script met exitcode 0 en blijft de aanvraag op `pending`
    staan; zie stap 2b.
 5. De kleuren bepalen. Staat `menu_kleuren` op `opdrachtgever`, dan worden de blobs één vlak in
-   de basiskleur uit de huisstijl-brief en krijgen de kopjes de accentkleur; anders blijft het de
-   NBC-huisstijl, met het verloop oranje-naar-teal uit het ontwerp.
+   de basiskleur en krijgen de kopjes de accentkleur. Die kleuren komen uit het Asana-veld
+   **Menukleuren** als daar een hexcode staat, en anders uit de huisstijl-brief. Levert geen van
+   beide iets op, dan blijft het de NBC-huisstijl, met het verloop oranje-naar-teal uit het
+   ontwerp. Wat het geworden is, staat altijd in de comment.
 6. Status op `running`, het scherm renderen op 3840×2160.
 7. Controleren of er tekst over een vast onderdeel van het ontwerp loopt.
 8. Het scherm als bijlage bij de Asana-taak hangen, in de opslag zetten, de comment plaatsen en de
