@@ -80,7 +80,9 @@ Eén commando doet alles, in deze volgorde:
    staan; zie stap 2b.
 5. De kleuren bepalen. Staat `menu_kleuren` op `opdrachtgever`, dan worden de blobs één vlak in
    de basiskleur en krijgen de kopjes de accentkleur. Die kleuren komen uit het Asana-veld
-   **Menukleuren** als daar een hexcode staat, en anders uit de huisstijl-brief. Levert geen van
+   **Menukleuren** als daar een hexcode staat, en anders uit de huisstijl-brief. Staat er een
+   derde hexcode in dat veld, dan gaat ook de tekst (titel, gerechten, dieetwens-blok) mee;
+   de huisstijl-brief levert die niet, daar blijft de tekst zoals in het ontwerp. Levert geen van
    beide iets op, dan blijft het de NBC-huisstijl, met het verloop oranje-naar-teal uit het
    ontwerp. Wat het geworden is, staat altijd in de comment.
 6. Status op `running`, het scherm renderen op 3840×2160.

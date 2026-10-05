@@ -179,6 +179,27 @@ test('één hexcode kleurt de blobs en de kopjes', () => {
   assert.equal(keuze.accent, '#5b2d8e')
 })
 
+test('een derde hexcode kleurt de tekst', () => {
+  const keuze = handmatigeKleuren('#0a1f3d, #f7941e, #1d1d1b')
+  assert.equal(keuze.basis, '#0a1f3d')
+  assert.equal(keuze.accent, '#f7941e')
+  assert.equal(keuze.tekst, '#1d1d1b', 'titel, gerechten en het dieetwens-blok')
+  assert.match(keuze.uitleg, /titel, de gerechten en het dieetwens-blok worden #1d1d1b/)
+
+  // Zonder derde code blijft de tekst zoals in het ontwerp: zwart.
+  assert.equal(handmatigeKleuren('#0a1f3d, #f7941e').tekst, null)
+  // En de opgehaalde huisstijl levert er sowieso geen: dat is een bewuste keuze.
+  assert.equal(merkKleuren(brief({ hex: '#0a1f3d', role: 'primary' },
+                                 { hex: '#333333', role: 'text' })).tekst, null)
+})
+
+test('een lichte tekstkleur wordt gezet, maar wel gemeld', () => {
+  // De ingredienten staan in een dunne snit op klein formaat; die vallen als eerste weg.
+  const keuze = handmatigeKleuren('#0a1f3d #f7941e #ffe600')
+  assert.equal(keuze.tekst, '#ffe600')
+  assert.match(keuze.uitleg, /dunne snit/)
+})
+
 test('twee hexcodes: de eerste de blobs, de tweede de kopjes', () => {
   // Hoe iemand ze scheidt mag niet uitmaken; een hekje vergeten ook niet.
   for (const tekst of ['#5b2d8e, #ff6600', '5b2d8e #ff6600', '#5B2D8E/#FF6600', '#5b2d8e; #ff6600']) {
