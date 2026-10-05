@@ -52,9 +52,9 @@ function leesbaarOpWit(hex) {
   return h !== null && h < 200
 }
 
-// Welke rol de basiskleur van de blobs wordt. De hoofdkleur van een huisstijl is
-// waar het merk aan te herkennen is, dus die krijgt het grootste vlak.
-const VOORKEUR = ['primary', 'secondary', 'accent', 'other']
+// Is er geen hoofdkleur in de brief, dan kiezen we in deze volgorde een vervanger
+// voor de blobs.
+const VOORKEUR = ['secondary', 'accent', 'other']
 // Voor het accent ligt het andersom: een accentkleur is bedoeld om mee te
 // benadrukken, en dat is precies wat een kopje doet.
 const VOORKEUR_ACCENT = ['accent', 'primary', 'secondary', 'other']
@@ -78,28 +78,50 @@ const omschrijf = (k) => (k.name ? `${k.hex} (${k.name})` : k.hex)
  */
 export function merkKleuren(bron) {
   const brief = bron?.colors ? bron : bron?.brief
-  const kleuren = (brief?.colors ?? []).filter(
-    (k) => !GEEN_MERKKLEUR.has(k.role) && bruikbaar(k.hex))
-  if (!kleuren.length) {
+  const kleuren = (brief?.colors ?? []).filter((k) => !GEEN_MERKKLEUR.has(k.role) && rgb(k.hex))
+  const bruikbare = kleuren.filter((k) => bruikbaar(k.hex))
+
+  const volgorde = (lijst) => [...bruikbare].sort(
+    (a, b) => rang(lijst, a.role) - rang(lijst, b.role)
+      || bruikbare.indexOf(a) - bruikbare.indexOf(b))
+
+  // De hoofdkleur wordt het grote vlak, ook als hij heel donker is. Daar is het merk aan
+  // te herkennen; een steunkleur die toevallig lichter is maakt er het scherm van een
+  // ander merk van. Een marineblauw hoort dus op het scherm, niet het rood ernaast.
+  //
+  // De enige hoofdkleur die we overslaan is een bijna-witte: die levert geen donker
+  // scherm op maar een leeg scherm, want de blobs vallen weg tegen het wit.
+  const hoofd = kleuren.find((k) => k.role === 'primary')
+  const basis = (hoofd && helderheid(hoofd.hex) < 235 ? hoofd : null) ?? volgorde(VOORKEUR)[0]
+  if (!basis) {
     return { reden: 'In de huisstijl van de opdrachtgever staat geen kleur die als blob kan werken.' }
   }
-
-  const volgorde = (lijst) => [...kleuren].sort(
-    (a, b) => rang(lijst, a.role) - rang(lijst, b.role)
-      || kleuren.indexOf(a) - kleuren.indexOf(b))
-
-  const basis = volgorde(VOORKEUR)[0]
   // Is er geen accentkleur die als kopje leesbaar blijft, dan krijgen de kopjes de
   // basiskleur. Terugvallen op NBC-oranje zou een vreemde kleur het scherm in halen
   // die bij deze opdrachtgever nergens staat; één merkkleur overal is dan beter.
-  const accent = volgorde(VOORKEUR_ACCENT).find((k) => leesbaarOpWit(k.hex)) ?? basis
+  const accent = volgorde(VOORKEUR_ACCENT).find((k) => k !== basis && leesbaarOpWit(k.hex)) ?? basis
 
-  const delen = [`De blobs worden één vlak in ${omschrijf(basis)}.`]
+  // Welke kleur het geworden is én waarom: anders is bij een scherm dat er raar uitziet
+  // niet te zien of de keuze fout was of de huisstijl-brief.
+  const ROLNAAM = { primary: 'de hoofdkleur', secondary: 'een steunkleur',
+                    accent: 'de accentkleur', other: 'een losse kleur' }
+  const rol = ROLNAAM[basis.role] ?? 'een kleur zonder rol'
+  const delen = [`De blobs worden één vlak in ${omschrijf(basis)}, ${rol} uit de huisstijl.`]
   delen.push(accent === basis
     ? 'De kopjes en het bestek-icoon krijgen dezelfde kleur.'
-    : `De kopjes en het bestek-icoon worden ${omschrijf(accent)}.`)
+    : `De kopjes en het bestek-icoon worden ${omschrijf(accent)}, ${ROLNAAM[accent.role] ?? 'een kleur zonder rol'}.`)
+  if (basis.role !== 'primary' && !kleuren.some((k) => k.role === 'primary')) {
+    delen.push('In de huisstijl staat geen hoofdkleur, vandaar die keuze.')
+  }
+  if (!bruikbaar(basis.hex)) {
+    delen.push('Let op: die kleur is heel donker, dus de blobs worden een zwaar vlak.')
+  }
+  if (hoofd && hoofd !== basis) {
+    delen.push(`De hoofdkleur ${omschrijf(hoofd)} is bijna wit; daarmee zouden de blobs `
+      + 'wegvallen tegen het scherm, dus die is overgeslagen.')
+  }
   if (!leesbaarOpWit(accent.hex)) {
-    delen.push('Let op: die kleur is licht, dus de kopjes kunnen op het witte scherm '
+    delen.push('Let op: de kleur van de kopjes is licht, dus die kunnen op het witte scherm '
       + 'zwak uitvallen.')
   }
   delen.push('Kijk dat even na.')
