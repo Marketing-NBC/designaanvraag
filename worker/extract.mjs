@@ -59,9 +59,19 @@ if (site) {
   dom = site.dom
   finalUrl = site.finalUrl
   status = site.status
-  shots = await screenshots(site.page, outDir, sharp)
-  heroBuf = shots.heroBuf
-  delete shots.heroBuf
+  // Screenshots zijn mooi om bij de brief te hebben, maar de kleuren, fonts en logo's komen
+  // uit de pagina zelf. Loopt het hier stuk, dan is dat een waarschuwing en niet het einde
+  // van de extractie.
+  try {
+    shots = await screenshots(site.page, outDir, sharp)
+    heroBuf = shots.heroBuf
+    delete shots.heroBuf
+    warnings.push(...(shots.waarschuwingen ?? []))
+    delete shots.waarschuwingen
+  } catch (e) {
+    warnings.push(`Geen screenshots (${e.message.split('\n')[0]}); kleuren en fonts komen alleen uit de pagina zelf.`)
+    log('screenshots mislukt', { error: e.message })
+  }
 } else {
   fallback = true
   const fb = await fetchFallback(url)
@@ -123,7 +133,7 @@ console.log('')
 console.log('=== EXTRACTIE KLAAR ===')
 console.log(`Map: ${outDir}`)
 console.log(`Site: ${dom.title ?? '(geen titel)'} — ${finalUrl} (HTTP ${status})${fallback ? ' [FALLBACK, geen screenshots]' : ''}`)
-if (!fallback) console.log(`Screenshots: hero.png, header.png, page.png`)
+if (!fallback) console.log(`Screenshots: ${Object.values(shots).join(', ') || 'geen'}`)
 console.log(`Logo-kandidaten (${logos.length}):`)
 for (const l of logos) console.log(`  [${l.index}] ${l.kind} score ${l.score} ${l.natural ? `${l.natural.width}×${l.natural.height}` : ''} → ${Object.values(l.files).join(', ')}  (${l.hint})`)
 console.log(`Merkkleuren (top): ${colors.brand.slice(0, 6).map((c) => `${c.hex} ${(c.share * 100).toFixed(1)}%`).join(', ') || 'geen'}`)
