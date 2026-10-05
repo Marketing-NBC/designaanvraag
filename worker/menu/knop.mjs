@@ -1,5 +1,5 @@
 /**
- * De knop "Menuscherm" in Asana terugzetten.
+ * De velden van het menuscherm in Asana: de knop terugzetten en "Menukleuren" uitlezen.
  *
  * Marketing zet het veld op "Genereer nu"; de webhook zet het op "Bezig" en start deze
  * worker. Daarna moet iemand hem ook weer op Klaar of Mislukt zetten, anders blijft er
@@ -66,4 +66,27 @@ export async function zetKnop(taskGid, optie, cfg = veldconfig()) {
     log('knop zetten mislukt', { optie, error: e.message })
     return false
   }
+}
+
+/**
+ * De tekst uit een tekstveld van een Asana-taak, of null als het veld leeg is of
+ * niet bestaat.
+ *
+ * De gid uit shared/asana-fields.json gaat voor; staat die er niet - het veld is nieuw
+ * en de workflow "Asana-velden vernieuwen" is nog niet gedraaid - dan vallen we terug
+ * op de naam zoals Asana hem teruggeeft. Zo werkt een nieuw veld meteen, ook voordat
+ * de configuratie is bijgewerkt.
+ *
+ * @param {object|null} taak  een taak uit getTask(), met custom_fields
+ * @param {string} sleutel    onze veldsleutel, bv. 'menukleuren'
+ */
+export function veldTekst(taak, sleutel, cfg = veldconfig()) {
+  const velden = taak?.custom_fields
+  if (!Array.isArray(velden)) return null
+  const gid = cfg?.fields?.[sleutel]?.gid
+  const naam = cfg?.fields?.[sleutel]?.name ?? sleutel
+  const veld = velden.find((v) => (gid && v.gid === gid))
+    ?? velden.find((v) => String(v.name ?? '').toLowerCase() === String(naam).toLowerCase())
+  const tekst = String(veld?.text_value ?? '').trim()
+  return tekst || null
 }

@@ -16,7 +16,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { addComment, uploadAttachment } from './lib/asana.mjs'
+import { addComment, getTask, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
 import { menuIsBruikbaar, renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
 import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
@@ -162,20 +162,39 @@ if (args.logo) {
 }
 
 /**
- * De kleuren. Standaard de NBC-huisstijl; koos Marketing in Asana voor de kleuren
- * van de opdrachtgever, dan halen we die uit de huisstijl-brief die de andere
- * Routine al heeft gemaakt: de blobs en het accent waarin de kopjes en het
- * bestek-icoon staan. Lukt dat niet, dan gaat het scherm gewoon door in de
- * NBC-kleuren - dat is een verschil in smaak, geen fout - maar het wordt gemeld.
+ * De kleuren. Standaard de NBC-huisstijl; koos Marketing in Asana voor de kleuren van
+ * de opdrachtgever, dan zoeken we er één basiskleur voor de blobs bij en een accent
+ * voor de kopjes en het bestek-icoon.
+ *
+ * Twee bronnen, in deze volgorde. Staat er een hexcode in het Asana-veld
+ * "Menukleuren", dan is dat de opdracht - handig bij een opdrachtgever zonder website,
+ * of als de automatisch gevonden kleur niet bevalt. Staat daar niets, dan komt het uit
+ * de huisstijl-brief die de andere Routine heeft gemaakt. Levert geen van beide iets
+ * op, dan gaat het scherm gewoon door in de NBC-kleuren - dat is een verschil in
+ * smaak, geen fout - maar het wordt gemeld.
  */
 if (args.kleuren === 'opdrachtgever' || aanvraag?.menu_kleuren === 'opdrachtgever') {
-  const { merkKleuren } = await import('./menu/kleuren.mjs')
-  const keuze = merkKleuren(aanvraag?.brand_result ?? null)
+  const { merkKleuren, handmatigeKleuren } = await import('./menu/kleuren.mjs')
+  let keuze = null
+  if (aanvraag?.asana_task_gid) {
+    try {
+      const { veldTekst } = await import('./menu/knop.mjs')
+      keuze = handmatigeKleuren(veldTekst(await getTask(aanvraag.asana_task_gid), 'menukleuren'))
+    } catch (e) {
+      // Het veld niet kunnen lezen mag nooit het scherm kosten: dan de huisstijl.
+      log('veld Menukleuren niet gelezen', { error: e.message })
+    }
+  }
+  if (keuze?.reden) {
+    invoerNotities.push(keuze.reden)
+    keuze = null
+  }
+  keuze = keuze ?? merkKleuren(aanvraag?.brand_result ?? null)
   if (keuze.reden) {
-    invoerNotities.push(`${keuze.reden} Het scherm blijft in de NBC-huisstijl.`)
+    invoerNotities.push(`${keuze.reden} Het scherm blijft in de NBC-huisstijl. Wil je toch een `
+      + 'eigen kleur, zet dan een hexcode in het veld "Menukleuren" van de taak.')
   } else {
-    merk = { ...merk, blobBoven: keuze.boven, blobOnder: keuze.onder,
-             ...(keuze.accent ? { accent: keuze.accent } : {}) }
+    merk = { ...merk, blobKleur: keuze.basis, accent: keuze.accent }
     invoerNotities.push(keuze.uitleg)
   }
 }
@@ -253,8 +272,8 @@ await updateMenu(id, {
   menu_result: {
     pakket: inhoud.pakket,
     invoer: invoerNotities,
-    kleuren: merk.blobBoven
-      ? { boven: merk.blobBoven, onder: merk.blobOnder, accent: merk.accent ?? null }
+    kleuren: merk.blobKleur
+      ? { basis: merk.blobKleur, accent: merk.accent ?? null }
       : 'nbc',
     bruikbaar,
     bestandsnaam,
