@@ -217,8 +217,18 @@ test('een kleur die niet kan wordt gezet, maar wel gemeld', () => {
   const wit = handmatigeKleuren('#ffffff')
   assert.equal(wit.basis, '#ffffff')
   assert.match(wit.uitleg, /vallen weg tegen het scherm/)
-  assert.match(handmatigeKleuren('#000000').uitleg, /gat in het scherm/)
   assert.match(handmatigeKleuren('#5b2d8e #ffe600').uitleg, /zwak uitvallen/)
+
+  // Donker is geen fout - een merk met een diep marineblauw hoort zo op het scherm -
+  // maar het wordt wel zwaarder dan het NBC-ontwerp. Beide routes moeten dat hetzelfde
+  // zeggen; eerder las dezelfde kleur uit het veld als "bijna zwart" en uit de huisstijl
+  // als "heel donker".
+  const zwartVeld = handmatigeKleuren('#0b1f35')
+  const zwartBrief = merkKleuren(brief({ hex: '#0b1f35', role: 'primary', name: 'marineblauw' }))
+  for (const uitleg of [zwartVeld.uitleg, zwartBrief.uitleg]) {
+    assert.match(uitleg, /heel donker/)
+    assert.doesNotMatch(uitleg, /bijna zwart|gat in het scherm/)
+  }
 })
 
 test('staat er geen kleur in het veld, dan zegt de melding wat er wel stond', () => {
