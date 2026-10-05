@@ -133,14 +133,32 @@ test('de kopjes en het icoon krijgen de accentkleur', () => {
   assert.match(keuze.uitleg, /kopjes en het bestek-icoon worden/)
 })
 
-test('een te licht merk houdt NBC-oranje voor de kopjes', () => {
+test('zonder leesbaar accent krijgen de kopjes de basiskleur, niet NBC-oranje', () => {
   // De blobs kunnen best licht zijn, maar een kopje op een wit scherm moet leesbaar
-  // blijven - dat is de houvast op zo'n scherm.
+  // blijven - dat is de houvast op zo'n scherm. Toch halen we daar geen NBC-oranje
+  // voor terug: dat is een kleur die bij deze opdrachtgever nergens staat.
   const keuze = merkKleuren(brief(
     { hex: '#ffe600', role: 'primary', name: 'geel' },
     { hex: '#ffd1dc', role: 'accent', name: 'roze' },
   ))
   assert.equal(keuze.basis, '#ffe600', 'als blob kan geel prima')
-  assert.equal(keuze.accent, null)
-  assert.match(keuze.uitleg, /blijven NBC-oranje/)
+  assert.equal(keuze.accent, '#ffe600', 'de kopjes blijven in het merk')
+  assert.doesNotMatch(keuze.uitleg, /NBC/)
+  assert.match(keuze.uitleg, /licht/, 'dat geel zwak uitvalt als kopje moet wel gemeld worden')
+})
+
+test('de kleuren worden gevonden in wat er echt in de database staat', () => {
+  // aanvragen.brand_result is { brief, assets, ... } - de kleuren zitten dus een laag
+  // dieper dan de brief zelf. Werd dat niet uitgepakt, dan kwam er nul kleuren uit en
+  // kreeg elk scherm stilletjes de NBC-huisstijl.
+  const brand_result = {
+    brief: { colors: [{ hex: '#5b2d8e', role: 'primary', name: 'paars' },
+                      { hex: '#00a3e0', role: 'accent', name: 'lichtblauw' }] },
+    assets: [],
+    extracted_at: '2026-10-05T09:00:00Z',
+  }
+  const keuze = merkKleuren(brand_result)
+  assert.equal(keuze.reden, undefined, 'brand_result hoort gewoon te werken')
+  assert.equal(keuze.basis, '#5b2d8e')
+  assert.equal(keuze.accent, '#00a3e0')
 })

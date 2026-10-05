@@ -10,7 +10,8 @@
  * Dan wordt het één kleur, niet twee. Het verloop hoort bij de NBC-huisstijl; bij een
  * andere opdrachtgever worden de blobs één vlak in zijn basiskleur, en zijn
  * accentkleur gaat naar de kopjes. Twee merkkleuren door elkaar klutsen levert een
- * verloop op dat in geen enkele huisstijl zo staat.
+ * verloop op dat in geen enkele huisstijl zo staat. Is er geen bruikbare accentkleur,
+ * dan krijgen de kopjes de basiskleur - alles van het merk, niets van NBC.
  *
  * Het blijft een keuze die iemand moet nakijken. Een merkkleur die op een website
  * prima werkt kan als vlak van twee meter breed heel anders uitpakken, dus wat
@@ -68,10 +69,15 @@ const omschrijf = (k) => (k.name ? `${k.hex} (${k.name})` : k.hex)
 /**
  * Kiest de kleuren voor het scherm uit een huisstijl-brief.
  *
- * @param {object|null} brief  de inhoud van aanvragen.brand_result
+ * Neemt zowel de brief zelf als de hele `aanvragen.brand_result` aan. Dat laatste is
+ * `{ brief, assets, ... }`, en wie dat doorgaf kreeg stilletjes nul kleuren terug: de
+ * kleuren zitten een laag dieper. Daarom pakt deze functie het zelf uit.
+ *
+ * @param {object|null} bron  aanvragen.brand_result, of de brand-brief zelf
  * @returns {{basis, accent, uitleg}|{reden: string}}
  */
-export function merkKleuren(brief) {
+export function merkKleuren(bron) {
+  const brief = bron?.colors ? bron : bron?.brief
   const kleuren = (brief?.colors ?? []).filter(
     (k) => !GEEN_MERKKLEUR.has(k.role) && bruikbaar(k.hex))
   if (!kleuren.length) {
@@ -83,14 +89,20 @@ export function merkKleuren(brief) {
       || kleuren.indexOf(a) - kleuren.indexOf(b))
 
   const basis = volgorde(VOORKEUR)[0]
-  const accent = volgorde(VOORKEUR_ACCENT).find((k) => leesbaarOpWit(k.hex)) ?? null
+  // Is er geen accentkleur die als kopje leesbaar blijft, dan krijgen de kopjes de
+  // basiskleur. Terugvallen op NBC-oranje zou een vreemde kleur het scherm in halen
+  // die bij deze opdrachtgever nergens staat; één merkkleur overal is dan beter.
+  const accent = volgorde(VOORKEUR_ACCENT).find((k) => leesbaarOpWit(k.hex)) ?? basis
 
   const delen = [`De blobs worden één vlak in ${omschrijf(basis)}.`]
-  delen.push(accent
-    ? `De kopjes en het bestek-icoon worden ${omschrijf(accent)}.`
-    : 'Geen van de merkkleuren is donker genoeg voor een leesbaar kopje op wit, dus de '
-      + 'kopjes en het bestek-icoon blijven NBC-oranje.')
+  delen.push(accent === basis
+    ? 'De kopjes en het bestek-icoon krijgen dezelfde kleur.'
+    : `De kopjes en het bestek-icoon worden ${omschrijf(accent)}.`)
+  if (!leesbaarOpWit(accent.hex)) {
+    delen.push('Let op: die kleur is licht, dus de kopjes kunnen op het witte scherm '
+      + 'zwak uitvallen.')
+  }
   delen.push('Kijk dat even na.')
 
-  return { basis: basis.hex, accent: accent?.hex ?? null, uitleg: delen.join(' ') }
+  return { basis: basis.hex, accent: accent.hex, uitleg: delen.join(' ') }
 }
