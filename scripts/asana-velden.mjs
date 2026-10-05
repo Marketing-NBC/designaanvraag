@@ -55,10 +55,12 @@ export const FIELD_SPECS = [
     key: 'menukleuren',
     type: 'text',
     description:
-      'Welke kleur het menuscherm krijgt, als je hem zelf wil bepalen. Eén hexcode voor de blobs '
-      + '(#5b2d8e), of twee voor de blobs en de kopjes (#5b2d8e, #ff6600). Wat hier staat wint van '
-      + 'de huisstijl die automatisch is opgehaald. Werkt samen met "Genereer nu (kleuren '
-      + 'opdrachtgever)"; laat het leeg om de opgehaalde huisstijl te gebruiken.',
+      'Welke kleuren het menuscherm krijgt, als je ze zelf wil bepalen. Eén hexcode voor de blobs '
+      + '(#5b2d8e), twee voor de blobs en de kopjes (#5b2d8e, #ff6600), drie als ook de tekst mee '
+      + 'moet (#5b2d8e, #ff6600, #1d1d1b). Die derde kleurt de titel, de gerechten en het '
+      + 'dieetwens-blok. Wat hier staat wint van de huisstijl die automatisch is opgehaald. Werkt '
+      + 'samen met "Genereer nu (kleuren opdrachtgever)"; laat het leeg om de opgehaalde huisstijl '
+      + 'te gebruiken.',
   },
   {
     key: 'spoed',

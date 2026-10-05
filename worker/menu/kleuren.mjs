@@ -126,7 +126,7 @@ export function merkKleuren(bron) {
   }
   delen.push('Kijk dat even na.')
 
-  return { basis: basis.hex, accent: accent.hex, uitleg: delen.join(' ') }
+  return { basis: basis.hex, accent: accent.hex, tekst: null, uitleg: delen.join(' ') }
 }
 
 // ── Kleuren die Marketing zelf intikt ────────────────────────────────
@@ -144,16 +144,18 @@ function hex(stuk) {
  *
  * Niet elke opdrachtgever heeft een website waar een huisstijl uit te halen valt, en
  * soms bevalt de gevonden kleur gewoon niet. Dan tikt Marketing hem hier in: één
- * hexcode voor de blobs, of twee voor de blobs en de kopjes.
+ * hexcode voor de blobs, twee voor de blobs en de kopjes, drie als ook de tekst mee
+ * moet. Die derde kleurt alles wat in het ontwerp zwart is - titel, gerechtnamen,
+ * ingredienten en het dieetwens-blok - en laat de kopjes op het accent staan.
  *
  * Wat hier staat is een opdracht, geen suggestie: te licht of te donker weigeren we
  * niet, want hoe het eruitziet beoordeelt degene die het intikte. We zeggen het wel.
  *
- * @param {string|null} tekst  de inhoud van het veld
- * @returns {{basis, accent, uitleg}|{reden: string}|null}  null als het veld leeg is
+ * @param {string|null} veld  de inhoud van het Asana-veld
+ * @returns {{basis, accent, tekst, uitleg}|{reden: string}|null}  null als het veld leeg is
  */
-export function handmatigeKleuren(tekst) {
-  const ruw = String(tekst ?? '').trim()
+export function handmatigeKleuren(veld) {
+  const ruw = String(veld ?? '').trim()
   if (!ruw) return null
   const stukken = ruw.split(/[\s,;/|]+/).filter(Boolean)
   const gevonden = stukken.map(hex).filter(Boolean)
@@ -162,14 +164,18 @@ export function handmatigeKleuren(tekst) {
       + 'hexkleur in (zoiets als #5b2d8e).' }
   }
 
-  const [basis, tweede] = gevonden
+  const [basis, tweede, derde] = gevonden
   const accent = tweede ?? basis
+  const tekst = derde ?? null
   const delen = [`De blobs worden één vlak in ${basis}, zoals ingevuld bij "Menukleuren".`]
   delen.push(accent === basis
     ? 'De kopjes en het bestek-icoon krijgen dezelfde kleur.'
     : `De kopjes en het bestek-icoon worden ${accent}.`)
-  if (gevonden.length > 2) {
-    delen.push(`Er stonden ${gevonden.length} kleuren in het veld; de eerste twee zijn gebruikt.`)
+  if (tekst) {
+    delen.push(`De titel, de gerechten en het dieetwens-blok worden ${tekst}.`)
+  }
+  if (gevonden.length > 3) {
+    delen.push(`Er stonden ${gevonden.length} kleuren in het veld; de eerste drie zijn gebruikt.`)
   }
   if (!bruikbaar(basis)) {
     delen.push(helderheid(basis) >= 235
@@ -180,6 +186,10 @@ export function handmatigeKleuren(tekst) {
     delen.push('Let op: de kleur van de kopjes is licht, dus die kunnen op het witte scherm '
       + 'zwak uitvallen.')
   }
+  if (tekst && !leesbaarOpWit(tekst)) {
+    delen.push('Let op: de tekstkleur is licht; de ingredienten staan in een dunne snit en '
+      + 'worden daarmee lastig te lezen.')
+  }
 
-  return { basis, accent, uitleg: delen.join(' ') }
+  return { basis, accent, tekst, uitleg: delen.join(' ') }
 }

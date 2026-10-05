@@ -353,9 +353,17 @@
 
   // ------------------------------------------------------------ tekenen
 
-  /** De sectiekoppen staan in het accent van de huisstijl; die mag per klant wisselen. */
+  /**
+   * De kleur van een stukje tekst in de menu-inhoud.
+   *
+   * Twee soorten: de sectiekoppen staan in het accent van de huisstijl, al het andere
+   * - gerechtnamen, ingredienten, bullets, de cursieve toelichting - is de tekstkleur.
+   * Zet de opdrachtgever geen van beide, dan blijft staan wat in het ontwerp stond.
+   */
   const kopKleur = (basis.stijl && basis.stijl.kop && basis.stijl.kop.kleur) || '#f6a107'
-  const kleurVan = (run) => (merk.accent && run.kleur === kopKleur ? merk.accent : run.kleur)
+  const kleurVan = (run) => (run.kleur === kopKleur
+    ? (merk.accent || run.kleur)
+    : (merk.tekstkleur || run.kleur))
 
   /**
    * Waar deze regel komt te staan, zonder hem te tekenen. De engine probeert
@@ -627,7 +635,7 @@
     }
     for (const regel of (basis.voetregel ? basis.voetregel.regels : [])) {
       const t = el('text', { x: regel.x, y: regel.baseline, 'font-family': regel.font,
-                             'font-size': regel.grootte, fill: regel.kleur })
+                             'font-size': regel.grootte, fill: merk.tekstkleur || regel.kleur })
       t.textContent = regel.tekst
       voet.appendChild(t)
     }
