@@ -79,34 +79,37 @@ test('een menu-aanvraag krijgt altijd de subtaak waar het logo aan hangt', () =>
 
 // ── Het scherm in de kleuren van de opdrachtgever ────────────────────
 // Ongeveer een op de vijf wil dat. De kleuren komen uit de huisstijl-brief die de
-// andere Routine al van de website van de opdrachtgever heeft gehaald: de blobs, en
-// het accent waarin de kopjes en het bestek-icoon staan.
+// andere Routine al van de website van de opdrachtgever heeft gehaald: één basiskleur
+// voor de blobs, en het accent waarin de kopjes en het bestek-icoon staan. Het verloop
+// oranje-naar-teal hoort bij NBC; een andere opdrachtgever krijgt één vlak.
 
 const brief = (...kleuren) => ({ colors: kleuren })
 
-test('de hoofdkleur gaat boven, de volgende eronder', () => {
+test('de blobs krijgen de hoofdkleur, en niet meer dan één kleur', () => {
   const keuze = merkKleuren(brief(
     { hex: '#00a3e0', role: 'accent', name: 'lichtblauw' },
     { hex: '#5b2d8e', role: 'primary', name: 'paars' },
   ))
-  assert.equal(keuze.boven, '#5b2d8e', 'primary hoort bovenaan te staan')
-  assert.equal(keuze.onder, '#00a3e0')
-  assert.match(keuze.uitleg, /paars/, 'de comment moet de kleuren noemen om na te kijken')
+  assert.equal(keuze.basis, '#5b2d8e', 'de hoofdkleur hoort het grote vlak te worden')
+  assert.equal(keuze.boven, undefined, 'er is geen tweede blobkleur meer')
+  assert.equal(keuze.onder, undefined)
+  assert.match(keuze.uitleg, /paars/, 'de comment moet de kleur noemen om na te kijken')
 })
 
-test('wit en zwart zijn geen blobkleuren', () => {
+test('één bruikbare merkkleur is genoeg', () => {
   // Achtergrond en tekst staan altijd in een huisstijl-brief, maar een witte blob
-  // valt weg tegen het scherm en een zwarte maakt er een gat van.
+  // valt weg tegen het scherm en een zwarte maakt er een gat van. Blijft er daarna
+  // één kleur over, dan is dat precies wat we nodig hebben.
   const keuze = merkKleuren(brief(
     { hex: '#ffffff', role: 'background' },
     { hex: '#111111', role: 'text' },
     { hex: '#5b2d8e', role: 'primary' },
   ))
-  assert.ok(keuze.reden, 'met een kleur is er geen verloop te maken')
-  assert.match(keuze.reden, /één bruikbare kleur/)
+  assert.equal(keuze.reden, undefined, 'met één kleur kan het scherm gewoon mee')
+  assert.equal(keuze.basis, '#5b2d8e')
 })
 
-test('een bijna-witte merkkleur telt ook niet mee', () => {
+test('blijft er geen enkele kleur over, dan blijft het NBC', () => {
   const keuze = merkKleuren(brief(
     { hex: '#fdfdfd', role: 'primary' },
     { hex: '#020202', role: 'secondary' },
@@ -137,7 +140,7 @@ test('een te licht merk houdt NBC-oranje voor de kopjes', () => {
     { hex: '#ffe600', role: 'primary', name: 'geel' },
     { hex: '#ffd1dc', role: 'accent', name: 'roze' },
   ))
-  assert.equal(keuze.boven, '#ffe600', 'als blob kan geel prima')
+  assert.equal(keuze.basis, '#ffe600', 'als blob kan geel prima')
   assert.equal(keuze.accent, null)
   assert.match(keuze.uitleg, /blijven NBC-oranje/)
 })

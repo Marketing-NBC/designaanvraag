@@ -1,10 +1,16 @@
 /**
  * De huisstijl van de opdrachtgever op het menuscherm.
  *
- * Standaard is alles NBC: blobs oranje-naar-teal, kopjes en het bestek-icoon in het
- * NBC-oranje. Ongeveer een op de vijf opdrachtgevers wil zijn eigen kleuren. De
- * huisstijl-Routine heeft die al van de website van de opdrachtgever gehaald en in
- * `brand_result` gezet; hier kiezen we eruit wat op het scherm terechtkomt.
+ * Standaard is alles NBC: blobs in het verloop oranje-naar-teal uit het
+ * Illustrator-bestand, kopjes en het bestek-icoon in het NBC-oranje. Ongeveer een op
+ * de vijf opdrachtgevers wil zijn eigen kleuren. De huisstijl-Routine heeft die al van
+ * de website van de opdrachtgever gehaald en in `brand_result` gezet; hier kiezen we
+ * eruit wat op het scherm terechtkomt.
+ *
+ * Dan wordt het één kleur, niet twee. Het verloop hoort bij de NBC-huisstijl; bij een
+ * andere opdrachtgever worden de blobs één vlak in zijn basiskleur, en zijn
+ * accentkleur gaat naar de kopjes. Twee merkkleuren door elkaar klutsen levert een
+ * verloop op dat in geen enkele huisstijl zo staat.
  *
  * Het blijft een keuze die iemand moet nakijken. Een merkkleur die op een website
  * prima werkt kan als vlak van twee meter breed heel anders uitpakken, dus wat
@@ -45,8 +51,8 @@ function leesbaarOpWit(hex) {
   return h !== null && h < 200
 }
 
-// Van welke rol we het liefst de bovenste blob maken. De onderste wordt de
-// volgende in de rij, zodat er verloop in blijft zitten.
+// Welke rol de basiskleur van de blobs wordt. De hoofdkleur van een huisstijl is
+// waar het merk aan te herkennen is, dus die krijgt het grootste vlak.
 const VOORKEUR = ['primary', 'secondary', 'accent', 'other']
 // Voor het accent ligt het andersom: een accentkleur is bedoeld om mee te
 // benadrukken, en dat is precies wat een kopje doet.
@@ -63,33 +69,28 @@ const omschrijf = (k) => (k.name ? `${k.hex} (${k.name})` : k.hex)
  * Kiest de kleuren voor het scherm uit een huisstijl-brief.
  *
  * @param {object|null} brief  de inhoud van aanvragen.brand_result
- * @returns {{boven, onder, accent, uitleg}|{reden: string}}
+ * @returns {{basis, accent, uitleg}|{reden: string}}
  */
 export function merkKleuren(brief) {
   const kleuren = (brief?.colors ?? []).filter(
     (k) => !GEEN_MERKKLEUR.has(k.role) && bruikbaar(k.hex))
-  if (kleuren.length < 2) {
-    return { reden: kleuren.length === 0
-      ? 'In de huisstijl van de opdrachtgever staat geen kleur die als blob kan werken.'
-      : 'In de huisstijl van de opdrachtgever staat maar één bruikbare kleur; '
-        + 'voor het verloop in de blobs zijn er twee nodig.' }
+  if (!kleuren.length) {
+    return { reden: 'In de huisstijl van de opdrachtgever staat geen kleur die als blob kan werken.' }
   }
 
   const volgorde = (lijst) => [...kleuren].sort(
     (a, b) => rang(lijst, a.role) - rang(lijst, b.role)
       || kleuren.indexOf(a) - kleuren.indexOf(b))
 
-  const [boven, onder] = volgorde(VOORKEUR)
+  const basis = volgorde(VOORKEUR)[0]
   const accent = volgorde(VOORKEUR_ACCENT).find((k) => leesbaarOpWit(k.hex)) ?? null
 
-  const delen = [`De blobs kleuren mee met de opdrachtgever: ${omschrijf(boven)} naar `
-    + `${omschrijf(onder)}.`]
+  const delen = [`De blobs worden één vlak in ${omschrijf(basis)}.`]
   delen.push(accent
     ? `De kopjes en het bestek-icoon worden ${omschrijf(accent)}.`
     : 'Geen van de merkkleuren is donker genoeg voor een leesbaar kopje op wit, dus de '
       + 'kopjes en het bestek-icoon blijven NBC-oranje.')
   delen.push('Kijk dat even na.')
 
-  return { boven: boven.hex, onder: onder.hex, accent: accent?.hex ?? null,
-           uitleg: delen.join(' ') }
+  return { basis: basis.hex, accent: accent?.hex ?? null, uitleg: delen.join(' ') }
 }

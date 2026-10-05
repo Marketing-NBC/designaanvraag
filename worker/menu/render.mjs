@@ -237,7 +237,7 @@ function gebruikteFonts(basis) {
  * @param {object} opdracht
  *   pakket   naam van het basisontwerp, bv. 'diner-4gangen'
  *   titel    optioneel: andere titel dan die van het basisontwerp
- *   merk     optioneel: { logo, logoAchtergrond, accent, blobBoven, blobOnder }
+ *   merk     optioneel: { logo, logoAchtergrond, accent, blobKleur }
  *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
  *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
  *   forceerHerberekening  alleen voor controle.mjs; zie payload hieronder
