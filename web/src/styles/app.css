@@ -303,7 +303,6 @@ input, textarea, button { font-family: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Status op het succes-scherm */
-.spinner--dark { flex: none; margin-top: 3px; border-color: rgba(33,40,43,0.2); border-top-color: var(--nbc-blue-deep); }
 .success__status--done svg { color: var(--nbc-success); }
 .success__status--failed svg { color: var(--nbc-gold); }
 

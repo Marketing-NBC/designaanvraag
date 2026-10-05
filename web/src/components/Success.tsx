@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react'
 import type { SubmitResult } from '../../../shared/aanvraag-schema'
-import { fetchStatus, type BrandStatus } from '../lib/api'
 import { Icon } from './Icon'
 
 function hostOf(url: string): string {
@@ -11,47 +9,28 @@ function hostOf(url: string): string {
   }
 }
 
-const POLL_MS = 8_000
-const POLL_MAX_MS = 10 * 60_000
-
+/**
+ * Het scherm na het versturen.
+ *
+ * De huisstijl wordt op de achtergrond opgehaald en dat duurt een paar minuten. Hier
+ * stond daarom een draaiend bolletje dat de status bijhield - maar daarmee leek het
+ * alsof de collega moest blijven wachten op iets waar hij niets mee doet. Hij kan het
+ * venster gewoon sluiten; het marketingteam ziet het resultaat vanzelf. Dus: geen
+ * spinner, geen statusverversing, en een regel die zegt dat hij klaar is.
+ */
 export function Success({ result, website, naam, onRestart }: { result: SubmitResult; website: string; naam: string; onRestart: () => void }) {
   const first = naam.split(' ')[0]
-  // Zonder website is er niets op te halen; dat is geen mislukking maar een overslag.
-  const [status, setStatus] = useState<BrandStatus>(result.brand_dispatched ? 'running' : website.trim() ? 'failed' : 'overgeslagen')
-
-  // Zolang de huisstijl wordt opgehaald: elke paar seconden de status ophalen.
-  useEffect(() => {
-    if (!result.brand_dispatched) return
-    const startedAt = Date.now()
-    let stopped = false
-    let timer = 0
-    const tick = async () => {
-      if (stopped) return
-      const s = await fetchStatus(result.aanvraag_id)
-      if (stopped) return
-      if (s) {
-        setStatus(s.brand_status)
-        if (s.brand_status === 'done' || s.brand_status === 'failed') return
-      }
-      if (Date.now() - startedAt < POLL_MAX_MS) timer = window.setTimeout(tick, POLL_MS)
-    }
-    timer = window.setTimeout(tick, POLL_MS)
-    return () => {
-      stopped = true
-      window.clearTimeout(timer)
-    }
-  }, [result.aanvraag_id, result.brand_dispatched])
-
   const host = <strong>{hostOf(website)}</strong>
+  // Zonder website is er niets op te halen; dat is geen mislukking maar een overslag.
+  const soort = result.brand_dispatched ? 'loopt' : website.trim() ? 'failed' : 'overgeslagen'
+
   const statusText =
-    status === 'overgeslagen' ? (
+    soort === 'overgeslagen' ? (
       <>Je gaf geen website op, dus we halen geen huisstijl op. Het marketingteam zoekt zelf uit hoe het eruit moet zien.</>
-    ) : status === 'done' ? (
-      <>Logo, kleuren en fonts van {host} liggen klaar bij je aanvraag.</>
-    ) : status === 'failed' ? (
+    ) : soort === 'failed' ? (
       <>De huisstijl van {host} kon niet automatisch worden opgehaald. Het marketingteam kijkt zelf even mee.</>
     ) : (
-      <>We halen nu automatisch logo, kleuren en fonts op van {host}. Binnen ongeveer vijf minuten ligt dat klaar bij je aanvraag.</>
+      <>Logo, kleuren en fonts van {host} halen we op de achtergrond op. Daar hoef je niet op te wachten — je kunt dit venster sluiten.</>
     )
 
   return (
@@ -62,8 +41,8 @@ export function Success({ result, website, naam, onRestart }: { result: SubmitRe
         <p className="success__lead">
           Dankjewel {first}. Je aanvraag staat klaar voor het marketingteam. Ze zien hem direct in hun lijst.
         </p>
-        <div className={`success__status success__status--${status === 'overgeslagen' ? 'done' : status}`} aria-live="polite">
-          {status === 'running' || status === 'pending' ? <span className="spinner spinner--dark" aria-hidden="true" /> : <Icon name={status === 'failed' ? 'alert' : 'check'} />}
+        <div className={`success__status success__status--${soort === 'failed' ? 'failed' : 'done'}`}>
+          <Icon name={soort === 'failed' ? 'alert' : 'check'} />
           <span>{statusText}</span>
         </div>
         <div className="success__actions">
