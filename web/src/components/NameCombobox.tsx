@@ -64,7 +64,7 @@ export function NameCombobox({ value, onChange, names, invalid, id }: Props) {
       </div>
       <ComboboxOptions anchor="bottom start" className="combo__list" modal={false}>
         {filtered.length === 0 ? (
-          <div className="combo__empty">Geen collega gevonden. Staat je naam er niet bij? Vraag Devi om je toe te voegen.</div>
+          <div className="combo__empty">Geen collega gevonden. Staat je naam er niet bij? Vraag Abel om je toe te voegen.</div>
         ) : (
           filtered.map((n) => (
             <ComboboxOption key={n} value={n} className="combo__opt">
