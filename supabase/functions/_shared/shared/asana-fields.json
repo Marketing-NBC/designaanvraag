@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-05T13:58:52.211Z",
+  "generated_at": "2026-10-06T07:12:02.576Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -80,7 +80,20 @@
         "genereer_kleur": "1219094964193589",
         "bezig": "1219094964193590",
         "klaar_menu": "1219094964193591",
-        "mislukt": "1219094964193592"
+        "mislukt": "1219094964193592",
+        "klaar_huisstijl": "1219094964193591"
+      }
+    },
+    "huisstijl": {
+      "gid": "1219209722962934",
+      "name": "Huisstijl",
+      "type": "enum",
+      "options": {
+        "bezig": "1219209722962936",
+        "klaar_menu": "1219209722962937",
+        "mislukt": "1219209722962938",
+        "opnieuw": "1219209722962935",
+        "klaar_huisstijl": "1219209722962937"
       }
     },
     "menukleuren": {
