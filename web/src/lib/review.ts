@@ -1,5 +1,5 @@
 import { aantalGerechten, pakketVan, wijzigingen, type MenuKeuze } from './menu'
-import { DESIGN_MODES, describeRequestTypes, vraagtOmMenu } from '../../../shared/request-types'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel, vraagtOmMenu } from '../../../shared/request-types'
 import { formatLong } from './dates'
 import type { Draft } from '../state'
 
@@ -26,6 +26,7 @@ export function reviewRows(d: Draft): ReviewRow[] {
   const gereed = d.bijlagen.filter((b) => b.status === 'klaar')
   const bijlagenRegel = gereed.length ? gereed.map((b) => b.bestandsnaam).join(', ') : 'Niets meegestuurd'
   const rijen: ReviewRow[] = [
+    { stepId: 'locatie', label: 'locatie', value: d.locatie ? locatieLabel(d.locatie) : '' },
     { stepId: 'naam', label: 'naam', value: d.naam },
     { stepId: 'event', label: 'event', value: d.event },
     { stepId: 'event_datum', label: 'eventdatum', value: d.event_datum ? formatLong(d.event_datum) : '' },

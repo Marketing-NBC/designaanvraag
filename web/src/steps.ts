@@ -5,7 +5,7 @@ import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import { aantalGerechten, eigenGerechten } from './lib/menu'
 import type { Draft } from './state'
 
-export type StepKind = 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
+export type StepKind = 'locatie' | 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
 
 /**
  * Wat bepaalt welke stappen er zijn. Losse waarden en geen heel concept, zodat de
@@ -36,6 +36,13 @@ export interface StepDef {
 }
 
 export const STEPS: StepDef[] = [
+  {
+    id: 'locatie',
+    kind: 'locatie',
+    title: 'Voor welke locatie is het?',
+    help: 'NBC en Green Village hebben niet dezelfde schermen, dus dit bepaalt wat je hierna kunt kiezen.',
+    validate: (d) => (d.locatie ? null : 'Kies een locatie.'),
+  },
   {
     id: 'naam',
     kind: 'naam',

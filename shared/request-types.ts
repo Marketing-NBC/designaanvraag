@@ -1,4 +1,21 @@
 /**
+ * Voor welke locatie de aanvraag is. Dit is de eerste vraag van het formulier, want het
+ * bepaalt wat er daarna te kiezen valt: Green Village heeft niet dezelfde schermen als NBC.
+ */
+export const LOCATIES = [
+  { key: 'nbc', label: 'NBC' },
+  { key: 'green_village', label: 'Green Village' },
+] as const
+
+export type Locatie = (typeof LOCATIES)[number]['key']
+
+export const LOCATIE_KEYS = LOCATIES.map((l) => l.key) as [Locatie, ...Locatie[]]
+
+export function locatieLabel(key: Locatie): string {
+  return LOCATIES.find((l) => l.key === key)?.label ?? String(key ?? '')
+}
+
+/**
  * Aanvraagtypes voor "Wat wil je aanvragen?".
  * Gedeeld door frontend, edge function en worker. Keys zijn stabiel; labels mogen wijzigen.
  * De letter (A–H) is de toetsenbord-sneltoets in het formulier.
@@ -15,6 +32,38 @@ export const REQUEST_TYPES = [
 ] as const
 
 export type RequestTypeKey = (typeof REQUEST_TYPES)[number]['key']
+
+export type RequestType = (typeof REQUEST_TYPES)[number]
+
+/**
+ * Wat er per locatie te kiezen valt, in de volgorde waarin het op het scherm staat.
+ *
+ * Green Village heeft geen LED-kolom, en de volgorde is daar een andere - allebei zoals
+ * Abel het heeft doorgegeven. Dit is de enige plek waar dat verschil staat: het formulier,
+ * de lettertoetsen en de controle bij het indienen lezen er alle drie uit.
+ */
+const TYPES_PER_LOCATIE: Record<Locatie, readonly RequestTypeKey[]> = {
+  nbc: [
+    'led_kolom', 'torenscherm', 'koffiescherm', 'overige_schermen',
+    'menukaart_print', 'menu_scherm', 'vlaggen', 'anders',
+  ],
+  green_village: [
+    'torenscherm', 'overige_schermen', 'menukaart_print',
+    'menu_scherm', 'koffiescherm', 'vlaggen', 'anders',
+  ],
+}
+
+/** De aanvraagtypes van een locatie, in schermvolgorde. Zonder keuze die van NBC. */
+export function requestTypesVoor(locatie: Locatie | null): RequestType[] {
+  return TYPES_PER_LOCATIE[locatie ?? 'nbc']
+    .map((k) => REQUEST_TYPES.find((t) => t.key === k))
+    .filter((t): t is RequestType => Boolean(t))
+}
+
+/** Kan dit type bij deze locatie worden aangevraagd? */
+export function typeHoortBij(locatie: Locatie, key: RequestTypeKey): boolean {
+  return TYPES_PER_LOCATIE[locatie].includes(key)
+}
 
 export const REQUEST_TYPE_KEYS = REQUEST_TYPES.map((t) => t.key) as [RequestTypeKey, ...RequestTypeKey[]]
 
@@ -48,8 +97,15 @@ export const DESIGN_MODES = [
   {
     key: 'standaard',
     label: 'Standaard designs',
-    description: 'Onze vaste NBC-templates, ingevuld met de gegevens van het event.',
+    // {locatie} wordt ingevuld met NBC of Green Village, al naar gelang de aanvraag.
+    description: 'Onze vaste {locatie}-templates, ingevuld met de gegevens van het event.',
   },
 ] as const
 
 export type DesignMode = (typeof DESIGN_MODES)[number]['key']
+
+/** De designkeuzes zoals ze op het scherm komen, met de locatie in de omschrijving. */
+export function designModesVoor(locatie: Locatie | null) {
+  const naam = locatieLabel(locatie ?? 'nbc')
+  return DESIGN_MODES.map((m) => ({ ...m, description: m.description.replace('{locatie}', naam) }))
+}

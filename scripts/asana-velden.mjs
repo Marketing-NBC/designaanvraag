@@ -13,6 +13,16 @@
 
 /** Velden zoals de edge function ze invult (zie supabase/functions/_shared/asana.ts → buildCustomFields). */
 export const FIELD_SPECS = [
+  {
+    key: 'locatie',
+    type: 'enum',
+    description: 'Voor welke locatie de aanvraag is. Bepaalt in het formulier welke aanvraagtypes '
+      + 'er te kiezen zijn: Green Village heeft bijvoorbeeld geen LED-kolom.',
+    options: [
+      ['nbc', 'blue-green'],
+      ['green_village', 'green'],
+    ],
+  },
   { key: 'eventdatum', type: 'date', description: 'Datum van het event.' },
   { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },
   {
@@ -43,7 +53,7 @@ export const FIELD_SPECS = [
   {
     key: 'modus',
     type: 'enum',
-    description: 'Volledig custom ontwerp of de standaard NBC-templates.',
+    description: 'Volledig custom ontwerp of de standaard templates van de locatie.',
     options: [
       ['custom', 'purple'],
       ['standaard', 'green'],
