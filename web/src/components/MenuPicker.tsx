@@ -4,8 +4,7 @@ import { LETTERS } from './ChoiceList'
 import { Icon } from './Icon'
 import {
   ALLE_GERECHTEN, PAKKETGROEPEN, type MenuKeuze, aantalGerechten, gerechtVan,
-  gerechtenInPakket, isBekend, leegMenu, letterVoorPakket, pakketVan, regelVan,
-  sectiesVan, uitPakket,
+  isBekend, leegMenu, letterVoorPakket, pakketVan, regelVan, sectiesVan, uitPakket,
 } from '../lib/menu'
 
 const REGELS = ALLE_GERECHTEN.map(regelVan)
@@ -18,7 +17,7 @@ const vergelijkbaar = (s: string) =>
  *
  * Wat makkelijk te verwarren is staat nu onder elkaar - Basic en Standard, met de
  * vega-variant ernaast - en onder elke naam staan de gangen, zodat je het verschil
- * ziet zonder het pakket te openen. Het aantal rechts is het aantal gerechten.
+ * ziet zonder het pakket te openen.
  *
  * De letters lopen door over de groepen heen, in de volgorde waarin ze op het scherm
  * staan; PAKKETTEN_OP_SCHERM is dezelfde lijst waar de lettertoets in App.tsx op zoekt.
@@ -60,7 +59,6 @@ function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
                       {meer ? <span className="pakket__meer"> +{meer}</span> : null}
                     </span>
                   </span>
-                  <span className="pakket__aantal">{gerechtenInPakket(p)} gerechten</span>
                 </button>
               )
             })}

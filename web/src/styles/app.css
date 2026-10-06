@@ -450,8 +450,3 @@ input, textarea, button { font-family: inherit; }
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pakket__meer { font-weight: 800; color: var(--fg-secondary); }
-.pakket__aantal {
-  font: 400 13px/1 var(--font-body); color: var(--fg-muted); flex: none;
-  border: 1px solid var(--nbc-stone-300); border-radius: 999px; padding: 6px 11px;
-}
-@media (max-width: 560px) { .pakket__aantal { display: none; } }

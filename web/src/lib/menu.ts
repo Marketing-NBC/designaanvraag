@@ -73,10 +73,6 @@ export function sectiesVan(p: Pakket, maximaal = 3): { tekst: string; meer: numb
   return { tekst: koppen.slice(0, maximaal).join(' · '), meer: Math.max(0, koppen.length - maximaal) }
 }
 
-/** Hoeveel gerechten zitten er in dit pakket? */
-export const gerechtenInPakket = (p: Pakket) =>
-  p.secties.reduce((n, s) => n + s.gerechten.length, 0)
-
 /** Het menu zoals de aanvrager het samenstelt. */
 export interface MenuKeuze {
   pakket: string | null

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   PAKKETGROEPEN, PAKKETTEN, PAKKETTEN_OP_SCHERM, ALLE_GERECHTEN, aantalGerechten,
-  eigenGerechten, gerechtenInPakket, isBekend, letterVoorPakket, naarInhoud, naarTekst,
+  eigenGerechten, isBekend, letterVoorPakket, naarInhoud, naarTekst,
   pakketVan, regelVan, sectiesVan, uitPakket, wijzigingen,
 } from './menu'
 
@@ -125,10 +125,5 @@ describe('de pakketten op het scherm', () => {
 
     // De lange kop uit het ontwerp wordt ingekort, anders vult die de hele regel.
     expect(sectiesVan(pakketVan('grab-and-go')!).tekst).toMatch(/^Op tafel/)
-  })
-
-  it('telt de gerechten per pakket', () => {
-    expect(gerechtenInPakket(pakketVan('lunch-basic')!)).toBe(7)
-    for (const p of PAKKETTEN) expect(gerechtenInPakket(p)).toBeGreaterThan(0)
   })
 })
