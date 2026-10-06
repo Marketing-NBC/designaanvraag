@@ -15,9 +15,18 @@ test.describe('designaanvraag-flow', () => {
 
     // Start
     await page.getByRole('button', { name: 'Start' }).click()
+    await expect(page.getByRole('heading', { name: /Voor welke locatie/ })).toBeVisible()
+
+    // 1. Locatie: doorgaan zonder keuze geeft een fout
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('alert')).toContainText('Kies een locatie')
+    await page.keyboard.press('a')
+    await expect(page.getByRole('radio', { name: 'NBC' })).toHaveAttribute('aria-checked', 'true')
+    await shot(page, '00b-locatie', p)
+    await page.keyboard.press('Enter')
     await expect(page.getByRole('heading', { name: 'Hoe heet je?' })).toBeVisible()
 
-    // 1. Naam: doorgaan zonder keuze geeft een fout
+    // 3. Naam: doorgaan zonder keuze geeft een fout
     await page.keyboard.press('Enter')
     await expect(page.getByRole('alert')).toContainText('Kies je naam')
     await page.getByPlaceholder('Typ of kies je naam').fill('noa')
@@ -26,13 +35,13 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Noa Demo')
     await page.keyboard.press('Enter')
 
-    // 2. Event
+    // 3. Event
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
     await page.keyboard.type('Zorgcongres 2026')
     await shot(page, '02-event', p)
     await page.keyboard.press('Enter')
 
-    // 3. Eventdatum: kies een dag ruim in de toekomst (volgende maand, 15e)
+    // 4. Eventdatum: kies een dag ruim in de toekomst (volgende maand, 15e)
     await expect(page.getByRole('heading', { name: 'Wanneer is het event?' })).toBeVisible()
     await page.getByRole('button', { name: 'Volgende maand' }).click()
     await page.locator('button.date__day:not([disabled])', { hasText: /^15$/ }).click()
@@ -40,14 +49,14 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '03-eventdatum', p)
     await page.keyboard.press('Enter')
 
-    // 4. Deadline: eerste beschikbare dag → korte doorlooptijd → waarschuwing, maar geen blokkade
+    // 5. Deadline: eerste beschikbare dag → korte doorlooptijd → waarschuwing, maar geen blokkade
     await expect(page.getByRole('heading', { name: 'Wanneer heb je het uiterlijk nodig?' })).toBeVisible()
     await page.locator('button.date__day:not([disabled])').first().click()
     await expect(page.locator('.msg--warn')).toContainText('werkdagen')
     await shot(page, '04-deadline', p)
     await page.keyboard.press('Enter')
 
-    // 5. Website: ongeldig → fout, daarna geldig
+    // 6. Website: ongeldig → fout, daarna geldig
     await expect(page.getByRole('heading', { name: /website/ })).toBeVisible()
     await page.keyboard.type('geen url')
     await page.keyboard.press('Enter')
@@ -55,16 +64,16 @@ test.describe('designaanvraag-flow', () => {
     await page.getByPlaceholder('www.event.nl').fill('www.nbccongrescentrum.nl')
     await page.keyboard.press('Enter')
 
-    // 6. Schijf (optioneel)
+    // 7. Schijf (optioneel)
     await expect(page.getByRole('heading', { name: /schijf/ })).toBeVisible()
     await page.keyboard.type('G:\\Events\\2026\\Zorgcongres')
     await page.keyboard.press('Enter')
 
-    // 7. Bestanden (optioneel; we sturen niets mee)
+    // 8. Bestanden (optioneel; we sturen niets mee)
     await expect(page.getByRole('heading', { name: /bestanden/ })).toBeVisible()
     await page.keyboard.press('Enter')
 
-    // 8. Aanvraagtypes via lettertoetsen, incl. Anders
+    // 9. Aanvraagtypes via lettertoetsen, incl. Anders
     await expect(page.getByRole('heading', { name: 'Wat wil je aanvragen?' })).toBeVisible()
     await page.keyboard.press('a')
     await page.keyboard.press('g')
@@ -78,14 +87,14 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.locator('[data-primary-action]')).toBeFocused()
     await page.keyboard.press('Enter')
 
-    // 9. Modus
+    // 10. Modus
     await expect(page.getByRole('heading', { name: /custom of standaard/ })).toBeVisible()
     await page.keyboard.press('a')
     await expect(page.getByRole('radio', { name: /Volledig custom/ })).toHaveAttribute('aria-checked', 'true')
     await shot(page, '08-modus', p)
     await page.keyboard.press('Enter')
 
-    // 10. Omschrijving: Enter is hier een nieuwe regel, geen "verder"
+    // 11. Omschrijving: Enter is hier een nieuwe regel, geen "verder"
     await expect(page.getByRole('heading', { name: /wensen/ })).toBeVisible()
     await page.keyboard.type('Eerste regel')
     await page.keyboard.press('Enter')
@@ -96,7 +105,7 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '09-omschrijving', p)
     await page.locator('[data-primary-action]').click()
 
-    // 11. Overzicht
+    // 12. Overzicht
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     // Op label zoeken en niet op volgorde: komt er een regel bij, dan hoort deze test
     // niet om te vallen op een vraag die er niets mee te maken heeft.
@@ -134,6 +143,8 @@ test.describe('designaanvraag-flow', () => {
   test('concept wordt bewaard en kan worden hervat', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Start' }).click()
+    await page.getByRole('radio', { name: 'NBC' }).click()
+    await page.locator('[data-primary-action]').click()
     await page.getByPlaceholder('Typ of kies je naam').fill('fen')
     await page.getByRole('option', { name: 'Fenna Demo' }).click()
     await page.keyboard.press('Enter')

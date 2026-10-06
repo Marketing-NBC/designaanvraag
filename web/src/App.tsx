@@ -1,7 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { submitPayloadSchema, type SubmitResult } from '../../shared/aanvraag-schema'
-import { DESIGN_MODES, REQUEST_TYPES, vraagtOmMenu, type DesignMode, type RequestTypeKey } from '../../shared/request-types'
+import {
+  DESIGN_MODES, LOCATIES, REQUEST_TYPES, designModesVoor, requestTypesVoor, typeHoortBij,
+  vraagtOmMenu, type DesignMode, type Locatie, type RequestTypeKey,
+} from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { DateField } from './components/DateField'
 import { MenuPicker } from './components/MenuPicker'
@@ -126,6 +129,20 @@ export default function App() {
     window.setTimeout(() => document.querySelector<HTMLButtonElement>('[data-primary-action]')?.focus({ preventScroll: true }), 30)
   }, [])
 
+  /**
+   * Van locatie wisselen gooit weg wat bij de nieuwe niet bestaat. Had iemand LED-kolom
+   * aangevinkt en zet hij de aanvraag daarna op Green Village, dan staat die keuze er
+   * anders nog in terwijl hij niet meer op het scherm te zien is.
+   */
+  const kiesLocatie = useCallback((key: string) => {
+    const locatie = key as Locatie
+    setDraft((d) => {
+      const types = d.aanvraag_types.filter((k) => typeHoortBij(locatie, k))
+      return { ...d, locatie, aanvraag_types: types, anders_tekst: types.includes('anders') ? d.anders_tekst : '' }
+    })
+    setError(null)
+  }, [])
+
   const toggleType = useCallback(
     (key: string) => {
       const k = key as RequestTypeKey
@@ -157,6 +174,9 @@ export default function App() {
     setSubmitError(null)
     const parsed = submitPayloadSchema.safeParse({
       aanvraag: {
+        // ?? undefined en niet '': het schema heeft een standaard ('nbc') voor een concept
+        // van voor deze vraag bestond, en die springt alleen aan bij een ontbrekende waarde.
+        locatie: volledig.locatie ?? undefined,
         naam: volledig.naam,
         event: volledig.event,
         event_datum: volledig.event_datum ?? '',
@@ -268,7 +288,7 @@ export default function App() {
 
       // De pakketkeuze toont dezelfde letters als de andere keuzeschermen, dus moeten
       // die toetsen daar ook werken - anders belooft de kaart iets wat niet gebeurt.
-      const metLetters = kind === 'multi' || kind === 'single'
+      const metLetters = kind === 'multi' || kind === 'single' || kind === 'locatie'
         || (kind === 'menu' && !draft.menu.pakket)
       if (metLetters && !typing && !e.metaKey && !e.ctrlKey) {
         const letter = e.key.toUpperCase()
@@ -283,11 +303,16 @@ export default function App() {
             }
             return
           }
-          const options = kind === 'multi' ? REQUEST_TYPES : DESIGN_MODES
+          // Dezelfde lijsten als op het scherm: bij Green Village staat er geen LED-kolom,
+          // dus mag de toets daar ook niets kiezen.
+          const options = kind === 'locatie' ? LOCATIES
+            : kind === 'multi' ? requestTypesVoor(draft.locatie)
+            : DESIGN_MODES
           const opt = options[i]
           if (opt) {
             e.preventDefault()
-            if (kind === 'multi') toggleType(opt.key)
+            if (kind === 'locatie') kiesLocatie(opt.key)
+            else if (kind === 'multi') toggleType(opt.key)
             else patch({ design_modus: opt.key as DesignMode })
           }
           return
@@ -306,7 +331,11 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [screen, next, prev, go, submit, toggleType, patch, focusPrimary, metMenu])
+    // draft.locatie en draft.menu.pakket staan erbij omdat de lettertoetsen erop kijken:
+    // welke lijst er op het scherm staat hangt van de locatie af, en of de pakketkeuze nog
+    // open is van het gekozen pakket. Zonder deze twee blijft de oude waarde hangen.
+  }, [screen, next, prev, go, submit, toggleType, kiesLocatie, patch, focusPrimary, metMenu,
+      draft.locatie, draft.menu.pakket])
 
   const variants = useMemo(
     () => ({
@@ -416,10 +445,13 @@ export default function App() {
               {step.kind === 'date' && step.id === 'deadline' ? (
                 <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} max={draft.event_datum ?? undefined} onPicked={focusPrimary} />
               ) : null}
+              {step.kind === 'locatie' ? (
+                <ChoiceList options={LOCATIES} value={draft.locatie} onToggle={kiesLocatie} />
+              ) : null}
               {step.kind === 'multi' ? (
                 <ChoiceList
                   multi
-                  options={REQUEST_TYPES}
+                  options={requestTypesVoor(draft.locatie)}
                   value={draft.aanvraag_types}
                   onToggle={toggleType}
                   otherKey="anders"
@@ -429,7 +461,7 @@ export default function App() {
                 />
               ) : null}
               {step.kind === 'single' ? (
-                <ChoiceList cards options={DESIGN_MODES} value={draft.design_modus} onToggle={(k) => patch({ design_modus: k as DesignMode })} />
+                <ChoiceList cards options={designModesVoor(draft.locatie)} value={draft.design_modus} onToggle={(k) => patch({ design_modus: k as DesignMode })} />
               ) : null}
               {step.kind === 'menu' ? (
                 <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />

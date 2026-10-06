@@ -4,9 +4,14 @@
 stuurt. Daar dienen ze een aanvraag in, en vullen ze via "Iets aanvullen of wijzigen" een lopende
 aanvraag aan.
 
-Interne tool waarmee NBC-collega's designwerk aanvragen bij het marketingteam. Eén vraag per scherm, in de
+Interne tool waarmee collega's designwerk aanvragen bij het marketingteam. Eén vraag per scherm, in de
 NBC-huisstijl. Elke aanvraag wordt een Asana-taak; de huisstijl van de opdrachtgever (logo, kleuren,
 fonts, stijl) wordt automatisch opgehaald en bij de taak gezet.
+
+De eerste vraag is voor welke **locatie** het is: NBC of Green Village. Die keuze bepaalt wat er daarna
+te kiezen valt - Green Village heeft bijvoorbeeld geen LED-kolom - en welke naam er in de rest van het
+formulier staat. Wat er per locatie bestaat staat in `TYPES_PER_LOCATIE` in `shared/request-types.ts`;
+dat is de enige plek waar dat verschil ligt.
 
 Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 

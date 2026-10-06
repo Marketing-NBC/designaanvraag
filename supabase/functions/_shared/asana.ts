@@ -1,5 +1,5 @@
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
-import { DESIGN_MODES, describeRequestTypes } from './shared/request-types.ts'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './shared/request-types.ts'
 import fieldsJson from './shared/asana-fields.json' with { type: 'json' }
 
 const API = 'https://app.asana.com/api/1.0'
@@ -117,6 +117,14 @@ export function buildCustomFields(
     if (gid) out[aanvrager.gid] = gid
   } else if (aanvrager?.type === 'text') {
     out[aanvrager.gid] = a.naam
+  }
+
+  const locatie = f['locatie']
+  if (locatie?.type === 'enum') {
+    const gid = locatie.options?.[a.locatie]
+    if (gid) out[locatie.gid] = gid
+  } else if (locatie?.type === 'text') {
+    out[locatie.gid] = locatieLabel(a.locatie)
   }
 
   const type = f['type']

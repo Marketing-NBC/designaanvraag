@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { bijlageIdsSchema } from './bijlagen.ts'
-import { REQUEST_TYPE_KEYS, vraagtOmMenu } from './request-types.ts'
+import {
+  LOCATIE_KEYS, REQUEST_TYPE_KEYS, locatieLabel, requestTypeLabel, typeHoortBij, vraagtOmMenu,
+} from './request-types.ts'
 
 /** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
 export const MIN_LEAD_BUSINESS_DAYS = 5
@@ -53,6 +55,12 @@ const menuInhoudSchema = z.object({
 
 export const aanvraagSchema = z
   .object({
+    /**
+     * Voor welke locatie de aanvraag is. Met een standaard, niet verplicht: een concept
+     * dat iemand nog in de browser had staan van voor deze vraag bestond hoort gewoon
+     * verstuurd te kunnen worden, en alles van voor vandaag was NBC.
+     */
+    locatie: z.enum(LOCATIE_KEYS).default('nbc'),
     naam: z.string().trim().min(1, 'Kies je naam').max(80),
     event: z.string().trim().min(2, 'Vul de naam van het event in').max(120, 'Maximaal 120 tekens'),
     event_datum: isoDate,
@@ -95,6 +103,15 @@ export const aanvraagSchema = z
   .superRefine((a, ctx) => {
     if (a.deadline > a.event_datum) {
       ctx.addIssue({ code: 'custom', path: ['deadline'], message: 'De deadline kan niet na het event liggen' })
+    }
+    for (const k of a.aanvraag_types) {
+      if (!typeHoortBij(a.locatie, k)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['aanvraag_types'],
+          message: `${requestTypeLabel(k)} kan niet bij ${locatieLabel(a.locatie)} worden aangevraagd`,
+        })
+      }
     }
     if (a.aanvraag_types.includes('anders') && !a.anders_tekst) {
       ctx.addIssue({ code: 'custom', path: ['anders_tekst'], message: 'Vul in wat je wilt aanvragen' })

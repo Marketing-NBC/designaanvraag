@@ -131,3 +131,34 @@ describe('culinaire invulling', () => {
     if (r.success) expect(r.data.menu_tekst).toBe('')
   })
 })
+
+describe('voor welke locatie de aanvraag is', () => {
+  it('neemt NBC aan als het veld ontbreekt', () => {
+    // Een concept dat iemand nog in zijn browser had staan van voor deze vraag bestond:
+    // dat hoort gewoon verstuurd te kunnen worden, en alles van toen was NBC.
+    const r = aanvraagSchema.safeParse(valid)
+    expect(r.success && r.data.locatie).toBe('nbc')
+  })
+
+  it('laat een Green Village-aanvraag door met wat daar bestaat', () => {
+    const r = aanvraagSchema.safeParse({
+      ...valid, locatie: 'green_village', aanvraag_types: ['torenscherm', 'vlaggen'],
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('weigert een type dat die locatie niet heeft', () => {
+    // Green Village heeft geen LED-kolom. Het formulier toont die daar ook niet, maar wie
+    // eerst NBC koos en daarna omschakelde zou hem anders stilletjes mee kunnen sturen.
+    const r = aanvraagSchema.safeParse({
+      ...valid, locatie: 'green_village', aanvraag_types: ['led_kolom'],
+    })
+    expect(r.success).toBe(false)
+    expect(r.success === false && r.error.issues[0]?.message)
+      .toMatch(/LED-kolom kan niet bij Green Village/)
+  })
+
+  it('kent geen derde locatie', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, locatie: 'kasteel' }).success).toBe(false)
+  })
+})

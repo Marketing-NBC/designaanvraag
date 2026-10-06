@@ -1,9 +1,11 @@
-import type { DesignMode, RequestTypeKey } from '../../shared/request-types'
+import type { DesignMode, Locatie, RequestTypeKey } from '../../shared/request-types'
 import type { Bijlage } from './lib/uploads'
 import { leegMenu, type MenuKeuze } from './lib/menu'
 
 /** Het concept in de browser: alle velden optioneel/leeg tot de gebruiker ze invult. */
 export interface Draft {
+  /** Voor welke locatie: bepaalt wat er bij "Wat wil je aanvragen?" te kiezen valt. */
+  locatie: Locatie | null
   naam: string
   event: string
   event_datum: string | null
@@ -21,6 +23,7 @@ export interface Draft {
 }
 
 export const emptyDraft = (): Draft => ({
+  locatie: null,
   naam: '',
   event: '',
   event_datum: null,

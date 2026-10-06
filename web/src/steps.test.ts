@@ -3,12 +3,12 @@ import { SPOED_WERKDAGEN } from '../../shared/spoed'
 import { STEPS, zichtbareStappen } from './steps'
 import type { RequestTypeKey } from '../../shared/request-types'
 import { leegMenu, uitPakket } from './lib/menu'
-import type { Draft } from './state'
+import { emptyDraft, type Draft } from './state'
 
 const eventStap = STEPS.find((s) => s.id === 'event_datum')!
 
 function draft(event_datum: string): Draft {
-  return { naam: '', event: '', event_datum, deadline: '', website: '', schijf_locatie: '', bijlagen: [], aanvraag_types: [], anders_tekst: '', design_modus: null, menu: leegMenu(), omschrijving: '' } as Draft
+  return { ...emptyDraft(), event_datum }
 }
 
 describe('bevestiging op de eventdatum', () => {

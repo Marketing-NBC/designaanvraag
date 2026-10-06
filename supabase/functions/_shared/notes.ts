@@ -1,5 +1,5 @@
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
-import { DESIGN_MODES, describeRequestTypes } from './shared/request-types.ts'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './shared/request-types.ts'
 
 /**
  * Asana `html_notes`: strikt XML, alleen toegestane tags, alles in <body>.
@@ -35,6 +35,7 @@ function modusLabel(a: Aanvraag): string {
 /** Beschrijving van de aanvraag: html_notes plus een platte fallback. */
 export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: string[] }): { html: string; plain: string } {
   const rows: [string, string][] = [
+    ['Locatie', locatieLabel(a.locatie)],
     ['Aanvrager', a.naam],
     ['Event', a.event],
     ['Eventdatum', formatDateNl(a.event_datum)],
@@ -52,8 +53,8 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   )
   htmlLines.push(
     a.schijf_locatie
-      ? `<strong>Locatie op de schijf:</strong> <code>${escapeXml(a.schijf_locatie)}</code>`
-      : `<strong>Locatie op de schijf:</strong> <em>niet opgegeven</em>`,
+      ? `<strong>Schijf:</strong> <code>${escapeXml(a.schijf_locatie)}</code>`
+      : `<strong>Schijf:</strong> <em>niet opgegeven</em>`,
   )
   if (opts.bijlagen?.length) {
     htmlLines.push(`<strong>Meegestuurd:</strong> ${escapeXml(opts.bijlagen.join(', '))}`)
@@ -82,7 +83,7 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
 
   const plainLines: string[] = rows.map(([k, v]) => `${k}: ${v}`)
   plainLines.push(`Website: ${a.website || 'niet opgegeven'}`)
-  plainLines.push(`Locatie op de schijf: ${a.schijf_locatie || 'niet opgegeven'}`)
+  plainLines.push(`Schijf: ${a.schijf_locatie || 'niet opgegeven'}`)
   if (opts.bijlagen?.length) plainLines.push(`Meegestuurd: ${opts.bijlagen.join(', ')}`)
   plainLines.push('', 'Wensen en bijzonderheden', a.omschrijving || 'Geen bijzonderheden opgegeven.', '')
   if (a.menu_tekst) plainLines.push('Menu', a.menu_tekst, '')

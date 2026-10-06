@@ -258,7 +258,9 @@ Deno.test('zonder Asana-configuratie → aanvraag bewaard, geen taak', async () 
 })
 
 Deno.test('taskTitle, subtaskTitles en notes', () => {
-  const a = { ...validAanvraag, website: 'https://www.zorgcongres.nl/', aanvraag_types: ['menu_scherm'] as const, anders_tekst: '' }
+  // locatie staat hier wel en in validAanvraag niet: die fixture gaat door het schema heen
+  // en test daarmee de standaard, deze test roept renderNotes rechtstreeks aan.
+  const a = { ...validAanvraag, locatie: 'nbc' as const, website: 'https://www.zorgcongres.nl/', aanvraag_types: ['menu_scherm'] as const, anders_tekst: '' }
   // deno-lint-ignore no-explicit-any
   assertEquals(taskTitle(a as any), 'Menu scherm Zorgcongres 2026 - 20 november 2026 - Noa')
   // Eén type, dus normaal geen subtaak - maar een menuscherm krijgt er altijd een,
@@ -282,6 +284,11 @@ Deno.test('taskTitle, subtaskTitles en notes', () => {
   assertMatch(notes.html, /<strong>Eventdatum:<\/strong> vrijdag 20 november 2026/)
   assertMatch(notes.html, /<a href="https:\/\/www.zorgcongres.nl\/">zorgcongres.nl<\/a>/)
   assertMatch(notes.plain, /Eventdatum: vrijdag 20 november 2026/)
+  assertMatch(notes.html, /<strong>Locatie:<\/strong> NBC/)
+  // deno-lint-ignore no-explicit-any
+  const gv = renderNotes({ ...a, locatie: 'green_village' } as any, { aanvraagId: 'abc' })
+  assertMatch(gv.html, /<strong>Locatie:<\/strong> Green Village/)
+  assertMatch(gv.plain, /Locatie: Green Village/)
 })
 
 Deno.test('buildCustomFields gebruikt alleen gemapte velden', () => {
