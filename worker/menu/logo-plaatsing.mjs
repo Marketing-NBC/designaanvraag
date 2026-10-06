@@ -9,13 +9,27 @@
  * logo is een blok en wordt begrensd door zijn breedte. Bij een gelijke korte zijde
  * wegen ze optisch even zwaar, en dat is wat het scherm nodig heeft.
  *
- * Twee kanttekeningen bij die herkomst. Het gaat om zeven plaatsingen die met het oog
- * zijn gemaakt, dus de regel is een samenvatting en geen natuurwet. En de vergelijking
- * draait om het beeld: of dit goed staat, bepaalt de ontwerper, niet dit bestand.
+ * Drie kanttekeningen bij die herkomst. Het gaat om zeven plaatsingen die met het oog
+ * zijn gemaakt, dus de regel is een samenvatting en geen natuurwet. De vergelijking draait
+ * om het beeld: of dit goed staat, bepaalt de ontwerper, niet dit bestand. En die zeven
+ * lopen van 1:1 tot 3,3:1 - daarbuiten is de korte zijde alleen niet genoeg, want een
+ * woordmerk van 5:1 wordt er een balk van. Zie LANGE_ZIJDE.
  */
 
 /** De kortste zijde van het logo. Hieraan hangt de optische grootte. */
 export const KORTE_ZIJDE = 330
+
+/**
+ * En zo lang mag de andere zijde worden.
+ *
+ * De zeven plaatsingen lopen van 1:1 tot 3,3:1, en het breedste dat Abel daarin neerzette
+ * is 1127. Daarbuiten is er geen referentie, en daar loopt de regel hierboven stuk: een
+ * woordmerk van 5:1 krijgt bij een korte zijde van 330 een breedte van 1766, een balk over
+ * bijna het halve scherm. Deze grens houdt het bij wat er wel is gezien. Een logo dat
+ * langgerekter is dan 3,4:1 wordt dus kleiner dan 330 op zijn korte zijde - dat is de
+ * bedoeling, want bij zo'n verhouding weegt de lengte zwaarder dan de hoogte.
+ */
+export const LANGE_ZIJDE = 1130
 
 /** Ruimte tussen het logo en de blob. Minder en het logo gaat erin hangen. */
 export const BLOB_MARGE = 150
@@ -56,9 +70,22 @@ function grensOnder(ruimte, links) {
   return Math.min(eerste - TEKST_MARGE, ONDER_GRENS)
 }
 
-/** Het logo zo groot mogelijk binnen deze strook, met de korte zijde als richtmaat. */
+/**
+ * De maat waar we naar streven, los van hoeveel ruimte er is: de korte zijde op
+ * KORTE_ZIJDE, behalve als de lange zijde daarmee voorbij LANGE_ZIJDE schiet.
+ */
+function streefschaal(bron) {
+  return Math.min(
+    KORTE_ZIJDE / Math.min(bron.breedte, bron.hoogte),
+    LANGE_ZIJDE / Math.max(bron.breedte, bron.hoogte),
+  )
+}
+
+/** Het logo zo groot mogelijk binnen deze strook, met de streefmaat als richtmaat. */
 function pasIn(bron, strook) {
-  let schaal = KORTE_ZIJDE / Math.min(bron.breedte, bron.hoogte)
+  // krap gaat alleen over de ruimte die er is. Dat de streefmaat zelf kleiner uitvalt bij
+  // een langgerekt logo is geen krapte maar de regel.
+  let schaal = streefschaal(bron)
   const krap = { hoogte: false, breedte: false }
   if (bron.hoogte * schaal > strook.hoogte) {
     schaal = strook.hoogte / bron.hoogte

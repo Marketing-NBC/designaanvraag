@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import gvZwart from '../assets/brand/green-village-icon-black.svg'
 import logo from '../assets/brand/nbc-logo-color-no-payoff.png'
 import { Icon } from './Icon'
 
@@ -19,7 +20,10 @@ export function Shell({ progress, counter, canPrev, canNext, onPrev, onNext, chi
     <div className="app">
       <header className="topbar">
         <div className="topbar__row">
-          <img className="topbar__logo" src={logo} alt="NBC" />
+          <span className="topbar__merken">
+            <img className="topbar__logo" src={logo} alt="NBC" />
+            <img className="topbar__icoon" src={gvZwart} alt="Green Village" />
+          </span>
           <span className="topbar__meta">designaanvraag</span>
         </div>
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label="Voortgang">

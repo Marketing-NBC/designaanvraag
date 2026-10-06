@@ -435,12 +435,7 @@ export default function App() {
                 <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />
               ) : null}
               {step.kind === 'textarea' ? (
-                <>
-                  <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
-                  <span className="hint hint--kbd">
-                    <kbd>Enter</kbd> maakt een nieuwe regel
-                  </span>
-                </>
+                <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
               ) : null}
             </Question>
           ) : null}

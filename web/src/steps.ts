@@ -173,7 +173,9 @@ export const STEPS: StepDef[] = [
     id: 'omschrijving',
     kind: 'textarea',
     title: 'Omschrijf je wensen of bijzonderheden',
-    help: 'Teksten, sfeer, voorbeelden, formaten, dingen die Marketing moet weten. Mag leeg blijven.',
+    // De regelovergang is bedoeld: wat erin kan staan is iets anders dan de mededeling
+    // dat het leeg mag. Een \n in een help-tekst komt als regelovergang op het scherm.
+    help: 'Teksten, sfeer, voorbeelden, formaten, dingen die Marketing moet weten.\nMag leeg blijven.',
     validate: (d) => (d.omschrijving.length > 3000 ? 'Houd het bij maximaal 3000 tekens.' : null),
   },
 ]
