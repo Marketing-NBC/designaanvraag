@@ -409,13 +409,18 @@ input, textarea, button { font-family: inherit; }
   white-space: nowrap;
 }
 .gerecht__nieuw svg { width: 14px; height: 14px; }
+/* Altijd zichtbaar. Ze verschenen eerst pas bij aanwijzen, maar op een touchscreen
+   is er geen hover: daar bestonden Wissel en de kruisjes dus niet. Rustig houden doen
+   ze nu met kleur - gedempt tot je ze aanwijst - in plaats van door weg te zijn. */
 .gerecht__knop {
   border: none; background: transparent; cursor: pointer; border-radius: var(--r-pill);
-  font: 400 14px/1 var(--font-body); color: var(--fg-secondary); flex: none;
-  padding: 8px 10px; opacity: 0; transition: opacity var(--dur-fast);
+  font: 400 14px/1 var(--font-body); color: var(--fg-muted); flex: none;
+  padding: 8px 10px; transition: color var(--dur-fast), background var(--dur-fast);
 }
-.gerecht:hover .gerecht__knop, .gerecht__knop:focus-visible { opacity: 1; }
-.gerecht__knop:hover { background: var(--nbc-stone-100); color: var(--fg-primary); }
+.gerecht:hover .gerecht__knop { color: var(--fg-secondary); }
+.gerecht__knop:hover, .gerecht__knop:focus-visible {
+  background: var(--nbc-stone-100); color: var(--fg-primary);
+}
 .gerecht__knop--weg { display: grid; place-items: center; padding: 8px; }
 .gerecht__knop svg { width: 16px; height: 16px; }
 .gerecht--nieuw:hover { background: transparent; }
@@ -434,7 +439,7 @@ input, textarea, button { font-family: inherit; }
 }
 
 /* De pakketkeuze: drie korte lijsten in plaats van negen kaarten op een rij. */
-.pakketten { display: grid; gap: 22px; max-width: 620px; }
+.pakketten { display: grid; gap: 22px; max-width: 480px; }
 .pakketten:focus { outline: none; }
 .pakketgroep__kop {
   font: 800 12px/1 var(--font-body); letter-spacing: 0.09em; text-transform: uppercase;
