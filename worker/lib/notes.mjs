@@ -99,7 +99,7 @@ export function renderComment({ brief, website, attachmentNames, ok = true }) {
 export function renderFailureComment({ website, reason, rerunHint }) {
   return (
     `<body>Huisstijl kon niet automatisch worden opgehaald van <a href="${escapeXml(website)}">${escapeXml(hostOf(website))}</a>. ` +
-    `Reden: ${escapeXml(reason)}. ${escapeXml(rerunHint ?? 'Kijk zelf even op de site, of vraag Devi de extractie opnieuw te starten.')}</body>`
+    `Reden: ${escapeXml(reason)}. ${escapeXml(rerunHint ?? 'Kijk zelf even op de site, of vraag Abel de extractie opnieuw te starten.')}</body>`
   )
 }
 
@@ -211,6 +211,6 @@ export function renderMenuFailureComment({ pakket, reason }) {
   return (
     `<body>Het menuscherm${pakket ? ` voor <strong>${escapeXml(pakket)}</strong>` : ''} `
     + `kon niet automatisch worden opgemaakt. Reden: ${escapeXml(reason)}. `
-    + 'Maak het scherm met de hand op, of vraag Devi de opmaak opnieuw te starten.</body>'
+    + 'Maak het scherm met de hand op, of vraag Abel de opmaak opnieuw te starten.</body>'
   )
 }
