@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  PAKKETTEN, ALLE_GERECHTEN, aantalGerechten, eigenGerechten, isBekend,
-  naarInhoud, naarTekst, pakketVan, regelVan, uitPakket, wijzigingen,
+  PAKKETGROEPEN, PAKKETTEN, PAKKETTEN_OP_SCHERM, ALLE_GERECHTEN, aantalGerechten,
+  eigenGerechten, gerechtenInPakket, isBekend, letterVoorPakket, naarInhoud, naarTekst,
+  pakketVan, regelVan, sectiesVan, uitPakket, wijzigingen,
 } from './menu'
 
 describe('de pakketten voor het formulier', () => {
@@ -90,5 +91,44 @@ describe('de pakketten voor het formulier', () => {
       }
     }
     expect(ALLE_GERECHTEN.length).toBeGreaterThan(50)
+  })
+})
+
+describe('de pakketten op het scherm', () => {
+  it('zet elk pakket in precies één groep', () => {
+    const gegroepeerd = PAKKETGROEPEN.flatMap((g) => g.pakketten)
+    expect(new Set(gegroepeerd).size).toBe(gegroepeerd.length)
+    // Niets mag ontbreken: een pakket dat nergens staat kan niemand kiezen.
+    expect([...gegroepeerd].sort()).toEqual(PAKKETTEN.map((p) => p.pakket).sort())
+  })
+
+  it('laat de lettertoets wijzen naar de rij die je ziet', () => {
+    // De letters lopen door over de groepen heen. Zou dit van PAKKETTEN afgeleid
+    // worden in plaats van van de groepen, dan kiest toets A een ander pakket dan er
+    // bovenaan het scherm staat.
+    expect(PAKKETTEN_OP_SCHERM).toHaveLength(PAKKETTEN.length)
+    expect(PAKKETTEN_OP_SCHERM[0].naam).toBe('Basic Lunch')
+    PAKKETTEN_OP_SCHERM.forEach((p, i) => {
+      expect(letterVoorPakket(p.pakket)).toBe(i)
+    })
+    expect(letterVoorPakket('bestaat-niet')).toBeNull()
+  })
+
+  it('vat de gangen samen in één regel, met een telling voor de rest', () => {
+    const lunch = pakketVan('lunch-basic')!
+    expect(sectiesVan(lunch)).toEqual({ tekst: 'Broodjes · Warme items', meer: 0 })
+
+    // Standard Lunch heeft zes gangen; drie op de regel en de rest als "+3".
+    const standaard = sectiesVan(pakketVan('lunch-standaard')!)
+    expect(standaard.tekst.split(' · ')).toHaveLength(3)
+    expect(standaard.meer).toBe(3)
+
+    // De lange kop uit het ontwerp wordt ingekort, anders vult die de hele regel.
+    expect(sectiesVan(pakketVan('grab-and-go')!).tekst).toMatch(/^Op tafel/)
+  })
+
+  it('telt de gerechten per pakket', () => {
+    expect(gerechtenInPakket(pakketVan('lunch-basic')!)).toBe(7)
+    for (const p of PAKKETTEN) expect(gerechtenInPakket(p)).toBeGreaterThan(0)
   })
 })

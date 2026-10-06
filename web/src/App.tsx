@@ -14,7 +14,7 @@ import { Success } from './components/Success'
 import { TextArea, TextField } from './components/TextField'
 import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
-import { PAKKETTEN, naarInhoud, naarTekst, uitPakket } from './lib/menu'
+import { PAKKETTEN_OP_SCHERM, naarInhoud, naarTekst, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
@@ -275,7 +275,8 @@ export default function App() {
         const i = LETTERS.indexOf(letter)
         if (letter.length === 1 && i >= 0) {
           if (kind === 'menu') {
-            const pakket = PAKKETTEN[i]
+            // Dezelfde volgorde als op het scherm: A is de bovenste in de eerste groep.
+            const pakket = PAKKETTEN_OP_SCHERM[i]
             if (pakket) {
               e.preventDefault()
               patch({ menu: uitPakket(pakket.pakket) })
