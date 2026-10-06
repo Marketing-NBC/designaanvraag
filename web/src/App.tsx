@@ -255,8 +255,10 @@ export default function App() {
           focusPrimary()
           return
         }
-        // Textarea: Shift+Enter is een nieuwe regel, Enter gaat door.
-        if (target instanceof HTMLTextAreaElement && e.shiftKey) return
+        // In een tekstvak is Enter gewoon een nieuwe regel. Verder ga je met de knop.
+        // Shift+Enter aanleren om een alinea te beginnen gaat een keer mis, en dan sta
+        // je op het overzicht met een half afgemaakte zin. De aanvulling doet dit al zo.
+        if (target instanceof HTMLTextAreaElement) return
         // Knoppen (behalve de primaire) doen hun eigen ding.
         if (target instanceof HTMLButtonElement && !target.hasAttribute('data-primary-action')) return
         e.preventDefault()
@@ -384,7 +386,13 @@ export default function App() {
               warning={step.warn?.(volledig) ?? null}
               goed={step.goed?.(volledig) ?? null}
               titleId={`q-${step.id}`}
-              footer={<PrimaryAction label={screen.index === stappen.length - 1 ? 'Naar overzicht' : 'Volgende'} onClick={next} />}
+              footer={
+                <PrimaryAction
+                  label={screen.index === stappen.length - 1 ? 'Naar overzicht' : 'Volgende'}
+                  onClick={next}
+                  hint={step.kind === 'textarea' ? null : 'Enter'}
+                />
+              }
             >
               {step.kind === 'naam' ? (
                 <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} />
@@ -429,7 +437,7 @@ export default function App() {
                 <>
                   <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
                   <span className="hint hint--kbd">
-                    <kbd>Shift</kbd> + <kbd>Enter</kbd> voor een nieuwe regel
+                    <kbd>Enter</kbd> maakt een nieuwe regel
                   </span>
                 </>
               ) : null}
