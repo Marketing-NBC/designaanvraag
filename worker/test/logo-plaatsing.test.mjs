@@ -15,7 +15,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import sharp from 'sharp'
 import {
-  BLOB_MARGE, BOVEN_MARGE, KORTE_ZIJDE, ONDER_GRENS, TEKST_MARGE,
+  BLOB_MARGE, BOVEN_MARGE, KORTE_ZIJDE, LANGE_ZIJDE, ONDER_GRENS, TEKST_MARGE,
   plaatsLogo, scherptewaarschuwing,
 } from '../menu/logo-plaatsing.mjs'
 import { logoBeeld } from '../menu/logo.mjs'
@@ -26,6 +26,49 @@ const RUIMTE = {
   eersteTekst: 546,
   kolommen: [{ x0: 261, x1: 1046, boven: 546 }, { x0: 1425, x1: 2276, boven: 546 }],
 }
+
+/**
+ * De zeven logo's die Abel met de hand plaatste, met de maat die hij ze gaf. Hieraan is
+ * af te lezen of een nieuwe regel de bekende gevallen heel laat. De verhoudingen lopen
+ * van 1:1 tot 3,3:1; daarbuiten heeft niemand ooit iets neergezet.
+ */
+const REFERENTIE = [
+  { naam: 'nbc', verhouding: 2.22, breedte: 449 },
+  { naam: 'nvwa', verhouding: 0.99, breedte: 485 },
+  { naam: 'svb', verhouding: 1.23, breedte: 366 },
+  { naam: 'compaxo130', verhouding: 1.0, breedte: 376 },
+  { naam: 'compaxo', verhouding: 2.46, breedte: 765 },
+  { naam: 'nvm', verhouding: 2.98, breedte: 1127 },
+  { naam: 'diamant', verhouding: 3.33, breedte: 896 },
+]
+
+test('de grens op de lange zijde raakt geen van de zeven referenties', () => {
+  // De grens is er voor wat buiten dit bereik valt. Zou hij hierbinnen gaan bijten, dan
+  // verandert hij plaatsingen die Abel zelf heeft goedgekeurd. Vandaar dat hij niet onder
+  // de breedste referentie mag zakken.
+  const breedste = Math.max(...REFERENTIE.map((r) => r.breedte))
+  assert.ok(LANGE_ZIJDE >= breedste,
+    `de grens (${LANGE_ZIJDE}) ligt onder de breedste plaatsing uit de referentie (${breedste})`)
+
+  for (const r of REFERENTIE) {
+    const p = plaatsLogo({ breedte: r.verhouding * 1000, hoogte: 1000 }, RUIMTE)
+    assert.ok(Math.abs(Math.min(p.breedte, p.hoogte) - KORTE_ZIJDE) < 1,
+      `${r.naam} (${r.verhouding}:1): kortste zijde ${Math.round(Math.min(p.breedte, p.hoogte))}, `
+      + `verwacht ${KORTE_ZIJDE} - de grens bijt te vroeg`)
+    assert.ok(Math.max(p.breedte, p.hoogte) <= LANGE_ZIJDE + 1)
+  }
+})
+
+test('een heel breed woordmerk wordt geen balk over het halve scherm', () => {
+  // Deloitte: ruim 5:1. Met alleen de korte zijde als maat kwam dat op 1738 breed uit,
+  // tegen de linkergrens aan, op een scherm van 3840. Dat is wat deze grens tegenhoudt.
+  const p = plaatsLogo({ breedte: 5355, hoogte: 1000 }, RUIMTE)
+  assert.ok(p.breedte <= LANGE_ZIJDE + 1, `${Math.round(p.breedte)} breed, hoogstens ${LANGE_ZIJDE}`)
+  assert.ok(p.hoogte < KORTE_ZIJDE, 'de korte zijde geeft mee; de lengte weegt hier zwaarder')
+  assert.ok(Math.abs(p.breedte / p.hoogte - 5.355) < 0.01, 'de verhouding blijft staan')
+  assert.equal(p.krap, false, 'dit is de regel en geen ruimtegebrek')
+  assert.ok(p.x > 1200, 'en hij blijft ruim van de linkergrens af')
+})
 
 test('de kortste zijde bepaalt de grootte, ongeacht de vorm', () => {
   // Een breed, een vierkant en een rond logo horen er even zwaar uit te komen.
