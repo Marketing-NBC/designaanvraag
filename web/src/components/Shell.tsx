@@ -33,11 +33,16 @@ export function Shell({ progress, counter, canPrev, canNext, onPrev, onNext, chi
         <span className="navdock__count" aria-hidden="true">
           {counter}
         </span>
+        {/*
+          De pijl wijst de kant op waar de inhoud heen gaat, niet de kant van de lijst.
+          Ga je verder, dan schuift de vraag omhoog en komt de volgende van onderen in
+          beeld; vandaar omhoog voor volgende en omlaag voor vorige.
+        */}
         <button type="button" className="icon-btn" onClick={onPrev} disabled={!canPrev} aria-label="Vorige vraag">
-          <Icon name="chevron-up" />
+          <Icon name="chevron-down" />
         </button>
         <button type="button" className="icon-btn" onClick={onNext} disabled={!canNext} aria-label="Volgende vraag">
-          <Icon name="chevron-down" />
+          <Icon name="chevron-up" />
         </button>
       </nav>
     </div>
