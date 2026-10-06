@@ -1,16 +1,73 @@
 import { Combobox, ComboboxInput, ComboboxOption, ComboboxOptions } from '@headlessui/react'
-import { useMemo, useState } from 'react'
-import { ChoiceList } from './ChoiceList'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { LETTERS } from './ChoiceList'
 import { Icon } from './Icon'
 import {
-  ALLE_GERECHTEN, PAKKETTEN, type MenuKeuze, aantalGerechten, gerechtVan, isBekend,
-  leegMenu, pakketVan, regelVan, uitPakket,
+  ALLE_GERECHTEN, PAKKETGROEPEN, type MenuKeuze, aantalGerechten, gerechtVan,
+  isBekend, leegMenu, letterVoorPakket, pakketVan, regelVan, sectiesVan, uitPakket,
 } from '../lib/menu'
 
 const REGELS = ALLE_GERECHTEN.map(regelVan)
 
 const vergelijkbaar = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+/**
+ * De pakketkeuze: drie korte lijsten in plaats van negen kaarten op een rij.
+ *
+ * Wat makkelijk te verwarren is staat nu onder elkaar - Basic en Standard, met de
+ * vega-variant ernaast - en onder elke naam staan de gangen, zodat je het verschil
+ * ziet zonder het pakket te openen.
+ *
+ * De letters lopen door over de groepen heen, in de volgorde waarin ze op het scherm
+ * staan; PAKKETTEN_OP_SCHERM is dezelfde lijst waar de lettertoets in App.tsx op zoekt.
+ */
+function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
+  const rootRef = useRef<HTMLDivElement>(null)
+  // Focus op het blok, zodat de lettertoetsen werken zonder dat een knop gekozen oogt.
+  useEffect(() => {
+    const t = window.setTimeout(() => rootRef.current?.focus({ preventScroll: true }), 0)
+    return () => window.clearTimeout(t)
+  }, [])
+
+  return (
+    <div className="pakketten" role="radiogroup" ref={rootRef} tabIndex={-1} data-choice-list>
+      {PAKKETGROEPEN.map((groep) => (
+        <div className="pakketgroep" key={groep.kop}>
+          <div className="pakketgroep__kop">{groep.kop}</div>
+          <div className="pakketgroep__lijst">
+            {groep.pakketten.map((sleutel) => {
+              const p = pakketVan(sleutel)
+              if (!p) return null
+              const letter = letterVoorPakket(sleutel)
+              const { tekst, meer } = sectiesVan(p)
+              return (
+                <button
+                  key={sleutel}
+                  type="button"
+                  className="opt pakket"
+                  role="radio"
+                  aria-checked={false}
+                  onClick={() => onKies(sleutel)}
+                  data-letter={letter === null ? undefined : LETTERS[letter]}
+                >
+                  <span className="opt__key" aria-hidden="true">{letter === null ? '' : LETTERS[letter]}</span>
+                  <span className="pakket__tekst">
+                    <span className="pakket__naam">{p.naam}</span>
+                    <span className="pakket__gangen">
+                      {tekst}
+                      {meer ? <span className="pakket__meer"> +{meer}</span> : null}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /**
  * Een gerecht kiezen uit het repertoire, of er zelf een intypen. Kiezen heeft de
@@ -117,15 +174,7 @@ export function MenuPicker({ menu, onChange }: Props) {
     // Alleen de naam op de kaart: de onderdelen staan een scherm later toch al, en
     // een kaart met een rij kopjes eronder leest als een opsomming die je moet lezen
     // in plaats van een knop die je aanklikt.
-    const opties = PAKKETTEN.map((p) => ({ key: p.pakket, label: p.naam }))
-    return (
-      <ChoiceList
-        cards
-        options={opties}
-        value={null}
-        onToggle={(k) => onChange(uitPakket(k))}
-      />
-    )
+    return <Pakketkeuze onKies={(k) => onChange(uitPakket(k))} />
   }
 
   const pakket = pakketVan(menu.pakket)

@@ -29,6 +29,50 @@ export interface Pakket {
 export const PAKKETTEN: Pakket[] = data.pakketten as Pakket[]
 export const ALLE_GERECHTEN: Gerecht[] = data.gerechten as Gerecht[]
 
+/**
+ * De pakketten zoals ze op het scherm staan: gegroepeerd per soort.
+ *
+ * Negen pakketten op een rij is een muur; in drie groepen is het drie korte lijstjes.
+ * En wat makkelijk te verwarren is staat nu naast elkaar - Basic en Standard, met de
+ * vega-variant eronder - in plaats van verspreid over een raster.
+ */
+export const PAKKETGROEPEN: { kop: string; pakketten: string[] }[] = [
+  { kop: 'Lunch', pakketten: ['lunch-basic', 'lunch-vega-basic', 'lunch-standaard', 'lunch-vega-standaard'] },
+  { kop: 'Diner', pakketten: ['diner-3gangen', 'diner-4gangen', 'walking-dinner'] },
+  { kop: 'Buffet en borrel', pakketten: ['buffet', 'grab-and-go'] },
+]
+
+/**
+ * Dezelfde pakketten, plat en in schermvolgorde. Hier hangen de lettertoetsen aan:
+ * A is de bovenste op het scherm. Zou dit van PAKKETTEN afgeleid worden in plaats van
+ * van de groepen, dan wijst de letter op de kaart naar een ander pakket dan de toets.
+ *
+ * Een pakket dat in de data staat maar in geen enkele groep, valt er hier achteraan bij
+ * - beter onderaan dan onvindbaar.
+ */
+export const PAKKETTEN_OP_SCHERM: Pakket[] = (() => {
+  const gegroepeerd = PAKKETGROEPEN.flatMap((g) => g.pakketten)
+  const vind = (sleutel: string) => PAKKETTEN.find((p) => p.pakket === sleutel)
+  return [
+    ...gegroepeerd.map(vind).filter((p): p is Pakket => Boolean(p)),
+    ...PAKKETTEN.filter((p) => !gegroepeerd.includes(p.pakket)),
+  ]
+})()
+
+/** Welke letter hoort bij dit pakket? Null als het er niet bij staat. */
+export const letterVoorPakket = (sleutel: string) => {
+  const i = PAKKETTEN_OP_SCHERM.findIndex((p) => p.pakket === sleutel)
+  return i === -1 ? null : i
+}
+
+/** De gangen van een pakket als één regel: "Broodjes · Warme items". */
+export function sectiesVan(p: Pakket, maximaal = 3): { tekst: string; meer: number } {
+  const koppen = p.secties
+    .map((s) => (s.kop ?? '').replace('Op de tafel staat het volgende klaar:', 'Op tafel'))
+    .filter(Boolean)
+  return { tekst: koppen.slice(0, maximaal).join(' · '), meer: Math.max(0, koppen.length - maximaal) }
+}
+
 /** Het menu zoals de aanvrager het samenstelt. */
 export interface MenuKeuze {
   pakket: string | null

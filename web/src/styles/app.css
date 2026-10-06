@@ -409,13 +409,18 @@ input, textarea, button { font-family: inherit; }
   white-space: nowrap;
 }
 .gerecht__nieuw svg { width: 14px; height: 14px; }
+/* Altijd zichtbaar. Ze verschenen eerst pas bij aanwijzen, maar op een touchscreen
+   is er geen hover: daar bestonden Wissel en de kruisjes dus niet. Rustig houden doen
+   ze nu met kleur - gedempt tot je ze aanwijst - in plaats van door weg te zijn. */
 .gerecht__knop {
   border: none; background: transparent; cursor: pointer; border-radius: var(--r-pill);
-  font: 400 14px/1 var(--font-body); color: var(--fg-secondary); flex: none;
-  padding: 8px 10px; opacity: 0; transition: opacity var(--dur-fast);
+  font: 400 14px/1 var(--font-body); color: var(--fg-muted); flex: none;
+  padding: 8px 10px; transition: color var(--dur-fast), background var(--dur-fast);
 }
-.gerecht:hover .gerecht__knop, .gerecht__knop:focus-visible { opacity: 1; }
-.gerecht__knop:hover { background: var(--nbc-stone-100); color: var(--fg-primary); }
+.gerecht:hover .gerecht__knop { color: var(--fg-secondary); }
+.gerecht__knop:hover, .gerecht__knop:focus-visible {
+  background: var(--nbc-stone-100); color: var(--fg-primary);
+}
 .gerecht__knop--weg { display: grid; place-items: center; padding: 8px; }
 .gerecht__knop svg { width: 16px; height: 16px; }
 .gerecht--nieuw:hover { background: transparent; }
@@ -432,3 +437,21 @@ input, textarea, button { font-family: inherit; }
 @media (prefers-reduced-motion: reduce) {
   .gerecht__knop { transition: none; }
 }
+
+/* De pakketkeuze: drie korte lijsten in plaats van negen kaarten op een rij. */
+.pakketten { display: grid; gap: 22px; max-width: 480px; }
+.pakketten:focus { outline: none; }
+.pakketgroep__kop {
+  font: 800 12px/1 var(--font-body); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--fg-muted); margin-bottom: 9px;
+}
+.pakketgroep__lijst { display: grid; gap: 7px; }
+.pakket { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 14px 18px; }
+.pakket__tekst { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.pakket__naam { font: 800 17px/1.3 var(--font-body); }
+/* De gangen op één regel; past het niet, dan kapt hij af in plaats van de rij hoger te maken. */
+.pakket__gangen {
+  font: 400 14px/1.35 var(--font-body); color: var(--fg-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pakket__meer { font-weight: 800; color: var(--fg-secondary); }
