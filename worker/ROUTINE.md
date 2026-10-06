@@ -1,7 +1,12 @@
 # Draaiboek: huisstijl ophalen voor een designaanvraag
 
 Dit draaiboek wordt uitgevoerd door de Claude Code Routine **"Huisstijl ophalen"**. Volg de stappen
-in deze volgorde. Het doel: de huisstijl (logo, kleuren, fonts, stijl) van de website uit de
+in deze volgorde.
+
+De Routine start op twee momenten: bij het indienen van een aanvraag met een website, en als
+Marketing het Asana-veld **Huisstijl** op *Haal opnieuw op* zet. Dat tweede is er voor een poging
+die is misgelukt of een site die inmiddels veranderd is; het draaiboek is in beide gevallen
+hetzelfde. `publish.mjs` zet het veld aan het eind op *Klaar*, `fail.mjs` op *Mislukt*. Het doel: de huisstijl (logo, kleuren, fonts, stijl) van de website uit de
 aanvraag vastleggen in `brand-brief.json`, en die als bijlagen plus tekst bij de Asana-taak van
 Marketing zetten.
 

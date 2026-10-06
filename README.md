@@ -323,6 +323,11 @@ Gaat het mis, dan staat de reden in de comment én in `menu_error`; opnieuw prob
 Run now. Heet de bijlage `NIET-BRUIKBAAR-…`, dan loopt er tekst over het ontwerp — dat is geen
 storing maar een te lang gerecht.
 
+**Opnieuw proberen.** Mislukt het ophalen van de huisstijl — een trage site, een bestand dat niet
+laadt — dan staat de aanvraag op `failed`. Zet het veld **Huisstijl** op *Haal opnieuw op* en
+dezelfde routine draait opnieuw; het veld gaat meteen op *Bezig* en staat daarna op *Klaar* of
+*Mislukt*. Handig ook als de website van de opdrachtgever intussen is veranderd.
+
 **De knop in Asana.** Marketing hangt het logo van de opdrachtgever aan de subtaak
 "Menu scherm …" en zet daarna het veld **Menuscherm** op **Genereer nu** — of op
 **Genereer nu (kleuren opdrachtgever)** als het scherm mee moet kleuren met de huisstijl van de

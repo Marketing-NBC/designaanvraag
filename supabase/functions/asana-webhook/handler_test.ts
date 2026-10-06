@@ -17,6 +17,13 @@ const cfg: AsanaFieldsConfig = {
       options: { genereer: 'opt-genereer', genereer_kleur: 'opt-genereer-kleur',
                  bezig: 'opt-bezig', klaar_menu: 'opt-klaar', mislukt: 'opt-mislukt' },
     },
+    huisstijl: {
+      gid: 'veld-huisstijl',
+      name: 'Huisstijl',
+      type: 'enum',
+      options: { opnieuw: 'opt-opnieuw', bezig: 'opt-hs-bezig',
+                 klaar_huisstijl: 'opt-hs-klaar', mislukt: 'opt-hs-mislukt' },
+    },
   },
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
@@ -82,6 +89,11 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Rec
     startMenu: opts.zonderRoutine ? undefined : (gid, kleuren) => {
       if (!bekend.has(gid)) return Promise.resolve(false)
       gestart.push(`${gid}:${kleuren}`)
+      return Promise.resolve(true)
+    },
+    startHuisstijl: opts.zonderRoutine ? undefined : (gid) => {
+      if (!bekend.has(gid)) return Promise.resolve(false)
+      gestart.push(`${gid}:huisstijl`)
       return Promise.resolve(true)
     },
     token: TOKEN,
@@ -284,4 +296,51 @@ Deno.test('zonder ingestelde routine blijft het niet stil', async () => {
   assertEquals(gestart, [])
   assertEquals(asana.gezet, [], 'op Bezig zetten terwijl er niets loopt is misleidend')
   assertMatch(JSON.stringify(body), /Routine is niet ingesteld/)
+})
+
+// ── De knop "Haal opnieuw op" ─────────────────────────────────────────
+
+Deno.test('de huisstijl opnieuw ophalen start de routine en zet de knop op Bezig', async () => {
+  // Mislukte de huisstijl de eerste keer, dan stond de aanvraag op failed en kon
+  // Marketing daar niets mee. Nu is het een knop.
+  const { handler, gestart, asana } = setup({
+    t1: { customFields: { 'veld-huisstijl': { optieGids: ['opt-opnieuw'], datum: null, tekst: null } } },
+  })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(gestart, ['t1:huisstijl'])
+  assertEquals(asana.gezet, [['t1', { 'veld-huisstijl': 'opt-hs-bezig' }]],
+    'op Bezig, zodat tweemaal klikken niets extra doet')
+})
+
+Deno.test('de andere standen van de huisstijl-knop starten niets', async () => {
+  for (const optie of ['opt-hs-bezig', 'opt-hs-klaar', 'opt-hs-mislukt']) {
+    const { handler, gestart } = setup({
+      t1: { customFields: { 'veld-huisstijl': { optieGids: [optie], datum: null, tekst: null } } },
+    })
+    await handler(await signed([veldGewijzigd('t1')]))
+    assertEquals(gestart, [], `${optie} hoort niets te starten`)
+  }
+})
+
+Deno.test('de twee knoppen zitten elkaar niet in de weg', async () => {
+  // Beide velden staan op de taak; alleen de knop die op zijn startstand staat telt.
+  const { handler, gestart } = setup({
+    t1: {
+      customFields: {
+        'veld-menu': { optieGids: ['opt-klaar'], datum: null, tekst: null },
+        'veld-huisstijl': { optieGids: ['opt-opnieuw'], datum: null, tekst: null },
+      },
+    },
+  })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(gestart, ['t1:huisstijl'])
+})
+
+Deno.test('zonder aanvraag bij de taak zegt de huisstijl-knop dat', async () => {
+  const { handler, asana } = setup({
+    t1: { customFields: { 'veld-huisstijl': { optieGids: ['opt-opnieuw'], datum: null, tekst: null } } },
+  }, { aanvragen: [] })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  assertMatch(JSON.stringify(await res.json()), /geen aanvraag bij deze taak/)
+  assertEquals(asana.gezet, [], 'niets gestart, dus ook niet op Bezig zetten')
 })

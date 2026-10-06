@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO_DIR } from '../lib/config.mjs'
 import { FIELD_SPECS, veldsleutels, zorgVoorVelden } from '../../scripts/asana-velden.mjs'
-import { knopWaarde } from '../menu/knop.mjs'
+import { knopWaarde } from '../lib/asana-knop.mjs'
 
 const map = JSON.parse(readFileSync(join(REPO_DIR, 'scripts', 'asana-field-map.json'), 'utf8'))
 
@@ -127,15 +127,31 @@ test('een veld dat Asana niet aankan blijft een waarschuwing, geen crash', async
 
 // ── De knop terugzetten ───────────────────────────────────────────────
 
+const CFG = {
+  fields: {
+    menuscherm: { gid: 'v1', name: 'Menuscherm', options: { klaar_menu: 'k', mislukt: 'm' } },
+    huisstijl: { gid: 'v2', name: 'Huisstijl', options: { klaar_huisstijl: 'kh', mislukt: 'mh' } },
+  },
+}
+
 test('de worker zet de knop op de gid uit de veldconfiguratie', () => {
-  const cfg = { fields: { menuscherm: { gid: 'v1', options: { klaar_menu: 'k', mislukt: 'm' } } } }
-  assert.deepEqual(knopWaarde(cfg, 'klaar_menu').waarde, { v1: 'k' })
-  assert.deepEqual(knopWaarde(cfg, 'mislukt').waarde, { v1: 'm' })
+  assert.deepEqual(knopWaarde(CFG, 'menuscherm', 'klaar_menu').waarde, { v1: 'k' })
+  assert.deepEqual(knopWaarde(CFG, 'menuscherm', 'mislukt').waarde, { v1: 'm' })
+})
+
+test('de twee knoppen zitten elkaar niet in de weg', () => {
+  // Menuscherm en Huisstijl delen optienamen als "mislukt", maar het zijn aparte
+  // velden met aparte optie-gids. Door elkaar halen zou de verkeerde knop omzetten.
+  assert.deepEqual(knopWaarde(CFG, 'huisstijl', 'mislukt').waarde, { v2: 'mh' })
+  assert.deepEqual(knopWaarde(CFG, 'huisstijl', 'klaar_huisstijl').waarde, { v2: 'kh' })
+  assert.match(knopWaarde(CFG, 'huisstijl', 'klaar_menu').reden, /geen optie "klaar_menu"/)
 })
 
 test('zonder veld of optie zegt de knop waarom het niet kan', () => {
-  assert.match(knopWaarde(null, 'klaar_menu').reden, /Asana-velden vernieuwen/)
-  assert.match(knopWaarde({ fields: {} }, 'klaar_menu').reden, /staat niet in/)
+  assert.match(knopWaarde(null, 'menuscherm', 'klaar_menu').reden, /Asana-velden vernieuwen/)
+  assert.match(knopWaarde({ fields: {} }, 'menuscherm', 'klaar_menu').reden, /staat niet in/)
   const zonderOptie = { fields: { menuscherm: { gid: 'v1', options: {} } } }
-  assert.match(knopWaarde(zonderOptie, 'klaar_menu').reden, /geen optie "klaar_menu"/)
+  assert.match(knopWaarde(zonderOptie, 'menuscherm', 'klaar_menu').reden, /geen optie "klaar_menu"/)
+  // De melding noemt het veld bij zijn naam in Asana, niet bij onze sleutel.
+  assert.match(knopWaarde({ fields: {} }, 'huisstijl', 'bezig').reden, /"huisstijl"/)
 })

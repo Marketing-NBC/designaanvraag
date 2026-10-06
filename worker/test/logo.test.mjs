@@ -12,7 +12,7 @@ import { join } from 'node:path'
 import { WORKER_DIR } from '../lib/config.mjs'
 import { bruikbaarAlsLogo, kiesLogo, logoDataUri } from '../menu/logo.mjs'
 import { handmatigeKleuren, kleurenVerslag, merkKleuren, merkMetKleuren } from '../menu/kleuren.mjs'
-import { veldTekst } from '../menu/knop.mjs'
+import { veldTekst } from '../lib/asana-knop.mjs'
 import { isMenuSubtaak, MENU_SUBTAAK_NAMEN, subtaskTitles } from '../../shared/asana-title.ts'
 
 const NBC_LOGO = join(WORKER_DIR, '..', 'web', 'src', 'assets', 'brand', 'nbc-logo-color-black.png')
