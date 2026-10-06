@@ -28,7 +28,6 @@ input, textarea, button { font-family: inherit; }
   display: inline-flex; align-items: center; gap: 12px;
 }
 .eyebrow::before { content: ""; width: 28px; height: 1px; background: currentColor; }
-.eyebrow--light { color: var(--nbc-paper); }
 .swash { font-feature-settings: "ss01" on, "liga" on, "calt" on; }
 
 /* ── Knoppen ───────────────────────────────────────────────────── */
