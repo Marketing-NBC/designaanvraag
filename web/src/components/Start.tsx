@@ -21,7 +21,7 @@ export function Start({ onStart, onAanvullen, stepCount }: { onStart: () => void
           <Icon name="arrow-right" className="arrow" />
         </button>
         <p className="start__meta">
-          {stepCount} vragen, ongeveer 2 minuten. <span className="hint--kbd">Enter is volgende.</span>
+          {stepCount} vragen, ongeveer 2 minuten.
         </p>
         {/* Loopt er al een aanvraag, dan hoort een wijziging daarbij en niet in een nieuwe taak. */}
         <p className="start__meta">
