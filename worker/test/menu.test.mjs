@@ -17,6 +17,7 @@ import { REPO_DIR, WORKER_DIR } from '../lib/config.mjs'
 import { leesMenuTekst, kiesPakket } from '../menu/menu-tekst.mjs'
 import { menuIsBruikbaar, renderMenuComment } from '../lib/notes.mjs'
 import { renderMenu, laadBasis, laadBibliotheek, pakketten, inhoudVanBasis, pakketkenmerken } from '../menu/render.mjs'
+import { tussenruimtes } from '../menu/controle.mjs'
 import { overtollig, woorden, zoekGerecht } from '../menu/gerecht-match.mjs'
 
 /** Zelfde normalisatie als tekstsleutel() in basis-extract.py en template.html. */
@@ -772,7 +773,12 @@ const MENU_TEKST_PAGINA_10 = [
 test('een te lang menu levert precies het ontwerp van pagina 10 op',
   { timeout: 120_000 }, async () => {
   const { secties } = leesMenuTekst(MENU_TEKST_PAGINA_10)
-  const { opmaak, meldingen } = await renderMenu({ pakket: 'diner-4gangen', secties })
+  // balanceren: false, want deze test gaat over de opmaak en niet over de verdeling.
+  // De kolommen worden daarna nog gelijk over de breedte gezet, en dan klopt de x uit
+  // het ontwerp per definitie niet meer. Dat die verschuiving alleen horizontaal is en
+  // niets aan de regelval verandert, staat in "verdelen schuift alleen op".
+  const { opmaak, meldingen } = await renderMenu({ pakket: 'diner-4gangen', secties,
+                                                  balanceren: false })
 
   // Het Voorgerecht gaat naar de linkerkolom, de rest blijft staan: 0-0-1-1-2.
   assert.deepEqual(opmaak.verdeling, [0, 0, 1, 1, 2])
@@ -813,4 +819,51 @@ test('pagina 7 en 8 delen hun tekstkaders', () => {
   assert.deepEqual(drie.kolommen.map((k) => k.x), vier.kolommen.map((k) => k.x))
   assert.equal(drie.kolommen[2].kader.breedte, vier.kolommen[2].kader.breedte)
   assert.ok(drie.kolommen[2].kader.gedeeldMet.includes('diner-4gangen'))
+})
+
+/**
+ * De kolommen worden na de opmaak gelijk over de breedte verdeeld.
+ *
+ * Het oog leest niet waar een kolom begint maar waar de tekst ophoudt, en dat hangt af
+ * van de langste regel. De kolomstarts in het basisontwerp staan op een vast ritme, maar
+ * omdat elke kolom zijn kader anders vol maakt viel het witte gat ertussen toch ongelijk
+ * uit - op het buffetscherm 227 tegen 325. Daarom schuift de engine ze recht.
+ */
+test('de tussenruimtes tussen de kolommen zijn gelijk', { timeout: 600_000 }, async () => {
+  for (const pakket of pakketten()) {
+    const { opmaak } = await renderMenu({ pakket })
+    const gaten = tussenruimtes(opmaak.regels)
+    if (gaten.length < 2) continue
+    const scheef = Math.max(...gaten) - Math.min(...gaten)
+    assert.ok(scheef <= 1, `${pakket}: tussenruimtes ${gaten.join('/')} lopen ${scheef} px uiteen`)
+  }
+})
+
+test('verdelen schuift alleen op en verandert de regelval niet', { timeout: 120_000 }, async () => {
+  // Alleen horizontaal opschuiven: de kaderbreedte blijft, dus dezelfde woorden op
+  // dezelfde regel en dezelfde baseline. Zou dat niet zo zijn, dan was het geen
+  // verdeling maar een nieuwe opmaak.
+  const kaal = await renderMenu({ pakket: 'buffet', balanceren: false })
+  const verdeeld = await renderMenu({ pakket: 'buffet' })
+  assert.equal(verdeeld.opmaak.regels.length, kaal.opmaak.regels.length)
+  for (const [i, r] of verdeeld.opmaak.regels.entries()) {
+    assert.equal(r.tekst, kaal.opmaak.regels[i].tekst)
+    assert.equal(r.baseline, kaal.opmaak.regels[i].baseline)
+  }
+})
+
+test('de buitenste kolommen blijven staan waar de ontwerper ze zette',
+  { timeout: 120_000 }, async () => {
+    // Zo blijft het tekstblok als geheel op zijn plek: de linkermarge verandert niet en
+    // de rechterkolom schuift de blob niet in.
+    const { balans } = await renderMenu({ pakket: 'buffet' })
+    const ki = Object.keys(balans.verschuiving).map(Number).sort((a, b) => a - b)
+    assert.equal(balans.verschuiving[ki[0]], 0, 'de eerste kolom hoort niet te verschuiven')
+    assert.equal(balans.verschuiving[ki[ki.length - 1]], 0, 'de laatste ook niet')
+    assert.ok(balans.verschuiving[ki[1]] !== 0, 'de middelste juist wel')
+  })
+
+test('bij twee kolommen valt er niets te verdelen', { timeout: 120_000 }, async () => {
+  const { balans } = await renderMenu({ pakket: 'lunch-basic' })
+  assert.deepEqual(Object.values(balans.verschuiving), [0, 0])
 })

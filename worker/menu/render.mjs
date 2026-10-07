@@ -243,6 +243,7 @@ function gebruikteFonts(basis) {
  *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
  *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
  *   forceerHerberekening  alleen voor controle.mjs; zie payload hieronder
+ *   balanceren            false laat de kolommen staan waar het ontwerp ze zet
  * @returns {Promise<{png: Buffer, meldingen: object, fonts: string[]}>}
  */
 /**
@@ -315,6 +316,10 @@ export async function renderMenu(opdracht) {
     // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
     // breken in plaats van de regelval van het basisontwerp over te nemen.
     forceerHerberekening: Boolean(opdracht.forceerHerberekening),
+    // De kolommen gelijk over de breedte verdelen. Staat altijd aan; alleen
+    // controle.mjs zet hem uit, om de opmaak zelf te kunnen vergelijken met het
+    // Illustrator-bestand zonder dat de verschuiving ertussen zit.
+    balanceren: opdracht.balanceren !== false,
   }
   // Waar het logo komt te staan, uitgerekend op de werkelijke ruimte van dit ontwerp.
   const maat = await logoMaat(payload.merk)
@@ -339,7 +344,8 @@ export async function renderMenu(opdracht) {
     // elke regel met zijn baseline. Daar kan een test op toetsen.
     const opmaak = await page.evaluate(() => window.__OPMAAK__ ?? null)
     const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 3840, height: 2160 } })
-    return { png, meldingen, opmaak, fonts: families, logoVak: payload.logoVak }
+    return { png, meldingen, opmaak, fonts: families, logoVak: payload.logoVak,
+             balans: opmaak?.balans ?? null }
   } finally {
     await browser.close()
   }

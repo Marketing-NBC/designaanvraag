@@ -88,6 +88,23 @@ async function vergelijk(renderPng, referentiePad) {
   }
 }
 
+/**
+ * De witte gaten tussen de kolommen, gemeten aan de inkt.
+ *
+ * Niet aan de kaders: tekst staat links in zijn kader, dus een kolom houdt op waar zijn
+ * langste regel ophoudt en niet waar het kader eindigt. Dat is ook wat het oog leest.
+ */
+export function tussenruimtes(regels) {
+  const per = new Map()
+  for (const r of regels) {
+    const h = per.get(r.kolom)
+    if (!h) per.set(r.kolom, { x0: r.x0, x1: r.x1 })
+    else { h.x0 = Math.min(h.x0, r.x0); h.x1 = Math.max(h.x1, r.x1) }
+  }
+  const ki = [...per.keys()].sort((a, b) => a - b)
+  return ki.slice(1).map((k, i) => Math.round(per.get(k).x0 - per.get(ki[i]).x1))
+}
+
 export async function controleer(namen, uitDir) {
   const uitslagen = []
   for (const pakket of namen) {
@@ -109,22 +126,39 @@ export async function controleer(namen, uitDir) {
     // zoalsBron: wat we bewust anders zetten dan het .ai (een gecorrigeerde titel,
     // een woord dat in het ontwerp verkeerd gespeld staat) draaien we voor de
     // vergelijking terug - anders meet je je eigen correctie als fout.
+    //
+    // balanceren: false bij alle drie. De kolommen worden na de opmaak gelijk over de
+    // breedte verdeeld, en dat is bewust anders dan het .ai. Zou die verschuiving in de
+    // vergelijking meelopen, dan meet je hem als fout en zie je niets meer van wat deze
+    // controle moet bewaken: dat de engine de tekst precies zet zoals de ontwerper.
+    // Hoe de verdeling zelf uitvalt wordt hieronder apart getoetst, op een render waar
+    // hij wel aan staat.
     const basis = laadBasis(pakket)
     const zoalsBron = Boolean(basis.titel.bronTekst || basis.correcties)
-    const kaal = await renderMenu({ pakket, zoalsBron })
-    const rond = await renderMenu({ ...inhoudVanBasis(basis), titel: undefined, zoalsBron })
-    const herbouw = await renderMenu({ pakket, forceerHerberekening: true, zoalsBron })
+    const kaal = await renderMenu({ pakket, zoalsBron, balanceren: false })
+    const rond = await renderMenu({ ...inhoudVanBasis(basis), titel: undefined, zoalsBron,
+                                    balanceren: false })
+    const herbouw = await renderMenu({ pakket, forceerHerberekening: true, zoalsBron,
+                                       balanceren: false })
+    // En hetzelfde ontwerp zoals het echt de deur uit gaat: met gelijke tussenruimtes.
+    const verdeeld = await renderMenu({ pakket })
     const uitslagKaal = await vergelijk(kaal.png, referentie)
     const uitslagRond = await vergelijk(rond.png, referentie)
     const uitslagHerbouw = await vergelijk(herbouw.png, referentie)
 
     if (uitDir) {
       mkdirSync(uitDir, { recursive: true })
+      // <pakket>.png hoort bij <pakket>-verschil.png: allebei zonder de verdeling,
+      // zodat het verschilbeeld over de render heen te leggen is. Hoe het scherm er
+      // werkelijk uit gaat zien staat in <pakket>-verdeeld.png.
       writeFileSync(join(uitDir, `${pakket}.png`), kaal.png)
       writeFileSync(join(uitDir, `${pakket}-verschil.png`), uitslagKaal.diff)
+      writeFileSync(join(uitDir, `${pakket}-verdeeld.png`), verdeeld.png)
     }
+    const gaten = tussenruimtes(verdeeld.opmaak.regels)
+    const scheef = gaten.length > 1 ? Math.max(...gaten) - Math.min(...gaten) : 0
     uitslagen.push({ pakket, ...uitslagKaal, viaInvoer: uitslagRond, bijHerbouw: uitslagHerbouw,
-                     herbouwMeldingen: herbouw.meldingen,
+                     herbouwMeldingen: herbouw.meldingen, gaten, scheef,
                      meldingen: kaal.meldingen, fonts: kaal.fonts })
 
     log(`${pakket.padEnd(22)} verplaatst ${uitslagKaal.procentVerplaatst.toFixed(3)}%  `
@@ -132,7 +166,10 @@ export async function controleer(namen, uitDir) {
       + `vlakwerk ${uitslagKaal.procentRest.toFixed(3)}%  `
       + `via invoer ${uitslagRond.procentVerplaatst.toFixed(3)}%  `
       + `bij herberekening ${uitslagHerbouw.procentVerplaatst.toFixed(3)}%  `
-      + `botsingen ${kaal.meldingen.botsingen.length}`)
+      + `botsingen ${kaal.meldingen.botsingen.length}  `
+      + `tussenruimte ${gaten.length ? gaten.join('/') : '-'}`)
+    if (scheef > 1) log(`   de tussenruimtes lopen ${scheef} px uiteen`)
+    for (const m of verdeeld.meldingen.botsingen) log(`   botsing na verdelen: "${m.tekst}"`)
     for (const m of kaal.meldingen.structuur) log(`   structuur: ${m}`)
     for (const m of kaal.meldingen.overloop) log(`   overloop: ${m}`)
     for (const m of kaal.meldingen.botsingen) log(`   botsing: "${m.tekst}" op y=${m.baseline}`)

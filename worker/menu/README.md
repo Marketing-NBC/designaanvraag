@@ -180,6 +180,16 @@ splitst het verschil op, want niet elk verschil betekent hetzelfde:
   uitgerekend in plaats van overgenomen. Dit is wat er gebeurt zodra een gerecht
   wijzigt. Zo zie je of de kolombreedtes kloppen voor het font dat wij zetten.
   Zes van de acht staan op 0,000%, de rest op sub-pixelruis.
+- **tussenruimte** — de witte gaten tussen de kolommen, gemeten aan de inkt. Die
+  horen gelijk te zijn; zie *De kolommen worden gelijk over de breedte verdeeld*.
+
+De drie vergelijkingen hierboven draaien met `balanceren: false`, want het verdelen
+van de kolommen is bewust anders dan het `.ai`. Zou die verschuiving meelopen, dan
+meet je hem als fout en zie je niets meer van wat deze controle moet bewaken: dat de
+engine de tekst precies zet zoals de ontwerper. De verdeling zelf wordt apart
+getoetst, op een render waar hij wél aan staat. In `worker/menu/out/` staat
+`<pakket>.png` bij `<pakket>-verschil.png` (allebei zonder verdeling) en
+`<pakket>-verdeeld.png` zoals het scherm er werkelijk uit gaat zien.
 
 ## Hoe de opmaak werkt
 
@@ -285,6 +295,28 @@ weggemoffeld — zie **Tekst mag nooit over iets anders heen**.
 
 Verschuift er een gang, dan komt dat als melding in de Asana-comment: het scherm ziet
 er dan anders uit dan het basisontwerp, ook al klopt elke maat.
+
+### De kolommen worden gelijk over de breedte verdeeld
+
+Het oog leest niet waar een kolom *begint* maar waar de tekst *ophoudt*. De
+kolomstarts in het basisontwerp staan op een vast ritme — op het buffetscherm 241,
+1334 en 2464, dus een steek van 1093 en 1130 — maar omdat elke kolom zijn kader
+anders vol maakt, viel het witte gat ertussen toch ongelijk uit: 227 tegen 325.
+
+Daarom schuift de engine de kolommen na de opmaak horizontaal recht. **Alleen
+opschuiven**: de kaderbreedte blijft, dus de regels breken af waar ze al afbraken en
+geen enkele baseline verandert. De eerste kolom blijft staan waar de ontwerper hem
+zette — dat is de linkermarge — en de laatste komt uit op de rechtermarge van het
+ontwerp, zodat het blok als geheel niet verloopt en de rechterkolom de blob niet in
+schuift. Wat ertussen overblijft wordt gelijk verdeeld.
+
+Dat werkt ook als de inhoud verandert, en dat is de reden dat het in de engine zit en
+niet in het Illustrator-bestand: haalt iemand twee gerechten uit een kolom, dan
+verschuift de rechterrand van die kolom en is een vaste positie meteen weer scheef.
+
+Blijft er minder dan `MINIMUM_GAT` (80 px) over, dan is de inhoud te breed geworden om
+gelijk te verdelen. De kolommen blijven dan staan waar het ontwerp ze zet en dat komt
+als melding in de Asana-comment.
 
 ### De gerechtenbibliotheek
 

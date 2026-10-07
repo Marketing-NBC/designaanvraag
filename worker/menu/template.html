@@ -404,6 +404,84 @@
     return meetRegel(runs, x, baseline)
   }
 
+  // ---------------------------------------------------- kolommen verdelen
+  //
+  // De kolommen zo neerzetten dat de tussenruimtes gelijk zijn.
+  //
+  // Het oog leest niet waar een kolom begint maar waar de tekst ophoudt, en dat hangt
+  // af van de langste regel. In het basisontwerp staan de kolomstarts netjes op een
+  // vast ritme, maar omdat elke kolom zijn kader anders vol maakt, valt het witte gat
+  // ertussen toch ongelijk uit - op het buffetscherm 227 tegen 325.
+  //
+  // Daarom schuiven we de kolommen na de opmaak horizontaal op hun plek. Alleen
+  // opschuiven: de kaderbreedte blijft, dus de regels breken af waar ze al afbraken en
+  // de hoogte verandert niet. De buitenranden blijven staan - de eerste kolom waar de
+  // ontwerper hem begon, de laatste waar zijn tekst in het ontwerp eindigde - zodat het
+  // blok als geheel niet verloopt en de laatste kolom de blob niet in schuift.
+
+  /** Hieronder is er niets meer te verdelen en blijven de kolommen staan. */
+  const MINIMUM_GAT = 80
+
+  /**
+   * Waar de tekst in het basisontwerp ophoudt aan de rechterkant.
+   *
+   * Dat is de rechtermarge die de ontwerper koos, en daarmee de buitenrand waarbinnen
+   * verdeeld wordt. Niet de kaderrand: die ligt verder naar rechts dan waar de tekst
+   * komt, en dan zou de laatste kolom tegen de blob aan geduwd worden.
+   */
+  function basisRechterrand(basis) {
+    let rechts = -Infinity
+    for (const kolom of basis.kolommen) {
+      for (const alinea of kolom.alineas ?? []) {
+        for (const regel of alinea.regels ?? []) {
+          rechts = Math.max(rechts, meetRegel(regel.runs, kolom.x, regel.baseline).x1)
+        }
+      }
+    }
+    return rechts
+  }
+
+  /**
+   * Hoeveel elke kolom opschuift.
+   *
+   * @returns {{verschuiving: Map<number, number>, gat: number|null, tekort?: number}}
+   *   Een lege map en gat=null als er niets te verdelen valt (een kolom) of als het
+   *   niet past; dan zegt `tekort` hoeveel ruimte er tekortkomt.
+   */
+  function verschuivingen(regels, basis) {
+    const randen = new Map()
+    for (const r of regels) {
+      const huidig = randen.get(r.kolom)
+      if (!huidig) randen.set(r.kolom, { x0: r.vak.x0, x1: r.vak.x1 })
+      else { huidig.x0 = Math.min(huidig.x0, r.vak.x0); huidig.x1 = Math.max(huidig.x1, r.vak.x1) }
+    }
+    const ki = [...randen.keys()].sort((a, b) => a - b)
+    if (ki.length < 2) return { verschuiving: new Map(), gat: null }
+
+    // De eerste kolom blijft staan. Zijn x is de linkermarge van het ontwerp, en die
+    // hoort niet mee te bewegen met wat er toevallig in de kolom staat; verdeeld wordt
+    // alleen de ruimte erna. De laatste komt zo vanzelf uit op de rechtermarge.
+    const eerste = randen.get(ki[0])
+    const volgende = ki.slice(1)
+    const samen = volgende.reduce((n, k) => n + (randen.get(k).x1 - randen.get(k).x0), 0)
+    const gat = (basisRechterrand(basis) - eerste.x1 - samen) / volgende.length
+    if (!(gat >= MINIMUM_GAT)) {
+      // De inhoud is zo breed geworden dat gelijk verdelen de kolommen tegen elkaar
+      // aan zou duwen. Dan laten we ze staan waar de ontwerper ze zette.
+      return { verschuiving: new Map(), gat: null, tekort: Math.round(gat) }
+    }
+    const verschuiving = new Map([[ki[0], 0]])
+    let x = eerste.x1 + gat
+    for (const k of volgende) {
+      // Afronden op een honderdste: anders blijft er drijvende-kommaruis staan en
+      // meldt de uitkomst een verschuiving van -4e-13 waar er geen is. Het || 0 maakt
+      // van die ruis een echte nul en niet -0, want dat leest als een verschuiving.
+      verschuiving.set(k, Math.round((x - randen.get(k).x0) * 100) / 100 || 0)
+      x += (randen.get(k).x1 - randen.get(k).x0) + gat
+    }
+    return { verschuiving, gat: Math.round(gat) }
+  }
+
   // ------------------------------------------------------- blob-verbod
 
   const NBC_BOVEN = [246, 161, 7]     // oranje, bovenin de blobs
@@ -837,7 +915,7 @@
               const y = baseline + offsets[i]
               const vak = meetRegel(runs, kolom.x, y)
               const tekst = runs.map((r) => r.tekst).join('')
-              regels.push({ runs, x: kolom.x, y, vak, tekst,
+              regels.push({ runs, x: kolom.x, y, vak, tekst, kolom: ki,
                             waarbij: { sectie: secties[si].naam, gerecht: taak.gerechtNaam } })
               const raakt = raaktIets(grenzen, vlakken, vak)
               if (raakt) botsingen.push({ tekst, waar: raakt, baseline: y, ...vak,
@@ -866,13 +944,44 @@
         + `${uitkomst.verschoven.join(' en ')} ${uitkomst.verschoven.length === 1 ? 'staat' : 'staan'} `
         + 'nu in een andere kolom.')
     }
+    // De kolommen gelijk over de breedte verdelen. Dit gebeurt na de opmaak en
+    // verschuift alleen horizontaal, dus de regelval en de hoogte blijven precies
+    // zoals de engine ze gelegd heeft. Met balanceren=false komt het ontwerp eruit
+    // zoals de ontwerper het zette; daar toetst controle.mjs de opmaak op.
+    const balans = gegevens.balanceren === false
+      ? { verschuiving: new Map(), gat: null }
+      : verschuivingen(uitkomst.regels, basis)
+    if (balans.tekort !== undefined) {
+      meldingen.opmaak.push('De kolommen zijn niet gelijk verdeeld: de inhoud is te breed '
+        + `geworden (er zou ${balans.tekort} px tussenruimte overblijven). Ze staan nu zoals `
+        + 'in het basisontwerp.')
+    }
+    for (const r of uitkomst.regels) {
+      const op = balans.verschuiving.get(r.kolom) ?? 0
+      if (!op) continue
+      r.x += op
+      r.vak = { ...r.vak, x0: r.vak.x0 + op, x1: r.vak.x1 + op }
+      // Opnieuw kijken of hij nu iets raakt: de botsingen zijn geteld op de oude plek.
+      const raakt = raaktIets(grenzen, vlakken, r.vak)
+      if (raakt) {
+        meldingen.botsingen.push({ tekst: r.tekst, waar: raakt, baseline: r.y, ...r.vak,
+                                   ...r.waarbij })
+      }
+    }
+
     for (const r of uitkomst.regels) tekenRegel(inhoudGroep, r.runs, r.x, r.y)
 
     // De uitkomst zelf, zodat een test kan nakijken welke gang in welke kolom
     // staat en op welke baseline. Zonder dit kun je alleen naar pixels kijken.
     window.__OPMAAK__ = {
       verdeling: uitkomst.verdeling,
+      // Wat de herverdeling deed: per kolom hoeveel hij opschoof, en de tussenruimte
+      // die eruit kwam. null betekent dat er niets te verdelen viel of dat het niet paste.
+      balans: { gat: balans.gat, verschuiving: Object.fromEntries(balans.verschuiving) },
+      // x0 en x1 zijn de werkelijke randen van de inkt, dus inclusief een bullet die
+      // links uitsteekt. Daar meet controle.mjs de tussenruimtes aan.
       regels: uitkomst.regels.map((r) => ({ x: r.x, baseline: Math.round(r.y * 100) / 100,
+                                            kolom: r.kolom, x0: r.vak.x0, x1: r.vak.x1,
                                             sectie: r.waarbij.sectie, tekst: r.tekst })),
     }
   }
