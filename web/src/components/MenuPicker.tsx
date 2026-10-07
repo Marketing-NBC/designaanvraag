@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LETTERS } from './ChoiceList'
 import { Icon } from './Icon'
 import {
-  ALLE_GERECHTEN, PAKKETGROEPEN, type MenuKeuze, aantalGerechten, gerechtVan,
-  isBekend, leegMenu, letterVoorPakket, pakketVan, regelVan, sectiesVan, uitPakket,
+  ALLE_GERECHTEN, PAKKETGROEPEN, type Gerechtkeuze, type MenuKeuze, aantalGerechten,
+  gerechtVan, ingredientenRegel, isBekend, leegMenu, letterVoorPakket, metIngredienten,
+  metNaam, metOnderdeel, pakketVan, regelVan, sectiesVan, uitPakket,
 } from '../lib/menu'
 
 const REGELS = ALLE_GERECHTEN.map(regelVan)
@@ -132,27 +133,106 @@ function GerechtKiezer({ waarde, onKies, onAnnuleer }: {
 }
 
 /**
+ * Een stukje tekst waar je direct in typt.
+ *
+ * Geen rand, geen vlak, hetzelfde lettertype en dezelfde kleur als de tekst eromheen:
+ * het ziet eruit als tekst, maar je klikt erin en je typt. Een textarea en geen input,
+ * want een ingredientenregel loopt door naar de volgende regel; de hoogte groeit mee.
+ *
+ * Enter sluit het veld af in plaats van een regel te maken - dit is één regel tekst, en
+ * de globale Enter-afhandeling laat een textarea met rust, dus hier moet het zelf.
+ */
+function Veld({ waarde, onChange, className, label, plaatshouder }: {
+  waarde: string
+  onChange: (v: string) => void
+  className?: string
+  label: string
+  plaatshouder?: string
+}) {
+  // Tijdens het typen houdt het veld zijn eigen tekst vast en gaat er pas bij het
+  // verlaten iets naar het menu. Dat moet ook wel: een ingredientenregel wordt bij het
+  // opslaan op de strepen uit elkaar gehaald en lege stukken vallen weg, dus wie "zalm |"
+  // typt zou de streep meteen weer kwijt zijn en nooit aan het tweede ingredient
+  // toekomen. Hetzelfde geldt voor de spatie aan het eind van een woord.
+  const [tekst, setTekst] = useState(waarde)
+  const typt = useRef(false)
+  useEffect(() => { if (!typt.current) setTekst(waarde) }, [waarde])
+
+  const ref = useRef<HTMLTextAreaElement>(null)
+  const groeiMee = () => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }
+  useEffect(groeiMee, [tekst])
+
+  return (
+    <textarea
+      ref={ref}
+      className={`veld-in-tekst${className ? ` ${className}` : ''}`}
+      value={tekst}
+      rows={1}
+      aria-label={label}
+      placeholder={plaatshouder}
+      onFocus={() => { typt.current = true }}
+      onChange={(e) => setTekst(e.target.value)}
+      onBlur={() => { typt.current = false; onChange(tekst) }}
+      onKeyDown={(e) => {
+        // Eén regel tekst, dus Enter is "klaar" en geen nieuwe regel. Escape zet terug
+        // wat er stond, zoals overal waar je iets kunt afbreken.
+        if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+        if (e.key === 'Escape') { e.preventDefault(); setTekst(waarde); typt.current = false }
+      }}
+    />
+  )
+}
+
+/**
  * Een gerecht zoals het op het scherm komt te staan: de naam op zijn eigen regel,
  * de ingredienten daaronder. Abel: "Ik wil dat de gerechten zo staan zoals op de
  * schermen." Dat is niet alleen mooier - zo zie je bij het kiezen al wat je straks
  * krijgt, in plaats van een regel met strepen die nergens zo staat.
  */
-function Gerechtregel({ regel }: { regel: string }) {
-  const g = gerechtVan(regel)
+function Gerechtregel({ gerecht, onChange }: {
+  gerecht: Gerechtkeuze
+  onChange: (g: Gerechtkeuze) => void
+}) {
   return (
     <>
-      <span className="gerecht__naam">{g.naam}</span>
-      {g.ingredienten?.length ? (
-        <span className="gerecht__ingredienten">{g.ingredienten.join(' | ')}</span>
-      ) : null}
-      {g.onderdelen?.length ? (
+      <Veld
+        className="gerecht__naam"
+        waarde={gerecht.naam}
+        label={`naam van ${gerecht.naam || 'dit gerecht'}`}
+        onChange={(v) => onChange(metNaam(gerecht, v))}
+      />
+      {gerecht.onderdelen?.length ? null : (
+        <Veld
+          className="gerecht__ingredienten"
+          waarde={ingredientenRegel(gerecht)}
+          label={`ingrediënten van ${gerecht.naam}`}
+          plaatshouder="ingrediënten, met een | ertussen"
+          onChange={(v) => onChange(metIngredienten(gerecht, v))}
+        />
+      )}
+      {gerecht.onderdelen?.length ? (
         <span className="gerecht__onderdelen">
-          {g.onderdelen.map((o) => (
-            <span className="gerecht__onderdeel" key={o.naam}>
-              <span className="gerecht__bullet">{o.naam}</span>
-              {o.toelichting?.length ? (
-                <span className="gerecht__toelichting">{o.toelichting.join(' | ')}</span>
-              ) : null}
+          {gerecht.onderdelen.map((o, i) => (
+            <span className="gerecht__onderdeel" key={i}>
+              <span className="gerecht__bullet">
+                <Veld
+                  waarde={o.naam}
+                  label={`naam van onderdeel ${i + 1}`}
+                  onChange={(v) => onChange(metOnderdeel(gerecht, i, { naam: v }))}
+                />
+              </span>
+              <Veld
+                className="gerecht__toelichting"
+                waarde={(o.toelichting ?? []).join(' | ')}
+                label={`toelichting bij ${o.naam}`}
+                plaatshouder="toelichting, met een | ertussen"
+                onChange={(v) => onChange(metOnderdeel(gerecht, i, { toelichting: v }))}
+              />
             </span>
           ))}
         </span>
@@ -178,7 +258,7 @@ export function MenuPicker({ menu, onChange }: Props) {
   }
 
   const pakket = pakketVan(menu.pakket)
-  const zet = (si: number, gerechten: string[]) => {
+  const zet = (si: number, gerechten: Gerechtkeuze[]) => {
     const secties = menu.secties.map((s, i) => (i === si ? { ...s, gerechten } : s))
     onChange({ ...menu, secties })
   }
@@ -197,13 +277,16 @@ export function MenuPicker({ menu, onChange }: Props) {
         <section className="menu__sectie" key={`${sectie.kop ?? 'zonder'}-${si}`}>
           {sectie.kop ? <h3 className="menu__sectiekop">{sectie.kop}</h3> : null}
           <ul className="menu__lijst">
-            {sectie.gerechten.map((regel, gi) => (
-              <li className="gerecht" key={`${regel}-${gi}`}>
+            {sectie.gerechten.map((gerecht, gi) => (
+              // De sleutel is de plek en niet de tekst: wie in de naam typt verandert de
+              // tekst bij elke aanslag, en met de tekst als sleutel bouwt React het veld
+              // dan opnieuw op en springt de cursor naar het eind.
+              <li className="gerecht" key={`${si}-${gi}`}>
                 {open === `${si}-${gi}` ? (
                   <GerechtKiezer
-                    waarde={regel}
+                    waarde={regelVan(gerecht)}
                     onKies={(nieuw) => {
-                      zet(si, sectie.gerechten.map((r, i) => (i === gi ? nieuw : r)))
+                      zet(si, sectie.gerechten.map((g, i) => (i === gi ? gerechtVan(nieuw) : g)))
                       setOpen(null)
                     }}
                     onAnnuleer={() => setOpen(null)}
@@ -211,8 +294,11 @@ export function MenuPicker({ menu, onChange }: Props) {
                 ) : (
                   <>
                     <span className="gerecht__tekst">
-                      <Gerechtregel regel={regel} />
-                      {isBekend(regel) ? null : (
+                      <Gerechtregel
+                        gerecht={gerecht}
+                        onChange={(g) => zet(si, sectie.gerechten.map((h, i) => (i === gi ? g : h)))}
+                      />
+                      {isBekend(gerecht) ? null : (
                         <span className="gerecht__nieuw">
                           <Icon name="alert" /> niet uit de lijst
                         </span>
@@ -224,7 +310,7 @@ export function MenuPicker({ menu, onChange }: Props) {
                     <button
                       type="button"
                       className="gerecht__knop gerecht__knop--weg"
-                      aria-label={`${regel} weghalen`}
+                      aria-label={`${gerecht.naam} weghalen`}
                       onClick={() => zet(si, sectie.gerechten.filter((_, i) => i !== gi))}
                     >
                       <Icon name="close" />
@@ -237,7 +323,7 @@ export function MenuPicker({ menu, onChange }: Props) {
               {open === `${si}-nieuw` ? (
                 <GerechtKiezer
                   waarde=""
-                  onKies={(nieuw) => { zet(si, [...sectie.gerechten, nieuw]); setOpen(null) }}
+                  onKies={(nieuw) => { zet(si, [...sectie.gerechten, gerechtVan(nieuw)]); setOpen(null) }}
                   onAnnuleer={() => setOpen(null)}
                 />
               ) : (

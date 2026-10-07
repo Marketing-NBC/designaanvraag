@@ -395,6 +395,27 @@ input, textarea, button { font-family: inherit; }
 }
 .menu__lijst { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 
+/* Een veld dat eruitziet als tekst. Alles wat een invoerveld normaal verraadt gaat
+   eraf, zodat de gerechten op het scherm staan zoals ze op het menuscherm komen - maar
+   je klikt erin en typt. De hoogte groeit mee in JS; overflow: hidden houdt de
+   scrollbalk weg zolang dat nog niet gebeurd is.
+
+   Dit blok staat bewust boven de .gerecht-stijlen: die bepalen het corps, de kleur en
+   het inspringen van elk stukje tekst, en dat hoort te winnen van het "font: inherit"
+   hieronder. Anders raakt de toelichting zijn cursief kwijt zodra het een veld wordt. */
+.veld-in-tekst {
+  font: inherit; color: inherit; letter-spacing: inherit;
+  width: 100%; display: block; padding: 0; margin: 0; border: 0; background: none;
+  resize: none; overflow: hidden; border-radius: var(--r-sm);
+}
+.veld-in-tekst::placeholder { color: var(--fg-muted); font-style: italic; }
+/* Alleen het veld waar je op staat licht op, niet de hele regel: anders ziet een
+   gerecht met bolletjes er bij het aanwijzen uit als een rij invulvakken. */
+.veld-in-tekst:hover, .veld-in-tekst:focus {
+  background: var(--nbc-stone-100); box-shadow: 0 0 0 3px var(--nbc-stone-100);
+}
+.veld-in-tekst:focus { outline: none; }
+
 .gerecht {
   display: flex; align-items: flex-start; gap: 8px; min-height: 44px;
   padding: 8px 4px 8px 12px; border-radius: var(--r-sm);
@@ -406,8 +427,11 @@ input, textarea, button { font-family: inherit; }
 .gerecht__ingredienten { font: 400 15px/1.35 var(--font-body); color: var(--fg-secondary); }
 .gerecht__onderdelen { display: grid; gap: 2px; margin-top: 4px; }
 .gerecht__onderdeel { display: grid; gap: 1px; }
-.gerecht__bullet { font: 400 15px/1.35 var(--font-body); color: var(--fg-primary); }
-.gerecht__bullet::before { content: '\2022'; margin-right: 8px; color: var(--fg-secondary); }
+.gerecht__bullet {
+  font: 400 15px/1.35 var(--font-body); color: var(--fg-primary);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.gerecht__bullet::before { content: '\2022'; color: var(--fg-secondary); flex: none; }
 .gerecht__toelichting {
   font: italic 400 14px/1.35 var(--font-body); color: var(--fg-secondary); padding-left: 18px;
 }

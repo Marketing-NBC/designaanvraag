@@ -152,7 +152,7 @@ test.describe('designaanvraag-flow', () => {
     // Het veld rechtstreeks vullen; waar de focus na de namenlijst belandt doet er voor
     // deze test niet toe, het gaat erom dat het concept bewaard blijft.
     await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Kerstborrel')
-    await page.waitForFunction(() => (localStorage.getItem('nbc-designaanvraag:draft:v2') ?? '').includes('Kerstborrel'))
+    await page.waitForFunction(() => (localStorage.getItem('nbc-designaanvraag:draft:v3') ?? '').includes('Kerstborrel'))
     await page.reload()
     await expect(page.locator('.resume')).toBeVisible()
     await page.getByRole('button', { name: 'Verder' }).click()

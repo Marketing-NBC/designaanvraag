@@ -19,6 +19,18 @@ export interface Gerecht {
   onderdelen?: { naam: string; toelichting?: string[] }[]
 }
 
+/**
+ * Een gerecht zoals het in het menu van deze aanvraag staat.
+ *
+ * Hetzelfde als een Gerecht uit de bibliotheek, plus of iemand eraan heeft gezeten.
+ * Dat laatste bepaalt wie er wint bij het opmaken: een onaangeroerd gerecht wordt in
+ * de bibliotheek teruggezocht en krijgt de opmaak van de ontwerper, een bewerkt
+ * gerecht komt er precies zo op te staan als het hier staat. Zie worker/menu/README.md.
+ */
+export interface Gerechtkeuze extends Gerecht {
+  bewerkt?: boolean
+}
+
 export interface Pakket {
   pakket: string
   naam: string
@@ -76,8 +88,16 @@ export function sectiesVan(p: Pakket, maximaal = 3): { tekst: string; meer: numb
 /** Het menu zoals de aanvrager het samenstelt. */
 export interface MenuKeuze {
   pakket: string | null
-  /** Per onderdeel de gerechten die erin zitten, als regel. Leeg = nog niet gekozen. */
-  secties: { kop: string | null; gerechten: string[] }[]
+  /**
+   * Per onderdeel de gerechten die erin zitten. Leeg = nog niet gekozen.
+   *
+   * Als structuur en niet als regel tekst: de Tartelettes uit Grab & Go zijn een naam
+   * met bolletjes eronder, elk met hun eigen cursieve toelichting, en dat overleeft een
+   * rondje door platte tekst niet. Dat ging vroeger goed omdat de regel in de
+   * bibliotheek werd teruggezocht - maar zodra iemand hem bewerkt, matcht hij niet meer
+   * en vielen de bolletjes weg.
+   */
+  secties: { kop: string | null; gerechten: Gerechtkeuze[] }[]
 }
 
 export const leegMenu = (): MenuKeuze => ({ pakket: null, secties: [] })
@@ -101,18 +121,25 @@ export function uitPakket(naam: string): MenuKeuze {
   if (!p) return { pakket: null, secties: [] }
   return {
     pakket: p.pakket,
-    secties: p.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map(regelVan) })),
+    secties: p.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map((g) => ({ ...g })) })),
   }
 }
 
 /** Alle regels die we kennen; alles daarbuiten is door iemand zelf ingetypt. */
 const BEKEND = new Set(ALLE_GERECHTEN.map(regelVan))
 
-export const isBekend = (regel: string) => BEKEND.has(regel)
+export const isBekend = (g: Gerechtkeuze) => BEKEND.has(regelVan(g))
 
-/** De zelf getypte gerechten, in de volgorde waarin ze op het scherm komen. */
+/**
+ * De gerechten die niet (meer) in het repertoire staan, in schermvolgorde.
+ *
+ * Niet of er aan gezeten is maar of de uitkomst bekend is: wie een gerecht bewerkt en
+ * precies terugtypt zoals het was, heeft er niets aan veranderd. Wie wel iets anders
+ * neerzet, krijgt de melding - en dat is ook de bedoeling, zodat de aanvrager ziet dat
+ * hij is afgeweken en Marketing het achteraf terugvindt.
+ */
 export function eigenGerechten(menu: MenuKeuze): string[] {
-  return menu.secties.flatMap((s) => s.gerechten).filter((r) => !isBekend(r))
+  return menu.secties.flatMap((s) => s.gerechten).filter((g) => !isBekend(g)).map(regelVan)
 }
 
 export const aantalGerechten = (menu: MenuKeuze) =>
@@ -127,12 +154,16 @@ export function wijzigingen(menu: MenuKeuze): string[] {
   if (!basis) return []
   const uit: string[] = []
   for (const [i, sectie] of menu.secties.entries()) {
-    const was = basis.secties[i]?.gerechten ?? []
+    // Op de regel vergelijken en niet op het object: twee gerechten zijn hetzelfde als
+    // er hetzelfde staat, ook als de een een los object is en de ander uit het pakket komt.
+    const was = (basis.secties[i]?.gerechten ?? []).map(regelVan)
+    const nu = sectie.gerechten.map(regelVan)
     const kop = sectie.kop ? `${sectie.kop}: ` : ''
-    for (const r of was) if (!sectie.gerechten.includes(r)) uit.push(`${kop}${r} gaat eruit`)
-    for (const r of sectie.gerechten) {
+    for (const r of was) if (!nu.includes(r)) uit.push(`${kop}${r} gaat eruit`)
+    for (const [j, r] of nu.entries()) {
       if (was.includes(r)) continue
-      uit.push(`${kop}${r} komt erbij${isBekend(r) ? '' : ' (staat niet in de gerechtenlijst)'}`)
+      const onbekend = isBekend(sectie.gerechten[j]) ? '' : ' (staat niet in de gerechtenlijst)'
+      uit.push(`${kop}${r} komt erbij${onbekend}`)
     }
   }
   return uit
@@ -148,7 +179,7 @@ export function naarTekst(menu: MenuKeuze): string {
   for (const s of menu.secties) {
     if (!s.gerechten.length) continue
     if (s.kop) delen.push(s.kop)
-    for (const r of s.gerechten) delen.push(`• ${r}`)
+    for (const g of s.gerechten) delen.push(`• ${regelVan(g)}`)
     delen.push('')
   }
   return delen.join('\n').trim()
@@ -162,7 +193,7 @@ const PER_REGEL = new Map(ALLE_GERECHTEN.map((g) => [regelVan(g), g]))
  * alles tot de eerste streep en is de rest ingredient - zo leest de opmaak-engine
  * losse tekst ook, dus zo ziet de aanvrager het straks ook op het scherm.
  */
-export function gerechtVan(regel: string): Gerecht {
+export function gerechtVan(regel: string): Gerechtkeuze {
   const bekend = PER_REGEL.get(regel)
   if (bekend) return bekend
   const [naam, ...rest] = regel.split('|').map((d) => d.trim())
@@ -186,7 +217,60 @@ export function naarInhoud(menu: MenuKeuze) {
       .filter((s) => s.gerechten.length)
       .map((s) => ({
         kop: s.kop,
-        gerechten: s.gerechten.map(gerechtVan),
+        gerechten: s.gerechten,
       })),
   }
+}
+
+// ------------------------------------------------------------ bewerken
+
+/** De ingredienten als één regel, zoals ze op het scherm staan. */
+export const ingredientenRegel = (g: Gerechtkeuze) => (g.ingredienten ?? []).join(' | ')
+
+/** Die regel terug naar losse ingredienten. Lege stukken vallen weg. */
+export const leesIngredienten = (tekst: string) =>
+  tekst.split('|').map((d) => d.trim()).filter(Boolean)
+
+/**
+ * Een gerecht met een aangepast stuk tekst.
+ *
+ * `bewerkt` gaat alleen aan als er werkelijk iets verandert. Wie in een veld klikt en
+ * weer wegklikt heeft niets bewerkt, en dan hoort het gerecht gewoon de opmaak van de
+ * ontwerper te houden.
+ */
+function metWijziging(g: Gerechtkeuze, anders: Partial<Gerechtkeuze>): Gerechtkeuze {
+  const nieuw = { ...g, ...anders }
+  if (regelVan(nieuw) === regelVan(g) && ingredientenRegel(nieuw) === ingredientenRegel(g)
+      && toelichtingGelijk(g, nieuw)) {
+    return g
+  }
+  return { ...nieuw, bewerkt: true }
+}
+
+/** regelVan() noemt alleen de namen van de bolletjes, dus de toelichting apart langs. */
+const toelichtingGelijk = (a: Gerechtkeuze, b: Gerechtkeuze) =>
+  (a.onderdelen ?? []).length === (b.onderdelen ?? []).length
+  && (a.onderdelen ?? []).every((o, i) =>
+    (o.toelichting ?? []).join(' | ') === (b.onderdelen?.[i]?.toelichting ?? []).join(' | '))
+
+export const metNaam = (g: Gerechtkeuze, naam: string) =>
+  metWijziging(g, { naam: naam.trim() })
+
+
+
+export const metIngredienten = (g: Gerechtkeuze, tekst: string) =>
+  metWijziging(g, { ingredienten: leesIngredienten(tekst) })
+
+/** Een bolletje onder een gerecht: zijn naam, of de cursieve toelichting eronder. */
+export function metOnderdeel(g: Gerechtkeuze, i: number,
+                             anders: { naam?: string; toelichting?: string }): Gerechtkeuze {
+  const onderdelen = (g.onderdelen ?? []).map((o, j) => {
+    if (j !== i) return o
+    return {
+      naam: anders.naam === undefined ? o.naam : anders.naam.trim(),
+      toelichting: anders.toelichting === undefined ? o.toelichting
+        : leesIngredienten(anders.toelichting),
+    }
+  })
+  return metWijziging(g, { onderdelen })
 }

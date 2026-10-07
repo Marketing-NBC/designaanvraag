@@ -798,7 +798,13 @@
         // staat hoe het hier komt te staan: waar de naam ophoudt en waar de
         // regels afbreken. Een opsomming met bullets slaan we over - dat is een
         // eigen structuur en die staat niet in de bibliotheek.
-        const bekend = bron && !(omschrijving && omschrijving.onderdelen)
+        //
+        // Behalve als de aanvrager er zelf in getypt heeft. De zoekregel laat extra
+        // woorden toe, dus een gerecht met een ingredient erbij wordt nog steeds
+        // gevonden - en dan zou het ontwerp winnen en kwam dat ingredient nooit op
+        // het scherm. Wie zelf typt hoort te zien wat hij typte; zie
+        // "Een gerecht dat anders is opgeschreven" in de README.
+        const bekend = bron && !bron.bewerkt && !(omschrijving && omschrijving.onderdelen)
           ? uitGerechtenbibliotheek(bron.naam, omschrijving ? omschrijving.tekst : '',
                                     naamAlinea.regels[0].runs[0].grootte)
           : null

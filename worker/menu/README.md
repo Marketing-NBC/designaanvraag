@@ -357,6 +357,16 @@ Dessertbuffet | met zoete lekkernijen | L'OR Coffee Popping Pearls
 De bibliotheek zegt welk deel de naam is, niet degene die het intypt — dus
 beide leveren hetzelfde scherm op, tot op de pixel.
 
+**Behalve als de aanvrager er zelf in getypt heeft.** In het formulier kun je direct
+in de gerechten typen, en dan komt `bewerkt: true` mee met dat gerecht. De engine slaat
+het opzoeken dan over en zet neer wat er staat.
+
+Dat moet wel, want de zoekregel laat extra woorden toe. Zonder dat vlaggetje wordt
+"Burrata | gedroogde mini vijgen | spruitjes | pistache | mesclun | truffel" nog steeds
+als Burrata herkend, wint het ontwerp, en komt die truffel nooit op het scherm — terwijl
+de aanvrager hem wel heeft ingetypt. De regel is dus: **niet aangeraakt → het ontwerp
+wint, aangeraakt → de tekst van de aanvrager wint.**
+
 ### Pagina's die geen pakket zijn
 
 `VOORBEELDEN` in `basis-extract.py` noemt pagina's die geen pakket zijn maar wel

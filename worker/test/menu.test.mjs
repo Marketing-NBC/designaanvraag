@@ -867,3 +867,45 @@ test('bij twee kolommen valt er niets te verdelen', { timeout: 120_000 }, async 
   const { balans } = await renderMenu({ pakket: 'lunch-basic' })
   assert.deepEqual(Object.values(balans.verschuiving), [0, 0])
 })
+
+/**
+ * Wie zelf in een gerecht typt, hoort te zien wat hij typte.
+ *
+ * De zoekregel in de bibliotheek laat extra woorden toe - een tikfout mag, een andere
+ * volgorde mag - zodat een gerecht dat de traiteur anders opschrijft toch de opmaak van
+ * de ontwerper krijgt. Maar dat betekent ook dat een gerecht mét een ingredient erbij nog
+ * steeds gevonden wordt, en dan won het ontwerp en verdween dat ingredient van het
+ * scherm. Het formulier zet daarom `bewerkt` op wat iemand heeft aangeraakt.
+ */
+test('een bewerkt gerecht komt er precies zo op als het is getypt',
+  { timeout: 120_000 }, async () => {
+    const basis = inhoudVanBasis(laadBasis('buffet'))
+    const regelsVan = async (bewerkt) => {
+      const inhoud = structuredClone(basis)
+      const g = inhoud.secties[0].gerechten[0]
+      inhoud.secties[0].gerechten[0] = { ...g, ingredienten: [...g.ingredienten, 'truffel'], bewerkt }
+      const { opmaak } = await renderMenu({ pakket: 'buffet', ...inhoud })
+      return opmaak.regels.filter((r) => r.sectie === 'Salade Bar').map((r) => r.tekst).join(' ')
+    }
+    assert.ok(!(await regelsVan(false)).includes('truffel'),
+      'zonder het vlaggetje wint het ontwerp; dat is hoe het hoorde te werken')
+    assert.ok((await regelsVan(true)).includes('truffel'),
+      'met het vlaggetje staat er wat de aanvrager typte')
+  })
+
+test('een bewerkt gerecht met bolletjes houdt zijn opsomming',
+  { timeout: 120_000 }, async () => {
+    const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
+    const g = inhoud.secties[0].gerechten[0]
+    inhoud.secties[0].gerechten[0] = {
+      ...g,
+      bewerkt: true,
+      onderdelen: g.onderdelen.map((o, i) => (i === 0 ? { ...o, naam: 'Zalmtartaar' } : o)),
+    }
+    const { opmaak, meldingen } = await renderMenu({ pakket: 'grab-and-go', ...inhoud })
+    const tekst = opmaak.regels.map((r) => r.tekst).join('\n')
+    assert.match(tekst, /Zalmtartaar/, 'de nieuwe naam staat erop')
+    assert.match(tekst, /umamicrème/, 'en de cursieve toelichting is niet weggevallen')
+    assert.match(tekst, /Taleggio/, 'het tweede bolletje ook niet')
+    assert.deepEqual(meldingen.botsingen, [])
+  })
