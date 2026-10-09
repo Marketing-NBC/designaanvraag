@@ -42,6 +42,13 @@ const gerechtSchema = z.object({
     naam: z.string().trim().min(1).max(200),
     toelichting: z.array(z.string().trim().max(200)).max(20).optional(),
   })).max(20).optional(),
+  /**
+   * De aanvrager heeft deze tekst zelf aangepast. Dan zet de opmaak-engine hem zoals
+   * hij hier staat, in plaats van hem terug te zoeken in de gerechtenbibliotheek en de
+   * versie van de ontwerper te tekenen. Zonder dit vlaggetje zou een toegevoegd
+   * ingredient stilletjes van het scherm verdwijnen.
+   */
+  bewerkt: z.boolean().optional(),
 })
 
 /** De culinaire invulling als structuur: het pakket met zijn onderdelen en gerechten. */

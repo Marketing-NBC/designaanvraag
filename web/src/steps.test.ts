@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SPOED_WERKDAGEN } from '../../shared/spoed'
 import { STEPS, zichtbareStappen } from './steps'
 import type { RequestTypeKey } from '../../shared/request-types'
-import { leegMenu, uitPakket } from './lib/menu'
+import { gerechtVan, leegMenu, uitPakket } from './lib/menu'
 import { emptyDraft, type Draft } from './state'
 
 const eventStap = STEPS.find((s) => s.id === 'event_datum')!
@@ -76,7 +76,7 @@ describe('de vraag over het menu', () => {
 
   it('waarschuwt over een gerecht buiten de lijst, maar blokkeert niet', () => {
     const menu = uitPakket('lunch-basic')
-    menu.secties[0].gerechten.push('Broodje kaantjes | appelstroop')
+    menu.secties[0].gerechten.push(gerechtVan('Broodje kaantjes | appelstroop'))
     expect(menuStap.validate(metTypes(['menu_scherm'], menu))).toBeNull()
     expect(menuStap.warn?.(metTypes(['menu_scherm'], menu))).toContain('staat niet in de gerechtenlijst')
     expect(menuStap.warn?.(metTypes(['menu_scherm'], uitPakket('lunch-basic')))).toBeNull()

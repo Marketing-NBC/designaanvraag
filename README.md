@@ -314,8 +314,9 @@ hij delen.
 Een proefrit van begin tot eind:
 
 1. Dien via het formulier een aanvraag in met **Menu scherm** aangevinkt. Bij "Welk pakket is het?"
-   kies je er een; daarna staat het hele menu er en kun je gerechten weghalen, wisselen of
-   toevoegen.
+   kies je er een; daarna staat het hele menu er en kun je gerechten weghalen, wisselen, toevoegen
+   of er direct in typen. Wat je zelf aanpast komt letterlijk zo op het scherm; wat je laat staan
+   krijgt de opmaak van de ontwerper (zie `worker/menu/README.md`).
 2. Zoek de aanvraag op in Supabase → Table editor → `aanvragen`, nieuwste bovenaan, en kopieer de
    `id`. Controleer meteen dat `menu_pakket` en `menu_inhoud` gevuld zijn: zo niet, dan is de
    migratie of de function niet uitgerold.

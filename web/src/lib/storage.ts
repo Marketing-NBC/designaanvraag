@@ -1,8 +1,9 @@
 import type { Draft } from '../state'
 
-// v2: de culinaire invulling is een keuze geworden in plaats van een lap tekst,
-// dus een concept van voor die tijd kunnen we niet meer herstellen.
-const KEY = 'nbc-designaanvraag:draft:v2'
+// v3: het menu bewaart de gerechten als structuur in plaats van als regel tekst, zodat
+// je er direct in kunt typen zonder dat de bolletjes van de Tartelettes wegvallen. Een
+// concept van voor die tijd past niet meer in die vorm.
+const KEY = 'nbc-designaanvraag:draft:v3'
 const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 3 // 3 dagen
 
 interface Stored {

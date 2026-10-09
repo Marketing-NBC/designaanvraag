@@ -13,7 +13,6 @@ export function Start({ onStart, onAanvullen, stepCount }: { onStart: () => void
           <img className="start__logo" src={logoWhite} alt="NBC" />
           <img className="start__icoon" src={gvWit} alt="Green Village" />
         </div>
-        <span className="eyebrow eyebrow--light">voor het marketingteam</span>
         <h1 className="start__title swash">Designaanvraag</h1>
         <p className="start__lead">Vertel ons wat je nodig hebt. Het marketingteam gaat ermee aan de slag, met de juiste huisstijl erbij.</p>
         <button type="button" className="btn btn--light" onClick={onStart} autoFocus data-primary-action>

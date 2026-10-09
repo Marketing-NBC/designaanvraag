@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   PAKKETGROEPEN, PAKKETTEN, PAKKETTEN_OP_SCHERM, ALLE_GERECHTEN, aantalGerechten,
-  eigenGerechten, isBekend, letterVoorPakket, naarInhoud, naarTekst,
+  eigenGerechten, gerechtVan, ingredientenRegel, isBekend, leesIngredienten,
+  letterVoorPakket, metIngredienten, metNaam, metOnderdeel, naarInhoud, naarTekst,
   pakketVan, regelVan, sectiesVan, uitPakket, wijzigingen,
 } from './menu'
 
@@ -26,22 +27,22 @@ describe('de pakketten voor het formulier', () => {
     expect(menu.pakket).toBe('lunch-basic')
     expect(aantalGerechten(menu)).toBe(
       pakket.secties.reduce((n, s) => n + s.gerechten.length, 0))
-    expect(menu.secties[0].gerechten[0]).toMatch(/^Volkorenpunt \| belegen kaas/)
+    expect(regelVan(menu.secties[0].gerechten[0])).toMatch(/^Volkorenpunt \| belegen kaas/)
   })
 
   it('herkent wat uit de lijst komt en wat iemand zelf typte', () => {
     const menu = uitPakket('lunch-basic')
     expect(eigenGerechten(menu)).toEqual([])
-    menu.secties[0].gerechten.push('Broodje kaantjes | appelstroop')
+    menu.secties[0].gerechten.push(gerechtVan('Broodje kaantjes | appelstroop'))
     expect(eigenGerechten(menu)).toEqual(['Broodje kaantjes | appelstroop'])
     expect(isBekend(menu.secties[0].gerechten[0])).toBe(true)
   })
 
   it('schrijft op wat er van het pakket afwijkt', () => {
     const menu = uitPakket('lunch-basic')
-    const weg = menu.secties[0].gerechten[1]
+    const weg = regelVan(menu.secties[0].gerechten[1])
     menu.secties[0].gerechten.splice(1, 1)
-    menu.secties[0].gerechten.push('Broodje kaantjes | appelstroop')
+    menu.secties[0].gerechten.push(gerechtVan('Broodje kaantjes | appelstroop'))
 
     const uit = wijzigingen(menu)
     expect(uit).toContain(`Broodjes: ${weg} gaat eruit`)
@@ -73,7 +74,7 @@ describe('de pakketten voor het formulier', () => {
 
   it('maakt van een zelf getypt gerecht een naam met ingredienten', () => {
     const menu = uitPakket('lunch-basic')
-    menu.secties[0].gerechten.push('Broodje kaantjes | appelstroop | bosui')
+    menu.secties[0].gerechten.push(gerechtVan('Broodje kaantjes | appelstroop | bosui'))
     const inhoud = naarInhoud(menu)!
     const eigen = inhoud.secties[0].gerechten.at(-1)!
     expect(eigen.naam).toBe('Broodje kaantjes')
@@ -125,5 +126,66 @@ describe('de pakketten op het scherm', () => {
 
     // De lange kop uit het ontwerp wordt ingekort, anders vult die de hele regel.
     expect(sectiesVan(pakketVan('grab-and-go')!).tekst).toMatch(/^Op tafel/)
+  })
+})
+
+describe('een gerecht bewerken', () => {
+  const grabAndGo = () => uitPakket('grab-and-go')
+  const tartelettes = () => grabAndGo().secties[0].gerechten[0]
+
+  it('onthoudt dat er aan gezeten is, en wat er nu staat', () => {
+    const g = metIngredienten(gerechtVan('Burrata | tomaat'), 'tomaat | truffel')
+    expect(g.ingredienten).toEqual(['tomaat', 'truffel'])
+    expect(g.bewerkt).toBe(true)
+  })
+
+  it('zet bewerkt niet aan als er niets verandert', () => {
+    // In een veld klikken en weer wegklikken is geen bewerking. Dat scheelt, want een
+    // bewerkt gerecht krijgt niet meer de opmaak van de ontwerper.
+    const g = gerechtVan('Burrata | tomaat')
+    expect(metNaam(g, 'Burrata').bewerkt).toBeUndefined()
+    expect(metIngredienten(g, 'tomaat').bewerkt).toBeUndefined()
+    expect(metIngredienten(g, '  tomaat  ').bewerkt).toBeUndefined()
+  })
+
+  it('houdt de bolletjes en hun toelichting heel', () => {
+    // Dit was de reden om het menu als structuur te bewaren: als regel tekst viel de
+    // hele opsomming weg zodra iemand er een letter in veranderde.
+    const g = metOnderdeel(tartelettes(), 0, { naam: 'Zalmtartaar' })
+    expect(g.onderdelen?.map((o) => o.naam)).toEqual(['Zalmtartaar', 'Taleggio (vega)'])
+    expect(g.onderdelen?.[0].toelichting).toEqual(['umamicrème', 'kwartelei'])
+    expect(g.onderdelen?.[1].toelichting?.length).toBeGreaterThan(0)
+    expect(g.bewerkt).toBe(true)
+  })
+
+  it('bewerkt de toelichting los van de naam', () => {
+    const g = metOnderdeel(tartelettes(), 1, { toelichting: 'romige Taleggio | bieslook' })
+    expect(g.onderdelen?.[1].naam).toBe('Taleggio (vega)')
+    expect(g.onderdelen?.[1].toelichting).toEqual(['romige Taleggio', 'bieslook'])
+    expect(g.onderdelen?.[0].toelichting).toEqual(['umamicrème', 'kwartelei'])
+  })
+
+  it('laat zien dat er is afgeweken van de lijst', () => {
+    const menu = grabAndGo()
+    expect(eigenGerechten(menu)).toEqual([])
+    const was = menu.secties[0].gerechten[1]
+    menu.secties[0].gerechten[1] = metIngredienten(was, `${ingredientenRegel(was)} | truffel`)
+    expect(eigenGerechten(menu)).toHaveLength(1)
+    expect(isBekend(menu.secties[0].gerechten[1])).toBe(false)
+  })
+
+  it('stuurt het vlaggetje mee naar de opmaak-engine', () => {
+    // Zonder dit zoekt de engine het gerecht terug in de bibliotheek en tekent hij de
+    // tekst van de ontwerper - dan verdwijnt wat de aanvrager typte van het scherm.
+    const menu = grabAndGo()
+    menu.secties[0].gerechten[1] = metNaam(menu.secties[0].gerechten[1], 'Pão de queijo deluxe')
+    const inhoud = naarInhoud(menu)!
+    expect(inhoud.secties[0].gerechten[1].bewerkt).toBe(true)
+    expect(inhoud.secties[0].gerechten[0].bewerkt).toBeUndefined()
+  })
+
+  it('leest een ingredientenregel heen en terug', () => {
+    expect(leesIngredienten('a | b |  | c ')).toEqual(['a', 'b', 'c'])
+    expect(ingredientenRegel(gerechtVan('Naam | a | b'))).toBe('a | b')
   })
 })
