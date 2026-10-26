@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-06T13:57:30.726Z",
+  "generated_at": "2026-10-26T16:11:15.941Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -19,6 +19,15 @@
       "options": {
         "nbc": "1219213842212164",
         "green_village": "1219213842212165"
+      }
+    },
+    "soort": {
+      "gid": "1219901790743938",
+      "name": "Soort",
+      "type": "enum",
+      "options": {
+        "evenement": "1219901790743939",
+        "intern": "1219901790743940"
       }
     },
     "eventdatum": {
@@ -123,10 +132,6 @@
     "in_planning": {
       "gid": "1218462168784126",
       "name": "In planning"
-    },
-    "mee_bezig": {
-      "gid": "1218459840125012",
-      "name": "Mee bezig"
     },
     "klaar": {
       "gid": "1218459914834826",
