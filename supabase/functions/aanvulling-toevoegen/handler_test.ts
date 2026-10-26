@@ -29,6 +29,7 @@ const cfg: AsanaFieldsConfig = {
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw', name: 'Nieuwe aanvragen' },
     feedback: { gid: 'sec-feedback', name: 'Feedback' },
+    in_planning: { gid: 'sec-planning', name: 'In planning' },
     mee_bezig: { gid: 'sec-bezig', name: 'Mee bezig' },
     klaar: { gid: 'sec-klaar', name: 'Klaar' },
   },
@@ -397,12 +398,25 @@ Deno.test('een afgevinkte taak telt net zo goed als afgerond', async () => {
   assertEquals(asana.verplaatst, ['sec-feedback'])
 })
 
-Deno.test('werk waar Marketing middenin zit blijft staan waar het staat', async () => {
-  const asana = fakeAsana({ completed: false, memberships: [{ project: '111', section: 'sec-bezig' }] })
+Deno.test('werk in Mee bezig gaat naar Feedback, maar blijft open en houdt zijn datum', async () => {
+  const asana = fakeAsana({ completed: false, assignee: 'abel', memberships: [{ project: '111', section: 'sec-bezig' }] })
   await createHandler(deps({ asana }))(post(payload()))
   assertEquals(asana.heropend, 0)
-  assertEquals(asana.verplaatst, [])
+  assertEquals(asana.verplaatst, ['sec-feedback'])
+  assertStringIncludes(asana.comments[0], '<a data-asana-gid="abel"/>')
+  assertStringIncludes(asana.comments[0], 'staat nu in de kolom Feedback')
   assertEquals(asana.comments[0].includes('heropend'), false)
+  assertEquals(asana.comments[0].includes('planningsdatum'), false)
+})
+
+Deno.test('in Nieuwe aanvragen en In planning blijft de taak staan waar hij staat', async () => {
+  for (const section of ['sec-nieuw', 'sec-planning']) {
+    const asana = fakeAsana({ completed: false, memberships: [{ project: '111', section }] })
+    await createHandler(deps({ asana }))(post(payload()))
+    assertEquals(asana.heropend, 0)
+    assertEquals(asana.verplaatst, [])
+    assertEquals(asana.comments[0].includes('Feedback'), false)
+  }
 })
 
 Deno.test('de sectie komt uit ons eigen project, niet uit de werkplanning', async () => {
@@ -410,7 +424,7 @@ Deno.test('de sectie komt uit ons eigen project, niet uit de werkplanning', asyn
   const asana = fakeAsana({
     memberships: [
       { project: 'werkplanning', section: 'sec-klaar' },
-      { project: '111', section: 'sec-bezig' },
+      { project: '111', section: 'sec-nieuw' },
     ],
   })
   await createHandler(deps({ asana }))(post(payload()))

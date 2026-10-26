@@ -117,6 +117,11 @@ export function renderAanvullingComment(v: {
    * heeft, zodat die een vermelding krijgt en het in zijn Asana-inbox belandt.
    */
   heropendVoor?: string | null
+  /**
+   * Gezet als een lopende taak (Mee bezig) naar de kolom Feedback is verplaatst; de waarde is de gid
+   * van degene die de taak heeft, voor de vermelding.
+   */
+  naarFeedbackVoor?: string | null
 }): string {
   const lines: string[] = []
 
@@ -127,6 +132,10 @@ export function renderAanvullingComment(v: {
     // De webhook vraagt maar één keer per taak om een vervaldatum, en dat is bij een afgeronde taak
     // allang gebeurd. Zonder deze regel zou de planningsdatum stilzwijgend verdwijnen.
     lines.push('De planningsdatum is eraf gehaald; kies een nieuwe zodra je weet wanneer je eraan toekomt.')
+    lines.push('')
+  } else if (v.naarFeedbackVoor !== undefined) {
+    const mention = v.naarFeedbackVoor ? `<a data-asana-gid="${escapeXml(v.naarFeedbackVoor)}"/> ` : ''
+    lines.push(`${mention}<strong>Er is feedback binnengekomen; de taak staat nu in de kolom Feedback.</strong>`)
     lines.push('')
   }
 
@@ -146,7 +155,7 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && v.naarFeedbackVoor === undefined) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

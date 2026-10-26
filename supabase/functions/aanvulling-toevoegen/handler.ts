@@ -231,14 +231,20 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Terugzetten in beeld: naar de kolom Feedback, vinkje eraf, planningsdatum eraf. Dat laatste
     // omdat een oude datum in de werkplanning niets meer zegt.
     //
-    // Alleen bij afgerond werk: een aanvulling op een taak waar Marketing middenin zit mag zijn plek
-    // op het bord niet afpakken.
+    // Staat hij in Mee bezig, dan gaat hij ook naar Feedback, maar blijven vinkje en datum staan:
+    // het werk loopt nog en de planning klopt nog. In Nieuwe aanvragen en In planning blijft hij
+    // waar hij is, want daar is nog niets om feedback op te geven.
     let heropendVoor: string | null | undefined
+    let naarFeedbackVoor: string | null | undefined
     if (taak) {
       // De sectie uit ónze projectkoppeling halen: een taak zit ook in "4. Werkplanning".
       const onzeSectie = taak.memberships.find((m) => m.project === projectGid)?.section ?? null
       const klaarGid = cfg.sections?.klaar?.gid ?? null
-      if (taak.completed || (klaarGid && onzeSectie === klaarGid)) {
+      const meeBezigGid = cfg.sections?.mee_bezig?.gid ?? null
+      const afgerond = taak.completed || (klaarGid !== null && onzeSectie === klaarGid)
+      const bezig = !afgerond && meeBezigGid !== null && onzeSectie === meeBezigGid
+
+      if (afgerond) {
         heropendVoor = taak.assignee
         try {
           await deps.asana.heropen(row.asana_task_gid)
@@ -247,22 +253,25 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           waarschuwingen.push(`taak heropenen mislukt: ${msg}`)
           log('warn', 'taak heropenen mislukt', { id: aanvullingRij.id, error: msg })
         }
+      }
 
+      if (afgerond || bezig) {
         const feedbackGid = cfg.sections?.feedback?.gid ?? null
         if (!feedbackGid) {
-          // De setup-workflow heeft de kolom nog niet gemaakt. Vinkje en datum zijn er wel af, dus
-          // de taak komt alsnog terug in de lijsten; alleen de plek op het bord klopt nog niet.
+          // De setup-workflow heeft de kolom nog niet gemaakt. Bij afgerond werk zijn vinkje en datum
+          // er wel af, dus de taak komt alsnog terug in de lijsten; alleen de plek op het bord klopt nog niet.
           waarschuwingen.push('kolom Feedback bestaat nog niet, taak niet verplaatst')
         } else {
           try {
             await deps.asana.moveToSection(row.asana_task_gid, feedbackGid)
+            if (bezig) naarFeedbackVoor = taak.assignee
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
             waarschuwingen.push(`taak naar Feedback verplaatsen mislukt: ${msg}`)
             log('warn', 'taak verplaatsen mislukt', { id: aanvullingRij.id, error: msg })
           }
         }
-        log('info', 'afgeronde taak heropend', { id: aanvullingRij.id, gid: row.asana_task_gid })
+        log('info', afgerond ? 'afgeronde taak heropend' : 'lopende taak naar Feedback', { id: aanvullingRij.id, gid: row.asana_task_gid })
       }
     }
 
@@ -292,6 +301,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
+          naarFeedbackVoor,
         }),
       )
     } catch (e) {
