@@ -22,6 +22,9 @@ export function loadDraft(): Stored | null {
       localStorage.removeItem(KEY)
       return null
     }
+    // Een concept van voor de vraag "evenement of intern" bestond. Wie al een event had ingevuld
+    // was met een evenement bezig; wie nog niet zo ver was, krijgt de vraag gewoon te zien.
+    if (parsed.draft.soort === undefined) parsed.draft.soort = parsed.draft.event ? 'evenement' : null
     return parsed
   } catch {
     return null

@@ -64,6 +64,7 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     menu_error: null,
     menu_kleuren: 'nbc' as const,
     vervallen_op: null,
+    soort: 'evenement',
     event: 'Zorgcongres 2026',
     event_datum: '2026-12-01',
     deadline: '2026-11-20',
@@ -92,9 +93,9 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
       counters.set(key, n)
       return n
     },
-    isCollega: () => Promise.resolve(true),
     findById: (id) => Promise.resolve(row && row.id === id ? row : null),
     zoekOpEvent: () => Promise.resolve([]),
+    zoekInternOpNaam: () => Promise.resolve([]),
     markeerVervallen: () => Promise.resolve(false),
     findByAsanaTaskGid: () => Promise.resolve(null),
     async findAanvullingByClientRequestId(id) {
@@ -174,7 +175,7 @@ function payload(over: Partial<AanvullingInput> = {}) {
     },
     client_request_id: crypto.randomUUID(),
     // Ruim voorbij de minimale invultijd.
-    started_at: new Date(Date.now() - 60_000).toISOString(),
+    started_at: new Date(VANDAAG.getTime() - 60_000).toISOString(),
   }
 }
 
@@ -186,8 +187,11 @@ function post(body: unknown): Request {
   })
 }
 
+/** Een vaste dag, zodat de deadline van de testaanvraag (20 november) niet vanzelf verloopt. */
+const VANDAAG = new Date('2026-10-26T10:00:00+01:00')
+
 function deps(over: Partial<Deps> = {}): Deps {
-  return { env, db: fakeDb(), asana: fakeAsana(), storage: null, fields: cfg, log: () => {}, ...over }
+  return { env, db: fakeDb(), asana: fakeAsana(), storage: null, fields: cfg, now: () => VANDAAG, log: () => {}, ...over }
 }
 
 // ── De regels zelf ───────────────────────────────────────────────────────────
@@ -303,6 +307,43 @@ Deno.test('een deadline na het event wordt geweigerd, ook als alleen de deadline
   assertEquals((await res.json()).field, 'aanvulling.nieuwe_deadline')
 })
 
+Deno.test('een verlopen deadline moet vervangen worden', async () => {
+  const verlopen = () => fakeDb(aanvraag({ deadline: '2026-10-20' }))
+  const zonder = await createHandler(deps({ db: verlopen() }))(post(payload()))
+  assertEquals(zonder.status, 400)
+  const fout = await zonder.json()
+  assertEquals(fout.field, 'aanvulling.nieuwe_deadline')
+  assertMatch(fout.error, /verstreken/)
+
+  const db = verlopen()
+  const met = await createHandler(deps({ db }))(post(payload({ nieuwe_deadline: '2026-11-02' })))
+  assertEquals(met.status, 200)
+  assertEquals(db.patches, [{ deadline: '2026-11-02' }])
+})
+
+Deno.test('een nieuwe deadline in het verleden wordt geweigerd', async () => {
+  const res = await createHandler(deps())(post(payload({ nieuwe_deadline: '2026-10-01' })))
+  assertEquals(res.status, 400)
+  assertMatch((await res.json()).error, /al geweest/)
+})
+
+Deno.test('is het event al geweest, dan mag de nieuwe deadline erna liggen', async () => {
+  const db = fakeDb(aanvraag({ event_datum: '2026-10-10', deadline: '2026-10-05' }))
+  const res = await createHandler(deps({ db }))(post(payload({ nieuwe_deadline: '2026-11-02' })))
+  assertEquals(res.status, 200)
+})
+
+Deno.test('een interne aanvraag heeft geen eventdatum om te verschuiven', async () => {
+  const db = fakeDb(aanvraag({ soort: 'intern', event: '', event_datum: null, aanvraag_types: [] }))
+  const asana = fakeAsana({ customFields: {} })
+  const res = await createHandler(deps({ db, asana }))(post(payload({ nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25' })))
+  assertEquals(res.status, 200)
+  // Alleen de deadline gaat naar Asana; een eventdatum hoort niet bij een interne aanvraag.
+  assertEquals(asana.velden, [{ 'f-deadline': { date: '2026-11-25' } }])
+  assertEquals(db.aanvullingen[0].nieuwe_event_datum, null)
+  assertEquals(db.patches, [{ deadline: '2026-11-25' }])
+})
+
 Deno.test('dezelfde client_request_id plaatst geen tweede reactie', async () => {
   const db = fakeDb()
   const asana = fakeAsana()
@@ -328,7 +369,7 @@ Deno.test('de honeypot bewaart niets maar doet alsof het lukte', async () => {
 
 Deno.test('te snel ingevuld wordt net zo behandeld', async () => {
   const db = fakeDb()
-  const res = await createHandler(deps({ db }))(post({ ...payload(), started_at: new Date().toISOString() }))
+  const res = await createHandler(deps({ db }))(post({ ...payload(), started_at: VANDAAG.toISOString() }))
   assertEquals(res.status, 200)
   assertEquals(db.aanvullingen.length, 0)
 })

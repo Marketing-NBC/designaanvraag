@@ -144,6 +144,12 @@ input, textarea, button { font-family: inherit; }
   padding: 12px 16px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 .msg--goed svg { color: var(--nbc-success); }
+.msg--verlopen {
+  font-weight: 400; color: var(--fg-primary);
+  background: var(--nbc-error-bg); border-left: 3px solid var(--nbc-error);
+  padding: 12px 16px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.msg--verlopen svg { color: var(--nbc-error); }
 
 /* ── Velden ────────────────────────────────────────────────────── */
 .field {
@@ -189,6 +195,7 @@ input, textarea, button { font-family: inherit; }
 .combo__opt svg { width: 16px; height: 16px; opacity: 0; }
 .combo__opt[data-selected] svg { opacity: 1; }
 .combo__empty { padding: 12px 14px; font: 400 16px/1.3 var(--font-body); color: var(--fg-secondary); }
+.combo__nieuw { margin: 10px 0 0; max-width: 560px; }
 
 /* Keuze-opties */
 .opts { display: grid; gap: 10px; max-width: 560px; }
@@ -324,6 +331,7 @@ input, textarea, button { font-family: inherit; }
 .vondst .opt__label { display: grid; gap: 4px; }
 .vondst__event { font: 800 18px/1.3 var(--font-body); }
 .vondst__meta { font: 400 15px/1.45 var(--font-body); color: var(--fg-secondary); }
+.vondst__verlopen { font-weight: 600; color: var(--nbc-error); }
 
 .extra { display: grid; gap: 28px; max-width: 620px; }
 .extra__blok { display: grid; gap: 10px; }

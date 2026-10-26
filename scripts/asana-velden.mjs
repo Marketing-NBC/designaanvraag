@@ -23,12 +23,25 @@ export const FIELD_SPECS = [
       ['green_village', 'green'],
     ],
   },
-  { key: 'eventdatum', type: 'date', description: 'Datum van het event.' },
+  {
+    key: 'soort',
+    type: 'enum',
+    description: 'Voor een evenement of intern. Een interne aanvraag heeft geen event, eventdatum of '
+      + 'website: alleen wat er nodig is (in de beschrijving) en de deadline.',
+    // Twee kleuren die niet op elkaar en niet op de andere velden lijken, zodat je op het bord in
+    // een oogopslag ziet wat intern is.
+    options: [
+      ['evenement', 'blue'],
+      ['intern', 'hot-pink'],
+    ],
+  },
+  { key: 'eventdatum', type: 'date', description: 'Datum van het event. Leeg bij een interne aanvraag.' },
   { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },
   {
     key: 'aanvrager',
     type: 'enum',
-    description: 'Collega die de aanvraag heeft ingediend. Een keuzelijst, zodat het dashboard erop kan groeperen.',
+    description: 'Wie de aanvraag heeft ingediend. Een keuzelijst, zodat het dashboard erop kan groeperen; '
+      + 'een nieuwe naam komt er vanzelf bij.',
     // Geen vaste opties: de edge function maakt de optie aan zodra iemand voor het eerst een
     // aanvraag doet. Zo staan er geen namen van collega's in deze (publieke) repo.
     optiesViaFunction: true,
@@ -75,7 +88,8 @@ export const FIELD_SPECS = [
   {
     key: 'spoed',
     type: 'enum',
-    description: 'Minder dan 10 werkdagen tussen de aanvraag en het event. Wordt automatisch gezet bij het indienen.',
+    description: 'Minder dan 10 werkdagen tussen de aanvraag en het event (bij een interne aanvraag: de deadline). '
+      + 'Wordt automatisch gezet bij het indienen.',
     // De optiekleuren bepalen ook de kleur bij "kleuren op veld" in de kalender van de werkplanning:
     // spoedjes rood, de rest neutraal grijs zodat alleen spoed opvalt.
     options: [

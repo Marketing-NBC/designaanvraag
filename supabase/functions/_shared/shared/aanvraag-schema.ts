@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { bijlageIdsSchema } from './bijlagen.ts'
 import {
-  LOCATIE_KEYS, REQUEST_TYPE_KEYS, locatieLabel, requestTypeLabel, typeHoortBij, vraagtOmMenu,
+  LOCATIE_KEYS, REQUEST_TYPE_KEYS, SOORT_KEYS, locatieLabel, requestTypeLabel, typeHoortBij, vraagtOmMenu,
 } from './request-types.ts'
 
 /** Werkdagen die Marketing normaal nodig heeft; korter geeft een zachte waarschuwing, geen blokkade. */
@@ -68,9 +68,17 @@ export const aanvraagSchema = z
      * verstuurd te kunnen worden, en alles van voor vandaag was NBC.
      */
     locatie: z.enum(LOCATIE_KEYS).default('nbc'),
-    naam: z.string().trim().min(1, 'Kies je naam').max(80),
-    event: z.string().trim().min(2, 'Vul de naam van het event in').max(120, 'Maximaal 120 tekens'),
-    event_datum: isoDate,
+    /** Hoeft niet in de lijst met collega's te staan: iedereen mag een aanvraag doen. */
+    naam: z.string().trim().min(2, 'Vul je naam in').max(80, 'Maximaal 80 tekens'),
+    /**
+     * Evenement of intern. Met een standaard om dezelfde reden als locatie: een concept van
+     * voor deze vraag was altijd voor een evenement.
+     */
+    soort: z.enum(SOORT_KEYS).default('evenement'),
+    // Event en eventdatum horen alleen bij een evenement; een interne aanvraag heeft ze niet.
+    // Of ze verplicht zijn staat daarom hieronder in superRefine, niet hier.
+    event: z.string().trim().max(120, 'Maximaal 120 tekens').default(''),
+    event_datum: isoDate.nullable().default(null),
     deadline: isoDate,
     /** Mag leeg: niet elk event of bedrijf heeft een site. Zonder site geen huisstijl-extractie. */
     website: z
@@ -87,9 +95,10 @@ export const aanvraagSchema = z
         return n
       }),
     schijf_locatie: z.string().trim().max(500, 'Maximaal 500 tekens').default(''),
-    aanvraag_types: z.array(z.enum(REQUEST_TYPE_KEYS)).min(1, 'Kies minimaal één optie'),
+    aanvraag_types: z.array(z.enum(REQUEST_TYPE_KEYS)).default([]),
     anders_tekst: z.string().trim().max(200, 'Maximaal 200 tekens').default(''),
-    design_modus: z.enum(['custom', 'standaard'], { error: 'Maak een keuze' }),
+    design_modus: z.enum(['custom', 'standaard']).nullable().default(null),
+    /** Bij een evenement de wensen en bijzonderheden; bij een interne aanvraag de hele vraag. */
     omschrijving: z.string().trim().max(3000, 'Maximaal 3000 tekens').default(''),
     /**
      * De culinaire invulling, zoals de collega hem van de opdrachtgever krijgt:
@@ -108,8 +117,27 @@ export const aanvraagSchema = z
     menu_inhoud: menuInhoudSchema.nullable().default(null),
   })
   .superRefine((a, ctx) => {
-    if (a.deadline > a.event_datum) {
+    if (a.soort === 'intern') {
+      // Een interne aanvraag is niets meer dan wat er nodig is en wanneer. De rest van de
+      // velden wordt hieronder leeggemaakt, dus daar valt niets aan te controleren.
+      if (a.omschrijving.length < 5) {
+        ctx.addIssue({ code: 'custom', path: ['omschrijving'], message: 'Beschrijf wat je wilt aanvragen' })
+      }
+      return
+    }
+    if (a.event.length < 2) {
+      ctx.addIssue({ code: 'custom', path: ['event'], message: 'Vul de naam van het event in' })
+    }
+    if (!a.event_datum) {
+      ctx.addIssue({ code: 'custom', path: ['event_datum'], message: 'Kies de datum van het event' })
+    } else if (a.deadline > a.event_datum) {
       ctx.addIssue({ code: 'custom', path: ['deadline'], message: 'De deadline kan niet na het event liggen' })
+    }
+    if (!a.aanvraag_types.length) {
+      ctx.addIssue({ code: 'custom', path: ['aanvraag_types'], message: 'Kies minimaal één optie' })
+    }
+    if (!a.design_modus) {
+      ctx.addIssue({ code: 'custom', path: ['design_modus'], message: 'Maak een keuze' })
     }
     for (const k of a.aanvraag_types) {
       if (!typeHoortBij(a.locatie, k)) {
@@ -129,6 +157,24 @@ export const aanvraagSchema = z
       ctx.addIssue({ code: 'custom', path: ['menu_tekst'], message: 'Er is geen menukaart of menuscherm aangevraagd' })
     }
   })
+  // Wie eerst "evenement" koos, dingen invulde en daarna toch "intern" koos, heeft die
+  // antwoorden nog in het concept staan. Ze horen niet bij een interne aanvraag, dus ze gaan
+  // er hier af - niet pas in de function, want dit object gaat zo de database in.
+  .transform((a) => (a.soort === 'intern'
+    ? {
+      ...a,
+      event: '',
+      event_datum: null,
+      website: '',
+      schijf_locatie: '',
+      aanvraag_types: [],
+      anders_tekst: '',
+      design_modus: null,
+      menu_tekst: '',
+      menu_pakket: '',
+      menu_inhoud: null,
+    }
+    : a))
 
 export type AanvraagInput = z.input<typeof aanvraagSchema>
 export type Aanvraag = z.output<typeof aanvraagSchema>

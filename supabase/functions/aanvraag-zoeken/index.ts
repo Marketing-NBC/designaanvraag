@@ -8,6 +8,7 @@ const db = createDb(env.supabaseUrl, env.supabaseSecretKey)
 const handler = createHandler({
   env,
   zoek: (q, vandaag) => db.zoekOpEvent(q, vandaag),
+  zoekIntern: (naam, vandaag) => db.zoekInternOpNaam(naam, vandaag),
   bumpRateLimit: (key, window) => db.bumpRateLimit(key, window),
 })
 

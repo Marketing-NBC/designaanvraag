@@ -1,5 +1,5 @@
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
-import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './shared/request-types.ts'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel } from './shared/request-types.ts'
 import fieldsJson from './shared/asana-fields.json' with { type: 'json' }
 
 const API = 'https://app.asana.com/api/1.0'
@@ -106,8 +106,19 @@ export function buildCustomFields(
     const fld = f[key]
     if (fld?.type === 'date') out[fld.gid] = { date: iso }
   }
-  dateField('eventdatum', a.event_datum)
+  // Een interne aanvraag heeft geen eventdatum; het veld blijft dan leeg.
+  if (a.event_datum) dateField('eventdatum', a.event_datum)
   dateField('deadline', a.deadline)
+
+  // Evenement of intern. Een enum met een eigen kleur per optie, zodat het verschil op het bord
+  // als gekleurd label op de kaart staat.
+  const soort = f['soort']
+  if (soort?.type === 'enum') {
+    const gid = soort.options?.[a.soort]
+    if (gid) out[soort.gid] = gid
+  } else if (soort?.type === 'text') {
+    out[soort.gid] = soortLabel(a.soort)
+  }
 
   const aanvrager = f['aanvrager']
   if (aanvrager?.type === 'enum') {
@@ -132,14 +143,16 @@ export function buildCustomFields(
     const gids = a.aanvraag_types.map((k) => type.options?.[k]).filter((g): g is string => Boolean(g))
     if (gids.length) out[type.gid] = gids
   } else if (type?.type === 'enum') {
-    const gid = type.options?.[a.aanvraag_types[0]]
+    const gid = a.aanvraag_types[0] ? type.options?.[a.aanvraag_types[0]] : undefined
     if (gid) out[type.gid] = gid
-  } else if (type?.type === 'text') {
+  } else if (type?.type === 'text' && a.aanvraag_types.length) {
     out[type.gid] = describeRequestTypes(a.aanvraag_types, a.anders_tekst)
   }
 
   const modus = f['modus']
-  if (modus?.type === 'enum') {
+  if (!a.design_modus) {
+    // Interne aanvraag: daar wordt niet gekozen tussen custom en standaard.
+  } else if (modus?.type === 'enum') {
     const gid = modus.options?.[a.design_modus]
     if (gid) out[modus.gid] = gid
   } else if (modus?.type === 'text') {

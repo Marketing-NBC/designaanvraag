@@ -115,11 +115,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     // Spoed: minder dan 10 werkdagen tot het event, gemeten op het moment van indienen. Daarna
-    // verandert de waarde niet meer, ook niet als de eventdatum later verschuift.
+    // verandert de waarde niet meer, ook niet als de eventdatum later verschuift. Een interne
+    // aanvraag heeft geen event; daar is de deadline het moment waar het om draait.
     const extraWaarschuwingen: string[] = []
     const vandaag = vandaagInNl(now())
-    const werkdagen = werkdagenTotEvent(aanvraag.event_datum, vandaag)
-    const spoed = isSpoed(aanvraag.event_datum, vandaag)
+    const peildatum = aanvraag.event_datum ?? aanvraag.deadline
+    const werkdagen = werkdagenTotEvent(peildatum, vandaag)
+    const spoed = isSpoed(peildatum, vandaag)
 
     const row = await db.insert({
       ...aanvraag,
@@ -128,7 +130,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       spoed,
       werkdagen_tot_event: Number.isFinite(werkdagen) ? werkdagen : null,
     })
-    log('info', 'aanvraag opgeslagen', { id: row.id, event: aanvraag.event, spoed, werkdagen })
+    log('info', 'aanvraag opgeslagen', { id: row.id, soort: aanvraag.soort, event: aanvraag.event, spoed, werkdagen })
 
     // Meegestuurde bestanden aan deze aanvraag hangen. Voorwaardelijk, dus ids die al bij een andere
     // aanvraag horen of niet bestaan vallen vanzelf af. De namen gaan mee de taakbeschrijving in,
@@ -146,16 +148,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       try {
         // Aanvrager is een keuzelijst zodat het dashboard erop kan groeperen. De optie-gids staan
         // niet in de repo (die is publiek), dus zoeken we de optie hier op naam op en maken hem zo
-        // nodig aan. Alleen voor namen die echt in de lijst met collega's staan.
+        // nodig aan. Ook voor een naam die niet in de lijst met collega's staat: iedereen mag een
+        // aanvraag doen, en wie dat doet hoort in het dashboard mee te tellen.
         const aanvragerVeld = cfg.fields?.aanvrager
         let aanvragerOptieGid: string | null = null
         if (aanvragerVeld?.type === 'enum') {
           try {
-            if (await db.isCollega(aanvraag.naam)) {
-              aanvragerOptieGid = await deps.asana.enumOptie(aanvragerVeld.gid, aanvraag.naam)
-            } else {
-              extraWaarschuwingen.push(`aanvrager "${aanvraag.naam}" staat niet in de lijst met collega's; veld Aanvrager leeg gelaten`)
-            }
+            aanvragerOptieGid = await deps.asana.enumOptie(aanvragerVeld.gid, aanvraag.naam)
           } catch (e) {
             extraWaarschuwingen.push(`veld Aanvrager niet gezet: ${e instanceof Error ? e.message : String(e)}`)
           }
@@ -207,7 +206,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     // Huisstijl-extractie via de Routine (fase 4). Zonder website valt er niets op te halen; dat is
-    // geen mislukking maar een overslag, en de Routine hoeft er geen run aan te verspillen.
+    // geen mislukking maar een overslag, en de Routine hoeft er geen run aan te verspillen. Een
+    // interne aanvraag heeft nooit een website, dus komt hier altijd langs.
     let dispatched = false
     if (!aanvraag.website) {
       await db.update(row.id, { brand_status: 'overgeslagen', brand_error: null })

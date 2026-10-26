@@ -1,10 +1,12 @@
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { Env } from '../_shared/env.ts'
 import type { GevondenAanvraag } from '../_shared/shared/aanvulling-schema.ts'
-import { ZOEK_MIN_TEKENS } from '../_shared/shared/aanvulling-schema.ts'
+import { ZOEK_MIN_TEKENS, ZOEK_NAAM_MIN_TEKENS } from '../_shared/shared/aanvulling-schema.ts'
 
 /**
- * GET ?q=<eventnaam> → de recente aanvragen waarvan de eventnaam daarop lijkt.
+ * GET ?q=<eventnaam> → de recente aanvragen voor een evenement waarvan de eventnaam daarop lijkt.
+ * GET ?naam=<naam>   → de recente interne aanvragen van precies deze aanvrager. Een interne
+ *                      aanvraag heeft geen event, dus vind je hem terug op je eigen naam.
  *
  * Hiermee vindt een collega zijn eerdere aanvraag terug om er iets aan toe te voegen. De pagina
  * staat op het open internet, dus dit endpoint geeft zo min mogelijk prijs: minimaal drie letters,
@@ -14,6 +16,7 @@ import { ZOEK_MIN_TEKENS } from '../_shared/shared/aanvulling-schema.ts'
 export interface Deps {
   env: Env
   zoek(q: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  zoekIntern(naam: string, vandaag: Date): Promise<GevondenAanvraag[]>
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
@@ -42,9 +45,11 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
     if (req.method !== 'GET') return json({ error: 'Alleen GET' }, 405, cors)
 
-    const q = new URL(req.url).searchParams.get('q')?.trim() ?? ''
+    const params = new URL(req.url).searchParams
+    const q = params.get('q')?.trim() ?? ''
+    const naam = params.get('naam')?.trim() ?? ''
     // Te kort is geen fout: het formulier zoekt tijdens het typen, dus geef gewoon niets terug.
-    if (q.length < ZOEK_MIN_TEKENS) return json({ resultaten: [] }, 200, cors)
+    if (naam ? naam.length < ZOEK_NAAM_MIN_TEKENS : q.length < ZOEK_MIN_TEKENS) return json({ resultaten: [] }, 200, cors)
 
     const ip = clientIp(req)
     if (ip) {
@@ -56,7 +61,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       }
     }
 
-    const resultaten = await deps.zoek(q, now())
+    const resultaten = naam ? await deps.zoekIntern(naam, now()) : await deps.zoek(q, now())
     return json({ resultaten }, 200, cors)
   }
 }

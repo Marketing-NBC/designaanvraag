@@ -1,4 +1,4 @@
-import type { DesignMode, Locatie, RequestTypeKey } from '../../shared/request-types'
+import type { DesignMode, Locatie, RequestTypeKey, Soort } from '../../shared/request-types'
 import type { Bijlage } from './lib/uploads'
 import { leegMenu, type MenuKeuze } from './lib/menu'
 
@@ -7,6 +7,8 @@ export interface Draft {
   /** Voor welke locatie: bepaalt wat er bij "Wat wil je aanvragen?" te kiezen valt. */
   locatie: Locatie | null
   naam: string
+  /** Evenement of intern: bepaalt welke vragen er na de naam komen. */
+  soort: Soort | null
   event: string
   event_datum: string | null
   deadline: string | null
@@ -19,12 +21,14 @@ export interface Draft {
   design_modus: DesignMode | null
   /** De culinaire invulling; alleen gevraagd bij een menukaart of menuscherm. */
   menu: MenuKeuze
+  /** Bij een evenement de wensen en bijzonderheden; bij een interne aanvraag de hele vraag. */
   omschrijving: string
 }
 
 export const emptyDraft = (): Draft => ({
   locatie: null,
   naam: '',
+  soort: null,
   event: '',
   event_datum: null,
   deadline: null,

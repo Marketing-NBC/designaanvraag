@@ -1,11 +1,11 @@
 import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
-import { vraagtOmMenu } from '../../shared/request-types'
+import { vraagtOmMenu, type Soort } from '../../shared/request-types'
 import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import { aantalGerechten, eigenGerechten } from './lib/menu'
 import type { Draft } from './state'
 
-export type StepKind = 'locatie' | 'naam' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
+export type StepKind = 'locatie' | 'naam' | 'soort' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
 
 /**
  * Wat bepaalt welke stappen er zijn. Losse waarden en geen heel concept, zodat de
@@ -14,11 +14,19 @@ export type StepKind = 'locatie' | 'naam' | 'text' | 'date' | 'url' | 'multi' | 
 export interface StapContext {
   /** Er is een menukaart of menuscherm aangevraagd. */
   metMenu: boolean
+  /**
+   * Evenement of intern. Zolang er nog niet gekozen is tellen we de vragen van een evenement:
+   * dat is de lange route, en het startscherm belooft liever te veel dan te weinig.
+   */
+  soort: Soort | null
 }
 
 export function stapContext(d: Draft): StapContext {
-  return { metMenu: vraagtOmMenu(d.aanvraag_types) }
+  return { metMenu: vraagtOmMenu(d.aanvraag_types), soort: d.soort }
 }
+
+const isIntern = (ctx: StapContext) => ctx.soort === 'intern'
+const isEvenement = (ctx: StapContext) => ctx.soort !== 'intern'
 
 export interface StepDef {
   id: string
@@ -35,6 +43,16 @@ export interface StepDef {
   toon?: (ctx: StapContext) => boolean
 }
 
+/** Te weinig tijd voor Marketing: een zachte waarschuwing, geen blokkade. */
+function deadlineWaarschuwing(deadline: string | null): string | null {
+  if (!deadline) return null
+  const days = businessDaysUntil(deadline)
+  if (days < MIN_LEAD_BUSINESS_DAYS) {
+    return `Marketing heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; dit zijn er ${Math.max(0, days)}. Overleg even met het team als het sneller moet.`
+  }
+  return null
+}
+
 export const STEPS: StepDef[] = [
   {
     id: 'locatie',
@@ -47,12 +65,53 @@ export const STEPS: StepDef[] = [
     id: 'naam',
     kind: 'naam',
     title: 'Hoe heet je?',
-    help: 'Kies je naam uit de lijst, dan weet Marketing wie de aanvraag stuurde.',
-    validate: (d) => (d.naam ? null : 'Kies je naam uit de lijst.'),
+    help: 'Kies je naam uit de lijst. Sta je er niet tussen? Typ dan gewoon je naam.',
+    validate: (d) => {
+      const v = d.naam.trim()
+      if (v.length < 2) return 'Vul je naam in.'
+      if (v.length > 80) return 'Houd het bij maximaal 80 tekens.'
+      return null
+    },
   },
+  {
+    id: 'soort',
+    kind: 'soort',
+    title: 'Is het voor een evenement of intern?',
+    help: 'Voor een evenement vragen we naar het event. Voor iets intern alleen wat je nodig hebt en wanneer.',
+    validate: (d) => (d.soort ? null : 'Maak een keuze.'),
+  },
+  // ── Intern: twee vragen en dan het overzicht ──────────────────────────────
+  {
+    id: 'wens_intern',
+    kind: 'textarea',
+    toon: isIntern,
+    title: 'Wat wil je aanvragen?',
+    help: 'Beschrijf alles wat Marketing moet weten: wat het is, formaat, teksten, voor wie.',
+    validate: (d) => {
+      const v = d.omschrijving.trim()
+      if (v.length < 5) return 'Beschrijf wat je wilt aanvragen.'
+      if (v.length > 3000) return 'Houd het bij maximaal 3000 tekens.'
+      return null
+    },
+  },
+  {
+    id: 'deadline_intern',
+    kind: 'date',
+    toon: isIntern,
+    title: 'Wanneer heb je het nodig?',
+    help: 'De dag waarop het klaar moet zijn.',
+    validate: (d) => {
+      if (!d.deadline) return 'Kies de datum waarop je het nodig hebt.'
+      if (isBeforeToday(d.deadline)) return 'Die datum is al geweest.'
+      return null
+    },
+    warn: (d) => deadlineWaarschuwing(d.deadline),
+  },
+  // ── Evenement ────────────────────────────────────────────────────────────
   {
     id: 'event',
     kind: 'text',
+    toon: isEvenement,
     title: 'Voor welk event is het?',
     help: 'De naam zoals de opdrachtgever hem gebruikt.',
     validate: (d) => {
@@ -65,6 +124,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'event_datum',
     kind: 'date',
+    toon: isEvenement,
     title: 'Wanneer is het event?',
     help: 'Bij een meerdaags event: de eerste dag.',
     validate: (d) => {
@@ -85,6 +145,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'deadline',
     kind: 'date',
+    toon: isEvenement,
     title: 'Wanneer heb je het uiterlijk nodig?',
     help: 'De dag waarop het design klaar moet zijn.',
     validate: (d) => {
@@ -93,18 +154,12 @@ export const STEPS: StepDef[] = [
       if (d.event_datum && d.deadline > d.event_datum) return 'De deadline kan niet na het event liggen.'
       return null
     },
-    warn: (d) => {
-      if (!d.deadline) return null
-      const days = businessDaysUntil(d.deadline)
-      if (days < MIN_LEAD_BUSINESS_DAYS) {
-        return `Marketing heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; dit zijn er ${Math.max(0, days)}. Overleg even met het team als het sneller moet.`
-      }
-      return null
-    },
+    warn: (d) => deadlineWaarschuwing(d.deadline),
   },
   {
     id: 'website',
     kind: 'url',
+    toon: isEvenement,
     title: 'Wat is de website van het bedrijf of het event?',
     help: 'We halen hier automatisch het logo, de kleuren en de fonts vandaan. Is er geen website? Laat het veld dan leeg.',
     validate: (d) => (!d.website.trim() || normalizeUrl(d.website) ? null : 'Vul een geldige website in, bijvoorbeeld www.event.nl.'),
@@ -112,6 +167,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'schijf_locatie',
     kind: 'text',
+    toon: isEvenement,
     title: 'Waar op de schijf vind ik meer informatie of bestaande designs?',
     help: 'Plak de map op de G:\\-schijf of een link. Mag leeg blijven.',
     validate: (d) => (d.schijf_locatie.length > 500 ? 'Houd het bij maximaal 500 tekens.' : null),
@@ -119,6 +175,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'bijlagen',
     kind: 'files',
+    toon: isEvenement,
     title: 'Heb je bestanden voor me?',
     help: 'Een logo, voorbeelden, een briefing. Afbeeldingen, PDF, Word of PowerPoint. Mag leeg blijven.',
     // Uploaden gebeurt al tijdens het kiezen; doorgaan mag pas als dat af is, anders zou de aanvraag
@@ -138,6 +195,7 @@ export const STEPS: StepDef[] = [
   {
     id: 'aanvraag_types',
     kind: 'multi',
+    toon: isEvenement,
     title: 'Wat wil je aanvragen?',
     help: 'Kies alles wat van toepassing is.',
     validate: (d) => {
@@ -150,7 +208,7 @@ export const STEPS: StepDef[] = [
     id: 'menu',
     kind: 'menu',
     // Komt meteen na "Wat wil je aanvragen?", want het hoort bij die keuze.
-    toon: (ctx) => ctx.metMenu,
+    toon: (ctx) => isEvenement(ctx) && ctx.metMenu,
     title: 'Welk pakket is het?',
     help: 'Kies het pakket; je ziet daarna wat erin zit en kunt gerechten weghalen, '
       + 'wisselen of toevoegen.',
@@ -173,12 +231,14 @@ export const STEPS: StepDef[] = [
   {
     id: 'design_modus',
     kind: 'single',
+    toon: isEvenement,
     title: 'Volledig custom of standaard designs?',
     validate: (d) => (d.design_modus ? null : 'Maak een keuze.'),
   },
   {
     id: 'omschrijving',
     kind: 'textarea',
+    toon: isEvenement,
     title: 'Omschrijf je wensen of bijzonderheden',
     // De regelovergang is bedoeld: wat erin kan staan is iets anders dan de mededeling
     // dat het leeg mag. Een \n in een help-tekst komt als regelovergang op het scherm.
@@ -190,7 +250,8 @@ export const STEPS: StepDef[] = [
 /**
  * De stappen die deze aanvraag echt doorloopt. Een stap met `toon` valt weg als
  * die niet van toepassing is; wie geen menukaart of menuscherm aanvraagt, krijgt
- * de vraag over het menu dus niet te zien.
+ * de vraag over het menu dus niet te zien, en wie intern kiest slaat alle vragen
+ * over het event over.
  */
 export function zichtbareStappen(ctx: StapContext): StepDef[] {
   return STEPS.filter((s) => !s.toon || s.toon(ctx))
