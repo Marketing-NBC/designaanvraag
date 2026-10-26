@@ -27,7 +27,8 @@ bytes komen nooit door een edge function heen. Zie README → "Bestanden meestur
 
 En tot slot **heropenen**: komt er feedback op een taak die al op Klaar staat of afgevinkt is, dan
 gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsdatum, met een
-@-vermelding in de reactie. Zie README → "Feedback op werk dat al af is".
+@-vermelding in de reactie. Staat de taak in Mee bezig, dan gaat hij ook naar Feedback, maar
+blijven vinkje en planningsdatum staan. Zie README → "Feedback op werk dat al af is".
 
 ### Nog te doen
 

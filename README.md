@@ -182,7 +182,11 @@ function hem terug in beeld:
 - de **planningsdatum gaat eraf**, zodat er geen verlopen datum in "4. Werkplanning" blijft hangen;
 - de reactie begint met een **@-vermelding**, zodat het in je Asana-inbox landt.
 
-Zit je nog middenin het werk, dan gebeurt er niets met de plek op het bord — die taak zie je toch.
+Staat de taak in **Mee bezig**, dan gaat hij ook naar **Feedback**, met een @-vermelding in de
+reactie. Vinkje en planningsdatum blijven dan staan: het werk loopt nog en de planning klopt nog.
+
+In **Nieuwe aanvragen** en **In planning** blijft de taak waar hij staat; daar is nog niets om feedback
+op te geven, dus een aanvulling is daar gewoon extra informatie.
 
 De reactie vraagt meteen om een nieuwe planningsdatum. Dat moet, want de webhook vraagt daar maar
 **één keer per taak** om, en bij een afgeronde taak is dat allang gebeurd.
