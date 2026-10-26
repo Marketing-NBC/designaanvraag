@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isoDate, normalizeUrl } from './aanvraag-schema.ts'
 import { bijlageIdsSchema } from './bijlagen.ts'
-import { REQUEST_TYPE_KEYS, type RequestTypeKey } from './request-types.ts'
+import { REQUEST_TYPE_KEYS, type RequestTypeKey, type Soort } from './request-types.ts'
 
 /**
  * Aanvullingen op een aanvraag die al een Asana-taak heeft: extra wensen, aanvullende informatie of
@@ -14,6 +14,13 @@ export const ZOEK_MIN_TEKENS = 3
 export const ZOEK_MAX_RESULTATEN = 10
 /** Ouder dan dit is het event allang geweest; die aanvragen horen niet meer in de zoeklijst. */
 export const ZOEK_DAGEN = 120
+/**
+ * Een interne aanvraag heeft geen event om op te zoeken; die vind je terug op je eigen naam.
+ * Een naam als "Bo" moet kunnen, dus hier is de grens lager dan bij het event.
+ */
+export const ZOEK_NAAM_MIN_TEKENS = 2
+/** Zoveel van de omschrijving gaat mee in een treffer: genoeg om je eigen aanvraag te herkennen. */
+export const ZOEK_OMSCHRIJVING_TEKENS = 140
 
 /**
  * Eén treffer in de zoeklijst: genoeg om de juiste aanvraag te herkennen, niet meer. Bewust geen
@@ -22,14 +29,22 @@ export const ZOEK_DAGEN = 120
  */
 export interface GevondenAanvraag {
   id: string
+  soort: Soort
+  /** Leeg bij een interne aanvraag. */
   event: string
-  event_datum: string
+  /** Null bij een interne aanvraag. */
+  event_datum: string | null
   deadline: string
   naam: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
   /** Al ingevuld? Dan laat het formulier zien dat een nieuw pad er alleen bij wordt gemeld. */
   schijf_locatie: string
+  /**
+   * Het begin van de omschrijving, ingekort tot ZOEK_OMSCHRIJVING_TEKENS. Alleen gevuld bij een
+   * interne aanvraag: daar is het de enige manier om de ene van de andere te onderscheiden.
+   */
+  omschrijving: string
 }
 
 export const aanvullingSchema = z
@@ -41,7 +56,11 @@ export const aanvullingSchema = z
     /** Types die erbij komen. Wat er al staat blijft staan; aanvullen kan nooit iets weghalen. */
     extra_types: z.array(z.enum(REQUEST_TYPE_KEYS)).default([]),
     anders_tekst: z.string().trim().max(200, 'Maximaal 200 tekens').default(''),
-    /** Alleen invullen als de datum echt verschuift; null betekent "laat staan". */
+    /**
+     * Alleen invullen als de datum echt verschuift; null betekent "laat staan". Is de deadline van
+     * de aanvraag al voorbij, dan is een nieuwe verplicht; dat controleert de function, want die
+     * kent de oude.
+     */
     nieuwe_event_datum: isoDate.nullable().default(null),
     nieuwe_deadline: isoDate.nullable().default(null),
     schijf_locatie: z.string().trim().max(500, 'Maximaal 500 tekens').default(''),

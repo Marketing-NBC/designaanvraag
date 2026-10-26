@@ -16,12 +16,28 @@ export function formatDateShortNl(iso: string, metJaar = true): string {
 
 type TitleInput = Pick<Aanvraag,
   'aanvraag_types' | 'anders_tekst' | 'deadline' | 'event' | 'event_datum' | 'naam'>
+  & Partial<Pick<Aanvraag, 'soort' | 'omschrijving'>>
 
 export const MEERDERE_DESIGNS = 'Meerdere designs'
 
 /** Het label van één aanvraagtype; bij "anders" de vrije tekst. */
 export function typeLabel(key: Aanvraag['aanvraag_types'][number], andersTekst: string): string {
   return key === 'anders' ? andersTekst.trim() || 'Anders' : requestTypeLabel(key)
+}
+
+/** Zoveel tekens van de omschrijving komen in de taaknaam van een interne aanvraag. */
+export const INTERN_TITEL_TEKENS = 60
+
+/**
+ * Het begin van de omschrijving, als één regel: "Nieuwe visitekaartjes voor het salesteam, met…".
+ * Afgebroken op een woordgrens, zodat er geen half woord in de taaknaam staat.
+ */
+export function kortVan(tekst: string, max = INTERN_TITEL_TEKENS): string {
+  const regel = tekst.replace(/\s+/g, ' ').trim()
+  if (regel.length <= max) return regel
+  const knip = regel.slice(0, max)
+  const spatie = knip.lastIndexOf(' ')
+  return `${(spatie > max / 2 ? knip.slice(0, spatie) : knip).replace(/[\s,.;:-]+$/, '')}…`
 }
 
 /**
@@ -32,17 +48,30 @@ export function typeLabel(key: Aanvraag['aanvraag_types'][number], andersTekst: 
  * Torenscherm"); meer types → "Meerdere designs".
  *
  * Zonder jaartal: de titel is al lang en de echte datum staat in het veld Eventdatum.
+ *
+ * Een interne aanvraag: "Intern - <aanvrager> - Deadline: <deadline> - <begin van wat er
+ * gevraagd wordt>".
  */
 export function taskTitle(a: TitleInput): string {
-  const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
   const datum = (iso: string) => formatDateShortNl(iso, false)
+  // Een interne aanvraag heeft geen event en geen soort design; wat er gevraagd wordt staat
+  // alleen in de omschrijving. Vooraan "Intern", zodat hij in de lijst meteen opvalt.
+  if (a.soort === 'intern') {
+    return [
+      'Intern',
+      a.naam.trim(),
+      `Deadline: ${datum(a.deadline)}`,
+      kortVan(a.omschrijving ?? ''),
+    ].filter(Boolean).join(' - ').slice(0, 250)
+  }
+  const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
   return [
     a.event.trim(),
-    datum(a.event_datum),
+    a.event_datum ? datum(a.event_datum) : '',
     a.naam.trim(),
     `Deadline: ${datum(a.deadline)}`,
     wat,
-  ].join(' - ').slice(0, 250)
+  ].filter(Boolean).join(' - ').slice(0, 250)
 }
 
 /**
@@ -67,6 +96,7 @@ export function isMenuSubtaak(naam: string): boolean {
  * plek is er niets om het aan te hangen en kan de worker niet beginnen.
  */
 export function subtaskTitles(a: TitleInput): string[] {
+  if (a.soort === 'intern') return []
   const nodig = a.aanvraag_types.length > 1
     ? a.aanvraag_types
     : a.aanvraag_types.filter((k) => MENU_TYPES.includes(k))

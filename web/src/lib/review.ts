@@ -1,5 +1,5 @@
 import { aantalGerechten, pakketVan, wijzigingen, type MenuKeuze } from './menu'
-import { DESIGN_MODES, describeRequestTypes, locatieLabel, vraagtOmMenu } from '../../../shared/request-types'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel, vraagtOmMenu } from '../../../shared/request-types'
 import { formatLong } from './dates'
 import type { Draft } from '../state'
 
@@ -22,12 +22,25 @@ function menuSamenvatting(menu: MenuKeuze): string {
 }
 
 export function reviewRows(d: Draft): ReviewRow[] {
+  const begin: ReviewRow[] = [
+    { stepId: 'locatie', label: 'locatie', value: d.locatie ? locatieLabel(d.locatie) : '' },
+    { stepId: 'naam', label: 'naam', value: d.naam },
+    { stepId: 'soort', label: 'voor', value: d.soort ? soortLabel(d.soort) : '' },
+  ]
+  // Een interne aanvraag is niet meer dan wat er nodig is en wanneer.
+  if (d.soort === 'intern') {
+    return [
+      ...begin,
+      { stepId: 'wens_intern', label: 'wat je aanvraagt', value: d.omschrijving },
+      { stepId: 'deadline_intern', label: 'nodig op', value: d.deadline ? formatLong(d.deadline) : '' },
+    ]
+  }
+
   const modus = DESIGN_MODES.find((m) => m.key === d.design_modus)?.label ?? ''
   const gereed = d.bijlagen.filter((b) => b.status === 'klaar')
   const bijlagenRegel = gereed.length ? gereed.map((b) => b.bestandsnaam).join(', ') : 'Niets meegestuurd'
   const rijen: ReviewRow[] = [
-    { stepId: 'locatie', label: 'locatie', value: d.locatie ? locatieLabel(d.locatie) : '' },
-    { stepId: 'naam', label: 'naam', value: d.naam },
+    ...begin,
     { stepId: 'event', label: 'event', value: d.event },
     { stepId: 'event_datum', label: 'eventdatum', value: d.event_datum ? formatLong(d.event_datum) : '' },
     { stepId: 'deadline', label: 'uiterlijk nodig op', value: d.deadline ? formatLong(d.deadline) : '' },

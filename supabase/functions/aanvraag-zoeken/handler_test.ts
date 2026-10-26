@@ -22,6 +22,7 @@ const env: Env = {
 
 const treffer: GevondenAanvraag = {
   id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+  soort: 'evenement',
   event: 'Zorgcongres 2026',
   event_datum: '2026-12-01',
   deadline: '2026-11-20',
@@ -29,6 +30,17 @@ const treffer: GevondenAanvraag = {
   aanvraag_types: ['led_kolom'],
   anders_tekst: '',
   schijf_locatie: '',
+  omschrijving: '',
+}
+
+const interneTreffer: GevondenAanvraag = {
+  ...treffer,
+  id: '9b2504e0-4f89-41d3-9a0c-0305e82c3302',
+  soort: 'intern',
+  event: '',
+  event_datum: null,
+  aanvraag_types: [],
+  omschrijving: 'Nieuwe visitekaartjes voor het salesteam',
 }
 
 function deps(over: Partial<Deps> = {}): Deps {
@@ -36,6 +48,7 @@ function deps(over: Partial<Deps> = {}): Deps {
   return {
     env,
     zoek: () => Promise.resolve([treffer]),
+    zoekIntern: () => Promise.resolve([interneTreffer]),
     async bumpRateLimit(key) {
       const n = (counters.get(key) ?? 0) + 1
       counters.set(key, n)
@@ -74,6 +87,29 @@ Deno.test('de zoekterm gaat ongeschonden door naar de database', async () => {
   const gezien: string[] = []
   await createHandler(deps({ zoek: (q) => (gezien.push(q), Promise.resolve([])) }))(get('  Zorgcongres 2026  '))
   assertEquals(gezien, ['Zorgcongres 2026'])
+})
+
+Deno.test('op naam zoekt alleen in de interne aanvragen', async () => {
+  const gezien: string[] = []
+  let opEvent = 0
+  const handler = createHandler(deps({
+    zoek: () => (opEvent++, Promise.resolve([treffer])),
+    zoekIntern: (naam) => (gezien.push(naam), Promise.resolve([interneTreffer])),
+  }))
+  const res = await handler(new Request('https://fn/aanvraag-zoeken?naam=%20Wendy%20Tester%20', {
+    headers: { Origin: 'https://marketing-nbc.github.io', 'x-forwarded-for': '10.0.0.1' },
+  }))
+  assertEquals((await res.json()).resultaten, [interneTreffer])
+  assertEquals(gezien, ['Wendy Tester'])
+  assertEquals(opEvent, 0)
+})
+
+Deno.test('een naam van één letter levert niets op', async () => {
+  let geraadpleegd = 0
+  const handler = createHandler(deps({ zoekIntern: () => (geraadpleegd++, Promise.resolve([interneTreffer])) }))
+  const res = await handler(new Request('https://fn/aanvraag-zoeken?naam=W'))
+  assertEquals((await res.json()).resultaten, [])
+  assertEquals(geraadpleegd, 0)
 })
 
 Deno.test('te veel zoekopdrachten geeft 429', async () => {

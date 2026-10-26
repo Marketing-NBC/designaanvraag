@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
 import type { Aanvulling, GevondenAanvraag } from './shared/aanvulling-schema.ts'
-import { ZOEK_DAGEN, ZOEK_MAX_RESULTATEN } from './shared/aanvulling-schema.ts'
-import type { RequestTypeKey } from './shared/request-types.ts'
+import { ZOEK_DAGEN, ZOEK_MAX_RESULTATEN, ZOEK_OMSCHRIJVING_TEKENS } from './shared/aanvulling-schema.ts'
+import type { RequestTypeKey, Soort } from './shared/request-types.ts'
 
 export interface AanvraagRow {
   id: string
@@ -34,8 +34,11 @@ export interface AanvraagRow {
  * ooit is ingevuld, zodat de function kan zien wat er werkelijk verandert.
  */
 export interface AanvraagDetail extends AanvraagRow {
+  soort: Soort
+  /** Leeg bij een interne aanvraag. */
   event: string
-  event_datum: string
+  /** Null bij een interne aanvraag. */
+  event_datum: string | null
   deadline: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
@@ -97,12 +100,15 @@ export interface Db {
   findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
-  /** Staat deze naam in de lijst met collega's? Voorkomt dat willekeurige invoer opties aanmaakt. */
-  isCollega(naam: string): Promise<boolean>
   /** De volledige aanvraag, voor het bijwerken vanuit een aanvulling. */
   findById(id: string): Promise<AanvraagDetail | null>
-  /** Recente aanvragen waarvan de eventnaam op `q` lijkt, nieuwste eerst. */
+  /** Recente aanvragen voor een evenement waarvan de eventnaam op `q` lijkt, nieuwste eerst. */
   zoekOpEvent(q: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  /**
+   * Recente interne aanvragen van deze aanvrager, nieuwste eerst. De naam moet precies kloppen
+   * (hoofdletters daargelaten): dit is "mijn aanvragen", niet zoeken in die van anderen.
+   */
+  zoekInternOpNaam(naam: string, vandaag: Date): Promise<GevondenAanvraag[]>
   /**
    * Markeert de aanvraag bij deze Asana-taak als vervallen. Geeft terug of er een rij geraakt is,
    * zodat de webhook een taak van buiten dit project kan herkennen.
@@ -124,14 +130,29 @@ export interface Db {
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
-const ZOEK_COLUMNS = 'id, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie'
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie`
+const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
   return q.replace(/[%_,()\\*]/g, ' ').trim()
+}
+
+/**
+ * Een rij uit de database als treffer. De omschrijving gaat alleen mee bij een interne aanvraag,
+ * en dan ingekort: bij een evenement herken je de aanvraag aan het event, en de volledige tekst
+ * hoort niet op een open endpoint.
+ */
+function alsTreffer(r: GevondenAanvraag): GevondenAanvraag {
+  const omschrijving = r.soort === 'intern' ? (r.omschrijving ?? '').replace(/\s+/g, ' ').trim() : ''
+  return {
+    ...r,
+    soort: r.soort ?? 'evenement',
+    aanvraag_types: r.aanvraag_types ?? [],
+    omschrijving: omschrijving.length > ZOEK_OMSCHRIJVING_TEKENS ? `${omschrijving.slice(0, ZOEK_OMSCHRIJVING_TEKENS).trimEnd()}…` : omschrijving,
+  }
 }
 
 export function createDb(url: string, secretKey: string): Db {
@@ -162,11 +183,6 @@ export function createDb(url: string, secretKey: string): Db {
       if (error) throw new Error(`db rate limit: ${error.message}`)
       return Number(data)
     },
-    async isCollega(naam) {
-      const { data, error } = await sb.from('collegas').select('naam').ilike('naam', naam.trim()).eq('actief', true).limit(1)
-      if (error) throw new Error(`db collegas: ${error.message}`)
-      return ((data as unknown[] | null) ?? []).length > 0
-    },
     async findById(id) {
       const { data, error } = await sb.from('aanvragen').select(DETAIL_COLUMNS).eq('id', id).maybeSingle()
       if (error) throw new Error(`db select: ${error.message}`)
@@ -179,6 +195,7 @@ export function createDb(url: string, secretKey: string): Db {
       const { data, error } = await sb
         .from('aanvragen')
         .select(ZOEK_COLUMNS)
+        .eq('soort', 'evenement')
         .ilike('event', `%${term}%`)
         .gte('created_at', grens)
         // Zonder taak valt er niets aan te vullen; die aanvraag hoort niet in de lijst.
@@ -188,7 +205,25 @@ export function createDb(url: string, secretKey: string): Db {
         .order('created_at', { ascending: false })
         .limit(ZOEK_MAX_RESULTATEN)
       if (error) throw new Error(`db zoeken: ${error.message}`)
-      return ((data as GevondenAanvraag[] | null) ?? []).map((r) => ({ ...r, aanvraag_types: r.aanvraag_types ?? [] }))
+      return ((data as GevondenAanvraag[] | null) ?? []).map(alsTreffer)
+    },
+    async zoekInternOpNaam(naam, vandaag) {
+      const term = veiligeZoekterm(naam)
+      if (!term) return []
+      const grens = new Date(vandaag.getTime() - ZOEK_DAGEN * 86_400_000).toISOString()
+      const { data, error } = await sb
+        .from('aanvragen')
+        .select(ZOEK_COLUMNS)
+        .eq('soort', 'intern')
+        // ilike zonder jokertekens: dezelfde naam, alleen de hoofdletters mogen verschillen.
+        .ilike('naam', term)
+        .gte('created_at', grens)
+        .not('asana_task_gid', 'is', null)
+        .is('vervallen_op', null)
+        .order('created_at', { ascending: false })
+        .limit(ZOEK_MAX_RESULTATEN)
+      if (error) throw new Error(`db zoeken: ${error.message}`)
+      return ((data as GevondenAanvraag[] | null) ?? []).map(alsTreffer)
     },
     async markeerVervallen(asanaTaskGid, moment) {
       const { data, error } = await sb

@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { AanvullingResult, GevondenAanvraag } from '../../shared/aanvulling-schema'
 import { ZOEK_MIN_TEKENS } from '../../shared/aanvulling-schema'
-import { REQUEST_TYPES, type RequestTypeKey, describeRequestTypes } from '../../shared/request-types'
-import { ChoiceList } from './components/ChoiceList'
+import { SOORT_KEUZES, describeRequestTypes, type Soort } from '../../shared/request-types'
+import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { FileField } from './components/FileField'
 import { DateField } from './components/DateField'
 import { Icon } from './components/Icon'
@@ -11,21 +11,28 @@ import { NameCombobox } from './components/NameCombobox'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
-import { ApiError, verstuurAanvulling, zoekAanvragen } from './lib/api'
+import { ApiError, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
 import { useBijlagen, type Uploads } from './lib/uploads'
-import { formatShort } from './lib/dates'
+import { formatShort, isBeforeToday, todayIso } from './lib/dates'
 
 /**
  * Tweede, korte flow: iets nasturen op een aanvraag die al loopt.
  *
  * Bewust géén gebruik van de STEPS-machinerie van het hoofdformulier. Die koppelt elke stap aan een
- * vaste sleutel in `Draft`, en dat zou hier verbogen moeten worden voor vier vragen waarvan de
- * eerste (zoeken) een heel eigen scherm heeft. De losse bouwstenen — Shell, Question, ChoiceList —
+ * vaste sleutel in `Draft`, en dat zou hier verbogen moeten worden voor een handvol vragen waarvan
+ * het zoeken een heel eigen scherm heeft. De losse bouwstenen — Shell, Question, ChoiceList —
  * worden wel gedeeld, dus het oogt en werkt hetzelfde.
+ *
+ * De eerste vraag is of het om een evenement gaat of om iets intern. Een evenement zoek je op
+ * eventnaam; een interne aanvraag heeft geen event, die vind je terug op je eigen naam.
  */
 
-const STAPPEN = ['zoek', 'naam', 'toelichting', 'extra'] as const
-type Stap = (typeof STAPPEN)[number]
+type Stap = 'soort' | 'zoek' | 'naam' | 'kies' | 'toelichting' | 'extra'
+
+const STAPPEN: Record<Soort, readonly Stap[]> = {
+  evenement: ['soort', 'zoek', 'naam', 'toelichting', 'extra'],
+  intern: ['soort', 'naam', 'kies', 'toelichting', 'extra'],
+}
 
 interface Props {
   collegas: string[]
@@ -35,8 +42,6 @@ interface Props {
 interface Draft {
   naam: string
   toelichting: string
-  extra_types: RequestTypeKey[]
-  anders_tekst: string
   nieuwe_event_datum: string | null
   nieuwe_deadline: string | null
   schijf_locatie: string
@@ -46,17 +51,21 @@ interface Draft {
 const leeg: Draft = {
   naam: '',
   toelichting: '',
-  extra_types: [],
-  anders_tekst: '',
   nieuwe_event_datum: null,
   nieuwe_deadline: null,
   schijf_locatie: '',
   link: '',
 }
 
+/** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. */
+function deadlineVerlopen(a: Pick<GevondenAanvraag, 'deadline'> | null): boolean {
+  return Boolean(a && isBeforeToday(a.deadline))
+}
+
 export function Aanvulling({ collegas, onSluit }: Props) {
   const [index, setIndex] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
+  const [soort, setSoort] = useState<Soort | null>(null)
   const [gekozen, setGekozen] = useState<GevondenAanvraag | null>(null)
   const [draft, setDraft] = useState<Draft>(leeg)
   const [error, setError] = useState<string | null>(null)
@@ -67,8 +76,28 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   const clientRequestId = useRef(crypto.randomUUID())
   const startedAt = useRef(new Date().toISOString())
 
-  const stap: Stap = STAPPEN[index]
+  // Zolang er nog niet gekozen is, telt de route van een evenement: die is even lang.
+  const stappen = STAPPEN[soort ?? 'evenement']
+  const stap: Stap = stappen[index]
+  const verlopen = deadlineVerlopen(gekozen)
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }))
+
+  /**
+   * Een andere aanvraag gekozen: de datums die je voor de vorige had aangepast horen daar niet bij.
+   * Wie een aanvraag met een verlopen deadline kiest, staat straks voor een verplichte nieuwe.
+   */
+  const kies = (a: GevondenAanvraag | null) => {
+    setGekozen(a)
+    setDraft((d) => ({ ...d, nieuwe_event_datum: null, nieuwe_deadline: null }))
+    setError(null)
+  }
+
+  const kiesSoort = (key: string) => {
+    if (key === soort) return
+    setSoort(key as Soort)
+    // Een gevonden aanvraag van de andere soort hoort niet mee naar de volgende vraag.
+    kies(null)
+  }
 
   const ga = (naar: number, richting: 1 | -1) => {
     ;(document.activeElement as HTMLElement | null)?.blur()
@@ -84,27 +113,34 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   }
 
   function valideer(): string | null {
-    if (stap === 'zoek') return gekozen ? null : 'Kies de aanvraag waar het over gaat.'
-    if (stap === 'naam') return draft.naam ? null : 'Kies je naam uit de lijst.'
+    if (stap === 'soort') return soort ? null : 'Maak een keuze.'
+    if (stap === 'zoek' || stap === 'kies') return gekozen ? null : 'Kies de aanvraag waar het over gaat.'
+    if (stap === 'naam') {
+      const n = draft.naam.trim()
+      if (n.length < 2) return 'Vul je naam in.'
+      if (n.length > 80) return 'Houd het bij maximaal 80 tekens.'
+      return null
+    }
     if (stap === 'toelichting') {
       const t = draft.toelichting.trim()
       if (t.length < 5) return 'Vertel kort wat er moet veranderen.'
       if (t.length > 3000) return 'Houd het bij maximaal 3000 tekens.'
       return null
     }
-    // Laatste stap: alles is optioneel, behalve dat wat je invult moet kloppen.
+    // Laatste stap: alles is optioneel, behalve een nieuwe deadline als de oude al voorbij is.
     if (uploads.bezig) return 'Je bestanden worden nog geüpload — nog heel even.'
-    if (draft.extra_types.includes('anders') && !draft.anders_tekst.trim()) return 'Vul in wat je bij "Anders" bedoelt.'
+    if (verlopen && !draft.nieuwe_deadline) return 'De deadline van deze aanvraag is al verstreken. Kies een nieuwe deadline.'
     const event = draft.nieuwe_event_datum ?? gekozen?.event_datum ?? ''
     const deadline = draft.nieuwe_deadline ?? gekozen?.deadline ?? ''
-    if (event && deadline && deadline > event) return 'De deadline kan niet na het event liggen.'
+    // Is het event al geweest, dan ligt een nieuwe deadline er per definitie na; dat mag dan.
+    if (event && event >= todayIso() && deadline && deadline > event) return 'De deadline kan niet na het event liggen.'
     return null
   }
 
   const volgende = () => {
     const f = valideer()
     if (f) return fout(f)
-    if (index < STAPPEN.length - 1) ga(index + 1, 1)
+    if (index < stappen.length - 1) ga(index + 1, 1)
     else void verstuur()
   }
 
@@ -120,9 +156,10 @@ export function Aanvulling({ collegas, onSluit }: Props) {
           aanvraag_id: gekozen.id,
           naam: draft.naam,
           toelichting: draft.toelichting,
-          extra_types: draft.extra_types,
-          anders_tekst: draft.anders_tekst,
-          nieuwe_event_datum: draft.nieuwe_event_datum,
+          // Wat er bij moet komen staat in de toelichting; een losse keuzelijst daarvoor dubbelde dat.
+          extra_types: [],
+          anders_tekst: '',
+          nieuwe_event_datum: gekozen.soort === 'intern' ? null : draft.nieuwe_event_datum,
           nieuwe_deadline: draft.nieuwe_deadline,
           schijf_locatie: draft.schijf_locatie,
           link: draft.link,
@@ -144,18 +181,23 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   useEffect(() => {
     if (klaar) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey) return
       const el = document.activeElement as HTMLElement | null
+      // De keuze evenement/intern toont letters, dus moeten die toetsen ook werken.
+      if (stap === 'soort' && !e.altKey && !e.metaKey && !e.ctrlKey && el?.tagName !== 'INPUT') {
+        const opt = SOORT_KEUZES[LETTERS.indexOf(e.key.toUpperCase())]
+        if (e.key.length === 1 && opt) {
+          e.preventDefault()
+          kiesSoort(opt.key)
+          return
+        }
+      }
+      if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey) return
+      // Headless UI heeft met deze Enter al een naam uit de lijst gekozen.
+      if (e.defaultPrevented) return
       if (el?.tagName === 'TEXTAREA') return
       // De namenlijst en de zoeklijst doen zelf iets met Enter.
-      if (el?.getAttribute('role') === 'combobox' || el?.dataset.vondst) return
-      // "Anders, namelijk…": Enter bevestigt de tekst en legt de focus op de knop. Zonder dit zou
-      // Enter tijdens het typen de hele aanvulling versturen.
-      if (el?.hasAttribute('data-other-input')) {
-        e.preventDefault()
-        window.setTimeout(() => document.querySelector<HTMLButtonElement>('[data-primary-action]')?.focus({ preventScroll: true }), 30)
-        return
-      }
+      if (el?.getAttribute('role') === 'combobox' && el.getAttribute('aria-activedescendant')) return
+      if (el?.dataset.vondst) return
       e.preventDefault()
       volgende()
     }
@@ -166,22 +208,30 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   if (klaar) return <Gelukt result={klaar} gekozen={gekozen} onSluit={onSluit} />
 
   const titels: Record<Stap, string> = {
+    soort: 'Is het voor een evenement of intern?',
     zoek: 'Bij welk event hoort het?',
     naam: 'Wie ben je?',
+    kies: 'Over welke aanvraag gaat het?',
     toelichting: 'Wat moet erbij of anders?',
-    extra: 'Verandert er nog iets aan de aanvraag?',
+    extra: verlopen ? 'De deadline is verstreken' : 'Verandert er nog iets aan de aanvraag?',
   }
   const hulp: Record<Stap, string | undefined> = {
+    soort: 'Dan zoeken we de goede aanvraag erbij.',
     zoek: 'Typ een deel van de eventnaam. Je ziet de aanvragen van de afgelopen maanden.',
-    naam: 'Dan weet Marketing wie deze aanvulling stuurde.',
-    toelichting: 'Extra wensen, aanvullende informatie of feedback op het concept. Het marketingteam krijgt er meteen bericht van.',
-    extra: 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
+    naam: soort === 'intern'
+      ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
+      : 'Dan weet Marketing wie deze aanvulling stuurde.',
+    kies: 'Je interne aanvragen van de afgelopen maanden.',
+    toelichting: 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Het marketingteam krijgt er meteen bericht van.',
+    extra: verlopen
+      ? 'Kies eerst een nieuwe deadline. De rest mag je overslaan.'
+      : 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
   }
 
   return (
     <Shell
-      progress={(index + 1) / (STAPPEN.length + 1)}
-      counter={`${index + 1} / ${STAPPEN.length}`}
+      progress={(index + 1) / (stappen.length + 1)}
+      counter={`${index + 1} / ${stappen.length}`}
       canPrev
       onPrev={vorige}
       canNext
@@ -205,18 +255,33 @@ export function Aanvulling({ collegas, onSluit }: Props) {
             titleId={`a-vraag-${stap}`}
             footer={
               <PrimaryAction
-                label={index === STAPPEN.length - 1 ? 'Versturen' : 'Volgende'}
+                label={index === stappen.length - 1 ? 'Versturen' : 'Volgende'}
                 onClick={volgende}
                 busy={busy}
                 hint={stap === 'toelichting' ? null : 'Enter'}
               />
             }
           >
-            {stap === 'zoek' ? <Zoeker gekozen={gekozen} onKies={setGekozen} invalid={Boolean(error)} /> : null}
+            {stap === 'soort' ? <ChoiceList options={SOORT_KEUZES} value={soort} onToggle={kiesSoort} /> : null}
+
+            {stap === 'zoek' ? <Zoeker gekozen={gekozen} onKies={kies} invalid={Boolean(error)} /> : null}
 
             {stap === 'naam' ? (
-              <NameCombobox id="a-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} />
+              <NameCombobox
+                id="a-naam"
+                value={draft.naam}
+                onChange={(v) => {
+                  patch({ naam: v })
+                  // Bij een interne aanvraag hangt de lijst hierna van je naam af.
+                  if (soort === 'intern' && gekozen) kies(null)
+                }}
+                names={collegas}
+                invalid={Boolean(error)}
+                onEnter={volgende}
+              />
             ) : null}
+
+            {stap === 'kies' ? <EigenAanvragen naam={draft.naam} gekozen={gekozen} onKies={kies} /> : null}
 
             {stap === 'toelichting' ? (
               <TextArea
@@ -229,11 +294,35 @@ export function Aanvulling({ collegas, onSluit }: Props) {
               />
             ) : null}
 
-            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} uploads={uploads} invalidAnders={Boolean(error)} /> : null}
+            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} uploads={uploads} verlopen={verlopen} /> : null}
           </Question>
         </motion.div>
       </AnimatePresence>
     </Shell>
+  )
+}
+
+/**
+ * Eén treffer, als knop. Hetzelfde voor een evenement en een interne aanvraag; alleen wat erin
+ * staat verschilt. Een verlopen deadline staat er meteen bij, zodat het niet pas op het laatste
+ * scherm als verrassing komt.
+ */
+function VondstKnop({ a, actief, onKies }: { a: GevondenAanvraag; actief: boolean; onKies: (a: GevondenAanvraag) => void }) {
+  const intern = a.soort === 'intern'
+  const meta = intern
+    ? [`nodig op ${formatShort(a.deadline)}`]
+    : [a.event_datum ? formatShort(a.event_datum) : null, `aangevraagd door ${a.naam}`, describeRequestTypes(a.aanvraag_types, a.anders_tekst)]
+  return (
+    <button type="button" className="opt vondst" data-vondst="true" aria-pressed={actief} onClick={() => onKies(a)}>
+      <span className="opt__label">
+        <span className="vondst__event">{intern ? a.omschrijving || 'Interne aanvraag' : a.event}</span>
+        <span className="vondst__meta">
+          {meta.filter(Boolean).join(' · ')}
+          {deadlineVerlopen(a) ? <span className="vondst__verlopen"> · deadline verstreken</span> : null}
+        </span>
+      </span>
+      <Icon name="check" className="opt__check" />
+    </button>
   )
 }
 
@@ -285,98 +374,98 @@ function Zoeker({ gekozen, onKies, invalid }: { gekozen: GevondenAanvraag | null
       ) : null}
 
       <div className="vondsten">
-        {resultaten.map((r) => {
-          const actief = gekozen?.id === r.id
-          return (
-            <button
-              key={r.id}
-              type="button"
-              className="opt vondst"
-              data-vondst="true"
-              aria-pressed={actief}
-              onClick={() => onKies(r)}
-            >
-              <span className="opt__label">
-                <span className="vondst__event">{r.event}</span>
-                <span className="vondst__meta">
-                  {formatShort(r.event_datum)} · aangevraagd door {r.naam} · {describeRequestTypes(r.aanvraag_types, r.anders_tekst)}
-                </span>
-              </span>
-              <Icon name="check" className="opt__check" />
-            </button>
-          )
-        })}
+        {resultaten.map((r) => (
+          <VondstKnop key={r.id} a={r} actief={gekozen?.id === r.id} onKies={onKies} />
+        ))}
       </div>
     </div>
   )
 }
 
-/** De optionele wijzigingen. Leeg laten betekent: laat staan wat er staat. */
+/** De interne aanvragen van deze collega, om de juiste uit te kiezen. */
+function EigenAanvragen({ naam, gekozen, onKies }: { naam: string; gekozen: GevondenAanvraag | null; onKies: (a: GevondenAanvraag) => void }) {
+  // Net als bij het zoeken: de uitkomst weet bij welke naam hij hoort.
+  const [uitkomst, setUitkomst] = useState<{ naam: string; rijen: GevondenAanvraag[] } | null>(null)
+  const term = naam.trim()
+  const geladen = uitkomst?.naam === term
+  const rijen = geladen ? (uitkomst?.rijen ?? []) : []
+
+  useEffect(() => {
+    let afgebroken = false
+    void zoekInterneAanvragen(term).then((r) => {
+      if (!afgebroken) setUitkomst({ naam: term, rijen: r })
+    })
+    return () => {
+      afgebroken = true
+    }
+  }, [term])
+
+  if (!geladen) return <p className="hint">Je aanvragen worden opgezocht…</p>
+  if (!rijen.length) {
+    return (
+      <p className="hint">
+        We vinden geen interne aanvragen op naam van {term} uit de afgelopen maanden. Staat je naam precies zoals je hem bij de aanvraag
+        invulde? Ga dan een stap terug om hem aan te passen.
+      </p>
+    )
+  }
+  return (
+    <div className="vondsten">
+      {rijen.map((r) => (
+        <VondstKnop key={r.id} a={r} actief={gekozen?.id === r.id} onKies={onKies} />
+      ))}
+    </div>
+  )
+}
+
+/** De wijzigingen. Leeg laten betekent: laat staan wat er staat - behalve een verlopen deadline. */
 function ExtraVelden({
   draft,
   patch,
   gekozen,
   uploads,
-  invalidAnders,
+  verlopen,
 }: {
   draft: Draft
   patch: (p: Partial<Draft>) => void
   gekozen: GevondenAanvraag | null
   uploads: Uploads
-  invalidAnders: boolean
+  verlopen: boolean
 }) {
-  const alAangevraagd = useMemo(() => new Set(gekozen?.aanvraag_types ?? []), [gekozen])
-  // Wat al is aangevraagd hoeft niet nog een keer gekozen te worden.
-  const opties = REQUEST_TYPES.filter((t) => !alAangevraagd.has(t.key)).map((t) => ({ key: t.key, label: t.label }))
-
-  const toggle = (key: string) => {
-    const k = key as RequestTypeKey
-    patch({ extra_types: draft.extra_types.includes(k) ? draft.extra_types.filter((x) => x !== k) : [...draft.extra_types, k] })
-    // Net als in het hoofdformulier: kies je "Anders", dan sta je meteen in het tekstveld.
-    if (k === 'anders' && !draft.extra_types.includes(k)) {
-      window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-other-input]')?.focus({ preventScroll: true }), 30)
-    }
-  }
-
+  const intern = gekozen?.soort === 'intern'
   return (
     <div className="extra">
-      {opties.length ? (
-        <section className="extra__blok">
-          <h2 className="extra__kop">Komt er iets bij?</h2>
-          <p className="extra__uitleg">
-            Al aangevraagd: {describeRequestTypes(gekozen?.aanvraag_types ?? [], gekozen?.anders_tekst ?? '')}. Wat je hier kiest komt erbij;
-            er verdwijnt niets.
-          </p>
-          <ChoiceList
-            multi
-            options={opties}
-            value={draft.extra_types}
-            onToggle={toggle}
-            otherKey="anders"
-            otherValue={draft.anders_tekst}
-            onOtherChange={(v) => patch({ anders_tekst: v })}
-            otherInvalid={invalidAnders && draft.extra_types.includes('anders') && !draft.anders_tekst.trim()}
-          />
-        </section>
+      {verlopen && gekozen ? (
+        <p className="msg msg--verlopen" role="alert">
+          <Icon name="alert" />
+          <span>
+            De deadline van deze aanvraag was <strong>{formatShort(gekozen.deadline)}</strong> en is al voorbij. Kies een nieuwe deadline,
+            anders weet Marketing niet wanneer je het nodig hebt.
+          </span>
+        </p>
       ) : null}
 
       <section className="extra__blok">
-        <h2 className="extra__kop">Is een datum verschoven?</h2>
-        <p className="extra__uitleg">Meestal niet, dus de kalender blijft dicht tot je hem nodig hebt.</p>
+        <h2 className="extra__kop">{verlopen ? 'Wanneer heb je het nu nodig?' : 'Is een datum verschoven?'}</h2>
+        {verlopen ? null : <p className="extra__uitleg">Meestal niet, dus de kalender blijft dicht tot je hem nodig hebt.</p>}
         <div className="extra__datums">
-          <DatumRegel
-            label="Eventdatum"
-            huidig={gekozen?.event_datum ?? null}
-            waarde={draft.nieuwe_event_datum}
-            onKies={(iso) => patch({ nieuwe_event_datum: iso })}
-            onWis={() => patch({ nieuwe_event_datum: null })}
-          />
+          {/* Een interne aanvraag heeft geen event, dus ook geen eventdatum. */}
+          {intern ? null : (
+            <DatumRegel
+              label="Eventdatum"
+              huidig={gekozen?.event_datum ?? null}
+              waarde={draft.nieuwe_event_datum}
+              onKies={(iso) => patch({ nieuwe_event_datum: iso })}
+              onWis={() => patch({ nieuwe_event_datum: null })}
+            />
+          )}
           <DatumRegel
             label="Deadline"
             huidig={gekozen?.deadline ?? null}
             waarde={draft.nieuwe_deadline}
             onKies={(iso) => patch({ nieuwe_deadline: iso })}
             onWis={() => patch({ nieuwe_deadline: null })}
+            verplicht={verlopen}
           />
         </div>
       </section>
@@ -423,6 +512,9 @@ function ExtraVelden({
 /**
  * Eén datum: laat zien wat er nu staat, en pas als je op "wijzigen" klikt komt de kalender open.
  * Anders staan er twee volle kalenders op een scherm waar niemand ze meestal nodig heeft.
+ *
+ * Is de datum verplicht te vervangen (een verlopen deadline), dan staat de kalender meteen open en
+ * is er geen weg terug naar de oude datum.
  */
 function DatumRegel({
   label,
@@ -430,16 +522,18 @@ function DatumRegel({
   waarde,
   onKies,
   onWis,
+  verplicht = false,
 }: {
   label: string
   huidig: string | null
   waarde: string | null
   onKies: (iso: string) => void
   onWis: () => void
+  verplicht?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
-  if (!open && !waarde) {
+  if (!verplicht && !open && !waarde) {
     return (
       <div className="datumregel">
         <span className="extra__label">{label}</span>
@@ -457,16 +551,18 @@ function DatumRegel({
     <div className="datumregel">
       <span className="extra__label">Nieuwe {label.toLowerCase()}</span>
       <DateField value={waarde} onChange={onKies} />
-      <button
-        type="button"
-        className="link"
-        onClick={() => {
-          onWis()
-          setOpen(false)
-        }}
-      >
-        toch laten staan op {huidig ? formatShort(huidig) : 'de oude datum'}
-      </button>
+      {verplicht ? null : (
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            onWis()
+            setOpen(false)
+          }}
+        >
+          toch laten staan op {huidig ? formatShort(huidig) : 'de oude datum'}
+        </button>
+      )}
     </div>
   )
 }

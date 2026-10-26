@@ -10,6 +10,7 @@ import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
+import { vandaagInNl } from '../_shared/shared/spoed.ts'
 
 /**
  * POST → een aanvulling op een aanvraag die al een Asana-taak heeft.
@@ -19,6 +20,8 @@ import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
  * verdwijnt:
  *  - Type aanvraag wordt alleen aangevuld, nooit uitgekleed; wat in Asana staat is daarbij leidend.
  *  - Eventdatum en deadline gaan alleen mee als ze echt anders zijn.
+ *  - Is de deadline al voorbij, dan moet er een nieuwe bij; anders plant Marketing op een datum
+ *    die niets meer betekent.
  *  - Schijf wordt alleen gevuld als het veld nog leeg is; anders staat het pad in de reactie.
  *  - Spoed blijft zoals bij de aanvraag: dat cijfer meet het aanvraaggedrag van toen.
  *  - De vervaldatum van de taak blijft onaangeroerd; dat is de planning van Marketing.
@@ -97,7 +100,7 @@ export function bepaalWijziging(
     }
   }
 
-  const datumVeld = (sleutel: string, nieuw: string | null, oud: string, terugval: string) => {
+  const datumVeld = (sleutel: string, nieuw: string | null, oud: string | null, terugval: string) => {
     if (!nieuw || nieuw === oud) return
     const fld = f[sleutel]
     if (fld?.type !== 'date') return
@@ -161,7 +164,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvulling, client_request_id, bijlage_ids } = parsed.data
+    const { aanvulling: invoer, client_request_id, bijlage_ids } = parsed.data
 
     // Idempotent: dubbelklik of retry plaatst geen tweede reactie.
     const bestaand = await db.findAanvullingByClientRequestId(client_request_id)
@@ -174,7 +177,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel aanvragen achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
     }
 
-    const row = await db.findById(aanvulling.aanvraag_id)
+    const row = await db.findById(invoer.aanvraag_id)
     if (!row) return json({ error: 'We konden die aanvraag niet meer vinden. Zoek hem opnieuw op.' }, 404, cors)
     if (!row.asana_task_gid) {
       return json(
@@ -189,11 +192,25 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       return json({ error: `Deze aanvraag staat niet meer open bij Marketing. Dien hem opnieuw in, of mail even naar ${MARKETING_MAIL}.` }, 409, cors)
     }
 
+    // Een interne aanvraag heeft geen event, dus ook geen eventdatum om te verschuiven.
+    const aanvulling: Aanvulling = row.soort === 'intern' ? { ...invoer, nieuwe_event_datum: null } : invoer
+
+    // Een verlopen deadline moet vervangen worden; het formulier vraagt daar al om, maar wie het
+    // formulier gisteren openzette en vandaag verstuurt komt hier toch langs.
+    const vandaag = vandaagInNl(now())
+    if (aanvulling.nieuwe_deadline && aanvulling.nieuwe_deadline < vandaag) {
+      return json({ error: 'Die deadline is al geweest. Kies een datum vanaf vandaag.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
+    }
+    if (!aanvulling.nieuwe_deadline && row.deadline < vandaag) {
+      return json({ error: 'De deadline van deze aanvraag is al verstreken. Kies een nieuwe deadline.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
+    }
+
     // De ene datum kan pas tegen de andere aan als we de aanvraag erbij hebben: schuift alleen de
-    // deadline, dan is de eventdatum uit de aanvraag de grens.
+    // deadline, dan is de eventdatum uit de aanvraag de grens. Is het event al geweest - feedback
+    // achteraf - dan is er geen grens meer: een nieuwe deadline ligt dan altijd na het event.
     const effectiefEvent = aanvulling.nieuwe_event_datum ?? row.event_datum
     const effectieveDeadline = aanvulling.nieuwe_deadline ?? row.deadline
-    if (effectieveDeadline > effectiefEvent) {
+    if (effectiefEvent && effectiefEvent >= vandaag && effectieveDeadline > effectiefEvent) {
       return json({ error: 'De deadline kan niet na het event liggen', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
 

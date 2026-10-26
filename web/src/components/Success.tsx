@@ -1,4 +1,5 @@
 import type { SubmitResult } from '../../../shared/aanvraag-schema'
+import type { Soort } from '../../../shared/request-types'
 import { Icon } from './Icon'
 
 function hostOf(url: string): string {
@@ -18,14 +19,23 @@ function hostOf(url: string): string {
  * venster gewoon sluiten; het marketingteam ziet het resultaat vanzelf. Dus: geen
  * spinner, geen statusverversing, en een regel die zegt dat hij klaar is.
  */
-export function Success({ result, website, naam, onRestart }: { result: SubmitResult; website: string; naam: string; onRestart: () => void }) {
+export function Success({ result, website, naam, soort: aanvraagSoort, onRestart }: {
+  result: SubmitResult
+  website: string
+  naam: string
+  soort: Soort | null
+  onRestart: () => void
+}) {
   const first = naam.split(' ')[0]
   const host = <strong>{hostOf(website)}</strong>
-  // Zonder website is er niets op te halen; dat is geen mislukking maar een overslag.
-  const soort = result.brand_dispatched ? 'loopt' : website.trim() ? 'failed' : 'overgeslagen'
+  // Zonder website is er niets op te halen; dat is geen mislukking maar een overslag. Een interne
+  // aanvraag heeft nooit een website, en daar is "je gaf er geen op" dus ook geen bericht waard.
+  const soort = aanvraagSoort === 'intern' ? 'intern' : result.brand_dispatched ? 'loopt' : website.trim() ? 'failed' : 'overgeslagen'
 
   const statusText =
-    soort === 'overgeslagen' ? (
+    soort === 'intern' ? (
+      <>Het marketingteam plant het in en laat van zich horen als er nog iets onduidelijk is.</>
+    ) : soort === 'overgeslagen' ? (
       <>Je gaf geen website op, dus we halen geen huisstijl op. Het marketingteam zoekt zelf uit hoe het eruit moet zien.</>
     ) : soort === 'failed' ? (
       <>De huisstijl van {host} kon niet automatisch worden opgehaald. Het marketingteam kijkt zelf even mee.</>

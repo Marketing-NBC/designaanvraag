@@ -1,5 +1,5 @@
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
-import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './shared/request-types.ts'
+import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel } from './shared/request-types.ts'
 
 /**
  * Asana `html_notes`: strikt XML, alleen toegestane tags, alles in <body>.
@@ -29,16 +29,41 @@ export function hostOf(url: string): string {
 }
 
 function modusLabel(a: Aanvraag): string {
-  return DESIGN_MODES.find((m) => m.key === a.design_modus)?.label ?? a.design_modus
+  return DESIGN_MODES.find((m) => m.key === a.design_modus)?.label ?? a.design_modus ?? ''
+}
+
+/**
+ * Een interne aanvraag: wie, voor welke locatie, wanneer, en wat er gevraagd wordt. Geen event,
+ * geen website en dus ook geen huisstijl-blok; dat zou alleen maar "niet opgegeven" zeggen.
+ */
+function renderInterneNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: string[] }): { html: string; plain: string } {
+  const rows: [string, string][] = [
+    ['Soort', soortLabel(a.soort)],
+    ['Locatie', locatieLabel(a.locatie)],
+    ['Aanvrager', a.naam],
+    ['Uiterlijk nodig op', formatDateNl(a.deadline)],
+  ]
+  if (opts.bijlagen?.length) rows.push(['Meegestuurd', opts.bijlagen.join(', ')])
+
+  const htmlLines = rows.map(([k, v]) => `<strong>${escapeXml(k)}:</strong> ${escapeXml(v)}`)
+  htmlLines.push('', '<h2>Wat er gevraagd wordt</h2>', `<blockquote>${escapeXml(a.omschrijving)}</blockquote>`, '')
+  htmlLines.push(`<em>Interne aanvraag ${escapeXml(opts.aanvraagId)} via het designaanvraag-formulier.</em>`)
+
+  const plainLines = rows.map(([k, v]) => `${k}: ${v}`)
+  plainLines.push('', 'Wat er gevraagd wordt', a.omschrijving, '', `Interne aanvraag ${opts.aanvraagId} via het designaanvraag-formulier.`)
+
+  return { html: `<body>${htmlLines.join('\n')}</body>`, plain: plainLines.join('\n') }
 }
 
 /** Beschrijving van de aanvraag: html_notes plus een platte fallback. */
 export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: string[] }): { html: string; plain: string } {
+  if (a.soort === 'intern') return renderInterneNotes(a, opts)
   const rows: [string, string][] = [
+    ['Soort', soortLabel(a.soort)],
     ['Locatie', locatieLabel(a.locatie)],
     ['Aanvrager', a.naam],
     ['Event', a.event],
-    ['Eventdatum', formatDateNl(a.event_datum)],
+    ['Eventdatum', a.event_datum ? formatDateNl(a.event_datum) : 'onbekend'],
     ['Uiterlijk nodig op', formatDateNl(a.deadline)],
     ['Aanvraag', describeRequestTypes(a.aanvraag_types, a.anders_tekst)],
     ['Design', modusLabel(a)],
