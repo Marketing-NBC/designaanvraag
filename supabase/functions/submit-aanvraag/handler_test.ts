@@ -195,7 +195,9 @@ Deno.test('gelukte aanvraag: rij, Asana-taak en Routine', async () => {
   assertEquals(row.brand_session_url, 'https://claude.ai/code/session_x')
   assertEquals(row.website, 'https://www.zorgcongres.nl/')
   assertEquals(routine.texts, [`aanvraag_id=${row.id}`])
-  assertEquals(asana.calls[0].name, 'Meerdere designs Zorgcongres 2026 - 20 november 2026 - Noa')
+  // Via taskTitle en niet als letterlijke tekst: zo kan deze bewering niet achterblijven
+  // bij de vorm van de taaknaam. Dat gebeurde wel, en de deploy ving het op.
+  assertEquals(asana.calls[0].name, taskTitle(validAanvraag as never))
   assertEquals(asana.calls[0].subtasks, ['LED-kolom Zorgcongres 2026', 'Vlaggen Zorgcongres 2026', 'Roll-up Zorgcongres 2026'])
   assertEquals(asana.calls[0].assigneeGid, '222')
   assertMatch(asana.calls[0].htmlNotes, /^<body>.*<\/body>$/s)
