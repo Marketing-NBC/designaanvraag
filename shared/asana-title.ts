@@ -3,14 +3,19 @@ import { MENU_TYPES, requestTypeLabel } from './request-types.ts'
 
 const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
 
-/** "2026-10-20" → "20 oktober 2026". Puur op de ISO-string, dus zonder tijdzone-verrassingen. */
-export function formatDateShortNl(iso: string): string {
+/**
+ * "2026-10-20" → "20 oktober 2026", of met `metJaar: false` → "20 oktober".
+ * Puur op de ISO-string, dus zonder tijdzone-verrassingen.
+ */
+export function formatDateShortNl(iso: string, metJaar = true): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
   if (!m) return iso
-  return `${Number(m[3])} ${MAANDEN[Number(m[2]) - 1] ?? m[2]} ${m[1]}`
+  const maand = MAANDEN[Number(m[2]) - 1] ?? m[2]
+  return `${Number(m[3])} ${maand}${metJaar ? ` ${m[1]}` : ''}`
 }
 
-type TitleInput = Pick<Aanvraag, 'aanvraag_types' | 'anders_tekst' | 'event' | 'event_datum' | 'naam'>
+type TitleInput = Pick<Aanvraag,
+  'aanvraag_types' | 'anders_tekst' | 'deadline' | 'event' | 'event_datum' | 'naam'>
 
 export const MEERDERE_DESIGNS = 'Meerdere designs'
 
@@ -20,13 +25,24 @@ export function typeLabel(key: Aanvraag['aanvraag_types'][number], andersTekst: 
 }
 
 /**
- * Taaknaam in Asana: "<wat> <event> - <eventdatum> - <aanvrager>".
- * Eén type → dat type ("Torenscherm Deloitte - 20 oktober 2026 - Wendy");
- * meer types → altijd "Meerdere designs Deloitte - 20 oktober 2026 - Wendy".
+ * Taaknaam in Asana: "<event> - <eventdatum> - <aanvrager> - Deadline: <deadline> - <wat>".
+ *
+ * Het event staat vooraan, want daar zoek je op in de lijst; wat er gevraagd is staat
+ * achteraan. Eén type → dat type ("EY - 11 december - Britt - Deadline: 9 december -
+ * Torenscherm"); meer types → "Meerdere designs".
+ *
+ * Zonder jaartal: de titel is al lang en de echte datum staat in het veld Eventdatum.
  */
 export function taskTitle(a: TitleInput): string {
   const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
-  return `${wat} ${a.event.trim()} - ${formatDateShortNl(a.event_datum)} - ${a.naam.trim()}`.slice(0, 250)
+  const datum = (iso: string) => formatDateShortNl(iso, false)
+  return [
+    a.event.trim(),
+    datum(a.event_datum),
+    a.naam.trim(),
+    `Deadline: ${datum(a.deadline)}`,
+    wat,
+  ].join(' - ').slice(0, 250)
 }
 
 /**
