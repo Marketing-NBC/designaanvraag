@@ -34,6 +34,8 @@ export const FIELD_SPECS = [
       ['evenement', 'blue'],
       ['intern', 'hot-pink'],
     ],
+    // Ook in het planningsproject, zodat je de kalender daar op Soort kunt kleuren.
+    ookInPlanning: true,
   },
   { key: 'eventdatum', type: 'date', description: 'Datum van het event. Leeg bij een interne aanvraag.' },
   { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },

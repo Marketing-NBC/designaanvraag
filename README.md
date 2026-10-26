@@ -278,8 +278,10 @@ kan geen grafieken of weergave-instellingen maken.
   filteren op **Spoed = Ja**. Dat kan omdat Aanvrager een keuzelijst is; op een tekstveld kan Asana
   niet groeperen.
 - **Zien in je planning:** project "4. Werkplanning" → **Kalender** → **Kleur** → **Spoed**.
-  Spoedjes worden rood, de rest grijs. Dit werkt omdat `scripts/asana-setup.mjs` het Spoed-veld ook
-  aan het planningsproject koppelt; andere velden blijven daar buiten.
+  Spoedjes worden rood, de rest grijs. Of kies **Kleur** → **Soort**: dan wordt intern roze en een
+  evenement blauw. Asana kleurt op één veld tegelijk, dus het is het een of het ander. Dit werkt
+  omdat `scripts/asana-velden.mjs` de velden Spoed en Soort ook aan het planningsproject koppelt;
+  andere velden blijven daar buiten.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.
