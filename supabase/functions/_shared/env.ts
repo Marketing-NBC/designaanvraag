@@ -1,3 +1,6 @@
+import { MELDING_AFZENDER } from './shared/contact.ts'
+import { createGraphMail, type MailClient } from './shared/mail.ts'
+
 /** Omgevingsvariabelen van de edge functions, met veilige defaults. */
 export interface Env {
   supabaseUrl: string
@@ -16,6 +19,15 @@ export interface Env {
   /** De Routine die het menuscherm maakt; apart, want dat is een ander draaiboek. */
   menuRoutineFireUrl: string | null
   menuRoutineToken: string | null
+  /**
+   * Meldingsmails via Microsoft 365. Alle drie nodig; ontbreekt er een, dan gaat er geen mail uit
+   * en loopt de rest gewoon door. Zie "Mail instellen" in de README.
+   */
+  msTenantId: string | null
+  msClientId: string | null
+  msClientSecret: string | null
+  /** Het postvak waar de mail vandaan komt; standaard MELDING_AFZENDER. */
+  mailAfzender: string | null
 }
 
 const DEFAULT_ORIGINS = ['https://marketing-nbc.github.io', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:4173']
@@ -53,6 +65,10 @@ export function readEnv(): Env {
     routineToken: opt('ROUTINE_TOKEN'),
     menuRoutineFireUrl: opt('MENU_ROUTINE_FIRE_URL'),
     menuRoutineToken: opt('MENU_ROUTINE_TOKEN'),
+    msTenantId: opt('MS_TENANT_ID'),
+    msClientId: opt('MS_CLIENT_ID'),
+    msClientSecret: opt('MS_CLIENT_SECRET'),
+    mailAfzender: opt('MAIL_AFZENDER'),
   }
 }
 
@@ -63,4 +79,15 @@ export function readEnv(): Env {
 export async function webhookToken(pat: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`asana-webhook:${pat}`))
   return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('').slice(0, 32)
+}
+
+/** De mailclient, of null als Microsoft 365 (nog) niet is ingesteld. */
+export function mailClientUit(env: Env): MailClient | null {
+  if (!env.msTenantId || !env.msClientId || !env.msClientSecret) return null
+  return createGraphMail({
+    tenantId: env.msTenantId,
+    clientId: env.msClientId,
+    clientSecret: env.msClientSecret,
+    afzender: env.mailAfzender ?? MELDING_AFZENDER,
+  })
 }

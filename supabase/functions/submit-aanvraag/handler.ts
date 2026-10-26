@@ -10,6 +10,8 @@ import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
 import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
+import type { MailClient } from '../_shared/shared/mail.ts'
+import { renderNieuweAanvraagMail } from '../_shared/shared/meldingen.ts'
 import { isSpoed, vandaagInNl, werkdagenTotEvent } from '../_shared/shared/spoed.ts'
 
 export interface Deps {
@@ -19,6 +21,8 @@ export interface Deps {
   routine: RoutineClient | null
   /** Voor het ophalen van meegestuurde bestanden; zonder dit worden bijlagen overgeslagen. */
   storage: Storage | null
+  /** Meldingsmail aan Marketing; zonder dit gaat er geen mail uit. */
+  mail?: MailClient | null
   /** Veldmapping; standaard shared/asana-fields.json. Alleen tests geven hier iets anders mee. */
   fields?: AsanaFieldsConfig
   now?: () => Date
@@ -138,6 +142,26 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       extraWaarschuwingen.push(`${bijlage_ids.length - bijlageRijen.length} meegestuurd bestand(en) niet gevonden of al gebruikt`)
     }
 
+    // Meldingsmail aan Marketing. Ook als Asana het liet afweten: dan staat dat in de mail, met alle
+    // gegevens erbij, zodat de aanvraag niet zoekraakt. Een mislukte mail houdt de aanvraag niet tegen.
+    const meld = async (asanaUrl: string | null, asanaFout: string | null) => {
+      if (!deps.mail) return
+      try {
+        await deps.mail.verstuur(renderNieuweAanvraagMail({
+          aanvraag,
+          aanvraagId: row.id,
+          spoed,
+          werkdagenTotEvent: Number.isFinite(werkdagen) ? werkdagen : null,
+          asanaUrl,
+          asanaFout,
+          bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
+        }))
+        log('info', 'melding gemaild', { id: row.id })
+      } catch (e) {
+        log('error', 'melding mailen mislukt', { id: row.id, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+
     // Asana-taak (fase 3). Zonder configuratie slaan we dit over; de aanvraag blijft bewaard.
     let asanaUrl: string | null = null
     let asanaGid: string | null = null
@@ -199,12 +223,16 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         const msg = e instanceof Error ? e.message : String(e)
         log('error', 'asana mislukt', { id: row.id, error: msg })
         await db.update(row.id, { asana_error: msg, brand_status: 'failed', brand_error: 'Geen Asana-taak, dus geen huisstijl-extractie.' })
+        await meld(null, `Asana gaf een fout: ${msg}`)
         return json({ aanvraag_id: row.id, asana_task_url: null, brand_dispatched: false } satisfies SubmitResult, 200, cors)
       }
     } else {
       await db.update(row.id, { asana_error: 'Asana niet geconfigureerd', brand_status: 'failed', brand_error: 'Asana niet geconfigureerd' })
+      await meld(null, 'De koppeling met Asana is niet ingesteld.')
       return json({ aanvraag_id: row.id, asana_task_url: null, brand_dispatched: false } satisfies SubmitResult, 200, cors)
     }
+
+    await meld(asanaUrl, null)
 
     // Huisstijl-extractie via de Routine (fase 4). Zonder website valt er niets op te halen; dat is
     // geen mislukking maar een overslag, en de Routine hoeft er geen run aan te verspillen.

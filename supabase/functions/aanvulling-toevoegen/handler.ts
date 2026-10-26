@@ -7,6 +7,9 @@ import type { Env } from '../_shared/env.ts'
 import { renderAanvullingComment } from '../_shared/notes.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
+import { taskTitle } from '../_shared/shared/asana-title.ts'
+import type { MailClient } from '../_shared/shared/mail.ts'
+import { renderAanvullingMail } from '../_shared/shared/meldingen.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
@@ -30,6 +33,8 @@ export interface Deps {
   asana: AsanaTaskClient | null
   /** Voor het ophalen van meegestuurde bestanden; zonder dit worden bijlagen overgeslagen. */
   storage: Storage | null
+  /** Meldingsmail aan Marketing; zonder dit gaat er geen mail uit. */
+  mail?: MailClient | null
   /** Veldmapping; standaard shared/asana-fields.json. Alleen tests geven hier iets anders mee. */
   fields?: AsanaFieldsConfig
   now?: () => Date
@@ -204,8 +209,65 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // horen of niet bestaan vallen vanzelf af.
     const bijlageRijen = bijlage_ids.length ? await db.claimBijlagen(bijlage_ids, { aanvulling_id: aanvullingRij.id }) : []
 
+    // Meldingsmail aan Marketing, ook als de reactie niet in Asana terechtkwam: dan staat dat erin,
+    // met de hele aanvulling, zodat hij niet zoekraakt. Een mislukte mail houdt niets tegen.
+    const meld = async (v: {
+      taak: AsanaTask | null
+      wijziging: Wijziging | null
+      bijlagen: string[]
+      heropend: boolean
+      naarFeedback: boolean
+      asanaFout: string | null
+    }) => {
+      if (!deps.mail) return
+      const types = v.wijziging?.nieuweTypes ?? [...new Set([...(row.aanvraag_types ?? []), ...aanvulling.extra_types])]
+      const andersTekst = aanvulling.anders_tekst || row.anders_tekst
+      const eventDatum = aanvulling.nieuwe_event_datum ?? row.event_datum
+      const deadline = aanvulling.nieuwe_deadline ?? row.deadline
+      try {
+        await deps.mail.verstuur(renderAanvullingMail({
+          naam: aanvulling.naam,
+          toelichting: aanvulling.toelichting,
+          link: aanvulling.link,
+          schijfLocatie: aanvulling.schijf_locatie,
+          extraTypes: aanvulling.extra_types.filter((t) => !(row.aanvraag_types ?? []).includes(t)),
+          andersTekst,
+          aanvraag: {
+            naam: row.naam,
+            locatie: row.locatie,
+            event: row.event,
+            spoed: row.spoed,
+            eventDatum,
+            deadline,
+            eventDatumGewijzigd: eventDatum !== row.event_datum,
+            deadlineGewijzigd: deadline !== row.deadline,
+            types,
+          },
+          // De naam zoals hij in Asana staat; Marketing kan hem hebben aangepast.
+          taakNaam: v.taak?.name || taskTitle({ ...row, aanvraag_types: types, anders_tekst: andersTekst }),
+          asanaUrl: row.asana_task_url,
+          bijgewerkt: v.wijziging?.bijgewerkt ?? [],
+          bijlagen: v.bijlagen,
+          heropend: v.heropend,
+          naarFeedback: v.naarFeedback,
+          asanaFout: v.asanaFout,
+        }))
+        log('info', 'aanvulling gemaild', { id: aanvullingRij.id })
+      } catch (e) {
+        log('error', 'aanvulling mailen mislukt', { id: aanvullingRij.id, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+
     if (!deps.asana) {
       await db.updateAanvulling(aanvullingRij.id, { asana_error: 'Asana niet geconfigureerd' })
+      await meld({
+        taak: null,
+        wijziging: null,
+        bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
+        heropend: false,
+        naarFeedback: false,
+        asanaFout: 'De koppeling met Asana is niet ingesteld.',
+      })
       return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
     }
 
@@ -308,12 +370,30 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const msg = e instanceof Error ? e.message : String(e)
       log('error', 'reactie plaatsen mislukt', { id: aanvullingRij.id, error: msg })
       await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: wijziging.bijgewerkt, asana_error: `reactie plaatsen mislukt: ${msg}` })
+      await meld({
+        taak,
+        wijziging,
+        // Wat niet als bijlage bij de taak kwam, staat in elk geval bij naam in de mail.
+        bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
+        heropend: heropendVoor !== undefined,
+        naarFeedback: naarFeedbackVoor !== undefined,
+        asanaFout: `De reactie kon niet bij de taak worden gezet: ${msg}`,
+      })
       return json({ error: 'De aanvulling is bewaard, maar kwam niet bij Marketing terecht. Laat het even weten aan het marketingteam.' }, 502, cors)
     }
 
     await db.updateAanvulling(aanvullingRij.id, {
       bijgewerkt: wijziging.bijgewerkt,
       asana_error: waarschuwingen.length ? waarschuwingen.join('; ') : null,
+    })
+
+    await meld({
+      taak,
+      wijziging,
+      bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
+      heropend: heropendVoor !== undefined,
+      naarFeedback: naarFeedbackVoor !== undefined,
+      asanaFout: null,
     })
 
     // Onze eigen administratie meebewegen, zodat een volgende aanvulling van de juiste stand uitgaat.

@@ -1,0 +1,58 @@
+name: Weekmail
+
+# Elke maandagochtend het weekoverzicht van de designaanvragen: de deadlines van deze week en waar
+# Marketing op moet letten, per locatie naar het eigen marketingpostvak. Zie scripts/weekmail.mjs.
+# Vereist secrets ASANA_PAT, MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
+
+on:
+  schedule:
+    # 05:00 UTC: 06:00 in de winter, 07:00 in de zomer. Ruim voor kantoortijd, ook als GitHub
+    # een geplande run een half uur later start, wat geregeld gebeurt.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      aan:
+        description: 'Naar dit adres in plaats van de marketingpostvakken (om te testen). Leeg = normaal.'
+        type: string
+        required: false
+        default: ''
+      proef:
+        description: 'Niets versturen, alleen laten zien wat er in zou staan'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: weekmail
+  cancel-in-progress: false
+
+jobs:
+  weekmail:
+    runs-on: ubuntu-latest
+    env:
+      ASANA_PAT: ${{ secrets.ASANA_PAT }}
+      ASANA_PROJECT_GID: ${{ secrets.ASANA_PROJECT_GID }}
+      MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+      MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Weekoverzicht versturen
+        env:
+          AAN: ${{ inputs.aan }}
+          PROEF: ${{ inputs.proef }}
+        run: |
+          args=()
+          [ -n "$AAN" ] && args+=(--aan "$AAN")
+          [ "$PROEF" = "true" ] && args+=(--proef)
+          node --experimental-strip-types --no-warnings scripts/weekmail.mjs "${args[@]}"
+      - name: Proefmails bewaren
+        if: inputs.proef
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekmail-proef
+          path: weekmail-proef/
