@@ -262,7 +262,10 @@ Deno.test('taskTitle, subtaskTitles en notes', () => {
   // en test daarmee de standaard, deze test roept renderNotes rechtstreeks aan.
   const a = { ...validAanvraag, locatie: 'nbc' as const, website: 'https://www.zorgcongres.nl/', aanvraag_types: ['menu_scherm'] as const, anders_tekst: '' }
   // deno-lint-ignore no-explicit-any
-  assertEquals(taskTitle(a as any), 'Menu scherm Zorgcongres 2026 - 20 november 2026 - Noa')
+  // Het event vooraan, wat er gevraagd is achteraan, en de deadline ertussen. Zonder
+  // jaartal: de titel is al lang en de echte datum staat in het veld Eventdatum.
+  assertEquals(taskTitle(a as any),
+    'Zorgcongres 2026 - 20 november - Noa - Deadline: 10 november - Menu scherm')
   // Eén type, dus normaal geen subtaak - maar een menuscherm krijgt er altijd een,
   // want daar hangt Marketing het logo van de opdrachtgever aan.
   // deno-lint-ignore no-explicit-any
@@ -278,7 +281,11 @@ Deno.test('taskTitle, subtaskTitles en notes', () => {
     ['Vlaggen Zorgcongres 2026', 'Menu scherm Zorgcongres 2026'])
   // Eén type "anders" → de vrije tekst als wat.
   // deno-lint-ignore no-explicit-any
-  assertEquals(taskTitle({ ...a, aanvraag_types: ['anders'], anders_tekst: 'Roll-up banner' } as any), 'Roll-up banner Zorgcongres 2026 - 20 november 2026 - Noa')
+  assertEquals(taskTitle({ ...a, aanvraag_types: ['anders'], anders_tekst: 'Roll-up banner' } as any),
+    'Zorgcongres 2026 - 20 november - Noa - Deadline: 10 november - Roll-up banner')
+  // Meer dan een type: dan zegt de staart "Meerdere designs" in plaats van het type.
+  assertEquals(taskTitle({ ...a, aanvraag_types: ['vlaggen', 'menu_scherm'] } as any),
+    'Zorgcongres 2026 - 20 november - Noa - Deadline: 10 november - Meerdere designs')
   // deno-lint-ignore no-explicit-any
   const notes = renderNotes(a as any, { aanvraagId: 'abc' })
   assertMatch(notes.html, /<strong>Eventdatum:<\/strong> vrijdag 20 november 2026/)

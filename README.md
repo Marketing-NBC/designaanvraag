@@ -112,9 +112,11 @@ alle gegevens in de beschrijving.
 
 ### Wat er in Asana gebeurt
 
-- **Taaknaam:** `<wat> <event> - <eventdatum> - <aanvrager>`, bijvoorbeeld
-  `Torenscherm Deloitte - 20 oktober 2026 - Wendy`. Bij meer dan één type altijd
-  `Meerdere designs Deloitte - …`, met per type een subtaak (`Torenscherm Deloitte`).
+- **Taaknaam:** `<event> - <eventdatum> - <aanvrager> - Deadline: <deadline> - <wat>`,
+  bijvoorbeeld `EY - 11 december - Britt - Deadline: 9 december - Torenscherm`. Het event
+  staat vooraan omdat je daarop zoekt; zonder jaartal, want de titel is al lang en de echte
+  datum staat in het veld Eventdatum. Bij meer dan één type is `<wat>` altijd
+  `Meerdere designs`, met per type een subtaak (`Torenscherm EY`).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
 - **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Mee bezig → Klaar. De volgorde komt uit
