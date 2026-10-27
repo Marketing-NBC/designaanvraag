@@ -2,7 +2,7 @@ import { koppelBijlagen } from '../_shared/bijlagen-koppelen.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { Env } from '../_shared/env.ts'
 import type { AsanaClient, AsanaFieldsConfig } from '../_shared/asana.ts'
-import { asanaFields, buildCustomFields, tagSleutel } from '../_shared/asana.ts'
+import { asanaFields, buildCustomFields } from '../_shared/asana.ts'
 import type { Db } from '../_shared/db.ts'
 import { renderNotes } from '../_shared/notes.ts'
 import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
@@ -161,8 +161,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         }
 
         const notes = renderNotes(aanvraag, { aanvraagId: row.id, bijlagen: bijlageRijen.map((b) => b.bestandsnaam) })
-        // Eén tag die soort en spoed samen vangt: daarop kleurt de kalender van de werkplanning.
-        const tagGid = cfg.tags?.[tagSleutel(aanvraag.soort, spoed)]?.gid
         const task = await deps.asana.createTask({
           name: taskTitle(aanvraag),
           htmlNotes: notes.html,
@@ -172,7 +170,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           assigneeGid: env.asanaAssigneeGid ?? cfg.assignee?.gid ?? null,
           customFields: buildCustomFields(aanvraag, cfg, { spoed, aanvragerOptieGid }),
           subtasks: subtaskTitles(aanvraag),
-          tagGids: tagGid ? [tagGid] : [],
         })
         asanaGid = task.gid
         asanaUrl = task.url

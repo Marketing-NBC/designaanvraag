@@ -277,23 +277,25 @@ kan geen grafieken of weergave-instellingen maken.
 - **Wie vraagt de meeste spoedjes aan:** dezelfde grafiek, maar groeperen op **Aanvrager** en
   filteren op **Spoed = Ja**. Dat kan omdat Aanvrager een keuzelijst is; op een tekstveld kan Asana
   niet groeperen.
-- **Zien in je planning:** de kalender van "4. Werkplanning" kleurt op **tags** (Opties → Kleur op
-  de standaard laten staan). Reminder is rood, NBC blauw, GV groen - en elke designaanvraag krijgt
-  bij het indienen één tag die soort en spoed samen vangt:
+- **Zien in je planning:** de kalender van "4. Werkplanning" kleurt op het veld **Kleur**
+  (Opties → Kleur → Kleur). Designaanvragen krijgen hun optie vanzelf bij het indienen, soort en
+  spoed samen; voor je eigen taken kies je zelf Reminder, NBC of GV:
 
-  | Tag | Kleur | Wanneer |
+  | Optie | Kleur | Wanneer |
   | --- | --- | --- |
   | Evenement | aqua | evenement, op tijd |
   | Evenement spoed | oranje | evenement, minder dan 10 werkdagen |
   | Intern | roze | intern, op tijd |
   | Intern spoed | paars | intern, minder dan 10 werkdagen |
+  | Reminder | rood | zelf kiezen |
+  | NBC | blauw | zelf kiezen |
+  | GV | groen | zelf kiezen |
 
-  Eén tag in plaats van twee velden, omdat Asana maar op één ding tegelijk kleurt; en geen rood,
-  want dat is van de reminders. De namen staan in `scripts/asana-field-map.json` onder `tags`, de
-  kleuren in `TAG_SPECS` in `scripts/asana-velden.mjs`. **Asana-velden vernieuwen** maakt ze aan;
-  zet daar eenmalig **Openstaande aanvragen ... taggen** aan om aanvragen van voor deze tags er
-  alsnog een te geven (op basis van hun velden Soort en Spoed). Een tag die al bestaat houdt de kleur
-  die je hem in Asana gaf.
+  Waarom één veld en geen tags: een designaanvraag staat ook in het project Designaanvragen, en
+  in de standaardkleuren wint de kleur van dat project het van een tag - alle aanvragen werden dan
+  mintgroen. Een veld wint wel. Het veld hangt aan beide projecten (`ookInPlanning` in
+  `scripts/asana-velden.mjs`); een optie erbij is een regel in `FIELD_SPECS` plus een label in
+  `option_aliases`, en dan **Asana-velden vernieuwen**.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.

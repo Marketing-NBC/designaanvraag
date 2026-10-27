@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO_DIR } from '../lib/config.mjs'
-import { FIELD_SPECS, TAG_SPECS, tagBestaandeTaken, tagSleutel, veldsleutels, zorgVoorTags, zorgVoorVelden } from '../../scripts/asana-velden.mjs'
+import { FIELD_SPECS, veldsleutels, zorgVoorVelden } from '../../scripts/asana-velden.mjs'
 import { knopWaarde } from '../lib/asana-knop.mjs'
 
 const map = JSON.parse(readFileSync(join(REPO_DIR, 'scripts', 'asana-field-map.json'), 'utf8'))
@@ -156,64 +156,17 @@ test('zonder veld of optie zegt de knop waarom het niet kan', () => {
   assert.match(knopWaarde({ fields: {} }, 'huisstijl', 'bezig').reden, /"huisstijl"/)
 })
 
-// ── Kalendertags ──────────────────────────────────────────────────────
+// ── Het kleurveld voor de werkplanning ────────────────────────────────
 
-test('elke kalendertag heeft een naam, en geen ervan is rood', () => {
-  for (const spec of TAG_SPECS) {
-    assert.ok(map.tags?.[spec.key], `tag "${spec.key}" heeft geen naam in asana-field-map.json`)
-    // Rood is van de reminders; een spoedje mag daar niet op lijken.
-    assert.ok(!/red/.test(spec.color) && !/red/.test(spec.terugval), `tag "${spec.key}" is rood`)
-  }
-  assert.deepEqual(['evenement', 'evenement_spoed', 'intern', 'intern_spoed'].map((k) => TAG_SPECS.some((t) => t.key === k)), [true, true, true, true])
-})
-
-test('de tag vangt soort en spoed samen', () => {
-  assert.equal(tagSleutel('evenement', false), 'evenement')
-  assert.equal(tagSleutel('evenement', true), 'evenement_spoed')
-  assert.equal(tagSleutel('intern', false), 'intern')
-  assert.equal(tagSleutel('intern', true), 'intern_spoed')
-})
-
-test('ontbrekende tags worden aangemaakt; bestaande houden hun kleur', async () => {
-  const calls = []
-  const api = async (path, { method = 'GET', body } = {}) => {
-    calls.push({ path, method, body })
-    if (method === 'GET') return path.includes('query=Intern%20spoed') ? [{ gid: 'bestaat', name: 'Intern spoed', color: 'magenta' }] : []
-    // De eerste keer weigert Asana de nieuwe kleurnaam, dan moet de oude het doen.
-    if (body.data.color === 'aqua') { const e = new Error('invalid color'); e.status = 400; throw e }
-    return { gid: `nieuw-${body.data.name}`, name: body.data.name }
-  }
-  const { tags, warnings } = await zorgVoorTags({ asana: api, map, workspaceGid: 'ws' })
-  assert.deepEqual(warnings, [])
-  assert.equal(tags.intern_spoed.gid, 'bestaat')
-  assert.equal(tags.evenement.gid, 'nieuw-Evenement')
-  const posts = calls.filter((c) => c.method === 'POST')
-  assert.ok(!posts.some((c) => c.body.data.name === 'Intern spoed'), 'een bestaande tag niet opnieuw aanmaken')
-  assert.deepEqual(posts.filter((c) => c.body.data.name === 'Evenement').map((c) => c.body.data.color), ['aqua', 'light-teal'])
-})
-
-test('alleen uitlezen maakt niets aan', async () => {
-  const calls = []
-  const api = async (path, { method = 'GET' } = {}) => (calls.push(method), [])
-  const { tags, warnings } = await zorgVoorTags({ asana: api, map, workspaceGid: 'ws', aanmaken: false })
-  assert.deepEqual(tags, {})
-  assert.equal(warnings.length, 4)
-  assert.ok(calls.every((m) => m === 'GET'))
-})
-
-test('bestaande taken krijgen de tag die bij hun velden hoort', async () => {
-  const tags = { evenement: { gid: 'tEv', name: 'Evenement' }, evenement_spoed: { gid: 'tEvS', name: 'Evenement spoed' }, intern: { gid: 'tIn', name: 'Intern' }, intern_spoed: { gid: 'tInS', name: 'Intern spoed' } }
-  const fields = { soort: { gid: 'fS', options: { evenement: 'oEv', intern: 'oIn' } }, spoed: { gid: 'fSp', options: { ja: 'oJa', nee: 'oNee' } } }
-  const veld = (gid, waarde) => ({ gid, enum_value: waarde ? { gid: waarde } : null })
-  const taken = [
-    { gid: '1', name: 'Oud evenement', tags: [], custom_fields: [] },
-    { gid: '2', name: 'Spoedje', tags: [], custom_fields: [veld('fSp', 'oJa')] },
-    { gid: '3', name: 'Intern', tags: [{ gid: 'reminder' }], custom_fields: [veld('fS', 'oIn'), veld('fSp', 'oNee')] },
-    { gid: '4', name: 'Al getagd', tags: [{ gid: 'tEv' }], custom_fields: [veld('fSp', 'oJa')] },
-  ]
-  const gezet = []
-  const api = async (path, { body }) => { gezet.push([path, body.data.tag]); return {} }
-  const { getagd } = await tagBestaandeTaken({ asana: api, lijst: async () => taken, projectGid: 'p', tags, fields })
-  assert.deepEqual(gezet, [['/tasks/1/addTag', 'tEv'], ['/tasks/2/addTag', 'tEvS'], ['/tasks/3/addTag', 'tIn']])
-  assert.equal(getagd.length, 3)
+test('het kleurveld vangt soort en spoed, plus de eigen taken, en spoed is nooit rood', () => {
+  const spec = FIELD_SPECS.find((s) => s.key === 'kleur')
+  assert.ok(spec, 'het kleurveld hoort bij de velden die we aanmaken')
+  assert.ok(spec.ookInPlanning, 'de kalender staat in de werkplanning; zonder het veld daar kleurt er niets')
+  const kleuren = Object.fromEntries(spec.options)
+  assert.deepEqual(Object.keys(kleuren),
+    ['evenement', 'evenement_spoed', 'intern', 'intern_spoed', 'reminder', 'nbc', 'gv'])
+  assert.equal(kleuren.reminder, 'red')
+  // Rood is van de reminders; een spoedje mag daar niet op lijken.
+  for (const k of ['evenement', 'evenement_spoed', 'intern', 'intern_spoed']) assert.notEqual(kleuren[k], 'red', k)
+  assert.equal(new Set(Object.values(kleuren)).size, spec.options.length, 'elke optie een eigen kleur')
 })

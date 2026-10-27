@@ -492,45 +492,42 @@ Deno.test('buildCustomFields zet de soort en laat lege velden van een interne aa
   assertEquals(buildCustomFields({ ...validAanvraag, soort: 'evenement' } as any, cfg).fS, 'oEv')
 })
 
-// ── Kalendertags ─────────────────────────────────────────────────────────────
+// ── Kleur voor de werkplanning ───────────────────────────────────────────────
 
-const metTags = {
+const metKleur = {
   project: { gid: '111' },
   assignee: { gid: '222' },
-  fields: {},
-  sections: {},
-  tags: {
-    evenement: { gid: 'tEv' },
-    evenement_spoed: { gid: 'tEvS' },
-    intern: { gid: 'tIn' },
-    intern_spoed: { gid: 'tInS' },
+  fields: {
+    kleur: {
+      gid: 'fK',
+      name: 'Kleur',
+      type: 'enum',
+      options: { evenement: 'kEv', evenement_spoed: 'kEvS', intern: 'kIn', intern_spoed: 'kInS', reminder: 'kR' },
+    },
   },
+  sections: {},
 } as unknown as Parameters<typeof createHandler>[0]['fields']
 
-Deno.test('elke taak krijgt één tag die soort en spoed samen vangt', async () => {
+Deno.test('het veld Kleur vangt soort en spoed samen', async () => {
   // Maandag 14 september: het event (20 november) is ruim op tijd, de interne deadline is krap.
   const nu = () => new Date('2026-09-14T10:00:00Z')
   const gevallen: [Record<string, unknown>, string][] = [
-    [validAanvraag, 'tEv'],
-    [{ ...validAanvraag, event_datum: '2026-09-18', deadline: '2026-09-17' }, 'tEvS'],
-    [{ ...interneAanvraag, deadline: '2026-11-10' }, 'tIn'],
-    [{ ...interneAanvraag, deadline: '2026-09-16' }, 'tInS'],
+    [validAanvraag, 'kEv'],
+    [{ ...validAanvraag, event_datum: '2026-09-18', deadline: '2026-09-17' }, 'kEvS'],
+    [{ ...interneAanvraag, deadline: '2026-11-10' }, 'kIn'],
+    [{ ...interneAanvraag, deadline: '2026-09-16' }, 'kInS'],
   ]
-  for (const [aanvraag, tag] of gevallen) {
+  for (const [aanvraag, optie] of gevallen) {
     const asana = fakeAsana()
-    const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: metTags, now: nu, log: () => {} })
+    const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: metKleur, now: nu, log: () => {} })
     await handler(post(payload({ aanvraag, started_at: '2026-09-14T09:59:00Z' })))
-    assertEquals(asana.calls[0].tagGids, [tag])
+    assertEquals(asana.calls[0].customFields, { fK: optie })
   }
 })
 
-Deno.test('zonder tags in de configuratie gaat de taak er gewoon zonder', async () => {
-  // Een eigen configuratie zonder tags, niet de echte: daar staan ze in zodra de workflow heeft gedraaid.
-  const zonderTags = { ...(metTags as object), tags: undefined } as unknown as Parameters<typeof createHandler>[0]['fields']
-  const asana = fakeAsana()
-  const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: zonderTags, log: () => {} })
-  await handler(post(payload()))
-  assertEquals(asana.calls[0].tagGids, [])
+Deno.test('zonder uitspraak over spoed gokt buildCustomFields geen kleur', () => {
+  // deno-lint-ignore no-explicit-any
+  assertEquals(buildCustomFields(validAanvraag as any, metKleur), {})
 })
 
 // ── Meegestuurde bestanden ───────────────────────────────────────────────────
