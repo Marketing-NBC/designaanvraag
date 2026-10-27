@@ -55,10 +55,10 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '03-eventdatum', p)
     await page.keyboard.press('Enter')
 
-    // 5. Deadline: eerste beschikbare dag → korte doorlooptijd → waarschuwing, maar geen blokkade
+    // 5. Deadline: eerste beschikbare dag → erg krap → dringende melding om contact op te nemen, maar geen blokkade
     await expect(page.getByRole('heading', { name: 'Wanneer heb je het uiterlijk nodig?' })).toBeVisible()
     await page.locator('button.date__day:not([disabled])').first().click()
-    await expect(page.locator('.msg--warn')).toContainText('werkdagen')
+    await expect(page.locator('.msg--verlopen')).toContainText('contact')
     await shot(page, '04-deadline', p)
     await page.keyboard.press('Enter')
 
@@ -94,8 +94,8 @@ test.describe('designaanvraag-flow', () => {
     await page.keyboard.press('Enter')
 
     // 10. Modus
-    await expect(page.getByRole('heading', { name: /custom of standaard/ })).toBeVisible()
-    await page.keyboard.press('a')
+    await expect(page.getByRole('heading', { name: /Standaard designs of volledig custom/ })).toBeVisible()
+    await page.keyboard.press('b')
     await expect(page.getByRole('radio', { name: /Volledig custom/ })).toHaveAttribute('aria-checked', 'true')
     await shot(page, '08-modus', p)
     await page.keyboard.press('Enter')

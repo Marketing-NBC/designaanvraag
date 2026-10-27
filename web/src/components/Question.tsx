@@ -8,6 +8,8 @@ interface Props {
   help?: string
   error?: string | null
   warning?: string | null
+  /** Dringende melding in het rood; gaat voor een gewone waarschuwing. */
+  alarm?: string | null
   /** Bevestiging dat het goed zit; wijkt voor een fout of waarschuwing. */
   goed?: string | null
   /** Verandert bij elke nieuwe fout, zodat het veld opnieuw "schudt". */
@@ -17,7 +19,7 @@ interface Props {
   titleId: string
 }
 
-export function Question({ number, title, help, error, warning, goed, errorNonce = 0, children, footer, titleId }: Props) {
+export function Question({ number, title, help, error, warning, alarm, goed, errorNonce = 0, children, footer, titleId }: Props) {
   return (
     <section className="q" role="group" aria-labelledby={titleId}>
       <div className="q__num" aria-hidden="true">
@@ -44,13 +46,19 @@ export function Question({ number, title, help, error, warning, goed, errorNonce
             <span>{error}</span>
           </p>
         ) : null}
-        {!error && warning ? (
+        {!error && alarm ? (
+          <p className="msg msg--verlopen" role="status">
+            <Icon name="alert" />
+            <span>{alarm}</span>
+          </p>
+        ) : null}
+        {!error && !alarm && warning ? (
           <p className="msg msg--warn">
             <Icon name="alert" />
             <span>{warning}</span>
           </p>
         ) : null}
-        {!error && !warning && goed ? (
+        {!error && !alarm && !warning && goed ? (
           <p className="msg msg--goed">
             <Icon name="check" />
             <span>{goed}</span>

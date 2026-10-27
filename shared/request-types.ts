@@ -111,17 +111,18 @@ export function vraagtOmMenu(keys: readonly RequestTypeKey[]): boolean {
   return keys.some((k) => MENU_TYPES.includes(k))
 }
 
+/** In schermvolgorde: standaard is A, custom is B. */
 export const DESIGN_MODES = [
-  {
-    key: 'custom',
-    label: 'Volledig custom',
-    description: 'Een nieuw ontwerp in de huisstijl van de opdrachtgever of het event.',
-  },
   {
     key: 'standaard',
     label: 'Standaard designs',
     // {locatie} wordt ingevuld met NBC of Green Village, al naar gelang de aanvraag.
     description: 'Onze vaste {locatie}-templates, ingevuld met de gegevens van het event.',
+  },
+  {
+    key: 'custom',
+    label: 'Volledig custom',
+    description: 'Een nieuw ontwerp in de huisstijl van de opdrachtgever of het event.',
   },
 ] as const
 

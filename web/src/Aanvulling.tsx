@@ -12,7 +12,7 @@ import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
 import { ApiError, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
-import { useBijlagen, type Uploads } from './lib/uploads'
+import { useBijlagen } from './lib/uploads'
 import { formatShort, isBeforeToday, todayIso } from './lib/dates'
 
 /**
@@ -222,7 +222,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
       ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
       : 'Dan weet Marketing wie deze aanvulling stuurde.',
     kies: 'Je interne aanvragen van de afgelopen maanden.',
-    toelichting: 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Het marketingteam krijgt er meteen bericht van.',
+    toelichting: 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Heb je bestanden, voeg ze hier meteen toe. Het marketingteam krijgt er meteen bericht van.',
     extra: verlopen
       ? 'Kies eerst een nieuwe deadline. De rest mag je overslaan.'
       : 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
@@ -293,8 +293,12 @@ export function Aanvulling({ collegas, onSluit }: Props) {
                 placeholder="Bijvoorbeeld: er komen ook vlaggen bij, en de tekst op de LED-kolom moet 'Welkom' worden."
               />
             ) : null}
+            {/* De bestanden horen bij wat er moet veranderen, dus ze staan hier en niet pas op het laatste scherm. */}
+            {stap === 'toelichting' ? (
+              <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
+            ) : null}
 
-            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} uploads={uploads} verlopen={verlopen} /> : null}
+            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} verlopen={verlopen} /> : null}
           </Question>
         </motion.div>
       </AnimatePresence>
@@ -423,13 +427,11 @@ function ExtraVelden({
   draft,
   patch,
   gekozen,
-  uploads,
   verlopen,
 }: {
   draft: Draft
   patch: (p: Partial<Draft>) => void
   gekozen: GevondenAanvraag | null
-  uploads: Uploads
   verlopen: boolean
 }) {
   const intern = gekozen?.soort === 'intern'
@@ -447,7 +449,6 @@ function ExtraVelden({
 
       <section className="extra__blok">
         <h2 className="extra__kop">{verlopen ? 'Wanneer heb je het nu nodig?' : 'Is een datum verschoven?'}</h2>
-        {verlopen ? null : <p className="extra__uitleg">Meestal niet, dus de kalender blijft dicht tot je hem nodig hebt.</p>}
         <div className="extra__datums">
           {/* Een interne aanvraag heeft geen event, dus ook geen eventdatum. */}
           {intern ? null : (
@@ -471,12 +472,11 @@ function ExtraVelden({
       </section>
 
       <section className="extra__blok">
-        <h2 className="extra__kop">Is er materiaal?</h2>
+        <h2 className="extra__kop">Staat er materiaal op de schijf of online?</h2>
         <p className="extra__uitleg">
-          Sleep bestanden hierheen, of verwijs naar een map op de G:-schijf of een link.
+          Verwijs naar een map op de G:-schijf of een link.
           {gekozen?.schijf_locatie ? ` Bij je aanvraag staat nu: ${gekozen.schijf_locatie} — vul je iets anders in, dan geven we dat erbij door.` : ' Alles hier mag leeg blijven.'}
         </p>
-        <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
 
         <div className="extra__velden">
           <div>
