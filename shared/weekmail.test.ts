@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { maakWeekoverzicht, renderWeekmail, taakUitAsana, weekVan, type WeekTaak } from './weekmail'
+import { maakWeekoverzicht, nietsTeMelden, renderWeekmail, taakUitAsana, weekVan, type WeekTaak } from './weekmail'
 
 // Maandag 26 oktober 2026, week 44.
 const MA = '2026-10-26'
@@ -69,6 +69,19 @@ describe('maakWeekoverzicht', () => {
     expect(o.letOp.naDeadlineIngepland.map((t) => t.naam)).toEqual(['te laat gepland'])
     // "nieuw" heeft ook geen datum, maar staat al onder Nog niet opgepakt.
     expect(o.letOp.nietIngepland.map((t) => t.naam)).toEqual(['geen datum'])
+  })
+})
+
+describe('nietsTeMelden', () => {
+  it('een lege week, of alleen iets voor volgende week, levert geen mail op', () => {
+    expect(nietsTeMelden(maakWeekoverzicht([], MA))).toBe(true)
+    expect(nietsTeMelden(maakWeekoverzicht([taak({ deadline: '2026-11-03' })], MA))).toBe(true)
+  })
+
+  it('een deadline deze week, of iets om op te letten, wel', () => {
+    expect(nietsTeMelden(maakWeekoverzicht([taak()], MA))).toBe(false)
+    // Geen deadline deze week, maar wel feedback die wacht.
+    expect(nietsTeMelden(maakWeekoverzicht([taak({ deadline: '2026-11-10', sectie: 'feedback' })], MA))).toBe(false)
   })
 })
 

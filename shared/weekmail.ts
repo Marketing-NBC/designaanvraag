@@ -157,6 +157,14 @@ export function maakWeekoverzicht(alle: WeekTaak[], vandaag: string): Weekoverzi
   }
 }
 
+/**
+ * Geen deadlines deze week en niets om op te letten: dan komt er geen mail. Een lege mail elke week
+ * leert je alleen hem niet meer te lezen. Deadlines van volgende week wachten tot die maandag.
+ */
+export function nietsTeMelden(o: Weekoverzicht): boolean {
+  return o.aantal === 0 && Object.values(o.letOp).every((l) => l.length === 0)
+}
+
 const SPOED = '<span style="display:inline-block;background:#c0392b;color:#ffffff;font-size:11px;font-weight:bold;padding:1px 6px;border-radius:3px;margin-left:6px;">SPOED</span>'
 
 function taakRegel(t: WeekTaak, extra: string[] = []): string {

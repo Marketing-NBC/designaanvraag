@@ -6,9 +6,11 @@ name: Weekmail
 
 on:
   schedule:
-    # 05:00 UTC: 06:00 in de winter, 07:00 in de zomer. Ruim voor kantoortijd, ook als GitHub
-    # een geplande run een half uur later start, wat geregeld gebeurt.
-    - cron: '0 5 * * 1'
+    # 8:00 Nederlandse tijd. GitHub kent alleen UTC, dus twee tijden: 06:00 UTC is 8:00 in de
+    # zomer, 07:00 UTC is 8:00 in de winter. De eerste stap laat alleen de juiste doorgaan.
+    # GitHub start een geplande run soms een kwartier of meer later.
+    - cron: '0 6 * * 1'
+    - cron: '0 7 * * 1'
   workflow_dispatch:
     inputs:
       aan:
@@ -37,11 +39,23 @@ jobs:
       MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
       MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
     steps:
+      - name: Is het 8:00 in Nederland?
+        id: tijd
+        if: github.event_name == 'schedule'
+        env:
+          SCHEMA: ${{ github.event.schedule }}
+        run: |
+          # +0200 is zomertijd, dan hoort de run van 06:00 UTC erbij; +0100 is wintertijd: 07:00 UTC.
+          if [ "$(TZ=Europe/Amsterdam date +%z)" = "+0200" ]; then juist='0 6 * * 1'; else juist='0 7 * * 1'; fi
+          if [ "$SCHEMA" = "$juist" ]; then echo "door=true" >> "$GITHUB_OUTPUT"; else echo "door=false" >> "$GITHUB_OUTPUT"; echo "Niet de 8:00-run van dit seizoen; overgeslagen."; fi
       - uses: actions/checkout@v4
+        if: steps.tijd.outputs.door != 'false'
       - uses: actions/setup-node@v4
+        if: steps.tijd.outputs.door != 'false'
         with:
           node-version: 22
       - name: Weekoverzicht versturen
+        if: steps.tijd.outputs.door != 'false'
         env:
           AAN: ${{ inputs.aan }}
           PROEF: ${{ inputs.proef }}

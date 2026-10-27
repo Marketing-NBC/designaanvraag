@@ -294,9 +294,9 @@ mislukte mail niets tegen: de aanvraag en de taak komen er gewoon. De reden staa
 de function (Supabase → Edge Functions → `submit-aanvraag` of `aanvulling-toevoegen` → Logs, zoek
 op "mailen mislukt").
 
-**Het weekoverzicht** (`scripts/weekmail.mjs`, workflow **Weekmail**) komt elke maandag rond 6:00
-(in de zomer 7:00), per locatie een eigen mail. Het haalt de open taken uit het project
-Designaanvragen en zet erin:
+**Het weekoverzicht** (`scripts/weekmail.mjs`, workflow **Weekmail**) komt elke maandag om 8:00,
+per locatie een eigen mail. GitHub start een geplande run soms een kwartier of meer later. Het haalt
+de open taken uit het project Designaanvragen en zet erin:
 
 - de **deadlines van deze week**, per dag, met spoed gemarkeerd en of er al een planningsdatum is;
 - **let op**: wat al over de deadline is, wat nog in Nieuwe aanvragen staat, wat in Feedback staat,
@@ -305,9 +305,11 @@ Designaanvragen en zet erin:
 
 "Deadline" is het veld Deadline: wanneer de aanvrager het af wil hebben. Een taak die met de hand in
 Asana is aangemaakt, zonder Locatie, telt als NBC. Wat in Klaar staat of is afgevinkt telt niet mee.
+Is er voor een locatie niets te melden (geen deadlines deze week en niets onder "let op"), dan komt
+er die week geen mail.
 
 Zelf draaien kan via Actions → **Weekmail** → Run workflow. Met **aan** ingevuld gaat alles naar dat
-adres in plaats van naar de marketingpostvakken, handig om te testen. Met **proef** aangevinkt wordt
+adres in plaats van naar de marketingpostvakken, ook als er niets te melden is: handig om te testen. Met **proef** aangevinkt wordt
 er niets verstuurd en staan de mails als bijlage bij de run.
 
 ### Mail instellen (eenmalig, door de Microsoft 365-beheerder)

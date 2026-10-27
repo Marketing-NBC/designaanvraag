@@ -9,7 +9,8 @@
  * Opties:
  *   --proef            Niets versturen; de mails komen als HTML in weekmail-proef/ (en in de
  *                      samenvatting van de workflow). Microsoft hoeft dan niet ingesteld te zijn.
- *   --aan <adres>      Alles naar dit adres in plaats van naar de marketingpostvakken. Om te testen.
+ *   --aan <adres>      Alles naar dit adres in plaats van naar de marketingpostvakken. Om te testen;
+ *                      dan komt er ook een mail als er niets te melden is.
  *   --datum <JJJJ-MM-DD>  Doen alsof het die dag is.
  *
  * Wat erin staat bepaalt shared/weekmail.ts; dit script haalt alleen op en verstuurt.
@@ -18,9 +19,9 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import fields from '../shared/asana-fields.json' with { type: 'json' }
 import { MELDING_AFZENDER } from '../shared/contact.ts'
 import { createGraphMail } from '../shared/mail.ts'
-import { LOCATIE_KEYS } from '../shared/request-types.ts'
+import { LOCATIE_KEYS, locatieLabel } from '../shared/request-types.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
-import { maakWeekoverzicht, renderWeekmail, taakUitAsana } from '../shared/weekmail.ts'
+import { maakWeekoverzicht, nietsTeMelden, renderWeekmail, taakUitAsana } from '../shared/weekmail.ts'
 
 const API = process.env.ASANA_API ?? 'https://app.asana.com/api/1.0'
 
@@ -84,6 +85,11 @@ if (proef) mkdirSync('weekmail-proef', { recursive: true })
 let mislukt = 0
 for (const locatie of LOCATIE_KEYS) {
   const overzicht = maakWeekoverzicht(taken.filter((t) => t.locatie === locatie), vandaag)
+  // Een test met --aan gaat altijd door: anders zie je in een rustige week niet of het mailen werkt.
+  if (nietsTeMelden(overzicht) && !testAdres) {
+    regels.push(`- ${locatieLabel(locatie)}: niets te melden deze week, geen mail`)
+    continue
+  }
   const bericht = renderWeekmail(overzicht, locatie, fields.project?.url ?? null)
   const aan = testAdres ? [testAdres] : bericht.aan
   const regel = `**${bericht.onderwerp}** → ${aan.join(', ')}`
