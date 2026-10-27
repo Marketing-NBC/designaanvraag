@@ -19,18 +19,15 @@ export interface AsanaFieldsConfig {
   sections?: Record<string, { gid: string; name?: string }>
   /** Project waar ingeplande taken ook in komen ("4. Werkplanning"). */
   planning_project?: { gid: string; name?: string; url?: string } | null
-  /** Tags waarop de kalender van de werkplanning kleurt; sleutels uit `tagSleutel`. */
-  tags?: Record<string, { gid: string; name?: string }>
 }
 
 export const asanaFields = fieldsJson as unknown as AsanaFieldsConfig
 
 /**
- * Welke kalendertag een aanvraag krijgt: soort en spoed samen, want de kalender van de werkplanning
- * kleurt op tags en kan maar één kleur per taak tonen. Dezelfde regel staat in
- * scripts/asana-velden.mjs, die de tags aanmaakt en oude taken bijwerkt.
+ * Welke optie een aanvraag krijgt in het veld Kleur: soort en spoed samen. De kalender van de
+ * werkplanning kleurt op dat veld, en Asana kleurt maar op één ding tegelijk.
  */
-export function tagSleutel(soort: Soort, spoed: boolean): string {
+export function kleurSleutel(soort: Soort, spoed: boolean): string {
   return `${soort === 'intern' ? 'intern' : 'evenement'}${spoed ? '_spoed' : ''}`
 }
 
@@ -46,8 +43,6 @@ export interface TaskInput {
   customFields: Record<string, unknown>
   /** Eén subtaak per aangevraagd type (alleen bij meer dan één type). */
   subtasks: string[]
-  /** Tags op de taak; de kalender van de werkplanning kleurt erop. */
-  tagGids?: string[]
 }
 
 export interface AsanaClient {
@@ -178,6 +173,14 @@ export function buildCustomFields(
   const schijf = f['schijf']
   if (schijf?.type === 'text' && a.schijf_locatie) out[schijf.gid] = a.schijf_locatie
 
+  // Kleur: soort en spoed samen in één optie, want daarop kleurt de kalender van de werkplanning.
+  // Alleen als spoed bekend is; zonder die uitspraak gokken we geen kleur.
+  const kleur = f['kleur']
+  if (kleur?.type === 'enum' && opties.spoed !== undefined) {
+    const gid = kleur.options?.[kleurSleutel(a.soort, opties.spoed)]
+    if (gid) out[kleur.gid] = gid
+  }
+
   const spoedVeld = f['spoed']
   if (spoedVeld && opties.spoed !== undefined) {
     const sleutel = opties.spoed ? 'ja' : 'nee'
@@ -284,12 +287,6 @@ export function createAsanaClient(pat: string): AsanaClient {
 
       // 3. Custom fields.
       warnings.push(...(await putCustomFields(pat, gid, input.customFields)))
-
-      // 4. Tags. Een tag die niet lukt kost alleen een kleur in de kalender, dus geen reden om te falen.
-      for (const tag of input.tagGids ?? []) {
-        const { status, body } = await asanaFetch(pat, `/tasks/${gid}/addTag`, { method: 'POST', body: JSON.stringify({ data: { tag } }) })
-        if (!ok(status)) warnings.push(`tag zetten mislukt (${status}: ${errorText(body)})`)
-      }
 
       return { gid, url, subtasks: await createSubtasks(pat, gid, input), warnings }
     },
