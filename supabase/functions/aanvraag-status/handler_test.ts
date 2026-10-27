@@ -17,6 +17,10 @@ const env: Env = {
   routineToken: null,
     menuRoutineFireUrl: null,
     menuRoutineToken: null,
+    msTenantId: null,
+    msClientId: null,
+    msClientSecret: null,
+    mailAfzender: null,
 }
 const ID = '4f1a2b3c-4d5e-4f60-8a71-829394a5b6c7'
 const handler = createStatusHandler({

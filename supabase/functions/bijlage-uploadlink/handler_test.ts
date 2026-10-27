@@ -20,6 +20,10 @@ const env: Env = {
   routineToken: null,
     menuRoutineFireUrl: null,
     menuRoutineToken: null,
+    msTenantId: null,
+    msClientId: null,
+    msClientSecret: null,
+    mailAfzender: null,
 }
 
 const GROEP = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
