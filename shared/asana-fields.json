@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-26T16:11:15.941Z",
+  "generated_at": "2026-10-27T10:51:54.986Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -136,6 +136,24 @@
     "klaar": {
       "gid": "1218459914834826",
       "name": "Klaar"
+    }
+  },
+  "tags": {
+    "evenement": {
+      "gid": "1219926364887877",
+      "name": "Evenement"
+    },
+    "evenement_spoed": {
+      "gid": "1219926364632941",
+      "name": "Evenement spoed"
+    },
+    "intern": {
+      "gid": "1219926315032791",
+      "name": "Intern"
+    },
+    "intern_spoed": {
+      "gid": "1219926364541654",
+      "name": "Intern spoed"
     }
   },
   "planning_project": {
