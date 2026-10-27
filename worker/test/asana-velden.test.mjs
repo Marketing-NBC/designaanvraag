@@ -162,6 +162,7 @@ test('het kleurveld vangt soort en spoed, plus de eigen taken, en spoed is nooit
   const spec = FIELD_SPECS.find((s) => s.key === 'kleur')
   assert.ok(spec, 'het kleurveld hoort bij de velden die we aanmaken')
   assert.ok(spec.ookInPlanning, 'de kalender staat in de werkplanning; zonder het veld daar kleurt er niets')
+  assert.ok(spec.ookInDeadlines, 'de mijlpalen in het deadlineproject krijgen dezelfde kleur')
   const kleuren = Object.fromEntries(spec.options)
   assert.deepEqual(Object.keys(kleuren),
     ['evenement', 'evenement_spoed', 'intern', 'intern_spoed', 'reminder', 'nbc', 'gv'])
@@ -169,4 +170,15 @@ test('het kleurveld vangt soort en spoed, plus de eigen taken, en spoed is nooit
   // Rood is van de reminders; een spoedje mag daar niet op lijken.
   for (const k of ['evenement', 'evenement_spoed', 'intern', 'intern_spoed']) assert.notEqual(kleuren[k], 'red', k)
   assert.equal(new Set(Object.values(kleuren)).size, spec.options.length, 'elke optie een eigen kleur')
+})
+
+test('Kleur komt ook in het planningsproject en het deadlineproject te hangen, en alleen Kleur daar', async () => {
+  const { api, calls } = nepAsana()
+  await zorgVoorVelden({ asana: api, map, workspaceGid: 'ws', projectGid: 'proj', planningGid: 'plan', deadlinesGid: 'dl' })
+  const naar = (p) => calls.filter((c) => c.path === `/projects/${p}/addCustomFieldSetting`).map((c) => c.body.data.custom_field)
+  const gid = (naam) => calls.find((c) => c.method === 'POST' && c.path === '/custom_fields' && c.body.data.name === naam)
+  const kleurIndex = calls.filter((c) => c.method === 'POST' && c.path === '/custom_fields').indexOf(gid('Kleur'))
+  const kleurGid = `nieuw-${kleurIndex + 1}`
+  assert.deepEqual(naar('dl'), [kleurGid])
+  assert.ok(naar('plan').includes(kleurGid))
 })

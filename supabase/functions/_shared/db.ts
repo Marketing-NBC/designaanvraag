@@ -10,6 +10,8 @@ export interface AanvraagRow {
   asana_task_gid: string | null
   asana_task_url: string | null
   asana_error: string | null
+  /** De mijlpaal op de deadline in het deadlineproject; null als die er niet is. */
+  asana_deadline_gid: string | null
   /** Minder dan 10 werkdagen tot het event, bepaald bij het indienen. */
   spoed: boolean
   /** Werkdagen tussen de aanvraag en het event; negatief kan niet, het formulier blokkeert dat. */
@@ -119,6 +121,11 @@ export interface Db {
    * zodat de webhook een taak van buiten dit project kan herkennen.
    */
   markeerVervallen(asanaTaskGid: string, moment: Date): Promise<boolean>
+  /**
+   * De deadline-mijlpaal van de aanvraag achter deze taak, ook als de aanvraag al vervallen is:
+   * juist dan moet de mijlpaal nog opgeruimd worden.
+   */
+  deadlineVan(asanaTaskGid: string): Promise<string | null>
   findAanvullingByClientRequestId(id: string): Promise<AanvullingRow | null>
   insertAanvulling(row: NewAanvulling): Promise<AanvullingRow>
   updateAanvulling(id: string, patch: Partial<AanvullingRow>): Promise<void>
@@ -134,7 +141,7 @@ export interface Db {
   markeerBijlage(id: string, patch: Partial<BijlageRow> & { fout?: string | null; asana_url?: string | null }): Promise<void>
 }
 
-const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
+const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
 const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving`
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
@@ -239,6 +246,11 @@ export function createDb(url: string, secretKey: string): Db {
         .select('id')
       if (error) throw new Error(`db vervallen: ${error.message}`)
       return ((data as unknown[] | null) ?? []).length > 0
+    },
+    async deadlineVan(asanaTaskGid) {
+      const { data, error } = await sb.from('aanvragen').select('asana_deadline_gid').eq('asana_task_gid', asanaTaskGid).limit(1).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as { asana_deadline_gid: string | null } | null)?.asana_deadline_gid ?? null
     },
     async findAanvullingByClientRequestId(id) {
       const { data, error } = await sb.from('aanvullingen').select(AANVULLING_COLUMNS).eq('client_request_id', id).maybeSingle()

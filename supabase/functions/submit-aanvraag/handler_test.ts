@@ -4,7 +4,7 @@ import type { AanvraagRow, BijlageRow, Db, NewAanvraag } from '../_shared/db.ts'
 import { HUISSTIJL_MARKER, renderNotes } from '../_shared/notes.ts'
 import { isMenuSubtaak, subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import { buildCustomFields } from '../_shared/asana.ts'
-import type { TaskInput } from '../_shared/asana.ts'
+import type { DeadlineInput, TaskInput } from '../_shared/asana.ts'
 import type { MailBericht } from '../_shared/shared/mail.ts'
 import { escapeHtml } from '../_shared/shared/mail.ts'
 import { createHandler, type Deps } from './handler.ts'
@@ -41,7 +41,7 @@ function fakeDb() {
       return null
     },
     async insert(row) {
-      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null, menu_status: 'pending' as const, menu_error: null, menu_kleuren: 'nbc' as const, vervallen_op: null }
+      const full = { ...row, id: crypto.randomUUID(), asana_task_gid: null, asana_task_url: null, asana_error: null, asana_deadline_gid: null, brand_status: 'pending' as const, brand_error: null, brand_session_url: null, menu_status: 'pending' as const, menu_error: null, menu_kleuren: 'nbc' as const, vervallen_op: null }
       rows.set(full.id, full)
       return full
     },
@@ -61,6 +61,7 @@ function fakeDb() {
     zoekOpEvent: () => Promise.resolve([]),
     zoekInternOpNaam: () => Promise.resolve([]),
     markeerVervallen: () => Promise.resolve(false),
+    deadlineVan: () => Promise.resolve(null),
     findAanvullingByClientRequestId: () => Promise.resolve(null),
     insertAanvulling: () => Promise.reject(new Error('niet gebruikt')),
     updateAanvulling: () => Promise.resolve(),
@@ -72,12 +73,19 @@ function fakeDb() {
   return db
 }
 
-function fakeAsana(opts: { fail?: boolean; warnings?: string[]; optieFail?: boolean } = {}) {
+function fakeAsana(opts: { fail?: boolean; warnings?: string[]; optieFail?: boolean; deadlineFail?: boolean } = {}) {
   const calls: TaskInput[] = []
   const opties: { fieldGid: string; naam: string }[] = []
+  const deadlines: DeadlineInput[] = []
   return {
     calls,
     opties,
+    deadlines,
+    async createDeadline(input: DeadlineInput) {
+      deadlines.push(input)
+      if (opts.deadlineFail) throw new Error('Deadline-mijlpaal aanmaken mislukt (403: Not Authorized)')
+      return { gid: 'mijlpaal-1', warnings: [] }
+    },
     async enumOptie(fieldGid: string, naam: string) {
       if (opts.optieFail) throw new Error('403: Not Authorized')
       opties.push({ fieldGid, naam })
@@ -534,6 +542,57 @@ Deno.test('het veld Kleur vangt soort en spoed samen', async () => {
 Deno.test('zonder uitspraak over spoed gokt buildCustomFields geen kleur', () => {
   // deno-lint-ignore no-explicit-any
   assertEquals(buildCustomFields(validAanvraag as any, metKleur), {})
+})
+
+// ── Deadline-mijlpaal ────────────────────────────────────────────────────────
+
+const metDeadlines = {
+  ...(metKleur as object),
+  deadlines_project: { gid: 'dl1', name: 'Deadlines designaanvragen' },
+} as unknown as Parameters<typeof createHandler>[0]['fields']
+
+Deno.test('elke aanvraag krijgt een mijlpaal op zijn deadline, en die wordt onthouden', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: metDeadlines,
+    now: () => new Date('2026-09-14T10:00:00Z'), log: () => {} })
+  await handler(post(payload({ started_at: '2026-09-14T09:59:00Z' })))
+  assertEquals(asana.deadlines, [{
+    name: 'Zorgcongres 2026 - Noa - Meerdere designs',
+    taakGid: '999',
+    projectGid: 'dl1',
+    dueOn: '2026-11-10',
+    customFields: { fK: 'kEv' },
+  }])
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.asana_deadline_gid, 'mijlpaal-1')
+  assertEquals(rij.asana_error, null)
+})
+
+Deno.test('een interne aanvraag krijgt ook een mijlpaal, met een eigen naam', async () => {
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: metDeadlines, log: () => {} })
+  await handler(post(payload({ aanvraag: interneAanvraag })))
+  assertEquals(asana.deadlines[0].name, 'Intern - Noa - Nieuwe visitekaartjes voor het hele salesteam, met de…')
+})
+
+Deno.test('lukt de mijlpaal niet, dan staat de aanvraag er gewoon, met de reden', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana({ deadlineFail: true })
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: metDeadlines, log: () => {} })
+  const res = await handler(post(payload()))
+  assertEquals(res.status, 200)
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.asana_task_gid, '999')
+  assertEquals(rij.asana_deadline_gid, null)
+  assertMatch(rij.asana_error ?? '', /Deadline-mijlpaal aanmaken mislukt/)
+})
+
+Deno.test('zonder deadlineproject komt er geen mijlpaal', async () => {
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: metKleur, log: () => {} })
+  await handler(post(payload()))
+  assertEquals(asana.deadlines, [])
 })
 
 // ── Meegestuurde bestanden ───────────────────────────────────────────────────

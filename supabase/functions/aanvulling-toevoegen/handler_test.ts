@@ -60,6 +60,7 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     asana_task_gid: '999',
     asana_task_url: 'https://app.asana.com/0/111/999',
     asana_error: null,
+    asana_deadline_gid: null,
     spoed: false,
     werkdagen_tot_event: 30,
     brand_status: 'done',
@@ -105,6 +106,7 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     zoekOpEvent: () => Promise.resolve([]),
     zoekInternOpNaam: () => Promise.resolve([]),
     markeerVervallen: () => Promise.resolve(false),
+    deadlineVan: () => Promise.resolve(null),
     findByAsanaTaskGid: () => Promise.resolve(null),
     async findAanvullingByClientRequestId(id) {
       return aanvullingen.find((a) => a.client_request_id === id) ?? null
@@ -170,6 +172,8 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
       heropend++
       return Promise.resolve()
     },
+    bijwerkDeadline: () => Promise.resolve(),
+    verwijderTaak: () => Promise.resolve(),
   }
 }
 

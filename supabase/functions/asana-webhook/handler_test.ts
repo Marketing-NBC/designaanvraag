@@ -10,6 +10,7 @@ const cfg: AsanaFieldsConfig = {
   project: { gid: 'proj1', name: 'Designaanvragen' },
   assignee: { gid: 'abel' },
   fields: {
+    deadline: { gid: 'veld-deadline', name: 'Deadline', type: 'date' },
     menuscherm: {
       gid: 'veld-menu',
       name: 'Menuscherm',
@@ -51,6 +52,8 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
   const added: [string, string][] = []
   const posted: [string, string][] = []
   const gezet: [string, Record<string, unknown>][] = []
+  const mijlpalen: [string, { dueOn: string; completed: boolean }][] = []
+  const verwijderd: string[] = []
   const client: AsanaTaskClient = {
     async getTask(gid) {
       const t = tasks[gid]
@@ -74,11 +77,17 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     uploadAttachment: () => Promise.resolve({ gid: 'att-1', url: null }),
     moveToSection: () => Promise.resolve(),
     heropen: () => Promise.resolve(),
+    async bijwerkDeadline(gid, stand) {
+      mijlpalen.push([gid, stand])
+    },
+    async verwijderTaak(gid) {
+      verwijderd.push(gid)
+    },
   }
-  return { client, added, posted, gezet }
+  return { client, added, posted, gezet, mijlpalen, verwijderd }
 }
 
-function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[]; zonderRoutine?: boolean } = {}) {
+function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[]; zonderRoutine?: boolean; mijlpalen?: Record<string, string> } = {}) {
   const store = fakeStore(opts.secrets)
   const asana = fakeAsana(tasks, opts.comments)
   // Welke taken een aanvraag in onze database hebben; standaard allemaal die in `tasks` staan.
@@ -107,6 +116,7 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Rec
       vervallen.push([gid, moment.toISOString()])
       return Promise.resolve(true)
     },
+    deadlineVan: opts.mijlpalen ? (gid) => Promise.resolve(opts.mijlpalen?.[gid] ?? null) : undefined,
   })
   return { handler, store, asana, vervallen, gestart }
 }
@@ -343,4 +353,42 @@ Deno.test('zonder aanvraag bij de taak zegt de huisstijl-knop dat', async () => 
   const res = await handler(await signed([veldGewijzigd('t1')]))
   assertMatch(JSON.stringify(await res.json()), /geen aanvraag bij deze taak/)
   assertEquals(asana.gezet, [], 'niets gestart, dus ook niet op Bezig zetten')
+})
+
+// ── De deadline-mijlpaal ─────────────────────────────────────────────────────
+
+const metDeadline = (datum: string | null) => ({ 'veld-deadline': { optieGids: [], datum, tekst: null } })
+
+Deno.test('een wijziging zet de mijlpaal op de deadline uit Asana', async () => {
+  const { handler, asana } = setup({ t1: { customFields: metDeadline('2026-11-20') } }, { mijlpalen: { t1: 'm1' } })
+  await handler(await signed([dueChanged('t1')]))
+  assertEquals(asana.mijlpalen, [['m1', { dueOn: '2026-11-20', completed: false }]])
+})
+
+Deno.test('een afgeronde taak rondt de mijlpaal af, een heropende zet hem weer open', async () => {
+  const taken: Record<string, Partial<AsanaTask>> = { t1: { completed: true, customFields: metDeadline('2026-11-20') } }
+  const { handler, asana } = setup(taken, { mijlpalen: { t1: 'm1' } })
+  await handler(await signed([dueChanged('t1')]))
+  taken.t1 = { completed: false, customFields: metDeadline('2026-11-27') }
+  await handler(await signed([dueChanged('t1')]))
+  assertEquals(asana.mijlpalen, [
+    ['m1', { dueOn: '2026-11-20', completed: true }],
+    ['m1', { dueOn: '2026-11-27', completed: false }],
+  ])
+})
+
+Deno.test('zonder mijlpaal of zonder deadline gebeurt er niets met mijlpalen', async () => {
+  const zonder = setup({ t1: { customFields: metDeadline('2026-11-20') } }, { mijlpalen: {} })
+  await zonder.handler(await signed([dueChanged('t1')]))
+  assertEquals(zonder.asana.mijlpalen, [])
+  const leeg = setup({ t1: { customFields: metDeadline(null) } }, { mijlpalen: { t1: 'm1' } })
+  await leeg.handler(await signed([dueChanged('t1')]))
+  assertEquals(leeg.asana.mijlpalen, [])
+})
+
+Deno.test('een weggegooide taak neemt zijn mijlpaal mee', async () => {
+  const { handler, asana, vervallen } = setup({ t1: {} }, { mijlpalen: { t1: 'm1' } })
+  await handler(await signed([verwijderd('t1')]))
+  assertEquals(asana.verwijderd, ['m1'])
+  assertEquals(vervallen.length, 1)
 })

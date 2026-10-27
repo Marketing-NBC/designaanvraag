@@ -302,6 +302,14 @@ kan geen grafieken of weergave-instellingen maken.
   mintgroen. Een veld wint wel. Het veld hangt aan beide projecten (`ookInPlanning` in
   `scripts/asana-velden.mjs`); een optie erbij is een regel in `FIELD_SPECS` plus een label in
   `option_aliases`, en dan **Asana-velden vernieuwen**.
+- **Alles op de deadline zien:** een Asana-kalender kan alleen op de vervaldatum, en die kiest
+  Marketing zelf bij het inplannen. Daarom krijgt elke aanvraag een **mijlpaal** in het project
+  **Deadlines designaanvragen**, met de deadline uit het formulier als vervaldatum en dezelfde Kleur.
+  De kalender van dat project is dus de deadline-kalender. De mijlpaal wordt bij het indienen gemaakt
+  (gid in `aanvragen.asana_deadline_gid`) en de webhook houdt hem bij: verschuift het veld Deadline
+  (via een aanvulling of met de hand in Asana), wordt de taak afgevinkt of heropend, dan doet de
+  mijlpaal mee; wordt de taak weggegooid, dan verdwijnt hij. Het project staat als `deadlines` in de
+  workflow **Asana-velden vernieuwen**; die hangt ook het veld Kleur eraan.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.

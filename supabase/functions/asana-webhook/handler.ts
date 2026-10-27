@@ -9,7 +9,10 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *    planningsproject ("4. Werkplanning") zetten. De vervaldatum is een eigenschap van de taak,
  *    dus die is in beide projecten gelijk;
  *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
- *    verdwijnt en er geen aanvulling meer op kan.
+ *    verdwijnt en er geen aanvulling meer op kan;
+ *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
+ *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
+ *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
  */
 
 export interface WebhookStore {
@@ -28,6 +31,8 @@ export interface Deps {
    * aanvraag in het zoekscherm staan en loopt een collega vast op een taak die niet meer bestaat.
    */
   markeerVervallen(asanaTaskGid: string, moment: Date): Promise<boolean>
+  /** De deadline-mijlpaal van de aanvraag achter deze taak. Zonder dit doet de webhook niets met mijlpalen. */
+  deadlineVan?(asanaTaskGid: string): Promise<string | null>
   /**
    * Start het maken van het menuscherm voor de aanvraag achter deze taak. Geeft
    * false als er geen aanvraag bij hoort. Ontbreekt de functie, dan is de Routine
@@ -158,10 +163,39 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     return 'huisstijl opnieuw gestart'
   }
 
+  /**
+   * Zet de deadline-mijlpaal gelijk met de taak. Altijd schrijven in plaats van eerst vergelijken:
+   * dat scheelt een extra ophaalronde, en de mijlpaal staat in een ander project, dus deze webhook
+   * hoort zijn eigen wijziging niet terug. Een fout hier mag de planning-flow niet tegenhouden.
+   */
+  async function volgDeadline(t: AsanaTask): Promise<void> {
+    const veld = cfg.fields?.deadline?.gid
+    const dueOn = veld ? t.customFields?.[veld]?.datum ?? null : null
+    if (!deps.deadlineVan || !dueOn) return
+    try {
+      const mijlpaal = await deps.deadlineVan(t.gid)
+      if (mijlpaal) await asana.bijwerkDeadline(mijlpaal, { dueOn, completed: t.completed })
+    } catch (e) {
+      log('warn', 'deadline-mijlpaal bijwerken mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  /** De taak is weg, dus de mijlpaal ook: die zou anders blijven staan op een deadline die niet meer bestaat. */
+  async function ruimDeadlineOp(taakGid: string): Promise<void> {
+    if (!deps.deadlineVan) return
+    try {
+      const mijlpaal = await deps.deadlineVan(taakGid)
+      if (mijlpaal) await asana.verwijderTaak(mijlpaal)
+    } catch (e) {
+      log('warn', 'deadline-mijlpaal opruimen mislukt', { gid: taakGid, error: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
   async function handleTask(gid: string): Promise<string> {
     const t = await asana.getTask(gid)
     const ours = t.memberships.find((m) => m.project === projectGid)
     if (!ours) return 'niet in ons project'
+    await volgDeadline(t)
 
     // De knop staat los van de planning-flow: een menuscherm mag ook gemaakt worden
     // als de taak al afgerond is of nog geen vervaldatum heeft.
@@ -249,6 +283,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       // Ook uit de gewone lijst halen: één gebeurtenissenbatch kan allebei bevatten, en een taak
       // ophalen die net weg is levert alleen een fout op.
       tasks.delete(gid)
+      await ruimDeadlineOp(gid)
       try {
         outcomes[gid] = (await deps.markeerVervallen(gid, now())) ? 'aanvraag vervallen' : 'geen aanvraag bij deze taak'
       } catch (e) {
