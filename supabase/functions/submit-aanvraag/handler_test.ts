@@ -525,7 +525,10 @@ Deno.test('elke taak krijgt één tag die soort en spoed samen vangt', async () 
 })
 
 Deno.test('zonder tags in de configuratie gaat de taak er gewoon zonder', async () => {
-  const { handler, asana } = setup()
+  // Een eigen configuratie zonder tags, niet de echte: daar staan ze in zodra de workflow heeft gedraaid.
+  const zonderTags = { ...(metTags as object), tags: undefined } as unknown as Parameters<typeof createHandler>[0]['fields']
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: zonderTags, log: () => {} })
   await handler(post(payload()))
   assertEquals(asana.calls[0].tagGids, [])
 })
