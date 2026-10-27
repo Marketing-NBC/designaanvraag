@@ -79,11 +79,15 @@ jobs:
           ROUTINE_TOKEN: ${{ secrets.ROUTINE_TOKEN }}
           MENU_ROUTINE_FIRE_URL: ${{ secrets.MENU_ROUTINE_FIRE_URL }}
           MENU_ROUTINE_TOKEN: ${{ secrets.MENU_ROUTINE_TOKEN }}
+          MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+          MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+          MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+          MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
           ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
           RATE_SALT: ${{ secrets.RATE_SALT }}
         run: |
           args=()
-          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN MENU_ROUTINE_FIRE_URL MENU_ROUTINE_TOKEN ALLOWED_ORIGINS RATE_SALT; do
+          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN MENU_ROUTINE_FIRE_URL MENU_ROUTINE_TOKEN MS_TENANT_ID MS_CLIENT_ID MS_CLIENT_SECRET MAIL_AFZENDER ALLOWED_ORIGINS RATE_SALT; do
             v="${!k}"
             if [ -n "$v" ]; then args+=("$k=$v"); echo "  zet $k"; else echo "  overslaan $k (leeg)"; fi
           done

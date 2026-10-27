@@ -3,6 +3,7 @@ import type { AsanaFieldsConfig, AsanaTask } from '../_shared/asana.ts'
 import type { AanvraagDetail, AanvullingRow, Db, NewAanvulling } from '../_shared/db.ts'
 import type { Env } from '../_shared/env.ts'
 import type { AanvullingInput } from '../_shared/shared/aanvulling-schema.ts'
+import type { MailBericht } from '../_shared/shared/mail.ts'
 import { bepaalWijziging, createHandler, type Deps } from './handler.ts'
 
 const env: Env = {
@@ -20,6 +21,10 @@ const env: Env = {
   routineToken: null,
     menuRoutineFireUrl: null,
     menuRoutineToken: null,
+    msTenantId: null,
+    msClientId: null,
+    msClientSecret: null,
+    mailAfzender: null,
 }
 
 /** Eigen mapping met herkenbare gids, zodat een assertie leest als de bedoeling. */
@@ -64,7 +69,10 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     menu_error: null,
     menu_kleuren: 'nbc' as const,
     vervallen_op: null,
+    naam: 'Britt',
+    locatie: 'nbc',
     soort: 'evenement',
+    omschrijving: '',
     event: 'Zorgcongres 2026',
     event_datum: '2026-12-01',
     deadline: '2026-11-20',
@@ -502,4 +510,83 @@ Deno.test('lukt het ophalen van de taak niet, dan heropenen we niets', async () 
   await createHandler(deps({ asana: kapot }))(post(payload()))
   assertEquals(asana.heropend, 0)
   assertEquals(asana.verplaatst, [])
+})
+
+// ── Meldingsmail ──────────────────────────────────────────────────────────────
+
+function fakeMail(opts: { fail?: boolean } = {}) {
+  const verstuurd: MailBericht[] = []
+  return {
+    verstuurd,
+    async verstuur(b: MailBericht) {
+      if (opts.fail) throw new Error('Mail versturen mislukt (403: ErrorAccessDenied)')
+      verstuurd.push(b)
+    },
+  }
+}
+
+Deno.test('een aanvulling geeft een mail met de taak, de tekst en de Asana-link', async () => {
+  const mail = fakeMail()
+  const res = await createHandler(deps({ mail }))(post(payload({ extra_types: ['vlaggen'], nieuwe_deadline: '2026-11-25' })))
+  assertEquals(res.status, 200)
+  const [m] = mail.verstuurd
+  assertEquals(m.aan, ['marketing@nbcevents.nl'])
+  assertEquals(m.onderwerp, 'Aanvulling: Zorgcongres 2026 - 1 december - LED-kolom, Vlaggen')
+  // De taaknaam zoals hij in Asana staat.
+  assertStringIncludes(m.html, '>Zorgcongres 2026</p>')
+  assertStringIncludes(m.html, 'Aanvulling van Wendy Tester')
+  assertStringIncludes(m.html, 'We willen er ook vlaggen bij.')
+  assertStringIncludes(m.html, 'Britt')
+  assertStringIncludes(m.html, 'href="https://app.asana.com/0/111/999"')
+  assertStringIncludes(m.html, 'Erbij gevraagd')
+  assertMatch(m.html, /25 november 2026<\/strong> <span[^>]*>\(gewijzigd\)/)
+})
+
+Deno.test('een aanvulling op een spoedje van Green Village', async () => {
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag({ spoed: true, locatie: 'green_village' }))
+  await createHandler(deps({ db, mail }))(post(payload()))
+  assertEquals(mail.verstuurd[0].aan, ['marketing@green-village.nl'])
+  assertMatch(mail.verstuurd[0].onderwerp, /^\[SPOED\] Aanvulling: /)
+})
+
+Deno.test('de mail zegt het als een afgeronde taak is heropend', async () => {
+  const mail = fakeMail()
+  const asana = fakeAsana({ memberships: [{ project: '111', section: 'sec-klaar' }] })
+  await createHandler(deps({ asana, mail }))(post(payload()))
+  assertStringIncludes(mail.verstuurd[0].html, 'was al afgerond en is heropend')
+})
+
+Deno.test('lukt de reactie niet, dan staat de aanvulling in elk geval in de mail', async () => {
+  const mail = fakeMail()
+  const res = await createHandler(deps({ mail, asana: fakeAsana({}, { commentFail: true }) }))(post(payload()))
+  assertEquals(res.status, 502)
+  const [m] = mail.verstuurd
+  assertMatch(m.onderwerp, /^\[Niet in Asana\] Aanvulling: /)
+  assertStringIncludes(m.html, 'We willen er ook vlaggen bij.')
+  assertStringIncludes(m.html, 'Not Authorized')
+})
+
+Deno.test('een mislukte mail houdt de aanvulling niet tegen', async () => {
+  const asana = fakeAsana()
+  const res = await createHandler(deps({ asana, mail: fakeMail({ fail: true }) }))(post(payload()))
+  assertEquals(res.status, 200)
+  assertEquals(asana.comments.length, 1)
+})
+
+Deno.test('een geweigerde aanvulling mailt niet', async () => {
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag({ vervallen_op: '2026-10-01T00:00:00Z' }))
+  await createHandler(deps({ db, mail }))(post(payload()))
+  assertEquals(mail.verstuurd.length, 0)
+})
+
+Deno.test('een aanvulling op een interne aanvraag mailt zonder event', async () => {
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag({ soort: 'intern', event: '', event_datum: null, aanvraag_types: [], omschrijving: 'Nieuwe visitekaartjes voor het salesteam' }))
+  const res = await createHandler(deps({ db, mail }))(post(payload()))
+  assertEquals(res.status, 200)
+  const [m] = mail.verstuurd
+  assertEquals(m.onderwerp, 'Aanvulling: Intern - Nieuwe visitekaartjes voor het salesteam')
+  assertEquals(m.html.includes('Eventdatum'), false)
 })

@@ -1,6 +1,6 @@
 import { createAsanaClient } from '../_shared/asana.ts'
 import { createDb } from '../_shared/db.ts'
-import { readEnv } from '../_shared/env.ts'
+import { mailClientUit, readEnv } from '../_shared/env.ts'
 import { createStorage } from '../_shared/storage.ts'
 import { createRoutineClient } from '../_shared/routine.ts'
 import { createHandler } from './handler.ts'
@@ -13,6 +13,7 @@ const handler = createHandler({
   asana: env.asanaPat ? createAsanaClient(env.asanaPat) : null,
   routine: env.routineFireUrl && env.routineToken ? createRoutineClient(env.routineFireUrl, env.routineToken) : null,
   storage: createStorage(env.supabaseUrl, env.supabaseSecretKey),
+  mail: mailClientUit(env),
 })
 
 Deno.serve(async (req) => {

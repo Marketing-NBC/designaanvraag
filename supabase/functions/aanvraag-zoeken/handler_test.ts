@@ -18,6 +18,10 @@ const env: Env = {
   routineToken: null,
     menuRoutineFireUrl: null,
     menuRoutineToken: null,
+    msTenantId: null,
+    msClientId: null,
+    msClientSecret: null,
+    mailAfzender: null,
 }
 
 const treffer: GevondenAanvraag = {

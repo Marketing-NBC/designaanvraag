@@ -27,7 +27,9 @@ Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 
 ```
 Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Marketing
-                                                  └→ Claude Code Routine → huisstijl bij de taak
+                                                  ├→ Claude Code Routine → huisstijl bij de taak
+                                                  └→ meldingsmail (Microsoft 365) → marketingpostvak
+Elke maandag: GitHub Actions → Asana → weekoverzicht per mail
 ```
 
 ## Structuur
@@ -38,7 +40,7 @@ Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Market
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
 | `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink` en `asana-webhook` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
-| `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `sync-shared.mjs` (schema's kopiëren naar de function) |
+| `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `weekmail.mjs` (weekoverzicht op maandag), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
 ## Lokaal draaien
 
@@ -77,9 +79,13 @@ Supabase; niets hoeft in de Supabase-UI.
 | `ASANA_PLANNING_PROJECT_GID` | Optioneel; standaard uit `shared/asana-fields.json` (planningsproject) | uit de projectlink |
 | `ROUTINE_FIRE_URL`, `ROUTINE_TOKEN` | Huisstijl-extractie starten | zie "Routine instellen" |
 | `RATE_SALT` | Optioneel; zout voor de IP-hash | willekeurige tekst |
+| `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | Meldingsmails en het weekoverzicht via Microsoft 365 | van de M365-beheerder, zie "Meldingen per mail". Het secret verloopt: zie daar |
 
 Repository *variable* `ALLOWED_ORIGINS` (optioneel): komma-gescheiden origins die het formulier
 mogen aanroepen; standaard `https://marketing-nbc.github.io` plus localhost.
+
+Repository *variable* `MAIL_AFZENDER` (optioneel): het postvak waar de mails vandaan komen;
+standaard `designaanvraag@nbcevents.nl`.
 
 ### Als de Supabase-deploy opeens faalt op authenticatie
 
@@ -299,6 +305,91 @@ kan geen grafieken of weergave-instellingen maken.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.
+
+## Meldingen per mail
+
+Marketing krijgt een mail in het eigen postvak als er via het formulier iets binnenkomt, en elke
+maandagochtend een weekoverzicht. Wat Marketing zelf in Asana doet levert geen mail op.
+
+| Locatie | Postvak |
+| --- | --- |
+| NBC | `marketing@nbcevents.nl` |
+| Green Village | `marketing@green-village.nl` |
+
+De afzender is `designaanvraag@nbcevents.nl`, zodat je in je inbox meteen ziet waar het over gaat.
+De adressen staan in `shared/contact.ts`.
+
+**Bij een nieuwe aanvraag of een aanvulling.** Onderwerp `Nieuwe aanvraag: EY - 11 december - Torenscherm`
+of `Aanvulling: …`, met `[SPOED]` ervoor als het een spoedje is. In de mail: de taaknaam, aanvrager,
+event, eventdatum, deadline, locatie, spoed, wat er gevraagd is, de wensen of de tekst van de
+aanvulling, en een knop naar de taak in Asana. Bij een aanvulling staat erbij welke datums zijn
+verschoven, welke types erbij kwamen en of de taak naar Feedback is gegaan.
+
+Lukt het niet in Asana, dan komt de mail er **toch**, met `[Niet in Asana]` in het onderwerp en
+alle gegevens erin (bij een aanvraag ook het menu). Zo raakt er niets zoek. Andersom houdt een
+mislukte mail niets tegen: de aanvraag en de taak komen er gewoon. De reden staat dan in de logs van
+de function (Supabase → Edge Functions → `submit-aanvraag` of `aanvulling-toevoegen` → Logs, zoek
+op "mailen mislukt").
+
+**Het weekoverzicht** (`scripts/weekmail.mjs`, workflow **Weekmail**) komt elke maandag om 8:00,
+per locatie een eigen mail. GitHub start een geplande run soms een kwartier of meer later. Het haalt
+de open taken uit het project Designaanvragen en zet erin:
+
+- de **deadlines van deze week**, per dag, met spoed gemarkeerd en of er al een planningsdatum is;
+- **let op**: wat al over de deadline is, wat nog in Nieuwe aanvragen staat, wat in Feedback staat,
+  wat is ingepland ná de deadline, en wat deze week af moet maar nog geen planningsdatum heeft;
+- een vooruitblik op de deadlines van **volgende week**.
+
+"Deadline" is het veld Deadline: wanneer de aanvrager het af wil hebben. Een taak die met de hand in
+Asana is aangemaakt, zonder Locatie, telt als NBC. Wat in Klaar staat of is afgevinkt telt niet mee.
+Is er voor een locatie niets te melden (geen deadlines deze week en niets onder "let op"), dan komt
+er die week geen mail.
+
+Zelf draaien kan via Actions → **Weekmail** → Run workflow. Met **aan** ingevuld gaat alles naar dat
+adres in plaats van naar de marketingpostvakken, ook als er niets te melden is: handig om te testen. Met **proef** aangevinkt wordt
+er niets verstuurd en staan de mails als bijlage bij de run.
+
+### Mail instellen (eenmalig, door de Microsoft 365-beheerder)
+
+De mail gaat via Microsoft 365 zelf, dus hij komt binnen als gewone mail uit jullie eigen
+organisatie. Zolang dit niet is ingesteld, gaat er geen mail uit en werkt de rest gewoon door.
+
+1. **Postvak.** Exchange admin center → Recipients → Mailboxes → *Add a shared mailbox*:
+   naam `Designaanvraag`, adres `designaanvraag@nbcevents.nl`. Een gedeeld postvak heeft geen
+   licentie nodig.
+2. **App-registratie.** Entra admin center → App registrations → *New registration*: naam
+   `Designaanvraag-meldingen`, *Accounts in this organizational directory only*, geen redirect-URI.
+   Noteer de **Application (client) ID** en de **Directory (tenant) ID**.
+3. **Client secret.** In die app → Certificates & secrets → *New client secret*. Kopieer de
+   **Value** meteen; die zie je maar één keer.
+4. **Recht om te mailen, alleen vanuit dit postvak.** Zo is het bij NBC ingericht:
+   - Entra → App registrations → de app → API permissions → Microsoft Graph → **Application
+     permissions** → `Mail.Send`, en dan *Grant admin consent*. Niet *Delegated*: dan mag de app niets.
+   - Dat recht mag namens élk postvak in de organisatie mailen. Beperk het daarom in Exchange tot
+     `designaanvraag@nbcevents.nl`. Maak een **mail-enabled security group**
+     `designaanvraag-app@nbcevents.nl` met het postvak als enig lid, en dan in Exchange Online
+     PowerShell:
+     ```powershell
+     New-ApplicationAccessPolicy -AppId <client-id> -PolicyScopeGroupId designaanvraag-app@nbcevents.nl `
+       -AccessRight RestrictAccess -Description "Designaanvraag mag alleen vanuit designaanvraag@nbcevents.nl mailen"
+     # Controle: Granted voor het eigen postvak, Denied voor elk ander
+     Test-ApplicationAccessPolicy -Identity designaanvraag@nbcevents.nl -AppId <client-id>
+     ```
+     Het kan tot een uur duren voordat de beperking werkt. Microsoft noemt deze manier inmiddels
+     legacy; de opvolger is *RBAC for Applications*, maar daarbij moet de admin consent in Entra er
+     juist af, anders vervalt de beperking.
+5. **Doorgeven.** Zet de drie waarden als GitHub-secrets `MS_TENANT_ID`, `MS_CLIENT_ID` en
+   `MS_CLIENT_SECRET` (Settings → Secrets and variables → Actions) en draai Actions →
+   **Supabase deploy**, zodat de functions ze krijgen.
+6. **Testen.** Actions → **Weekmail** → Run workflow, met bij **aan** je eigen adres. Komt de mail
+   binnen, dan werkt het. Zo niet, dan staat de reden van Microsoft in de samenvatting van de run.
+
+Ontvangt `marketing@green-village.nl` geen mail van buiten de eigen organisatie, dan moet dat postvak
+mail van `designaanvraag@nbcevents.nl` toelaten.
+
+**Het secret verloopt** (hooguit na 24 maanden). Dan stoppen de mails, en meldt de run van Weekmail
+iets als `AADSTS7000222: The provided client secret keys are expired`. Laat de beheerder een nieuw
+secret maken (stap 3), vervang `MS_CLIENT_SECRET` en draai Supabase deploy opnieuw.
 
 ## Routine instellen (huisstijl-extractie)
 
