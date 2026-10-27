@@ -23,7 +23,8 @@ import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
 import { useBijlagen } from './lib/uploads'
-import { zichtbareStappen } from './steps'
+import { moetContactOpnemen, zichtbareStappen } from './steps'
+import { MELDING_ONTVANGERS } from '../../shared/contact'
 
 type Screen =
   | { kind: 'start' }
@@ -409,7 +410,16 @@ export default function App() {
   }
 
   if (screen.kind === 'success') {
-    return <Success result={screen.result} website={screen.draft.website} naam={screen.draft.naam} soort={screen.draft.soort} onRestart={restart} />
+    return (
+      <Success
+        result={screen.result}
+        website={screen.draft.website}
+        naam={screen.draft.naam}
+        soort={screen.draft.soort}
+        contactMail={moetContactOpnemen(screen.draft) ? MELDING_ONTVANGERS[screen.draft.locatie ?? 'nbc'] : null}
+        onRestart={restart}
+      />
+    )
   }
 
   const progress = stepIndex / stappen.length
@@ -433,6 +443,7 @@ export default function App() {
               error={error}
               errorNonce={errorNonce}
               warning={step.warn?.(volledig) ?? null}
+              alarm={step.alarm?.(volledig) ?? null}
               goed={step.goed?.(volledig) ?? null}
               titleId={`q-${step.id}`}
               footer={

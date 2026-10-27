@@ -19,11 +19,13 @@ function hostOf(url: string): string {
  * venster gewoon sluiten; het marketingteam ziet het resultaat vanzelf. Dus: geen
  * spinner, geen statusverversing, en een regel die zegt dat hij klaar is.
  */
-export function Success({ result, website, naam, soort: aanvraagSoort, onRestart }: {
+export function Success({ result, website, naam, soort: aanvraagSoort, contactMail, onRestart }: {
   result: SubmitResult
   website: string
   naam: string
   soort: Soort | null
+  /** Gezet als het zo krap is dat de collega nu contact moet opnemen; het postvak van Marketing. */
+  contactMail: string | null
   onRestart: () => void
 }) {
   const first = naam.split(' ')[0]
@@ -55,6 +57,16 @@ export function Success({ result, website, naam, soort: aanvraagSoort, onRestart
           <Icon name={soort === 'failed' ? 'alert' : 'check'} />
           <span>{statusText}</span>
         </div>
+        {contactMail ? (
+          <div className="success__status success__status--contact" role="status">
+            <Icon name="alert" />
+            <span>
+              Het is erg krap. Neem nu even contact op met het marketingteam via{' '}
+              <a href={`mailto:${contactMail}`}>{contactMail}</a> om te bespreken wat er precies gedaan moet worden. Anders kunnen we
+              niet beloven dat het op tijd klaar is.
+            </span>
+          </div>
+        ) : null}
         <div className="success__actions">
           {/* Geen link naar het werksysteem van Marketing: collega's werken daar niet in. */}
           <button type="button" className="btn btn--primary" onClick={onRestart}>
