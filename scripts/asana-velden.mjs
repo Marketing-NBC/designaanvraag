@@ -134,7 +134,7 @@ export const FIELD_SPECS = [
 
 /** De veldsleutels uit asana-field-map.json; de rest van dat bestand is geen veld. */
 export function veldsleutels(map) {
-  return Object.keys(map).filter((k) => !k.startsWith('_') && k !== 'option_aliases' && k !== 'sections')
+  return Object.keys(map).filter((k) => !k.startsWith('_') && !['option_aliases', 'sections', 'tags'].includes(k))
 }
 
 const norm = (s) => String(s ?? '').trim().toLowerCase()
@@ -250,4 +250,105 @@ export async function zorgVoorVelden({ asana, map, workspaceGid, projectGid, pla
   }
 
   return { summary, warnings }
+}
+
+// ── Tags voor de kalender van de werkplanning ─────────────────────────
+
+/**
+ * De kalender van "4. Werkplanning" kleurt op tags: Reminder is rood, NBC blauw, GV groen. Een
+ * veld kan daar niet naast, want Asana kleurt op één ding tegelijk, en dan zouden de reminders hun
+ * rood kwijtraken. Daarom krijgt elke designaanvraag één tag die soort en spoed samen vangt, in een
+ * kleur die nog niet in gebruik is - en zeker geen rood.
+ *
+ * `terugval` is dezelfde kleur in het oude palet van de API, voor als Asana de nieuwe naam weigert.
+ * De namen staan in asana-field-map.json onder "tags".
+ */
+export const TAG_SPECS = [
+  { key: 'evenement', color: 'aqua', terugval: 'light-teal' },
+  { key: 'evenement_spoed', color: 'orange', terugval: 'dark-orange' },
+  { key: 'intern', color: 'pink', terugval: 'light-pink' },
+  { key: 'intern_spoed', color: 'purple', terugval: 'dark-purple' },
+]
+
+/** Welke tag een aanvraag krijgt. Dezelfde regel als tagSleutel in de edge function. */
+export function tagSleutel(soort, spoed) {
+  return `${soort === 'intern' ? 'intern' : 'evenement'}${spoed ? '_spoed' : ''}`
+}
+
+/**
+ * Zoekt de tags op naam op en maakt met `aanmaken` aan wat er mist. Een tag die al bestaat houdt
+ * zijn kleur: heeft Marketing die zelf aangepast, dan blijft dat zo.
+ *
+ * @returns {Promise<{tags: Record<string, {gid: string, name: string}>, summary: string[], warnings: string[]}>}
+ */
+export async function zorgVoorTags({ asana, map, workspaceGid, aanmaken = true }) {
+  const tags = {}
+  const summary = []
+  const warnings = []
+  for (const spec of TAG_SPECS) {
+    const naam = map.tags?.[spec.key]
+    if (!naam) {
+      warnings.push(`Geen tagnaam voor "${spec.key}" in asana-field-map.json.`)
+      continue
+    }
+    try {
+      const gevonden = await asana(`/workspaces/${workspaceGid}/typeahead?resource_type=tag&count=20&opt_fields=name,color&query=${encodeURIComponent(naam)}`)
+      let tag = (gevonden ?? []).find((t) => norm(t.name) === norm(naam)) ?? null
+      if (tag) {
+        summary.push(`Tag "${naam}": bestond al`)
+      } else if (aanmaken) {
+        tag = await maakTag(asana, workspaceGid, naam, spec)
+        summary.push(`Tag "${naam}": aangemaakt`)
+      } else {
+        warnings.push(`Tag "${naam}" bestaat niet; draai met "Ontbrekende velden aanmaken" aan.`)
+        continue
+      }
+      tags[spec.key] = { gid: tag.gid, name: tag.name ?? naam }
+    } catch (e) {
+      warnings.push(`Tag "${naam}": ${e.message}`)
+    }
+  }
+  return { tags, summary, warnings }
+}
+
+async function maakTag(asana, workspaceGid, naam, spec) {
+  try {
+    return await asana('/tags', { method: 'POST', body: { data: { workspace: workspaceGid, name: naam, color: spec.color } } })
+  } catch (e) {
+    if (e.status !== 400) throw e
+    return asana('/tags', { method: 'POST', body: { data: { workspace: workspaceGid, name: naam, color: spec.terugval } } })
+  }
+}
+
+/**
+ * Geeft de openstaande aanvragen die nog geen van deze tags hebben er alsnog een, op basis van de
+ * velden Soort en Spoed op de taak zelf. Soort leeg betekent een evenement: tot het veld bestond
+ * kon je niets anders aanvragen. Een taak die al een van de tags heeft blijft ongemoeid, dus
+ * opnieuw draaien kan geen kwaad.
+ *
+ * `lijst` haalt alle pagina's van een lijst op.
+ */
+export async function tagBestaandeTaken({ asana, lijst, projectGid, tags, fields }) {
+  const onze = new Set(Object.values(tags).map((t) => t.gid))
+  const internGid = fields?.soort?.options?.intern ?? null
+  const spoedJaGid = fields?.spoed?.options?.ja ?? null
+  const taken = await lijst(`/projects/${projectGid}/tasks?completed_since=now&limit=100&opt_fields=name,tags.gid,custom_fields.gid,custom_fields.enum_value.gid`)
+
+  const getagd = []
+  const warnings = []
+  for (const taak of taken) {
+    if ((taak.tags ?? []).some((t) => onze.has(t.gid))) continue
+    const waarde = (veldGid) => (taak.custom_fields ?? []).find((f) => f.gid === veldGid)?.enum_value?.gid ?? null
+    const soort = internGid && waarde(fields.soort.gid) === internGid ? 'intern' : 'evenement'
+    const spoed = Boolean(spoedJaGid && waarde(fields.spoed.gid) === spoedJaGid)
+    const tag = tags[tagSleutel(soort, spoed)]
+    if (!tag) continue
+    try {
+      await asana(`/tasks/${taak.gid}/addTag`, { method: 'POST', body: { data: { tag: tag.gid } } })
+      getagd.push(`${taak.name} → ${tag.name}`)
+    } catch (e) {
+      warnings.push(`Taak "${taak.name}" niet getagd: ${e.message}`)
+    }
+  }
+  return { getagd, warnings }
 }

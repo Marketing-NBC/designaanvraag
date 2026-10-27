@@ -277,9 +277,23 @@ kan geen grafieken of weergave-instellingen maken.
 - **Wie vraagt de meeste spoedjes aan:** dezelfde grafiek, maar groeperen op **Aanvrager** en
   filteren op **Spoed = Ja**. Dat kan omdat Aanvrager een keuzelijst is; op een tekstveld kan Asana
   niet groeperen.
-- **Zien in je planning:** project "4. Werkplanning" → **Kalender** → **Kleur** → **Spoed**.
-  Spoedjes worden rood, de rest grijs. Dit werkt omdat `scripts/asana-setup.mjs` het Spoed-veld ook
-  aan het planningsproject koppelt; andere velden blijven daar buiten.
+- **Zien in je planning:** de kalender van "4. Werkplanning" kleurt op **tags** (Opties → Kleur op
+  de standaard laten staan). Reminder is rood, NBC blauw, GV groen - en elke designaanvraag krijgt
+  bij het indienen één tag die soort en spoed samen vangt:
+
+  | Tag | Kleur | Wanneer |
+  | --- | --- | --- |
+  | Evenement | aqua | evenement, op tijd |
+  | Evenement spoed | oranje | evenement, minder dan 10 werkdagen |
+  | Intern | roze | intern, op tijd |
+  | Intern spoed | paars | intern, minder dan 10 werkdagen |
+
+  Eén tag in plaats van twee velden, omdat Asana maar op één ding tegelijk kleurt; en geen rood,
+  want dat is van de reminders. De namen staan in `scripts/asana-field-map.json` onder `tags`, de
+  kleuren in `TAG_SPECS` in `scripts/asana-velden.mjs`. **Asana-velden vernieuwen** maakt ze aan;
+  zet daar eenmalig **Openstaande aanvragen ... taggen** aan om aanvragen van voor deze tags er
+  alsnog een te geven (op basis van hun velden Soort en Spoed). Een tag die al bestaat houdt de kleur
+  die je hem in Asana gaf.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.

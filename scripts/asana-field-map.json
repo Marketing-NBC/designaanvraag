@@ -1,5 +1,5 @@
 {
-  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig). Het veld \"locatie\" zegt of de aanvraag voor NBC of voor Green Village is. Het veld \"soort\" zegt of het voor een evenement of intern is; de opties hebben elk een eigen kleur, zodat je het verschil op het bord ziet. Onder sections staan de bord-kolommen (sleutel → naam in Asana). Het veld \"menuscherm\" is de knop waarmee Marketing een menuscherm laat maken: zet hem op \"Genereer nu\" zodra het logo aan de subtaak hangt, of op \"Genereer nu (kleuren opdrachtgever)\" als de blobs mee moeten kleuren. De worker zet hem daarna zelf op Bezig, Klaar of Mislukt. Het veld \"menukleuren\" is optioneel: staat daar een hexcode, dan gebruikt het menuscherm die in plaats van de automatisch opgehaalde huisstijl. Het veld \"huisstijl\" is de knop waarmee je de huisstijl opnieuw laat ophalen als dat de eerste keer misging.",
+  "_comment": "Koppelt onze veldsleutels aan de namen van de custom fields in het Asana-project van Marketing. Pas de rechterkant aan als de veldnamen in Asana anders heten. Enum-opties worden op label gematcht (hoofdletterongevoelig). Het veld \"locatie\" zegt of de aanvraag voor NBC of voor Green Village is. Het veld \"soort\" zegt of het voor een evenement of intern is; de opties hebben elk een eigen kleur, zodat je het verschil op het bord ziet. Onder tags staan de vier tags waarop de kalender van de werkplanning kleurt (soort en spoed samen); de kleuren staan in scripts/asana-velden.mjs. Onder sections staan de bord-kolommen (sleutel → naam in Asana). Het veld \"menuscherm\" is de knop waarmee Marketing een menuscherm laat maken: zet hem op \"Genereer nu\" zodra het logo aan de subtaak hangt, of op \"Genereer nu (kleuren opdrachtgever)\" als de blobs mee moeten kleuren. De worker zet hem daarna zelf op Bezig, Klaar of Mislukt. Het veld \"menukleuren\" is optioneel: staat daar een hexcode, dan gebruikt het menuscherm die in plaats van de automatisch opgehaalde huisstijl. Het veld \"huisstijl\" is de knop waarmee je de huisstijl opnieuw laat ophalen als dat de eerste keer misging.",
   "locatie": "Locatie",
   "soort": "Soort",
   "eventdatum": "Eventdatum",
@@ -13,6 +13,12 @@
   "menuscherm": "Menuscherm",
   "huisstijl": "Huisstijl",
   "menukleuren": "Menukleuren",
+  "tags": {
+    "evenement": "Evenement",
+    "evenement_spoed": "Evenement spoed",
+    "intern": "Intern",
+    "intern_spoed": "Intern spoed"
+  },
   "sections": {
     "nieuwe_aanvragen": "Nieuwe aanvragen",
     "feedback": "Feedback",
