@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-27T10:51:54.986Z",
+  "generated_at": "2026-10-27T13:09:57.443Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -28,6 +28,21 @@
       "options": {
         "evenement": "1219901790743939",
         "intern": "1219901790743940"
+      }
+    },
+    "kleur": {
+      "gid": "1219931481780936",
+      "name": "Kleur",
+      "type": "enum",
+      "options": {
+        "evenement": "1219931481780937",
+        "intern": "1219931481780939",
+        "evenement_spoed": "1219931481780938",
+        "intern_spoed": "1219931481780940",
+        "reminder": "1219931481780941",
+        "gv": "1219931481780943",
+        "nbc": "1219931481780942",
+        "green_village": "1219931481780943"
       }
     },
     "eventdatum": {
@@ -136,24 +151,6 @@
     "klaar": {
       "gid": "1218459914834826",
       "name": "Klaar"
-    }
-  },
-  "tags": {
-    "evenement": {
-      "gid": "1219926364887877",
-      "name": "Evenement"
-    },
-    "evenement_spoed": {
-      "gid": "1219926364632941",
-      "name": "Evenement spoed"
-    },
-    "intern": {
-      "gid": "1219926315032791",
-      "name": "Intern"
-    },
-    "intern_spoed": {
-      "gid": "1219926364541654",
-      "name": "Intern spoed"
     }
   },
   "planning_project": {
