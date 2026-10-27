@@ -52,12 +52,12 @@ describe('de vraag over het menu', () => {
   }
 
   it('staat niet in de stappen zonder menu-aanvraag', () => {
-    const ids = zichtbareStappen({ metMenu: false }).map((s) => s.id)
+    const ids = zichtbareStappen({ metMenu: false, soort: 'evenement' }).map((s) => s.id)
     expect(ids).not.toContain('menu')
   })
 
   it('komt erbij zodra er een menuscherm is gekozen', () => {
-    const ids = zichtbareStappen({ metMenu: true }).map((s) => s.id)
+    const ids = zichtbareStappen({ metMenu: true, soort: 'evenement' }).map((s) => s.id)
     expect(ids).toContain('menu')
     // Meteen na de vraag wat je wilt aanvragen, want het hoort bij die keuze.
     expect(ids[ids.indexOf('menu') - 1]).toBe('aanvraag_types')
@@ -84,5 +84,43 @@ describe('de vraag over het menu', () => {
 
   it('blokkeert niets als er geen menu bij hoort', () => {
     expect(menuStap.validate(metTypes(['vlaggen']))).toBeNull()
+  })
+})
+
+describe('evenement of intern', () => {
+  it('vraagt het meteen na de naam', () => {
+    const ids = zichtbareStappen({ metMenu: false, soort: null }).map((s) => s.id)
+    expect(ids.slice(0, 3)).toEqual(['locatie', 'naam', 'soort'])
+  })
+
+  it('telt de vragen van een evenement zolang er niet gekozen is', () => {
+    expect(zichtbareStappen({ metMenu: false, soort: null })).toEqual(zichtbareStappen({ metMenu: false, soort: 'evenement' }))
+  })
+
+  it('intern: alleen wat je wilt en wanneer', () => {
+    const ids = zichtbareStappen({ metMenu: false, soort: 'intern' }).map((s) => s.id)
+    expect(ids).toEqual(['locatie', 'naam', 'soort', 'wens_intern', 'deadline_intern'])
+  })
+
+  it('intern: ook een eerder gekozen menu brengt de menuvraag niet terug', () => {
+    expect(zichtbareStappen({ metMenu: true, soort: 'intern' }).map((s) => s.id)).not.toContain('menu')
+  })
+
+  it('wil een omschrijving bij een interne aanvraag', () => {
+    const stap = STEPS.find((s) => s.id === 'wens_intern')!
+    expect(stap.validate({ ...emptyDraft(), soort: 'intern' })).toContain('Beschrijf')
+    expect(stap.validate({ ...emptyDraft(), soort: 'intern', omschrijving: 'Nieuwe visitekaartjes' })).toBeNull()
+  })
+})
+
+describe('je naam', () => {
+  const naamStap = STEPS.find((s) => s.id === 'naam')!
+
+  it('mag ook een naam zijn die niet in de lijst staat', () => {
+    expect(naamStap.validate({ ...emptyDraft(), naam: 'Iemand Nieuw' })).toBeNull()
+  })
+
+  it('moet wel ingevuld zijn', () => {
+    expect(naamStap.validate({ ...emptyDraft(), naam: '  ' })).toContain('Vul je naam in')
   })
 })

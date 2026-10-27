@@ -56,12 +56,10 @@ function fakeDb() {
       counters.set(key, n)
       return n
     },
-    async isCollega(naam) {
-      return naam !== 'Onbekende Indringer'
-    },
     // Alleen de aanvulling-function gebruikt deze; hier zijn ze er om aan `Db` te voldoen.
     findById: () => Promise.resolve(null),
     zoekOpEvent: () => Promise.resolve([]),
+    zoekInternOpNaam: () => Promise.resolve([]),
     markeerVervallen: () => Promise.resolve(false),
     findAanvullingByClientRequestId: () => Promise.resolve(null),
     insertAanvulling: () => Promise.reject(new Error('niet gebruikt')),
@@ -392,15 +390,15 @@ Deno.test('aanvrager-optie wordt opgezocht en op de taak gezet', async () => {
   assertEquals([...db.rows.values()][0].asana_error, null)
 })
 
-Deno.test('naam buiten de collegalijst krijgt geen optie', async () => {
+Deno.test('een naam buiten de collegalijst krijgt gewoon een optie', async () => {
+  // Iedereen mag een aanvraag doen, dus wie niet in de lijst staat telt in het dashboard ook mee.
   const db = fakeDb()
   const asana = fakeAsana()
   const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: velden, log: () => {} })
-  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Onbekende Indringer' } })))
-  // Geen nieuwe optie in Asana, veld leeg, en de reden staat in de rij.
-  assertEquals(asana.opties, [])
-  assertEquals(asana.calls[0].customFields, {})
-  assertMatch([...db.rows.values()][0].asana_error ?? '', /staat niet in de lijst met collega's/)
+  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Nieuwe Collega' } })))
+  assertEquals(asana.opties, [{ fieldGid: 'fA', naam: 'Nieuwe Collega' }])
+  assertEquals(asana.calls[0].customFields, { fA: 'optie-Nieuwe Collega' })
+  assertEquals([...db.rows.values()][0].asana_error, null)
 })
 
 Deno.test('mislukte optie-lookup blokkeert de aanvraag niet', async () => {
@@ -429,6 +427,113 @@ Deno.test('zonder website: taak wel, huisstijl overgeslagen', async () => {
   // De beschrijving vermeldt het, en het Website-veld blijft leeg.
   assertMatch(asana.calls[0].plainNotes, /Website: niet opgegeven/)
   assertMatch(asana.calls[0].htmlNotes, /geen website op/)
+})
+
+// ── Interne aanvragen ────────────────────────────────────────────────────────
+
+const interneAanvraag = {
+  soort: 'intern',
+  naam: 'Noa',
+  deadline: '2026-11-10',
+  omschrijving: 'Nieuwe visitekaartjes voor het hele salesteam, met de nieuwe functietitels erop.',
+}
+
+Deno.test('interne aanvraag: taak met eigen titel, geen subtaken en geen huisstijl', async () => {
+  const { handler, db, asana, routine } = setup()
+  const res = await handler(post(payload({ aanvraag: interneAanvraag })))
+  assertEquals(res.status, 200)
+  const taak = asana.calls[0]
+  assertEquals(taak.name, 'Intern - Noa - Deadline: 10 november - Nieuwe visitekaartjes voor het hele salesteam, met de…')
+  assertEquals(taak.subtasks, [])
+  assertMatch(taak.plainNotes, /Soort: Intern/)
+  assertMatch(taak.plainNotes, /Wat er gevraagd wordt\nNieuwe visitekaartjes/)
+  assertEquals(routine.texts, [])
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.soort, 'intern')
+  assertEquals(rij.event_datum, null)
+  assertEquals(rij.brand_status, 'overgeslagen')
+})
+
+Deno.test('interne aanvraag: wat er van een evenement in het concept bleef staan gaat er af', async () => {
+  // Eerst evenement gekozen en alles ingevuld, toen toch intern: dat hoort niet in de database.
+  const { handler, db } = setup()
+  await handler(post(payload({ aanvraag: { ...validAanvraag, ...interneAanvraag } })))
+  const rij = [...db.rows.values()][0]
+  assertEquals([rij.event, rij.event_datum, rij.website, rij.design_modus], ['', null, '', null])
+  assertEquals(rij.aanvraag_types, [])
+})
+
+Deno.test('interne aanvraag zonder omschrijving wordt geweigerd', async () => {
+  const { handler } = setup()
+  const res = await handler(post(payload({ aanvraag: { ...interneAanvraag, omschrijving: '' } })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvraag.omschrijving')
+})
+
+Deno.test('interne aanvraag: spoed meet tot de deadline', async () => {
+  // Maandag 2 november; de deadline is dinsdag 10 november, zes werkdagen later.
+  const { handler, db } = setup({ now: () => new Date('2026-11-02T10:00:00Z') })
+  await handler(post(payload({ aanvraag: interneAanvraag, started_at: '2026-11-02T09:59:00Z' })))
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.spoed, true)
+  assertEquals(rij.werkdagen_tot_event, 6)
+})
+
+Deno.test('buildCustomFields zet de soort en laat lege velden van een interne aanvraag weg', () => {
+  const cfg = {
+    project: { gid: '1' },
+    assignee: null,
+    fields: {
+      soort: { gid: 'fS', name: 'Soort', type: 'enum', options: { evenement: 'oEv', intern: 'oIn' } },
+      eventdatum: { gid: 'f1', name: 'Eventdatum', type: 'date' },
+      deadline: { gid: 'f2', name: 'Deadline', type: 'date' },
+      type: { gid: 'f3', name: 'Type', type: 'multi_enum', options: { led_kolom: 'o1' } },
+      modus: { gid: 'f4', name: 'Design', type: 'enum', options: { custom: 'o3', standaard: 'o4' } },
+    },
+  }
+  const intern = { soort: 'intern', event_datum: null, deadline: '2026-11-10', aanvraag_types: [], design_modus: null, website: '', schijf_locatie: '' }
+  // deno-lint-ignore no-explicit-any
+  assertEquals(buildCustomFields(intern as any, cfg), { fS: 'oIn', f2: { date: '2026-11-10' } })
+  // deno-lint-ignore no-explicit-any
+  assertEquals(buildCustomFields({ ...validAanvraag, soort: 'evenement' } as any, cfg).fS, 'oEv')
+})
+
+// ── Kleur voor de werkplanning ───────────────────────────────────────────────
+
+const metKleur = {
+  project: { gid: '111' },
+  assignee: { gid: '222' },
+  fields: {
+    kleur: {
+      gid: 'fK',
+      name: 'Kleur',
+      type: 'enum',
+      options: { evenement: 'kEv', evenement_spoed: 'kEvS', intern: 'kIn', intern_spoed: 'kInS', reminder: 'kR' },
+    },
+  },
+  sections: {},
+} as unknown as Parameters<typeof createHandler>[0]['fields']
+
+Deno.test('het veld Kleur vangt soort en spoed samen', async () => {
+  // Maandag 14 september: het event (20 november) is ruim op tijd, de interne deadline is krap.
+  const nu = () => new Date('2026-09-14T10:00:00Z')
+  const gevallen: [Record<string, unknown>, string][] = [
+    [validAanvraag, 'kEv'],
+    [{ ...validAanvraag, event_datum: '2026-09-18', deadline: '2026-09-17' }, 'kEvS'],
+    [{ ...interneAanvraag, deadline: '2026-11-10' }, 'kIn'],
+    [{ ...interneAanvraag, deadline: '2026-09-16' }, 'kInS'],
+  ]
+  for (const [aanvraag, optie] of gevallen) {
+    const asana = fakeAsana()
+    const handler = createHandler({ env, db: fakeDb(), asana, routine: fakeRoutine(), storage: null, fields: metKleur, now: nu, log: () => {} })
+    await handler(post(payload({ aanvraag, started_at: '2026-09-14T09:59:00Z' })))
+    assertEquals(asana.calls[0].customFields, { fK: optie })
+  }
+})
+
+Deno.test('zonder uitspraak over spoed gokt buildCustomFields geen kleur', () => {
+  // deno-lint-ignore no-explicit-any
+  assertEquals(buildCustomFields(validAanvraag as any, metKleur), {})
 })
 
 // ── Meegestuurde bestanden ───────────────────────────────────────────────────
@@ -659,4 +764,16 @@ Deno.test('een herhaalde verzending mailt niet nog een keer', async () => {
   await handler(post(p))
   await handler(post(p))
   assertEquals(mail.verstuurd.length, 1)
+})
+
+Deno.test('een interne aanvraag mailt zonder event, met de vraag in het onderwerp', async () => {
+  const mail = fakeMail()
+  const { handler } = setup({ mail })
+  await handler(post(payload({ aanvraag: interneAanvraag })))
+  const [m] = mail.verstuurd
+  assertMatch(m.onderwerp, /^Nieuwe aanvraag: Intern - /)
+  assertStringIncludes(m.html, 'Nieuwe interne aanvraag van')
+  assertStringIncludes(m.html, 'Wat er gevraagd wordt')
+  assertEquals(m.html.includes('Eventdatum'), false)
+  assertEquals(m.html.includes('Website'), false)
 })

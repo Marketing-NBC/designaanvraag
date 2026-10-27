@@ -16,6 +16,29 @@ export function locatieLabel(key: Locatie): string {
 }
 
 /**
+ * Is de aanvraag voor een evenement of voor iets intern? Dat bepaalt welke vragen er komen:
+ * een interne aanvraag heeft geen event, geen eventdatum en geen huisstijl om op te halen;
+ * alleen wat er nodig is en wanneer.
+ *
+ * Het label is wat er in Asana in het veld Soort staat; `vraag` is hoe het in het formulier staat.
+ */
+export const SOORTEN = [
+  { key: 'evenement', label: 'Evenement', vraag: 'Voor een evenement' },
+  { key: 'intern', label: 'Intern', vraag: 'Intern' },
+] as const
+
+export type Soort = (typeof SOORTEN)[number]['key']
+
+export const SOORT_KEYS = SOORTEN.map((s) => s.key) as [Soort, ...Soort[]]
+
+export function soortLabel(key: Soort): string {
+  return SOORTEN.find((s) => s.key === key)?.label ?? String(key ?? '')
+}
+
+/** De keuze zoals hij in het formulier staat, als opties voor een keuzelijst. */
+export const SOORT_KEUZES = SOORTEN.map((s) => ({ key: s.key, label: s.vraag }))
+
+/**
  * Aanvraagtypes voor "Wat wil je aanvragen?".
  * Gedeeld door frontend, edge function en worker. Keys zijn stabiel; labels mogen wijzigen.
  * De letter (A–H) is de toetsenbord-sneltoets in het formulier.

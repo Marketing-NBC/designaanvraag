@@ -2,8 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { submitPayloadSchema, type SubmitResult } from '../../shared/aanvraag-schema'
 import {
-  DESIGN_MODES, LOCATIES, REQUEST_TYPES, designModesVoor, requestTypesVoor, typeHoortBij,
-  vraagtOmMenu, type DesignMode, type Locatie, type RequestTypeKey,
+  DESIGN_MODES, LOCATIES, REQUEST_TYPES, SOORT_KEUZES, designModesVoor, requestTypesVoor, typeHoortBij,
+  vraagtOmMenu, type DesignMode, type Locatie, type RequestTypeKey, type Soort,
 } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { DateField } from './components/DateField'
@@ -71,7 +71,9 @@ export default function App() {
   // React Compiler de uitkomst nog tot de array waar hij uit komt, en dan geldt elke
   // callback die hem gebruikt als niet-memoiseerbaar.
   const metMenu = Boolean(vraagtOmMenu(draft.aanvraag_types))
-  const stappen = zichtbareStappen({ metMenu })
+  // Net zo'n vaste waarde: evenement of intern bepaalt welke vragen er na de naam komen.
+  const soort = draft.soort
+  const stappen = zichtbareStappen({ metMenu, soort })
 
   const clientRequestId = useRef<string>(crypto.randomUUID())
   const startedAt = useRef<string>(new Date().toISOString())
@@ -83,8 +85,8 @@ export default function App() {
   // Autosave zolang de gebruiker in het formulier zit.
   useEffect(() => {
     if (screen.kind === 'step') saveDraft(volledig, screen.index)
-    if (screen.kind === 'review') saveDraft(volledig, zichtbareStappen({ metMenu }).length - 1)
-  }, [volledig, screen, metMenu])
+    if (screen.kind === 'review') saveDraft(volledig, zichtbareStappen({ metMenu, soort }).length - 1)
+  }, [volledig, screen, metMenu, soort])
 
   const patch = useCallback((p: Partial<Draft>) => {
     setDraft((d) => ({ ...d, ...p }))
@@ -105,7 +107,7 @@ export default function App() {
 
   const next = useCallback(() => {
     if (screen.kind !== 'step') return
-    const lijst = zichtbareStappen({ metMenu })
+    const lijst = zichtbareStappen({ metMenu, soort })
     const msg = lijst[screen.index]?.validate(volledig) ?? null
     if (msg) {
       setError(msg)
@@ -114,16 +116,16 @@ export default function App() {
     }
     if (screen.index + 1 < lijst.length) go({ kind: 'step', index: screen.index + 1 }, 1)
     else go({ kind: 'review' }, 1)
-  }, [screen, volledig, go, metMenu])
+  }, [screen, volledig, go, metMenu, soort])
 
   const prev = useCallback(() => {
     if (screen.kind === 'step') {
       if (screen.index === 0) go({ kind: 'start' }, -1)
       else go({ kind: 'step', index: screen.index - 1 }, -1)
     } else if (screen.kind === 'review') {
-      go({ kind: 'step', index: zichtbareStappen({ metMenu }).length - 1 }, -1)
+      go({ kind: 'step', index: zichtbareStappen({ metMenu, soort }).length - 1 }, -1)
     }
-  }, [screen, go, metMenu])
+  }, [screen, go, metMenu, soort])
 
   const focusPrimary = useCallback(() => {
     window.setTimeout(() => document.querySelector<HTMLButtonElement>('[data-primary-action]')?.focus({ preventScroll: true }), 30)
@@ -167,17 +169,27 @@ export default function App() {
 
   const submit = useCallback(async () => {
     if (busy) return
-    if (uploads.bezig) {
+    if (uploads.bezig && volledig.soort !== 'intern') {
       setSubmitError('Je bestanden worden nog geüpload. Nog heel even.')
       return
     }
     setSubmitError(null)
+    const intern = volledig.soort === 'intern'
     const parsed = submitPayloadSchema.safeParse({
-      aanvraag: {
+      // Een interne aanvraag stuurt alleen mee wat erbij gevraagd is. Wat er van een eerdere keuze
+      // voor "evenement" nog in het concept staat blijft thuis.
+      aanvraag: intern ? {
+        locatie: volledig.locatie ?? undefined,
+        naam: volledig.naam,
+        soort: 'intern',
+        deadline: volledig.deadline ?? '',
+        omschrijving: volledig.omschrijving,
+      } : {
         // ?? undefined en niet '': het schema heeft een standaard ('nbc') voor een concept
         // van voor deze vraag bestond, en die springt alleen aan bij een ontbrekende waarde.
         locatie: volledig.locatie ?? undefined,
         naam: volledig.naam,
+        soort: 'evenement',
         event: volledig.event,
         event_datum: volledig.event_datum ?? '',
         deadline: volledig.deadline ?? '',
@@ -193,13 +205,18 @@ export default function App() {
       },
       client_request_id: clientRequestId.current,
       started_at: startedAt.current,
-      bijlage_ids: uploads.ids,
+      bijlage_ids: intern ? [] : uploads.ids,
       website_confirm: '',
     })
     if (!parsed.success) {
       const issue = parsed.error.issues[0]
       const field = String(issue?.path?.[1] ?? '')
-      const idx = zichtbareStappen({ metMenu }).findIndex((s) => s.id === field || (field === 'anders_tekst' && s.id === 'aanvraag_types'))
+      // Bij een interne aanvraag staan omschrijving en deadline op hun eigen vragen.
+      const stapId = intern && field === 'omschrijving' ? 'wens_intern'
+        : intern && field === 'deadline' ? 'deadline_intern'
+        : field === 'anders_tekst' ? 'aanvraag_types'
+        : field
+      const idx = zichtbareStappen({ metMenu, soort }).findIndex((s) => s.id === stapId)
       if (idx >= 0) {
         go({ kind: 'step', index: idx }, -1)
         setError(issue?.message ?? 'Controleer dit veld.')
@@ -222,7 +239,7 @@ export default function App() {
     } finally {
       setBusy(false)
     }
-  }, [busy, volledig, go, uploads.bezig, uploads.ids, metMenu])
+  }, [busy, volledig, go, uploads.bezig, uploads.ids, metMenu, soort])
 
   const restart = useCallback(() => {
     clientRequestId.current = crypto.randomUUID()
@@ -261,7 +278,7 @@ export default function App() {
       }
 
       if (screen.kind !== 'step') return
-      const kind = zichtbareStappen({ metMenu })[screen.index]?.kind
+      const kind = zichtbareStappen({ metMenu, soort })[screen.index]?.kind
 
       if (e.key === 'Enter') {
         // Open combobox met een actieve optie: laat Headless UI die kiezen. Zonder actieve optie valideren we gewoon.
@@ -288,7 +305,7 @@ export default function App() {
 
       // De pakketkeuze toont dezelfde letters als de andere keuzeschermen, dus moeten
       // die toetsen daar ook werken - anders belooft de kaart iets wat niet gebeurt.
-      const metLetters = kind === 'multi' || kind === 'single' || kind === 'locatie'
+      const metLetters = kind === 'multi' || kind === 'single' || kind === 'locatie' || kind === 'soort'
         || (kind === 'menu' && !draft.menu.pakket)
       if (metLetters && !typing && !e.metaKey && !e.ctrlKey) {
         const letter = e.key.toUpperCase()
@@ -306,12 +323,14 @@ export default function App() {
           // Dezelfde lijsten als op het scherm: bij Green Village staat er geen LED-kolom,
           // dus mag de toets daar ook niets kiezen.
           const options = kind === 'locatie' ? LOCATIES
+            : kind === 'soort' ? SOORT_KEUZES
             : kind === 'multi' ? requestTypesVoor(draft.locatie)
             : DESIGN_MODES
           const opt = options[i]
           if (opt) {
             e.preventDefault()
             if (kind === 'locatie') kiesLocatie(opt.key)
+            else if (kind === 'soort') patch({ soort: opt.key as Soort })
             else if (kind === 'multi') toggleType(opt.key)
             else patch({ design_modus: opt.key as DesignMode })
           }
@@ -334,7 +353,7 @@ export default function App() {
     // draft.locatie en draft.menu.pakket staan erbij omdat de lettertoetsen erop kijken:
     // welke lijst er op het scherm staat hangt van de locatie af, en of de pakketkeuze nog
     // open is van het gekozen pakket. Zonder deze twee blijft de oude waarde hangen.
-  }, [screen, next, prev, go, submit, toggleType, kiesLocatie, patch, focusPrimary, metMenu,
+  }, [screen, next, prev, go, submit, toggleType, kiesLocatie, patch, focusPrimary, metMenu, soort,
       draft.locatie, draft.menu.pakket])
 
   const variants = useMemo(
@@ -390,7 +409,7 @@ export default function App() {
   }
 
   if (screen.kind === 'success') {
-    return <Success result={screen.result} website={screen.draft.website} naam={screen.draft.naam} onRestart={restart} />
+    return <Success result={screen.result} website={screen.draft.website} naam={screen.draft.naam} soort={screen.draft.soort} onRestart={restart} />
   }
 
   const progress = stepIndex / stappen.length
@@ -425,7 +444,7 @@ export default function App() {
               }
             >
               {step.kind === 'naam' ? (
-                <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} />
+                <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} onEnter={next} />
               ) : null}
               {step.kind === 'text' && step.id === 'event' ? (
                 <TextField id="f-event" value={draft.event} onChange={(v) => patch({ event: v })} placeholder="Bijvoorbeeld Zorgcongres 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
@@ -444,6 +463,12 @@ export default function App() {
               ) : null}
               {step.kind === 'date' && step.id === 'deadline' ? (
                 <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} max={draft.event_datum ?? undefined} onPicked={focusPrimary} />
+              ) : null}
+              {step.kind === 'date' && step.id === 'deadline_intern' ? (
+                <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} onPicked={focusPrimary} />
+              ) : null}
+              {step.kind === 'soort' ? (
+                <ChoiceList options={SOORT_KEUZES} value={draft.soort} onToggle={(k) => patch({ soort: k as Soort })} />
               ) : null}
               {step.kind === 'locatie' ? (
                 <ChoiceList options={LOCATIES} value={draft.locatie} onToggle={kiesLocatie} />
@@ -466,8 +491,11 @@ export default function App() {
               {step.kind === 'menu' ? (
                 <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />
               ) : null}
-              {step.kind === 'textarea' ? (
+              {step.kind === 'textarea' && step.id === 'omschrijving' ? (
                 <TextArea id="f-omschrijving" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} placeholder="Bijvoorbeeld: tekst voor het scherm, gewenste sfeer, voorbeelden van eerdere edities…" />
+              ) : null}
+              {step.kind === 'textarea' && step.id === 'wens_intern' ? (
+                <TextArea id="f-wens-intern" value={draft.omschrijving} onChange={(v) => patch({ omschrijving: v })} maxLength={3000} invalid={Boolean(error)} placeholder="Bijvoorbeeld: nieuwe visitekaartjes voor het salesteam, 85 x 55 mm, met de nieuwe functietitels." />
               ) : null}
             </Question>
           ) : null}

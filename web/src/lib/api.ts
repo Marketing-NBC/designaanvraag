@@ -72,6 +72,22 @@ export async function zoekAanvragen(q: string): Promise<GevondenAanvraag[]> {
   }
 }
 
+/**
+ * De recente interne aanvragen van deze collega. Een interne aanvraag heeft geen event om op te
+ * zoeken, dus vind je hem terug op je naam. Net als bij het zoeken: een storing is een lege lijst.
+ */
+export async function zoekInterneAanvragen(naam: string): Promise<GevondenAanvraag[]> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) return zoekInternMock(naam)
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/aanvraag-zoeken?naam=${encodeURIComponent(naam)}`, { headers: { apikey: PUBLISHABLE_KEY } })
+    if (!res.ok) return []
+    const body = (await res.json()) as { resultaten?: GevondenAanvraag[] }
+    return body.resultaten ?? []
+  } catch {
+    return []
+  }
+}
+
 export async function verstuurAanvulling(payload: AanvullingPayload): Promise<AanvullingResult> {
   if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
     await new Promise((r) => setTimeout(r, 900))
@@ -93,6 +109,7 @@ export async function verstuurAanvulling(payload: AanvullingPayload): Promise<Aa
 function zoekMock(q: string): GevondenAanvraag[] {
   const demo: GevondenAanvraag = {
     id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+    soort: 'evenement',
     event: 'Zorgcongres 2026',
     event_datum: '2026-12-01',
     deadline: '2026-11-20',
@@ -100,8 +117,32 @@ function zoekMock(q: string): GevondenAanvraag[] {
     aanvraag_types: ['led_kolom'],
     anders_tekst: '',
     schijf_locatie: '',
+    omschrijving: '',
   }
-  return demo.event.toLowerCase().includes(q.trim().toLowerCase()) ? [demo] : []
+  // Een tweede met een deadline die al voorbij is, om de melding daarover lokaal te kunnen zien.
+  const verlopen: GevondenAanvraag = { ...demo, id: '3f2504e0-4f89-41d3-9a0c-0305e82c3303', event: 'Zorgdag 2026', event_datum: '2026-10-01', deadline: '2026-09-25' }
+  return [demo, verlopen].filter((d) => d.event.toLowerCase().includes(q.trim().toLowerCase()))
+}
+
+/** Twee verzonnen interne aanvragen voor de eerste mock-collega, zodat de keuzelijst iets toont. */
+function zoekInternMock(naam: string): GevondenAanvraag[] {
+  if (naam.trim().toLowerCase() !== COLLEGAS_MOCK[0].toLowerCase()) return []
+  const basis: GevondenAanvraag = {
+    id: '3f2504e0-4f89-41d3-9a0c-0305e82c3304',
+    soort: 'intern',
+    event: '',
+    event_datum: null,
+    deadline: '2026-12-04',
+    naam: COLLEGAS_MOCK[0],
+    aanvraag_types: [],
+    anders_tekst: '',
+    schijf_locatie: '',
+    omschrijving: 'Nieuwe visitekaartjes voor het salesteam, met de nieuwe functietitels.',
+  }
+  return [
+    basis,
+    { ...basis, id: '3f2504e0-4f89-41d3-9a0c-0305e82c3305', deadline: '2026-10-02', omschrijving: 'Poster voor de kantine over de nieuwe lunchtijden.' },
+  ]
 }
 
 /** Vraagt tijdelijke uploadlinks aan, één per bestand. Zonder backend verzinnen we ze. */

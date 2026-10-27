@@ -13,6 +13,16 @@ te kiezen valt - Green Village heeft bijvoorbeeld geen LED-kolom - en welke naam
 formulier staat. Wat er per locatie bestaat staat in `TYPES_PER_LOCATIE` in `shared/request-types.ts`;
 dat is de enige plek waar dat verschil ligt.
 
+Na de naam komt de vraag of het **voor een evenement of intern** is. Bij een evenement gaat het
+formulier verder zoals altijd (event, eventdatum, deadline, website, ...). Bij **intern** zijn het nog
+maar twee vragen: *Wat wil je aanvragen?* (één tekstvak) en *Wanneer heb je het nodig?*, en dan het
+overzicht. Een interne aanvraag heeft geen event, eventdatum, website of huisstijl. In Asana heet de
+taak dan `Intern - <aanvrager> - Deadline: <deadline> - <begin van de omschrijving>`, en het veld
+**Soort** (Evenement blauw, Intern roze) staat als gekleurd label op de kaart.
+
+**Je naam** kies je uit de lijst, maar wie er niet tussen staat typt gewoon zijn naam: iedereen kan een
+aanvraag doen.
+
 Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 
 ```
@@ -134,11 +144,15 @@ alle gegevens in de beschrijving.
   van de taak, dus in beide projecten gelijk.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
   function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
-  Alleen namen die in de Supabase-tabel `collegas` staan krijgen een optie; bij een onbekende naam
-  blijft het veld leeg en staat de reden in `asana_error`. Je hoeft de lijst dus nergens dubbel bij
-  te houden.
-- **Spoed:** zit er minder dan 10 werkdagen tussen de aanvraag en de eventdatum, dan zet de function
-  het veld **Spoed** op "Ja". Dat gebeurt één keer bij het indienen; verschuift de eventdatum later,
+  Dat geldt ook voor een naam die niet in de Supabase-tabel `collegas` staat: iedereen mag een
+  aanvraag doen en telt in het dashboard mee. Hoofdletters maken niet uit ("britt" en "Britt" zijn
+  één optie), een tikfout wel - die haal je in Asana weg of voeg je samen.
+- **Soort** (Evenement / Intern) is een keuzelijst met een eigen kleur per optie, zodat je op het
+  bord meteen ziet wat intern is. Asana kan de kaart zelf niet inkleuren; het gekleurde label op de
+  kaart is wat er kan. Het veld komt er bij de eerstvolgende run van **Asana-velden vernieuwen**
+  (met "Ontbrekende velden aanmaken" aan).
+- **Spoed:** zit er minder dan 10 werkdagen tussen de aanvraag en de eventdatum (bij een interne
+  aanvraag: de deadline), dan zet de function het veld **Spoed** op "Ja". Dat gebeurt één keer bij het indienen; verschuift de eventdatum later,
   dan blijft de registratie staan. De regel staat in `shared/spoed.ts`.
 - **Taak weggegooid:** haalt Marketing een taak weg (of uit het project), dan vervalt de aanvraag ook
   in de applicatie — zie **Een aanvraag weggooien** hieronder.
@@ -208,22 +222,29 @@ er wel af en blijft de taak in Klaar staan, met de reden in `asana_error`. Draai
 Er verandert bijna altijd nog iets nadat een aanvraag binnen is: er komt een type bij, er komt
 materiaal achteraan, of er is feedback op het concept. Daar hoort geen tweede taak bij.
 
-Op het startscherm staat daarom **"Iets aanvullen of wijzigen"**. De collega zoekt op de **eventnaam**
-(niet op zijn eigen naam — bij een event zijn vaak meer mensen betrokken), kiest de juiste aanvraag
-en typt wat er moet gebeuren. Dat komt als **reactie onder de bestaande Asana-taak**, zodat je er een
+Op het startscherm staat daarom **"Iets aanvullen of wijzigen"**. De eerste vraag is of het om een
+**evenement** of iets **intern** gaat. Bij een evenement zoekt de collega op de **eventnaam** (niet op
+zijn eigen naam — bij een event zijn vaak meer mensen betrokken); bij intern vult hij zijn naam in en
+kiest hij uit zijn eigen interne aanvragen. Daarna typt hij wat er moet gebeuren — ook wat er
+eventueel bij moet komen; een aparte keuzelijst daarvoor is er niet meer.
+
+**Verlopen deadline.** Is de deadline van de gekozen aanvraag al voorbij, dan krijgt de collega een
+duidelijke melding en moet hij een nieuwe deadline kiezen voordat hij kan versturen. De function
+controleert dat ook zelf. Is het event zelf ook al geweest (feedback achteraf), dan mag de nieuwe
+deadline na het event liggen. Dat komt als **reactie onder de bestaande Asana-taak**, zodat je er een
 melding van krijgt en alles bij elkaar blijft.
 
 Een aanvulling werkt daarnaast een paar velden bij, met opzet terughoudend:
 
 | Veld | Wat er gebeurt |
 | --- | --- |
-| Type aanvraag | Alleen aanvullen. De unie van wat er in Asana staat en wat erbij gevraagd wordt, dus ook wat jij zelf hebt bijgezet blijft staan. |
-| Eventdatum, Deadline | Alleen als de datum echt anders is dan wat er staat. |
+| Type aanvraag | Verandert niet vanuit het formulier: wat erbij moet staat in de toelichting. (De function kan nog wel aanvullen, nooit weghalen.) |
+| Eventdatum, Deadline | Alleen als de datum echt anders is dan wat er staat. Een verlopen deadline moet vervangen worden; een interne aanvraag heeft geen eventdatum. |
 | Schijf | Alleen als het veld nog leeg is. Stond er al iets, dan komt het nieuwe pad in de reactie. |
 | Spoed | Verandert niet. Die waarde meet het aanvraaggedrag bij het indienen; met terugwerkende kracht herrekenen maakt de cijfers waardeloos. |
 | Vervaldatum | Verandert niet. Dat is de planning van Marketing. |
 
-Het zoeken is bewust karig: vanaf drie letters, alleen aanvragen van de afgelopen 120 dagen (zie
+Het zoeken is bewust karig: vanaf drie letters (op naam: twee, en dan alleen een precies kloppende naam), alleen aanvragen van de afgelopen 120 dagen (zie
 `ZOEK_DAGEN` in `shared/aanvulling-schema.ts`), maximaal tien treffers en een eigen uurlimiet per IP.
 De pagina staat immers op het open internet.
 
@@ -262,9 +283,25 @@ kan geen grafieken of weergave-instellingen maken.
 - **Wie vraagt de meeste spoedjes aan:** dezelfde grafiek, maar groeperen op **Aanvrager** en
   filteren op **Spoed = Ja**. Dat kan omdat Aanvrager een keuzelijst is; op een tekstveld kan Asana
   niet groeperen.
-- **Zien in je planning:** project "4. Werkplanning" → **Kalender** → **Kleur** → **Spoed**.
-  Spoedjes worden rood, de rest grijs. Dit werkt omdat `scripts/asana-setup.mjs` het Spoed-veld ook
-  aan het planningsproject koppelt; andere velden blijven daar buiten.
+- **Zien in je planning:** de kalender van "4. Werkplanning" kleurt op het veld **Kleur**
+  (Opties → Kleur → Kleur). Designaanvragen krijgen hun optie vanzelf bij het indienen, soort en
+  spoed samen; voor je eigen taken kies je zelf Reminder, NBC of GV:
+
+  | Optie | Kleur | Wanneer |
+  | --- | --- | --- |
+  | Evenement | aqua | evenement, op tijd |
+  | Evenement spoed | oranje | evenement, minder dan 10 werkdagen |
+  | Intern | roze | intern, op tijd |
+  | Intern spoed | paars | intern, minder dan 10 werkdagen |
+  | Reminder | rood | zelf kiezen |
+  | NBC | blauw | zelf kiezen |
+  | GV | groen | zelf kiezen |
+
+  Waarom één veld en geen tags: een designaanvraag staat ook in het project Designaanvragen, en
+  in de standaardkleuren wint de kleur van dat project het van een tag - alle aanvragen werden dan
+  mintgroen. Een veld wint wel. Het veld hangt aan beide projecten (`ookInPlanning` in
+  `scripts/asana-velden.mjs`); een optie erbij is een regel in `FIELD_SPECS` plus een label in
+  `option_aliases`, en dan **Asana-velden vernieuwen**.
 
 In Supabase staan `spoed` en `werkdagen_tot_event` per aanvraag, mocht je er later zelf op willen
 rekenen.
@@ -325,19 +362,22 @@ organisatie. Zolang dit niet is ingesteld, gaat er geen mail uit en werkt de res
    Noteer de **Application (client) ID** en de **Directory (tenant) ID**.
 3. **Client secret.** In die app → Certificates & secrets → *New client secret*. Kopieer de
    **Value** meteen; die zie je maar één keer.
-4. **Recht om te mailen, alleen vanuit dit postvak.** Het recht `Mail.Send` als *application
-   permission* mag standaard namens élk postvak in de organisatie mailen. Beperk het daarom tot
-   `designaanvraag@nbcevents.nl`. Microsoft raadt daarvoor *RBAC for Applications* aan, in Exchange
-   Online PowerShell:
-   ```powershell
-   # <client-id>: Application (client) ID; <object-id>: Object ID van de app onder Enterprise applications
-   New-ServicePrincipal -AppId <client-id> -ObjectId <object-id> -DisplayName "Designaanvraag-meldingen"
-   New-ManagementScope -Name "Designaanvraag postvak" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'designaanvraag@nbcevents.nl'"
-   New-ManagementRoleAssignment -App <client-id> -Role "Application Mail.Send" -CustomResourceScope "Designaanvraag postvak"
-   ```
-   Geef dan in Entra **geen** admin consent voor `Mail.Send`: die twee tellen bij elkaar op en dan
-   is de beperking weg. (De oudere route, Graph-permissie `Mail.Send` met admin consent plus een
-   *Application Access Policy*, werkt ook.)
+4. **Recht om te mailen, alleen vanuit dit postvak.** Zo is het bij NBC ingericht:
+   - Entra → App registrations → de app → API permissions → Microsoft Graph → **Application
+     permissions** → `Mail.Send`, en dan *Grant admin consent*. Niet *Delegated*: dan mag de app niets.
+   - Dat recht mag namens élk postvak in de organisatie mailen. Beperk het daarom in Exchange tot
+     `designaanvraag@nbcevents.nl`. Maak een **mail-enabled security group**
+     `designaanvraag-app@nbcevents.nl` met het postvak als enig lid, en dan in Exchange Online
+     PowerShell:
+     ```powershell
+     New-ApplicationAccessPolicy -AppId <client-id> -PolicyScopeGroupId designaanvraag-app@nbcevents.nl `
+       -AccessRight RestrictAccess -Description "Designaanvraag mag alleen vanuit designaanvraag@nbcevents.nl mailen"
+     # Controle: Granted voor het eigen postvak, Denied voor elk ander
+     Test-ApplicationAccessPolicy -Identity designaanvraag@nbcevents.nl -AppId <client-id>
+     ```
+     Het kan tot een uur duren voordat de beperking werkt. Microsoft noemt deze manier inmiddels
+     legacy; de opvolger is *RBAC for Applications*, maar daarbij moet de admin consent in Entra er
+     juist af, anders vervalt de beperking.
 5. **Doorgeven.** Zet de drie waarden als GitHub-secrets `MS_TENANT_ID`, `MS_CLIENT_ID` en
    `MS_CLIENT_SECRET` (Settings → Secrets and variables → Actions) en draai Actions →
    **Supabase deploy**, zodat de functions ze krijgen.
@@ -464,7 +504,8 @@ voor titels, Area Normal voor de rest.
 ## Collega's
 
 De namenlijst komt uit de Supabase-tabel `collegas` (Table editor → collegas: naam toevoegen,
-`actief` uitzetten om iemand te verbergen). Fallback: `web/src/data/collegas.fallback.ts`.
+`actief` uitzetten om iemand te verbergen). Die lijst is een hulp om snel te kiezen, geen
+toegangscontrole: wie er niet in staat typt zijn naam gewoon zelf. Fallback: `web/src/data/collegas.fallback.ts`.
 
 ## Aanvragen bekijken
 

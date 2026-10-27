@@ -155,3 +155,18 @@ test('zonder veld of optie zegt de knop waarom het niet kan', () => {
   // De melding noemt het veld bij zijn naam in Asana, niet bij onze sleutel.
   assert.match(knopWaarde({ fields: {} }, 'huisstijl', 'bezig').reden, /"huisstijl"/)
 })
+
+// ── Het kleurveld voor de werkplanning ────────────────────────────────
+
+test('het kleurveld vangt soort en spoed, plus de eigen taken, en spoed is nooit rood', () => {
+  const spec = FIELD_SPECS.find((s) => s.key === 'kleur')
+  assert.ok(spec, 'het kleurveld hoort bij de velden die we aanmaken')
+  assert.ok(spec.ookInPlanning, 'de kalender staat in de werkplanning; zonder het veld daar kleurt er niets')
+  const kleuren = Object.fromEntries(spec.options)
+  assert.deepEqual(Object.keys(kleuren),
+    ['evenement', 'evenement_spoed', 'intern', 'intern_spoed', 'reminder', 'nbc', 'gv'])
+  assert.equal(kleuren.reminder, 'red')
+  // Rood is van de reminders; een spoedje mag daar niet op lijken.
+  for (const k of ['evenement', 'evenement_spoed', 'intern', 'intern_spoed']) assert.notEqual(kleuren[k], 'red', k)
+  assert.equal(new Set(Object.values(kleuren)).size, spec.options.length, 'elke optie een eigen kleur')
+})

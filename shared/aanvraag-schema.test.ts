@@ -162,3 +162,46 @@ describe('voor welke locatie de aanvraag is', () => {
     expect(aanvraagSchema.safeParse({ ...valid, locatie: 'kasteel' }).success).toBe(false)
   })
 })
+
+describe('evenement of intern', () => {
+  const intern = { soort: 'intern' as const, naam: 'Naomi', deadline: '2026-11-10', omschrijving: 'Nieuwe visitekaartjes voor sales.' }
+
+  it('een aanvraag zonder soort is voor een evenement', () => {
+    const r = aanvraagSchema.safeParse(valid)
+    expect(r.success && r.data.soort).toBe('evenement')
+  })
+
+  it('een evenement zonder event, datum, types of design wordt geweigerd', () => {
+    const r = aanvraagSchema.safeParse({ naam: 'Naomi', deadline: '2026-11-10' })
+    expect(r.success).toBe(false)
+    const velden = r.success ? [] : r.error.issues.map((i) => i.path[0])
+    expect(velden).toEqual(expect.arrayContaining(['event', 'event_datum', 'aanvraag_types', 'design_modus']))
+  })
+
+  it('intern: alleen naam, deadline en wat er nodig is', () => {
+    const r = aanvraagSchema.safeParse(intern)
+    expect(r.success).toBe(true)
+    if (r.success) expect([r.data.event, r.data.event_datum, r.data.design_modus]).toEqual(['', null, null])
+  })
+
+  it('intern: zonder omschrijving gaat het niet', () => {
+    const r = aanvraagSchema.safeParse({ ...intern, omschrijving: '' })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0].path).toEqual(['omschrijving'])
+  })
+
+  it('intern: wat er nog van een evenement in stond gaat eraf', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, ...intern })
+    expect(r.success).toBe(true)
+    if (r.success) {
+      expect(r.data.aanvraag_types).toEqual([])
+      expect(r.data.website).toBe('')
+      expect(r.data.schijf_locatie).toBe('')
+    }
+  })
+
+  it('een naam die niet in de lijst staat mag gewoon', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, naam: 'Iemand van buiten de lijst' }).success).toBe(true)
+    expect(aanvraagSchema.safeParse({ ...valid, naam: ' ' }).success).toBe(false)
+  })
+})
