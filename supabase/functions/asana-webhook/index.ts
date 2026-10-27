@@ -52,6 +52,7 @@ const handler = createHandler({
   token: await webhookToken(env.asanaPat),
   store: createWebhookStore(env.supabaseUrl, env.supabaseSecretKey),
   markeerVervallen: (gid, moment) => db.markeerVervallen(gid, moment),
+  deadlineVan: (gid) => db.deadlineVan(gid),
   startMenu: menuRoutine ? startMenu : undefined,
   startHuisstijl: brandRoutine ? startHuisstijl : undefined,
   asana: createAsanaTaskClient(env.asanaPat),

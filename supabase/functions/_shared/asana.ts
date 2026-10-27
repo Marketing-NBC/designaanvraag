@@ -19,6 +19,8 @@ export interface AsanaFieldsConfig {
   sections?: Record<string, { gid: string; name?: string }>
   /** Project waar ingeplande taken ook in komen ("4. Werkplanning"). */
   planning_project?: { gid: string; name?: string; url?: string } | null
+  /** Project met per aanvraag een mijlpaal op de deadline ("Deadlines designaanvragen"). */
+  deadlines_project?: { gid: string; name?: string; url?: string } | null
 }
 
 export const asanaFields = fieldsJson as unknown as AsanaFieldsConfig
@@ -45,9 +47,22 @@ export interface TaskInput {
   subtasks: string[]
 }
 
+/** De mijlpaal op de deadline, in het deadlineproject. */
+export interface DeadlineInput {
+  name: string
+  /** De aanvraagtaak, voor de link in de beschrijving. */
+  taakGid: string
+  projectGid: string
+  dueOn: string
+  /** Velden die het deadlineproject kent, zoals Kleur. Een geweigerd veld kost de mijlpaal niet. */
+  customFields: Record<string, unknown>
+}
+
 export interface AsanaClient {
   /** `warnings` bevat wat Asana geweigerd heeft; de taak bestaat dan wel. Leeg = alles gelukt. */
   createTask(input: TaskInput): Promise<{ gid: string; url: string; subtasks: number; warnings: string[] }>
+  /** Maakt de deadline-mijlpaal. `warnings` zoals bij createTask. */
+  createDeadline(input: DeadlineInput): Promise<{ gid: string; warnings: string[] }>
   /** Gid van de enum-optie met deze naam; maakt hem aan als hij nog niet bestaat. */
   enumOptie(fieldGid: string, naam: string): Promise<string>
   uploadAttachment(taskGid: string, naam: string, bytes: Uint8Array<ArrayBuffer>, mime: string): Promise<AsanaBijlage>
@@ -95,6 +110,10 @@ export interface AsanaTaskClient {
    * call — Marketing kiest zelf een nieuwe datum zodra ze weten wanneer ze eraan toekomen.
    */
   heropen(taskGid: string): Promise<void>
+  /** Zet de deadline-mijlpaal gelijk met zijn aanvraag: datum en afgerond of niet. */
+  bijwerkDeadline(gid: string, stand: { dueOn: string; completed: boolean }): Promise<void>
+  /** Gooit een taak weg; voor de mijlpaal van een aanvraag die niet meer bestaat. */
+  verwijderTaak(gid: string): Promise<void>
 }
 
 /**
@@ -291,6 +310,20 @@ export function createAsanaClient(pat: string): AsanaClient {
       return { gid, url, subtasks: await createSubtasks(pat, gid, input), warnings }
     },
 
+    async createDeadline(input) {
+      const data = {
+        name: input.name,
+        projects: [input.projectGid],
+        resource_subtype: 'milestone',
+        due_on: input.dueOn,
+        html_notes: `<body>Deadline van <a data-asana-gid="${input.taakGid}"/>. Deze mijlpaal beweegt vanzelf mee met de aanvraag; niet met de hand aanpassen.</body>`,
+      }
+      const { status, body } = await asanaFetch(pat, '/tasks', { method: 'POST', body: JSON.stringify({ data }) })
+      if (!ok(status) || !body.data?.gid) throw new Error(`Deadline-mijlpaal aanmaken mislukt (${status}: ${errorText(body)})`)
+      const gid = String(body.data.gid)
+      return { gid, warnings: await putCustomFields(pat, gid, input.customFields) }
+    },
+
     async enumOptie(fieldGid, naam) {
       const gezocht = naam.trim().toLowerCase()
       const huidig = await asanaFetch(pat, `/custom_fields/${fieldGid}?opt_fields=enum_options.gid,enum_options.name,enum_options.enabled`, { method: 'GET' })
@@ -429,6 +462,15 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
     async heropen(taskGid) {
       const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}`, { method: 'PUT', body: JSON.stringify({ data: { completed: false, due_on: null } }) })
       if (!ok(status)) throw new Error(`Taak heropenen mislukt (${status}: ${errorText(body)})`)
+    },
+    async bijwerkDeadline(gid, stand) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data: { due_on: stand.dueOn, completed: stand.completed } }) })
+      if (!ok(status)) throw new Error(`Deadline-mijlpaal bijwerken mislukt (${status}: ${errorText(body)})`)
+    },
+    async verwijderTaak(gid) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${gid}`, { method: 'DELETE' })
+      // Al weg is ook goed: dan is er niets meer op te ruimen.
+      if (!ok(status) && status !== 404) throw new Error(`Taak verwijderen mislukt (${status}: ${errorText(body)})`)
     },
   }
 }

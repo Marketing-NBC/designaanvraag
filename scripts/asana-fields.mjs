@@ -11,7 +11,7 @@
  * regel onderaan de workflow - die zie je over het hoofd.
  *
  * Gebruik:
- *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--aanmaken] [--assignee "Abel"] [--planning <gid of url>]
+ *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--aanmaken] [--assignee "Abel"] [--planning <gid of url>] [--deadlines <gid of url>]
  *
  * Draait ook in de workflow .github/workflows/asana-fields.yml.
  */
@@ -72,13 +72,14 @@ const warnings = []
 const ontbrekend = []
 const norm = (s) => String(s ?? '').trim().toLowerCase()
 const planningGid = args.planning && args.planning !== 'true' ? extractGid(args.planning) : null
+const deadlinesGid = args.deadlines && args.deadlines !== 'true' ? extractGid(args.deadlines) : null
 
 // Eerst aanvullen wat er in Asana nog niet staat. Zonder deze stap kon een veld dat we
 // later bedachten - de knop "Menuscherm" - er maanden uit blijven: het stond wel in
 // asana-field-map.json, maar uitlezen maakt een veld niet aan.
 if (args.aanmaken && args.aanmaken !== 'false') {
   const gezorgd = await zorgVoorVelden({
-    asana, map, workspaceGid: project.workspace?.gid, projectGid, planningGid,
+    asana, map, workspaceGid: project.workspace?.gid, projectGid, planningGid, deadlinesGid,
   })
   for (const line of gezorgd.summary) console.log(line)
   warnings.push(...gezorgd.warnings)
@@ -90,7 +91,7 @@ const settings = await lees(
 
 const asanaFields = settings.map((s) => s.custom_field)
 
-const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {}, sections: {}, planning_project: null }
+const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {}, sections: {}, planning_project: null, deadlines_project: null }
 
 for (const key of veldsleutels(map)) {
   const wanted = map[key]
@@ -139,6 +140,15 @@ if (args.planning && args.planning !== 'true') {
   }
 }
 
+// Deadlineproject: per aanvraag een mijlpaal op de deadline.
+if (args.deadlines && args.deadlines !== 'true') {
+  if (!deadlinesGid) warnings.push(`Kan geen project-gid halen uit "${args.deadlines}".`)
+  else {
+    const p = await lees(`/projects/${deadlinesGid}?opt_fields=name,gid,permalink_url`)
+    out.deadlines_project = { gid: p.gid, name: p.name, url: p.permalink_url }
+  }
+}
+
 if (args.assignee && args.assignee !== 'true') {
   const member = (project.members ?? []).find((m) => norm(m.name).includes(norm(args.assignee)))
   if (member) out.assignee = { gid: member.gid, name: member.name }
@@ -153,6 +163,7 @@ console.log(`Velden gekoppeld: ${Object.keys(out.fields).join(', ') || 'geen'}`)
 if (out.assignee) console.log(`Assignee gevonden (${out.assignee.gid})`)
 console.log(`Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`)
 if (out.planning_project) console.log(`Planningsproject: ${out.planning_project.name} (${out.planning_project.gid})`)
+if (out.deadlines_project) console.log(`Deadlineproject: ${out.deadlines_project.name} (${out.deadlines_project.gid})`)
 
 // Waarschuwingen moeten in de workflow te zien zijn zonder het logboek open te klappen.
 // Dat ging eerder mis: console.warn gaat naar stderr en de workflow zette alleen stdout
@@ -173,6 +184,7 @@ if (process.env.GITHUB_STEP_SUMMARY) {
     `- Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`]
   if (out.assignee) regels.push(`- Assignee: ${out.assignee.name}`)
   if (out.planning_project) regels.push(`- Planningsproject: ${out.planning_project.name}`)
+  if (out.deadlines_project) regels.push(`- Deadlineproject: ${out.deadlines_project.name}`)
   if (ontbrekend.length) {
     regels.push('', `> [!CAUTION]`, `> Deze velden staan nog niet in Asana: **${ontbrekend.join('**, **')}**.`,
       '> Zolang ze ontbreken doet de function er niets mee.')

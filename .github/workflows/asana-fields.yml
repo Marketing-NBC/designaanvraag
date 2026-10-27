@@ -22,6 +22,10 @@ on:
         description: 'Link of GID van het planningsproject (taken komen daar ook in zodra er een vervaldatum staat)'
         required: false
         default: 'https://app.asana.com/1/1205781972079586/project/1206998483284471'
+      deadlines:
+        description: 'Link of GID van het deadlineproject (per aanvraag een mijlpaal op de deadline)'
+        required: false
+        default: 'https://app.asana.com/1/1205781972079586/project/1219937271361859'
 
 permissions:
   contents: write
@@ -37,6 +41,7 @@ jobs:
       AANMAKEN_INPUT: ${{ inputs.aanmaken }}
       ASSIGNEE_INPUT: ${{ inputs.assignee }}
       PLANNING_INPUT: ${{ inputs.planning }}
+      DEADLINES_INPUT: ${{ inputs.deadlines }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +50,7 @@ jobs:
       - name: Velden aanmaken en uitlezen
         run: |
           [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
-          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --aanmaken "${AANMAKEN_INPUT:-true}" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT"
+          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --aanmaken "${AANMAKEN_INPUT:-true}" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT" --deadlines "$DEADLINES_INPUT"
           node scripts/sync-shared.mjs
       - name: Committen
         id: commit

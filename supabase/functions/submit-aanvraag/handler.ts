@@ -2,10 +2,10 @@ import { koppelBijlagen } from '../_shared/bijlagen-koppelen.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import type { Env } from '../_shared/env.ts'
 import type { AsanaClient, AsanaFieldsConfig } from '../_shared/asana.ts'
-import { asanaFields, buildCustomFields } from '../_shared/asana.ts'
+import { asanaFields, buildCustomFields, kleurSleutel } from '../_shared/asana.ts'
 import type { Db } from '../_shared/db.ts'
 import { renderNotes } from '../_shared/notes.ts'
-import { subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
+import { deadlineTitel, subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
@@ -174,6 +174,29 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         asanaGid = task.gid
         asanaUrl = task.url
 
+        // De mijlpaal op de deadline, in een eigen project: een Asana-kalender kan alleen op de
+        // vervaldatum, en die kiest Marketing zelf bij het inplannen. Mislukt hij, dan bestaat de
+        // taak gewoon; de reden staat dan in asana_error.
+        let deadlineGid: string | null = null
+        const deadlinesGid = cfg.deadlines_project?.gid ?? null
+        if (deadlinesGid) {
+          try {
+            const kleur = cfg.fields?.kleur
+            const kleurOptie = kleur?.type === 'enum' ? kleur.options?.[kleurSleutel(aanvraag.soort, spoed)] : undefined
+            const mijlpaal = await deps.asana.createDeadline({
+              name: deadlineTitel(aanvraag),
+              taakGid: task.gid,
+              projectGid: deadlinesGid,
+              dueOn: aanvraag.deadline,
+              customFields: kleur && kleurOptie ? { [kleur.gid]: kleurOptie } : {},
+            })
+            deadlineGid = mijlpaal.gid
+            extraWaarschuwingen.push(...mijlpaal.warnings.map((w) => `deadline-mijlpaal: ${w}`))
+          } catch (e) {
+            extraWaarschuwingen.push(e instanceof Error ? e.message : String(e))
+          }
+        }
+
         if (bijlageRijen.length && deps.storage) {
           const { gekoppeld, waarschuwingen } = await koppelBijlagen(task.gid, bijlageRijen, {
             storage: deps.storage,
@@ -191,7 +214,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         // `asana_error`; de taak zelf bestaat, dus de aanvraag slaagt.
         const alleWaarschuwingen = [...extraWaarschuwingen, ...task.warnings]
         const gedeeltelijk = alleWaarschuwingen.length ? alleWaarschuwingen.join('; ') : null
-        await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url, asana_error: gedeeltelijk })
+        await db.update(row.id, { asana_task_gid: task.gid, asana_task_url: task.url, asana_deadline_gid: deadlineGid, asana_error: gedeeltelijk })
         if (gedeeltelijk) log('warn', 'asana-taak onvolledig', { id: row.id, gid: task.gid, warnings: gedeeltelijk })
         else log('info', 'asana-taak aangemaakt', { id: row.id, gid: task.gid, subtasks: task.subtasks })
       } catch (e) {

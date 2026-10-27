@@ -75,6 +75,18 @@ export function taskTitle(a: TitleInput): string {
 }
 
 /**
+ * Naam van de deadline-mijlpaal: de taaknaam zonder de datums, want de mijlpaal staat zelf al op
+ * de deadline. "EY - Britt - Torenscherm", of "Intern - Abel - Nieuwe reserveerborden…".
+ */
+export function deadlineTitel(a: TitleInput): string {
+  if (a.soort === 'intern') {
+    return ['Intern', a.naam.trim(), kortVan(a.omschrijving ?? '')].filter(Boolean).join(' - ').slice(0, 250)
+  }
+  const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
+  return [a.event.trim(), a.naam.trim(), wat].filter(Boolean).join(' - ').slice(0, 250)
+}
+
+/**
  * De namen waarop de worker de menu-subtaak herkent: "Menu scherm …",
  * "Menukaart print …". Daar hangt Marketing het logo van de opdrachtgever aan, en
  * zonder logo maakt de worker geen scherm — er staat dan een rode plaatshouder waar

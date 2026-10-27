@@ -53,6 +53,8 @@ export const FIELD_SPECS = [
     ],
     /** De kalender staat in het planningsproject, dus daar moet het veld ook hangen. */
     ookInPlanning: true,
+    /** En in het deadlineproject, zodat de mijlpalen daar dezelfde kleur krijgen. */
+    ookInDeadlines: true,
   },
   { key: 'eventdatum', type: 'date', description: 'Datum van het event. Leeg bij een interne aanvraag.' },
   { key: 'deadline', type: 'date', description: 'Wanneer de aanvrager het design uiterlijk nodig heeft. De vervaldatum van de taak kiest Marketing zelf bij het inplannen.' },
@@ -169,9 +171,10 @@ const norm = (s) => String(s ?? '').trim().toLowerCase()
  * @param {string} o.workspaceGid   workspace waarin een nieuw veld wordt aangemaakt
  * @param {string} o.projectGid     project waar het veld aan gekoppeld moet zijn
  * @param {string|null} o.planningGid  planningsproject, voor velden met ookInPlanning
+ * @param {string|null} o.deadlinesGid deadlineproject, voor velden met ookInDeadlines
  * @returns {Promise<{summary: string[], warnings: string[]}>}
  */
-export async function zorgVoorVelden({ asana, map, workspaceGid, projectGid, planningGid = null }) {
+export async function zorgVoorVelden({ asana, map, workspaceGid, projectGid, planningGid = null, deadlinesGid = null }) {
   const summary = []
   const warnings = []
 
@@ -186,22 +189,24 @@ export async function zorgVoorVelden({ asana, map, workspaceGid, projectGid, pla
     warnings.push(`Kon de veldenbibliotheek niet lezen (${e.message}); velden worden zo nodig nieuw aangemaakt.`)
   }
 
-  // Sommige velden horen ook in het planningsproject ("4. Werkplanning"): alleen velden die daar aan
-  // het project hangen kun je in de kalender als kleur gebruiken.
-  let planningVelden = null
-  async function koppelAanPlanning(field) {
-    if (!planningGid) return
+  // Sommige velden horen ook in een ander project: het planningsproject ("4. Werkplanning") en het
+  // deadlineproject. Alleen velden die aan een project hangen kun je daar in de kalender als kleur
+  // gebruiken, en alleen dan kan de function ze op een taak in dat project zetten.
+  const veldenPerProject = new Map()
+  async function koppelAan(extraGid, wat, field) {
+    if (!extraGid) return
     try {
-      if (!planningVelden) {
-        const s = await asana(`/projects/${planningGid}/custom_field_settings?limit=100&opt_fields=custom_field.gid`)
-        planningVelden = new Set(s.map((x) => x.custom_field?.gid).filter(Boolean))
+      if (!veldenPerProject.has(extraGid)) {
+        const s = await asana(`/projects/${extraGid}/custom_field_settings?limit=100&opt_fields=custom_field.gid`)
+        veldenPerProject.set(extraGid, new Set(s.map((x) => x.custom_field?.gid).filter(Boolean)))
       }
-      if (planningVelden.has(field.gid)) return
-      await asana(`/projects/${planningGid}/addCustomFieldSetting`, { method: 'POST', body: { data: { custom_field: field.gid, is_important: false } } })
-      planningVelden.add(field.gid)
-      summary.push(`Veld "${field.name}" ook aan het planningsproject gekoppeld (voor de kleur in de kalender)`)
+      const al = veldenPerProject.get(extraGid)
+      if (al.has(field.gid)) return
+      await asana(`/projects/${extraGid}/addCustomFieldSetting`, { method: 'POST', body: { data: { custom_field: field.gid, is_important: false } } })
+      al.add(field.gid)
+      summary.push(`Veld "${field.name}" ook aan het ${wat} gekoppeld (voor de kleur in de kalender)`)
     } catch (e) {
-      warnings.push(`Veld "${field.name}" kon niet aan het planningsproject gekoppeld worden: ${e.message}`)
+      warnings.push(`Veld "${field.name}" kon niet aan het ${wat} gekoppeld worden: ${e.message}`)
     }
   }
 
@@ -254,7 +259,8 @@ export async function zorgVoorVelden({ asana, map, workspaceGid, projectGid, pla
         onProject.push(field)
         if (status === 'bestond al') status = 'aan project gekoppeld'
       }
-      if (spec.ookInPlanning) await koppelAanPlanning({ gid: field.gid, name })
+      if (spec.ookInPlanning) await koppelAan(planningGid, 'planningsproject', { gid: field.gid, name })
+      if (spec.ookInDeadlines) await koppelAan(deadlinesGid, 'deadlineproject', { gid: field.gid, name })
       summary.push(`Veld "${name}" (${spec.type}): ${status}`)
     } catch (e) {
       if (e.status === 402 || /premium|paid|upgrade|starter/i.test(e.message)) {
