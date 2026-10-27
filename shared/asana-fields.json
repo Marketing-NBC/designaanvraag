@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-27T13:09:57.443Z",
+  "generated_at": "2026-10-27T14:54:12.305Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -157,5 +157,10 @@
     "gid": "1206998483284471",
     "name": "4. Werkplanning",
     "url": "https://app.asana.com/1/1205781972079586/project/1206998483284471"
+  },
+  "deadlines_project": {
+    "gid": "1219937271361859",
+    "name": "Deadlines designaanvragen",
+    "url": "https://app.asana.com/1/1205781972079586/project/1219937271361859"
   }
 }
