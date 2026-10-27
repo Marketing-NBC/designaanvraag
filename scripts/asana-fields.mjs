@@ -10,15 +10,18 @@
  * veld dat nog niet in Asana staat (de knop "Menuscherm" was dat) niet meer dan een
  * regel onderaan de workflow - die zie je over het hoofd.
  *
+ * Ook de tags waarop de kalender van de werkplanning kleurt (zie TAG_SPECS) worden opgezocht en zo
+ * nodig aangemaakt. Met --taggen krijgen openstaande aanvragen zonder zo'n tag er alsnog een.
+ *
  * Gebruik:
- *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--aanmaken] [--assignee "Abel"] [--planning <gid of url>]
+ *   ASANA_PAT=... node scripts/asana-fields.mjs --project <gid of url> [--aanmaken] [--taggen] [--assignee "Abel"] [--planning <gid of url>]
  *
  * Draait ook in de workflow .github/workflows/asana-fields.yml.
  */
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { veldsleutels, zorgVoorVelden } from './asana-velden.mjs'
+import { tagBestaandeTaken, veldsleutels, zorgVoorTags, zorgVoorVelden } from './asana-velden.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -56,6 +59,20 @@ async function asana(path, { method = 'GET', body } = {}) {
   return json.data
 }
 
+/** Alle pagina's van een lijst; `asana` geeft alleen de eerste. */
+async function lijst(path) {
+  const rijen = []
+  let pad = path
+  while (pad) {
+    const res = await fetch(`${API}${pad}`, { headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json' } })
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(`Asana GET ${pad} → ${res.status}: ${json?.errors?.map((e) => e.message).join('; ') ?? 'onbekende fout'}`)
+    rijen.push(...(json.data ?? []))
+    pad = json.next_page?.path ?? null
+  }
+  return rijen
+}
+
 /** Uitlezen dat niet mag mislukken: zonder deze gegevens heeft de rest geen zin. */
 async function lees(path) {
   try {
@@ -90,7 +107,7 @@ const settings = await lees(
 
 const asanaFields = settings.map((s) => s.custom_field)
 
-const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {}, sections: {}, planning_project: null }
+const out = { generated_at: new Date().toISOString(), project: { gid: project.gid, name: project.name, url: project.permalink_url, workspace_gid: project.workspace?.gid }, assignee: null, fields: {}, sections: {}, tags: {}, planning_project: null }
 
 for (const key of veldsleutels(map)) {
   const wanted = map[key]
@@ -120,6 +137,25 @@ for (const key of veldsleutels(map)) {
     }
   }
   out.fields[key] = entry
+}
+
+// Tags voor de kalender van de werkplanning: één per aanvraag, soort en spoed samen.
+const aanmaken = Boolean(args.aanmaken && args.aanmaken !== 'false')
+const gezorgdeTags = await zorgVoorTags({ asana, map, workspaceGid: project.workspace?.gid, aanmaken })
+for (const line of gezorgdeTags.summary) console.log(line)
+warnings.push(...gezorgdeTags.warnings)
+out.tags = gezorgdeTags.tags
+
+let getagd = []
+if (args.taggen && args.taggen !== 'false') {
+  try {
+    const uitkomst = await tagBestaandeTaken({ asana, lijst, projectGid, tags: out.tags, fields: out.fields })
+    getagd = uitkomst.getagd
+    warnings.push(...uitkomst.warnings)
+    for (const regel of getagd) console.log(`Getagd: ${regel}`)
+  } catch (e) {
+    warnings.push(`Bestaande taken taggen mislukt: ${e.message}`)
+  }
 }
 
 // Bord-kolommen (sleutel → gid), op naam uit asana-field-map.json.
@@ -152,6 +188,7 @@ console.log(`Project: ${project.name} (${project.gid})`)
 console.log(`Velden gekoppeld: ${Object.keys(out.fields).join(', ') || 'geen'}`)
 if (out.assignee) console.log(`Assignee gevonden (${out.assignee.gid})`)
 console.log(`Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`)
+console.log(`Tags gekoppeld: ${Object.keys(out.tags).join(', ') || 'geen'}`)
 if (out.planning_project) console.log(`Planningsproject: ${out.planning_project.name} (${out.planning_project.gid})`)
 
 // Waarschuwingen moeten in de workflow te zien zijn zonder het logboek open te klappen.
@@ -170,7 +207,9 @@ for (const w of warnings.filter((w) => !ontbrekend.some((n) => w.includes(`"${n}
 if (process.env.GITHUB_STEP_SUMMARY) {
   const regels = [`## Asana-velden`, '', `[${project.name}](${project.permalink_url})`, '',
     `- Velden gekoppeld: ${Object.keys(out.fields).join(', ') || 'geen'}`,
-    `- Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`]
+    `- Secties gekoppeld: ${Object.keys(out.sections).join(', ') || 'geen'}`,
+    `- Tags gekoppeld: ${Object.keys(out.tags).join(', ') || 'geen'}`]
+  if (args.taggen && args.taggen !== 'false') regels.push(`- Bestaande aanvragen getagd: ${getagd.length}`)
   if (out.assignee) regels.push(`- Assignee: ${out.assignee.name}`)
   if (out.planning_project) regels.push(`- Planningsproject: ${out.planning_project.name}`)
   if (ontbrekend.length) {

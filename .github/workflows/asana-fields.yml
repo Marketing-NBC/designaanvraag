@@ -11,9 +11,13 @@ on:
         description: 'Link of GID van het Asana-project van Marketing'
         required: true
       aanmaken:
-        description: 'Ontbrekende velden en opties in Asana aanmaken'
+        description: 'Ontbrekende velden, opties en tags in Asana aanmaken'
         type: boolean
         default: true
+      taggen:
+        description: 'Openstaande aanvragen zonder kalendertag er alsnog een geven (eenmalig nodig)'
+        type: boolean
+        default: false
       assignee:
         description: 'Naam van de designer zoals in Asana (voor de assignee-gid)'
         required: false
@@ -35,6 +39,7 @@ jobs:
       ASANA_PAT: ${{ secrets.ASANA_PAT }}
       PROJECT_INPUT: ${{ inputs.project }}
       AANMAKEN_INPUT: ${{ inputs.aanmaken }}
+      TAGGEN_INPUT: ${{ inputs.taggen }}
       ASSIGNEE_INPUT: ${{ inputs.assignee }}
       PLANNING_INPUT: ${{ inputs.planning }}
     steps:
@@ -45,7 +50,7 @@ jobs:
       - name: Velden aanmaken en uitlezen
         run: |
           [ -n "$ASANA_PAT" ] || { echo "::error::Secret ASANA_PAT ontbreekt"; exit 1; }
-          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --aanmaken "${AANMAKEN_INPUT:-true}" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT"
+          node scripts/asana-fields.mjs --project "$PROJECT_INPUT" --aanmaken "${AANMAKEN_INPUT:-true}" --taggen "${TAGGEN_INPUT:-false}" --assignee "$ASSIGNEE_INPUT" --planning "$PLANNING_INPUT"
           node scripts/sync-shared.mjs
       - name: Committen
         id: commit
