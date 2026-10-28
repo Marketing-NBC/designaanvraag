@@ -179,7 +179,8 @@ function taakRegel(t: WeekTaak, extra: string[] = []): string {
 }
 
 function lijst(taken: WeekTaak[], extra: (t: WeekTaak) => string[] = () => []): string {
-  return `<ul style="margin:4px 0 0;padding-left:20px;">${taken.map((t) => taakRegel(t, extra(t))).join('')}</ul>`
+  // Inspringen met margin: Word (de klassieke Outlook) negeert padding op een lijst.
+  return `<ul style="margin:4px 0 0 24px;padding:0;">${taken.map((t) => taakRegel(t, extra(t))).join('')}</ul>`
 }
 
 function kop(tekst: string): string {

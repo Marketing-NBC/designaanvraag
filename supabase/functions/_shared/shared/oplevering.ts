@@ -12,7 +12,7 @@
 import { formatDateShortNl, kortVan } from './asana-title.ts'
 import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL } from './contact.ts'
-import { escapeHtml, gegevensTabel, knop, mailOpmaak, waarschuwingBlok } from './mail.ts'
+import { escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, vlak, waarschuwingBlok } from './mail.ts'
 import type { MailBericht } from './mail.ts'
 import { describeRequestTypes } from './request-types.ts'
 import type { RequestTypeKey, Soort } from './request-types.ts'
@@ -137,8 +137,9 @@ const TOEGESTAAN: Record<string, string> = {
   ul: 'ul', ol: 'ol', li: 'li', blockquote: 'blockquote', pre: 'pre', h1: 'strong', h2: 'strong',
 }
 const STIJL: Record<string, string> = {
-  ul: 'margin:4px 0 4px 20px;padding:0;',
-  ol: 'margin:4px 0 4px 20px;padding:0;',
+  // Inspringen met margin: Word negeert padding op een lijst.
+  ul: 'margin:4px 0 4px 24px;padding:0;',
+  ol: 'margin:4px 0 4px 24px;padding:0;',
   li: 'margin:0 0 2px;',
   blockquote: 'margin:4px 0;padding:0 0 0 12px;border-left:3px solid #c9d1d3;color:#596165;',
   pre: 'margin:4px 0;font-family:Consolas,monospace;white-space:pre-wrap;',
@@ -281,7 +282,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
     : `${intern ? 'Je aanvraag' : `Het design voor <strong>${escapeHtml(m.event)}</strong>`} staat klaar.`}</p>`)
 
   if (m.berichtHtml) {
-    delen.push(`<div style="background:#e9f5f4;padding:12px 16px;margin:0 0 4px;">${m.berichtHtml}</div>`)
+    delen.push(vlak(m.berichtHtml, { achtergrond: '#e9f5f4', onder: 4 }))
     if (m.afzenderNaam) delen.push(`<p style="margin:0 0 16px;color:#596165;font-size:13px;">${escapeHtml(m.afzenderNaam)}, Marketing</p>`)
   }
 
@@ -299,7 +300,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   if (m.links.length) {
     rijen.push(['Bestanden', m.links.map((l) => `<a href="${escapeHtml(l.url)}" style="color:#165e5a;">${escapeHtml(l.naam)}</a>`).join('<br>')])
   }
-  delen.push(`<div style="margin:16px 0 0;">${gegevensTabel(rijen)}</div>`)
+  delen.push(ruimte(gegevensTabel(rijen), 16))
 
   delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Iets aan te passen?</p>`)
   delen.push(`<p style="margin:4px 0 0;">Geef je feedback via de knop hieronder. Dan komt hij meteen bij de juiste aanvraag terecht, `

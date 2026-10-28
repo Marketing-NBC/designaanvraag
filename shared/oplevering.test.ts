@@ -84,7 +84,7 @@ describe('de beschrijving als mail', () => {
   it('regels, lijstjes en links blijven', () => {
     const html = beschrijvingAlsMailHtml('<body>Twee dingen:\n<ul>\n<li>torenscherm</li>\n<li>vlag</li>\n</ul>Zie <a href="https://wetransfer.com/x">WeTransfer</a></body>')
     expect(html).toContain('Twee dingen:<br>')
-    expect(html).toContain('<ul style="margin:4px 0 4px 20px;padding:0;"><li style="margin:0 0 2px;">torenscherm</li><li style="margin:0 0 2px;">vlag</li></ul>')
+    expect(html).toContain('<ul style="margin:4px 0 4px 24px;padding:0;"><li style="margin:0 0 2px;">torenscherm</li><li style="margin:0 0 2px;">vlag</li></ul>')
     expect(html).toContain('<a href="https://wetransfer.com/x" style="color:#165e5a;">WeTransfer</a>')
   })
 
@@ -184,5 +184,28 @@ describe('het verslag in Asana', () => {
     expect(verslagProef({ naar: 'abel@nbcevents.nl', aan: ['britt@nbcevents.nl', 'jan@klant.nl'], bijlagen: ['a.png', 'b.pdf'], links: [] }))
       .toBe('<body>Proefmail gestuurd naar abel@nbcevents.nl. De echte mail gaat naar britt@nbcevents.nl en jan@klant.nl, met a.png en b.pdf. '
         + 'Klopt alles, zet Oplevermail dan op Verstuur nu.</body>')
+  })
+})
+
+describe('opmaak voor de klassieke Outlook', () => {
+  // Outlook rendert met Word: padding op een link of div en margin op een tabel tellen daar niet.
+  const m = renderOpleveringMail({
+    aan: ['a@x.nl'], antwoordAan: ['m@x.nl'], aanvraagId: 'id', versie: 1, soort: 'evenement', event: 'E', eventDatum: null,
+    omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, bijlagen: [], links: [],
+  })
+
+  it('de knop krijgt zijn lucht van de cel, niet van de link', () => {
+    expect(m.html).toMatch(/<td align="center" bgcolor="#229d96" style="[^"]*padding:12px 24px;[^"]*"><a /)
+    expect(m.html).not.toMatch(/<a [^>]*padding/)
+  })
+
+  it('geen divs voor vlakken of ruimte', () => {
+    expect(m.html).not.toContain('<div')
+  })
+
+  it('elke cel noemt zelf het lettertype', () => {
+    const cellen = [...m.html.matchAll(/<td [^>]*style="([^"]*)"/g)].map((c) => c[1]).filter((st) => /font-size/.test(st))
+    expect(cellen.length).toBeGreaterThan(3)
+    for (const st of cellen) expect(st).toContain('font-family:Arial')
   })
 })

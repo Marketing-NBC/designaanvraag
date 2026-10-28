@@ -7,7 +7,7 @@
 import type { Aanvraag } from './aanvraag-schema.ts'
 import { formatDateShortNl, kortVan, taskTitle } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
-import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, waarschuwingBlok } from './mail.ts'
+import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, waarschuwingBlok } from './mail.ts'
 import type { MailBericht } from './mail.ts'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
@@ -226,7 +226,7 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   if (m.schijfLocatie) rijen.push(['Schijf', escapeHtml(m.schijfLocatie)])
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   if (m.bijgewerkt.length) rijen.push(['Bijgewerkt in Asana', escapeHtml(m.bijgewerkt.join(', '))])
-  delen.push(`<div style="margin-top:20px;">${gegevensTabel(rijen)}</div>`)
+  delen.push(ruimte(gegevensTabel(rijen), 20))
 
   if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana'), `<p style="margin:4px 0 0;font-size:13px;">${link(m.asanaUrl)}</p>`)
 

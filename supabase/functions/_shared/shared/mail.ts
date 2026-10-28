@@ -188,46 +188,86 @@ export function escapeHtml(s: string): string {
 }
 
 /**
- * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen en
- * inline stijlen, want Outlook negeert vrijwel alles wat moderner is. Pockota en Area Normal zijn er
- * in een mail niet; Arial is de veilige terugval.
+ * Het lettertype, op elk element apart. De klassieke Outlook (die bij NBC en Green Village overal
+ * draait) rendert mail met Word, en Word laat een lettertype niet doorlopen naar een tabel in een
+ * tabel: zonder dit staan de gegevens in Calibri of Aptos en de rest in Arial. Pockota en Area
+ * Normal zijn er in een mail niet; Arial is de veilige terugval.
+ */
+export const LETTER = 'font-family:Arial,Helvetica,sans-serif;'
+
+/**
+ * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen,
+ * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
+ * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
+ * een eigen stijl mist, zoals lijstjes uit Asana.
  */
 export function mailOpmaak(kop: string, inhoud: string, voet = 'Automatische melding van het designaanvraag-formulier.'): string {
   return `<!doctype html>
-<html lang="nl"><head><meta charset="utf-8"></head>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body,table,td,p,a,li,span,strong,em,h1,h2{${LETTER}}</style>
+</head>
 <body style="margin:0;padding:0;background:#f1f1ef;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1ef" style="background:#f1f1ef;">
 <tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0e0e0e;">
-<tr><td style="background:#229d96;color:#ffffff;padding:20px 24px;font-size:20px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
-<tr><td style="padding:24px;">${inhoud}</td></tr>
-<tr><td style="padding:16px 24px;border-top:1px solid #eaebec;color:#828b8d;font-size:12px;">${escapeHtml(voet)}</td></tr>
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
+<tr><td bgcolor="#229d96" style="background:#229d96;color:#ffffff;padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
+<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
+<tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
 </td></tr>
 </table>
 </body></html>`
 }
 
-/** Een knop naar de Asana-taak; een gewone link als terugval voor wie geen opmaak ziet. */
+/**
+ * Een knop. De opvulling zit op de cel en niet op de link: Word negeert `padding` op een link,
+ * en dan staat er een strak gekleurd vlak zonder lucht om de tekst. De ruimte erboven zit om
+ * dezelfde reden in een buitencel in plaats van in een `margin`.
+ */
 export function knop(href: string, tekst: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0 4px;"><tr>`
-    + `<td style="background:#229d96;border-radius:4px;">`
-    + `<a href="${escapeHtml(href)}" style="display:inline-block;padding:10px 18px;color:#ffffff;text-decoration:none;font-weight:bold;">${escapeHtml(tekst)}</a>`
-    + `</td></tr></table>`
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 0 4px;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
+    + `<td align="center" bgcolor="#229d96" style="background:#229d96;border-radius:4px;padding:12px 24px;">`
+    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:#ffffff;text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
+    + `</td></tr></table></td></tr></table>`
 }
 
 /** Een tabel met label en waarde per regel. De waarde is al HTML; escapen doet de aanroeper. */
 export function gegevensTabel(rijen: [string, string][]): string {
+  const cel = `${LETTER}font-size:15px;line-height:22px;vertical-align:top;`
   const tr = rijen
-    .map(([k, v]) => `<tr><td style="padding:4px 16px 4px 0;color:#596165;vertical-align:top;white-space:nowrap;">${escapeHtml(k)}</td>`
-      + `<td style="padding:4px 0;vertical-align:top;">${v}</td></tr>`)
+    .map(([k, v]) => `<tr><td valign="top" style="${cel}padding:3px 16px 3px 0;color:#596165;white-space:nowrap;">${escapeHtml(k)}</td>`
+      + `<td valign="top" style="${cel}padding:3px 0;color:#0e0e0e;">${v}</td></tr>`)
     .join('')
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${tr}</table>`
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${tr}</table>`
+}
+
+/**
+ * Ruimte boven en onder een stuk mail. Via `padding` op een cel, want Word negeert `margin` op een
+ * `<div>` en een tabel.
+ */
+export function ruimte(html: string, boven: number, onder = 0): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:${boven}px 0 ${onder}px;">${html}</td></tr></table>`
+}
+
+/**
+ * Een gekleurd vlak met lucht eromheen, als tabel: Word negeert `padding` op een `<div>`, en dan
+ * plakt de tekst tegen de rand van het vlak. `boven` en `onder` is de ruimte buiten het vlak.
+ */
+export function vlak(html: string, o: { achtergrond: string; rand?: string; boven?: number; onder?: number }): string {
+  const rand = o.rand ? `border-left:4px solid ${o.rand};` : ''
+  return ruimte(
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>`
+      + `<td bgcolor="${o.achtergrond}" style="background:${o.achtergrond};${rand}padding:12px 16px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${html}</td>`
+      + `</tr></table>`,
+    o.boven ?? 0,
+    o.onder ?? 0,
+  )
 }
 
 /** Een opvallend blok voor iets wat niet goed ging, of spoed. */
 export function waarschuwingBlok(html: string): string {
-  return `<div style="background:#fff4de;border-left:4px solid #f6a304;padding:12px 16px;margin:0 0 20px;">${html}</div>`
+  return vlak(html, { achtergrond: '#fff4de', rand: '#f6a304', onder: 20 })
 }
 
 /**
@@ -235,5 +275,5 @@ export function waarschuwingBlok(html: string): string {
  * `white-space: pre-wrap`.
  */
 export function citaat(tekst: string): string {
-  return `<div style="background:#e9f5f4;padding:12px 16px;margin:4px 0 0;">${escapeHtml(tekst).replace(/\r?\n/g, '<br>')}</div>`
+  return vlak(escapeHtml(tekst).replace(/\r?\n/g, '<br>'), { achtergrond: '#e9f5f4', boven: 4 })
 }
