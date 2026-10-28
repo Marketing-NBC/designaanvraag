@@ -131,6 +131,7 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
     updateOplevering: () => Promise.resolve(),
+    heropenOplevering: () => Promise.reject(new Error('niet gebruikt')),
   }
   return db
 }

@@ -80,6 +80,11 @@ function setup(opts: {
   mailFout?: string
   zonderMail?: boolean
   gebruiker?: { naam: string | null; email: string | null } | 'fout'
+  /**
+   * Zoveel aanroepen lezen de oplevering voordat er één verder mag: zo zien twee gelijktijdige
+   * aanroepen allebei dezelfde stand, zoals bij een dubbele levering van Asana.
+   */
+  gelijktijdig?: number
 } = {}) {
   const comments: string[] = []
   const velden: Record<string, unknown>[] = []
@@ -90,6 +95,10 @@ function setup(opts: {
   const gemaakt: string[] = []
   const bijgewerkt: [string, { naam?: string; completed?: boolean }][] = []
   const bestanden = opts.bestanden ?? { 'sub-1': [bestand()] }
+  let lezers = 0
+  let conflicten = 0
+  let iedereenGelezen = () => {}
+  const gelezen = new Promise<void>((klaar) => (iedereenGelezen = klaar))
 
   const asana = {
     listSubtaken: () => Promise.resolve(opts.subtaken ?? [subtaak()]),
@@ -112,12 +121,31 @@ function setup(opts: {
   const db: OpleverDeps['db'] = {
     findDetailByAsanaTaskGid: () => Promise.resolve(opts.aanvraag === undefined ? aanvraag : opts.aanvraag),
     collegaEmail: () => Promise.resolve(opts.email === undefined ? 'britt@nbcevents.nl' : opts.email),
-    findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.subtaak_gid === gid) ?? null),
+    findOplevering: async (gid) => {
+      const gevonden = rijen.find((r) => r.subtaak_gid === gid) ?? null
+      lezers++
+      if (opts.gelijktijdig) {
+        if (lezers === opts.gelijktijdig) iedereenGelezen()
+        await gelezen
+      }
+      return gevonden ? { ...gevonden } : null
+    },
     aantalVerstuurd: () => Promise.resolve(opts.verstuurd ?? 0),
     insertOplevering: (r) => {
+      // Zoals de unieke sleutel op subtaak_gid: de db-laag maakt van die unique-violation null.
+      if (rijen.some((x) => x.subtaak_gid === r.subtaak_gid)) {
+        conflicten++
+        return Promise.resolve(null)
+      }
       const rij: OpleveringRow = { ...r, id: `op-${rijen.length + 1}`, created_at: NU.toISOString(), status: 'bezig', fout: null, verstuurd_op: null }
       rijen.push(rij)
-      return Promise.resolve(rij)
+      return Promise.resolve({ ...rij })
+    },
+    heropenOplevering: (oud, patch) => {
+      const i = rijen.findIndex((r) => r.id === oud.id && r.status === oud.status && r.created_at === oud.created_at)
+      if (i < 0) return Promise.resolve(false)
+      rijen[i] = { ...rijen[i], ...patch }
+      return Promise.resolve(true)
     },
     updateOplevering: (id, patch) => {
       const i = rijen.findIndex((r) => r.id === id)
@@ -135,7 +163,7 @@ function setup(opts: {
   }
 
   const oplever = createOplever({ asana, db, mail, cfg, now: () => NU, log: () => {} })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt }
+  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, conflicten: () => conflicten }
 }
 
 // ── Echt versturen ────────────────────────────────────────────────────
@@ -265,6 +293,42 @@ Deno.test('een tweede druk terwijl de eerste nog loopt doet niets', async () => 
   assertEquals(s.gemaild, [])
   assertEquals(s.comments, [])
   assertEquals(s.velden, [])
+})
+
+Deno.test('Asana levert "Verstuur nu" dubbel: één mail, één verslag, geen valse foutmelding', async () => {
+  // 28 oktober, Zorgcongres: beide aanroepen zagen nog geen rij, de tweede liep vast op de unieke
+  // sleutel en meldde "niet verstuurd" terwijl de mail wel ging.
+  const s = setup({ gelijktijdig: 2 })
+  const uitkomsten = await Promise.all([s.oplever(taak(), ECHT), s.oplever(taak(), ECHT)])
+
+  assertEquals(s.conflicten(), 1, 'de tweede insert liep op de unieke sleutel')
+  assertEquals(uitkomsten.sort(), ['oplevermail al bezig', 'oplevermail verstuurd (versie 1)'])
+  assertEquals(s.gemaild.length, 1)
+  assertEquals(s.downloads, ['att-1'], 'de tweede haalt ook geen bestanden op')
+  assertEquals(s.comments.length, 1)
+  assertMatch(s.comments[0], /Opleveringsmail verstuurd op 28 oktober 2026/)
+  assert(!s.comments.some((c) => c.includes('niet</strong> verstuurd')))
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-verstuurd' }], 'nooit op Mislukt')
+  assertEquals(s.rijen.length, 1)
+  assertEquals(s.rijen[0].status, 'verstuurd')
+  assertEquals(s.rijen[0].ontvangers, ['britt@nbcevents.nl'])
+  assertEquals(s.gemaakt, ['t1:Oplevering:abel'], 'één nieuwe lege subtaak, niet twee')
+})
+
+Deno.test('ook een herkansing die Asana dubbel levert gaat maar één keer de deur uit', async () => {
+  const eerder: OpleveringRow = {
+    id: 'op-1', created_at: '2026-10-28T09:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
+    ontvangers: [], bijlagen: [], status: 'mislukt', fout: 'geen ontvanger', verstuurd_op: null,
+  }
+  const s = setup({ eerder, gelijktijdig: 2 })
+  const uitkomsten = await Promise.all([s.oplever(taak(), ECHT), s.oplever(taak(), ECHT)])
+
+  assertEquals(uitkomsten.sort(), ['oplevermail al bezig', 'oplevermail verstuurd (versie 1)'])
+  assertEquals(s.gemaild.length, 1)
+  assertEquals(s.comments.length, 1)
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-verstuurd' }])
+  assertEquals(s.rijen.length, 1)
+  assertEquals(s.rijen[0].status, 'verstuurd')
 })
 
 Deno.test('na een mislukte poging kan dezelfde subtaak opnieuw', async () => {

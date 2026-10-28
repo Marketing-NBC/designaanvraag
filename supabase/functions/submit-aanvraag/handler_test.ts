@@ -76,6 +76,7 @@ function fakeDb() {
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
     updateOplevering: () => Promise.resolve(),
+    heropenOplevering: () => Promise.reject(new Error('niet gebruikt')),
   }
   return db
 }

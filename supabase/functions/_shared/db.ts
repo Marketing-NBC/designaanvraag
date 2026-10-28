@@ -172,7 +172,17 @@ export interface Db {
   findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
   aantalVerstuurd(aanvraagId: string): Promise<number>
-  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow>
+  /**
+   * Een nieuwe oplevering, status "bezig". Null als deze subtaak al een rij heeft (de unieke sleutel
+   * op subtaak_gid): een gelijktijdige poging was net eerder, bijvoorbeeld omdat Asana de wijziging
+   * dubbel stuurde.
+   */
+  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow | null>
+  /**
+   * Een mislukte of vastgelopen oplevering opnieuw op "bezig" zetten, alleen als de rij nog zo
+   * is als we hem lazen. False als een gelijktijdige poging hem net eerder pakte.
+   */
+  heropenOplevering(rij: Pick<OpleveringRow, 'id' | 'status' | 'created_at'>, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<boolean>
   updateOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<void>
 }
 
@@ -374,8 +384,16 @@ export function createDb(url: string, secretKey: string): Db {
     },
     async insertOplevering(row) {
       const { data, error } = await sb.from('opleveringen').insert(row).select(OPLEVERING_COLUMNS).single()
+      // 23505: unique_violation, hier alleen mogelijk op subtaak_gid.
+      if (error?.code === '23505') return null
       if (error) throw new Error(`db insert oplevering: ${error.message}`)
       return data as OpleveringRow
+    },
+    async heropenOplevering(rij, patch) {
+      const { data, error } = await sb.from('opleveringen').update(patch)
+        .eq('id', rij.id).eq('status', rij.status).eq('created_at', rij.created_at).select('id')
+      if (error) throw new Error(`db heropen oplevering: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length > 0
     },
     async updateOplevering(id, patch) {
       const { error } = await sb.from('opleveringen').update(patch).eq('id', id)

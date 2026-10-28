@@ -28,7 +28,7 @@ import { vandaagInNl } from '../_shared/shared/spoed.ts'
 
 export interface OpleverDeps {
   asana: AsanaTaskClient
-  db: Pick<Db, 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'>
+  db: Pick<Db, 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'heropenOplevering' | 'updateOplevering'>
   /** Null als Microsoft 365 niet is ingesteld; dan zegt de reactie dat. */
   mail: MailClient | null
   cfg: AsanaFieldsConfig
@@ -100,6 +100,8 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         throw new Weigering('Er stond geen open subtaak "Oplevering"; die staat er nu. Zet daar de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
       }
 
+      const versie = (await db.aantalVerstuurd(aanvraag.id)) + 1
+
       if (!proef) {
         const bestaand = await db.findOplevering(subtaak.gid)
         if (bestaand?.status === 'verstuurd') {
@@ -109,7 +111,18 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           // Twee keer op de knop gedrukt, of Asana stuurde de wijziging dubbel. De eerste loopt nog.
           return 'oplevermail al bezig'
         }
-        rij = bestaand
+        // Meteen de rij claimen, vóór het trage werk. Stuurt Asana de wijziging dubbel, dan zien beide
+        // aanroepen hierboven nog niets; de tweede verliest dan hier en doet verder niets, ook geen
+        // reactie of Mislukt, want de eerste verstuurt hem.
+        const claim = { versie, status: 'bezig' as const, fout: null, created_at: now().toISOString() }
+        if (bestaand) {
+          // Een eerdere poging met deze subtaak mislukte (of bleef hangen): dezelfde rij opnieuw.
+          if (!(await db.heropenOplevering(bestaand, claim))) return 'oplevermail al bezig'
+          rij = { ...bestaand, ...claim }
+        } else {
+          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: [], bijlagen: [] })
+          if (!rij) return 'oplevermail al bezig'
+        }
       }
 
       // Ontvangers: de aanvrager en wie er in "Ook mailen naar" staat.
@@ -142,16 +155,9 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         }
       }
       const marketing = MELDING_ONTVANGERS[aanvraag.locatie] ?? MELDING_ONTVANGERS.nbc
-      const versie = (await db.aantalVerstuurd(aanvraag.id)) + 1
-      const bijlagenAdmin = keuze.bestanden.map((b) => ({ naam: b.naam, bytes: b.bytes ?? 0 }))
 
-      if (!proef) {
-        if (rij) {
-          // Een eerdere poging met deze subtaak mislukte (of bleef hangen): dezelfde rij opnieuw.
-          await db.updateOplevering(rij.id, { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status: 'bezig', fout: null, created_at: now().toISOString() })
-        } else {
-          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin })
-        }
+      if (rij) {
+        await db.updateOplevering(rij.id, { ontvangers: aan, bijlagen: keuze.bestanden.map((b) => ({ naam: b.naam, bytes: b.bytes ?? 0 })) })
       }
 
       const bijlagen: MailBijlage[] = []
