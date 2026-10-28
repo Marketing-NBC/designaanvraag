@@ -206,7 +206,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (aanvulling.nieuwe_deadline && aanvulling.nieuwe_deadline < vandaag) {
       return json({ error: 'Die deadline is al geweest. Kies een datum vanaf vandaag.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
-    if (!aanvulling.nieuwe_deadline && row.deadline < vandaag) {
+    // Zonder deadline (een interne aanvraag mag dat) is er niets wat kan verlopen.
+    if (!aanvulling.nieuwe_deadline && row.deadline && row.deadline < vandaag) {
       return json({ error: 'De deadline van deze aanvraag is al verstreken. Kies een nieuwe deadline.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
 
@@ -215,7 +216,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // achteraf - dan is er geen grens meer: een nieuwe deadline ligt dan altijd na het event.
     const effectiefEvent = aanvulling.nieuwe_event_datum ?? row.event_datum
     const effectieveDeadline = aanvulling.nieuwe_deadline ?? row.deadline
-    if (effectiefEvent && effectiefEvent >= vandaag && effectieveDeadline > effectiefEvent) {
+    if (effectiefEvent && effectiefEvent >= vandaag && effectieveDeadline && effectieveDeadline > effectiefEvent) {
       return json({ error: 'De deadline kan niet na het event liggen', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
 

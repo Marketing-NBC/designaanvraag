@@ -63,9 +63,9 @@ const leeg: Draft = {
   link: '',
 }
 
-/** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. */
+/** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. Zonder deadline niet. */
 function deadlineVerlopen(a: Pick<GevondenAanvraag, 'deadline'> | null): boolean {
-  return Boolean(a && isBeforeToday(a.deadline))
+  return Boolean(a?.deadline && isBeforeToday(a.deadline))
 }
 
 export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
@@ -357,7 +357,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
 function VondstKnop({ a, actief, onKies }: { a: GevondenAanvraag; actief: boolean; onKies: (a: GevondenAanvraag) => void }) {
   const intern = a.soort === 'intern'
   const meta = intern
-    ? [`nodig op ${formatShort(a.deadline)}`]
+    ? [a.deadline ? `nodig op ${formatShort(a.deadline)}` : 'geen deadline']
     : [a.event_datum ? formatShort(a.event_datum) : null, `aangevraagd door ${a.naam}`, describeRequestTypes(a.aanvraag_types, a.anders_tekst)]
   return (
     <button type="button" className="opt vondst" data-vondst="true" aria-pressed={actief} onClick={() => onKies(a)}>
@@ -480,7 +480,7 @@ function ExtraVelden({
   const intern = gekozen?.soort === 'intern'
   return (
     <div className="extra">
-      {verlopen && gekozen ? (
+      {verlopen && gekozen?.deadline ? (
         <p className="msg msg--verlopen" role="alert">
           <Icon name="alert" />
           <span>
@@ -505,6 +505,7 @@ function ExtraVelden({
           )}
           <DatumRegel
             label="Deadline"
+            leeg="geen deadline"
             huidig={gekozen?.deadline ?? null}
             waarde={draft.nieuwe_deadline}
             onKies={(iso) => patch({ nieuwe_deadline: iso })}
@@ -566,9 +567,12 @@ function DatumRegel({
   onKies,
   onWis,
   verplicht = false,
+  leeg = 'onbekend',
 }: {
   label: string
   huidig: string | null
+  /** Wat er staat als er (nog) geen datum is; bij een interne aanvraag kan de deadline ontbreken. */
+  leeg?: string
   waarde: string | null
   onKies: (iso: string) => void
   onWis: () => void
@@ -581,9 +585,9 @@ function DatumRegel({
       <div className="datumregel">
         <span className="extra__label">{label}</span>
         <p className="datumregel__nu">
-          {huidig ? formatShort(huidig) : 'onbekend'}{' '}
+          {huidig ? formatShort(huidig) : leeg}{' '}
           <button type="button" className="link" onClick={() => setOpen(true)}>
-            wijzigen
+            {huidig ? 'wijzigen' : 'toevoegen'}
           </button>
         </p>
       </div>
@@ -603,7 +607,7 @@ function DatumRegel({
             setOpen(false)
           }}
         >
-          toch laten staan op {huidig ? formatShort(huidig) : 'de oude datum'}
+          {huidig ? `toch laten staan op ${formatShort(huidig)}` : `toch ${leeg}`}
         </button>
       )}
     </div>

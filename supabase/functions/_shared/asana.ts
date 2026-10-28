@@ -150,7 +150,8 @@ export function buildCustomFields(
   }
   // Een interne aanvraag heeft geen eventdatum; het veld blijft dan leeg.
   if (a.event_datum) dateField('eventdatum', a.event_datum)
-  dateField('deadline', a.deadline)
+  // Een interne aanvraag mag zonder deadline; ook dan blijft het veld leeg.
+  if (a.deadline) dateField('deadline', a.deadline)
 
   // Evenement of intern. Een enum met een eigen kleur per optie, zodat het verschil op het bord
   // als gekleurd label op de kaart staat.

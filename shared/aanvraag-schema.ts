@@ -79,7 +79,8 @@ export const aanvraagSchema = z
     // Of ze verplicht zijn staat daarom hieronder in superRefine, niet hier.
     event: z.string().trim().max(120, 'Maximaal 120 tekens').default(''),
     event_datum: isoDate.nullable().default(null),
-    deadline: isoDate,
+    /** Verplicht bij een evenement. Een interne aanvraag mag zonder: dan is het null. */
+    deadline: isoDate.nullable().default(null),
     /** Mag leeg: niet elk event of bedrijf heeft een site. Zonder site geen huisstijl-extractie. */
     website: z
       .string()
@@ -128,9 +129,12 @@ export const aanvraagSchema = z
     if (a.event.length < 2) {
       ctx.addIssue({ code: 'custom', path: ['event'], message: 'Vul de naam van het event in' })
     }
+    if (!a.deadline) {
+      ctx.addIssue({ code: 'custom', path: ['deadline'], message: 'Kies de datum waarop je het nodig hebt' })
+    }
     if (!a.event_datum) {
       ctx.addIssue({ code: 'custom', path: ['event_datum'], message: 'Kies de datum van het event' })
-    } else if (a.deadline > a.event_datum) {
+    } else if (a.deadline && a.deadline > a.event_datum) {
       ctx.addIssue({ code: 'custom', path: ['deadline'], message: 'De deadline kan niet na het event liggen' })
     }
     if (!a.aanvraag_types.length) {

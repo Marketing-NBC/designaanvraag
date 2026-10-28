@@ -121,12 +121,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     // Spoed: minder dan 10 werkdagen tot het event, gemeten op het moment van indienen. Daarna
     // verandert de waarde niet meer, ook niet als de eventdatum later verschuift. Een interne
-    // aanvraag heeft geen event; daar is de deadline het moment waar het om draait.
+    // aanvraag heeft geen event; daar is de deadline het moment waar het om draait. Zonder deadline
+    // heeft het geen haast, dus geen spoed.
     const extraWaarschuwingen: string[] = []
     const vandaag = vandaagInNl(now())
     const peildatum = aanvraag.event_datum ?? aanvraag.deadline
-    const werkdagen = werkdagenTotEvent(peildatum, vandaag)
-    const spoed = isSpoed(peildatum, vandaag)
+    const werkdagen = peildatum ? werkdagenTotEvent(peildatum, vandaag) : null
+    const spoed = peildatum ? isSpoed(peildatum, vandaag) : false
 
     const row = await db.insert({
       ...aanvraag,
@@ -203,10 +204,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
         // De mijlpaal op de deadline, in een eigen project: een Asana-kalender kan alleen op de
         // vervaldatum, en die kiest Marketing zelf bij het inplannen. Mislukt hij, dan bestaat de
-        // taak gewoon; de reden staat dan in asana_error.
+        // taak gewoon; de reden staat dan in asana_error. Zonder deadline ook geen mijlpaal.
         let deadlineGid: string | null = null
         const deadlinesGid = cfg.deadlines_project?.gid ?? null
-        if (deadlinesGid) {
+        if (deadlinesGid && aanvraag.deadline) {
           try {
             const kleur = cfg.fields?.kleur
             const kleurOptie = kleur?.type === 'enum' ? kleur.options?.[kleurSleutel(aanvraag.soort, spoed)] : undefined

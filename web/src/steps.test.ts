@@ -122,6 +122,13 @@ describe('evenement of intern', () => {
     expect(zichtbareStappen({ metMenu: true, soort: 'intern' }).map((s) => s.id)).not.toContain('menu')
   })
 
+  it('intern: een datum, of "Geen deadline"', () => {
+    const stap = zichtbareStappen({ metMenu: false, soort: 'intern' }).find((s) => s.id === 'deadline_intern')!
+    expect(stap.validate({ ...emptyDraft(), soort: 'intern' })).toMatch(/Geen deadline/)
+    expect(stap.validate({ ...emptyDraft(), soort: 'intern', geen_deadline: true })).toBeNull()
+    expect(stap.validate({ ...emptyDraft(), soort: 'intern', deadline: '2099-01-01' })).toBeNull()
+  })
+
   it('wil een omschrijving bij een interne aanvraag', () => {
     const stap = STEPS.find((s) => s.id === 'wens_intern')!
     expect(stap.validate({ ...emptyDraft(), soort: 'intern' })).toContain('Beschrijf')

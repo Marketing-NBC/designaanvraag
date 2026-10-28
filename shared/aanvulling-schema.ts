@@ -34,7 +34,8 @@ export interface GevondenAanvraag {
   event: string
   /** Null bij een interne aanvraag. */
   event_datum: string | null
-  deadline: string
+  /** Null bij een interne aanvraag zonder deadline. */
+  deadline: string | null
   naam: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string

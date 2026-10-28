@@ -41,7 +41,7 @@ function renderInterneNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Soort', soortLabel(a.soort)],
     ['Locatie', locatieLabel(a.locatie)],
     ['Aanvrager', a.naam],
-    ['Uiterlijk nodig op', formatDateNl(a.deadline)],
+    ['Uiterlijk nodig op', a.deadline ? formatDateNl(a.deadline) : 'geen deadline, het mag klaar zijn wanneer het past'],
   ]
   if (opts.bijlagen?.length) rows.push(['Meegestuurd', opts.bijlagen.join(', ')])
 
@@ -64,7 +64,7 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Aanvrager', a.naam],
     ['Event', a.event],
     ['Eventdatum', a.event_datum ? formatDateNl(a.event_datum) : 'onbekend'],
-    ['Uiterlijk nodig op', formatDateNl(a.deadline)],
+    ['Uiterlijk nodig op', a.deadline ? formatDateNl(a.deadline) : 'onbekend'],
     ['Aanvraag', describeRequestTypes(a.aanvraag_types, a.anders_tekst)],
     ['Design', modusLabel(a)],
   ]

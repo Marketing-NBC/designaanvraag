@@ -20,6 +20,12 @@ overzicht. Een interne aanvraag heeft geen event, eventdatum, website of huissti
 taak dan `Intern - <aanvrager> - Deadline: <deadline> - <begin van de omschrijving>`, en het veld
 **Soort** (Evenement blauw, Intern roze) staat als gekleurd label op de kaart.
 
+Een interne aanvraag mag ook **zonder deadline**: onder de kalender staat de keuze **Geen deadline**
+("het mag klaar zijn wanneer het past"). In de taaknaam staat dan `Geen deadline` in plaats van de
+datum, het veld Deadline blijft leeg, er komt geen mijlpaal in de deadline-agenda en het telt nooit
+als spoed. Komt er later toch een datum, dan kan die via "Iets aanvullen of wijzigen". Bij een
+evenement blijft de deadline verplicht.
+
 **Je naam** kies je uit de lijst, maar wie er niet tussen staat typt gewoon zijn naam: iedereen kan een
 aanvraag doen.
 

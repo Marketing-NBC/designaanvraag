@@ -346,6 +346,16 @@ Deno.test('een verlopen deadline moet vervangen worden', async () => {
   assertEquals(db.patches, [{ deadline: '2026-11-02' }])
 })
 
+Deno.test('zonder deadline kan er niets verlopen, en kan er alsnog een bij', async () => {
+  const zonder = () => fakeDb(aanvraag({ soort: 'intern', event: '', event_datum: null, deadline: null }))
+  const res = await createHandler(deps({ db: zonder() }))(post(payload()))
+  assertEquals(res.status, 200)
+
+  const db = zonder()
+  await createHandler(deps({ db }))(post(payload({ nieuwe_deadline: '2026-11-25' })))
+  assertEquals(db.patches, [{ deadline: '2026-11-25' }])
+})
+
 Deno.test('een nieuwe deadline in het verleden wordt geweigerd', async () => {
   const res = await createHandler(deps())(post(payload({ nieuwe_deadline: '2026-10-01' })))
   assertEquals(res.status, 400)
