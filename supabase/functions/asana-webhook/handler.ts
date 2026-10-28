@@ -12,6 +12,8 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *    verdwijnt en er geen aanvulling meer op kan;
  *  - het veld Oplevermail stuurt de aanvrager de opleveringsmail, of eerst een proef naar wie op
  *    de knop drukte (zie oplevering.ts);
+ *  - kolom en vinkje zeggen hetzelfde: naar Klaar gesleept → afgevinkt, uit Klaar gesleept → vinkje
+ *    eraf. Zo hoeft niemand twee dingen te doen, en loopt de deadline-mijlpaal mee met de kolom;
  *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
  *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
  *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
@@ -110,6 +112,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const projectGid = cfg.project?.gid ?? null
   const sections = cfg.sections ?? {}
   const inPlanning = sections.in_planning?.gid ?? null
+  const klaar = sections.klaar?.gid ?? null
   const planningGid = deps.planningProjectGid ?? cfg.planning_project?.gid ?? null
   const planningName = cfg.planning_project?.name ?? 'de werkplanning'
 
@@ -237,10 +240,29 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
   }
 
-  async function handleTask(gid: string, door: string | null = null): Promise<string> {
-    const t = await asana.getTask(gid)
-    const ours = t.memberships.find((m) => m.project === projectGid)
+  /**
+   * De taak is naar een andere kolom gesleept: zet het vinkje gelijk met de kolom. Naar Klaar is af,
+   * uit Klaar is weer open. Alleen bij slepen: wie in een andere kolom zelf het vinkje zet, krijgt
+   * dat niet teruggedraaid. Geeft de taak terug zoals hij nu is.
+   */
+  async function volgKolom(t: AsanaTask, sectie: string | null, naar: string | undefined): Promise<AsanaTask> {
+    if (!naar || naar !== sectie || !klaar) return t
+    const moetAf = sectie === klaar
+    if (t.completed === moetAf) return t
+    try {
+      await asana.werkTaakBij(t.gid, { completed: moetAf })
+      return { ...t, completed: moetAf }
+    } catch (e) {
+      log('warn', `taak ${moetAf ? 'afvinken' : 'heropenen'} na slepen mislukt`, { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      return t
+    }
+  }
+
+  async function handleTask(gid: string, door: string | null = null, naar?: string): Promise<string> {
+    const opgehaald = await asana.getTask(gid)
+    const ours = opgehaald.memberships.find((m) => m.project === projectGid)
     if (!ours) return 'niet in ons project'
+    const t = await volgKolom(opgehaald, ours.section, naar)
     await volgDeadline(t)
 
     // De knoppen staan los van de planning-flow: een menuscherm mag ook gemaakt worden
@@ -314,6 +336,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const tasks = new Set<string>()
     // Wie de laatste wijziging aan een taak deed; de proefmail gaat naar die persoon.
     const door = new Map<string, string>()
+    // Naar welke kolom van ons bord een taak gesleept is; het vinkje volgt de kolom.
+    const naar = new Map<string, string>()
+    const onzeKolommen = new Set(Object.values(sections).map((s) => s.gid))
     // Verwijderde taken apart: die kunnen we niet meer opvragen bij Asana, dus de planning-flow heeft
     // er niets te zoeken. Het enige wat telt is dat de aanvraag vervalt.
     const verwijderd = new Set<string>()
@@ -324,7 +349,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       // hetzelfde neer: de taak staat niet meer op het bord van Marketing.
       if (e.action === 'deleted') verwijderd.add(gid)
       else if (e.action === 'removed' && e.parent?.gid === projectGid) verwijderd.add(gid)
-      else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid === inPlanning) tasks.add(gid)
+      else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid && onzeKolommen.has(e.parent.gid)) {
+        tasks.add(gid)
+        naar.set(gid, e.parent.gid)
+      }
       else if (e.action === 'changed') {
         tasks.add(gid)
         if (e.user?.gid) door.set(gid, e.user.gid)
@@ -346,7 +374,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     for (const gid of tasks) {
       try {
-        outcomes[gid] = await handleTask(gid, door.get(gid) ?? null)
+        outcomes[gid] = await handleTask(gid, door.get(gid) ?? null, naar.get(gid))
       } catch (e) {
         outcomes[gid] = `fout: ${e instanceof Error ? e.message : String(e)}`
         log('error', 'webhook-taak mislukt', { gid, error: outcomes[gid] })

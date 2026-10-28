@@ -143,6 +143,10 @@ alle gegevens in de beschrijving.
   een vervaldatum staat in "In planning", komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
+- **Klaar en het vinkje lopen gelijk:** sleep je een taak naar **Klaar**, dan wordt hij afgevinkt;
+  sleep je hem er weer uit, dan gaat het vinkje eraf. De deadline-mijlpaal volgt het vinkje, dus die
+  verdwijnt dan ook uit de deadline-agenda (of komt terug). Alleen slepen telt: vink je zelf een taak
+  af in een andere kolom, dan blijft dat zo.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
   function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
   Dat geldt ook voor een naam die niet in de Supabase-tabel `collegas` staat: iedereen mag een
