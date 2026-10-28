@@ -6,6 +6,7 @@ import { asanaFields, buildCustomFields, kleurSleutel } from '../_shared/asana.t
 import type { Db } from '../_shared/db.ts'
 import { renderNotes } from '../_shared/notes.ts'
 import { deadlineTitel, subtaskTitles, taskTitle } from '../_shared/shared/asana-title.ts'
+import { OPLEVER_SUBTAAK } from '../_shared/shared/oplevering.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
@@ -193,7 +194,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           sectionGid: cfg.sections?.nieuwe_aanvragen?.gid ?? null,
           assigneeGid: env.asanaAssigneeGid ?? cfg.assignee?.gid ?? null,
           customFields: buildCustomFields(aanvraag, cfg, { spoed, aanvragerOptieGid }),
-          subtasks: subtaskTitles(aanvraag),
+          // Plus altijd de subtaak Oplevering: daar zet Marketing straks de tekst en bestanden voor
+          // de opleveringsmail in.
+          subtasks: [...subtaskTitles(aanvraag), OPLEVER_SUBTAAK],
         })
         asanaGid = task.gid
         asanaUrl = task.url

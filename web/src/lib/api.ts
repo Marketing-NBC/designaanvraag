@@ -88,6 +88,24 @@ export async function zoekInterneAanvragen(naam: string): Promise<GevondenAanvra
   }
 }
 
+/**
+ * Eén aanvraag op id, voor de knop "Feedback geven" in de opleveringsmail. Null als hij niet (meer)
+ * bestaat of als het opzoeken mislukt; dan kiest de collega hem zelf.
+ */
+export async function haalAanvraag(id: string): Promise<GevondenAanvraag | null> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    return [...zoekMock(''), ...zoekInternMock(COLLEGAS_MOCK[0])].find((a) => a.id === id) ?? null
+  }
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/aanvraag-zoeken?id=${encodeURIComponent(id)}`, { headers: { apikey: PUBLISHABLE_KEY } })
+    if (!res.ok) return null
+    const body = (await res.json()) as { resultaten?: GevondenAanvraag[] }
+    return body.resultaten?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function verstuurAanvulling(payload: AanvullingPayload): Promise<AanvullingResult> {
   if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
     await new Promise((r) => setTimeout(r, 900))

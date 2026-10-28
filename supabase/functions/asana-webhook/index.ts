@@ -1,8 +1,9 @@
 import { asanaFields, createAsanaTaskClient } from '../_shared/asana.ts'
 import { createDb, createWebhookStore } from '../_shared/db.ts'
-import { readEnv, webhookToken } from '../_shared/env.ts'
+import { mailClientUit, readEnv, webhookToken } from '../_shared/env.ts'
 import { createRoutineClient } from '../_shared/routine.ts'
 import { createHandler } from './handler.ts'
+import { createOplever } from './oplevering.ts'
 
 const env = readEnv()
 if (!env.asanaPat) throw new Error('ASANA_PAT is verplicht voor asana-webhook')
@@ -48,6 +49,11 @@ async function startHuisstijl(asanaTaskGid: string): Promise<boolean> {
   return true
 }
 
+const asana = createAsanaTaskClient(env.asanaPat)
+const oplever = createOplever({ asana, db, mail: mailClientUit(env), cfg: asanaFields })
+
+declare const EdgeRuntime: { waitUntil(werk: Promise<unknown>): void } | undefined
+
 const handler = createHandler({
   token: await webhookToken(env.asanaPat),
   store: createWebhookStore(env.supabaseUrl, env.supabaseSecretKey),
@@ -55,7 +61,10 @@ const handler = createHandler({
   deadlineVan: (gid) => db.deadlineVan(gid),
   startMenu: menuRoutine ? startMenu : undefined,
   startHuisstijl: brandRoutine ? startHuisstijl : undefined,
-  asana: createAsanaTaskClient(env.asanaPat),
+  oplever,
+  // Supabase laat de function doorlopen tot dit klaar is, ook nadat Asana zijn antwoord heeft.
+  achtergrond: typeof EdgeRuntime !== 'undefined' ? (werk) => EdgeRuntime!.waitUntil(werk) : undefined,
+  asana,
   cfg: asanaFields,
   planningProjectGid: env.asanaPlanningProjectGid,
 })

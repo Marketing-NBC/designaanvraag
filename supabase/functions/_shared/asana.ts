@@ -1,6 +1,7 @@
 import type { Aanvraag } from './shared/aanvraag-schema.ts'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel, type Soort } from './shared/request-types.ts'
 import fieldsJson from './shared/asana-fields.json' with { type: 'json' }
+import type { AsanaBestand, Subtaak } from './shared/oplevering.ts'
 
 const API = 'https://app.asana.com/api/1.0'
 
@@ -114,6 +115,20 @@ export interface AsanaTaskClient {
   bijwerkDeadline(gid: string, stand: { dueOn: string; completed: boolean }): Promise<void>
   /** Gooit een taak weg; voor de mijlpaal van een aanvraag die niet meer bestaat. */
   verwijderTaak(gid: string): Promise<void>
+  /** De subtaken van een taak, met beschrijving; voor de subtaak Oplevering. */
+  listSubtaken(taskGid: string): Promise<Subtaak[]>
+  /** Maakt een lege subtaak; geeft zijn gid terug. */
+  maakSubtaak(parentGid: string, naam: string, assigneeGid: string | null): Promise<string>
+  /** Naam en/of afgevinkt van een (sub)taak aanpassen. */
+  werkTaakBij(gid: string, stand: { naam?: string; completed?: boolean }): Promise<void>
+  /** Bestanden die bij een (sub)taak staan. */
+  listBestanden(taskGid: string): Promise<AsanaBestand[]>
+  /** De inhoud van een geüpload bestand. */
+  downloadBestand(gid: string): Promise<{ bytes: Uint8Array; mime: string }>
+  /** Afvinken en in de kolom Klaar zetten. */
+  rondAf(taskGid: string, klaarSectieGid: string | null): Promise<void>
+  /** Naam en e-mailadres van een Asana-gebruiker; voor de proefmail. */
+  gebruiker(gid: string): Promise<{ naam: string | null; email: string | null }>
 }
 
 /**
@@ -472,5 +487,96 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
       // Al weg is ook goed: dan is er niets meer op te ruimen.
       if (!ok(status) && status !== 404) throw new Error(`Taak verwijderen mislukt (${status}: ${errorText(body)})`)
     },
+    async listSubtaken(taskGid) {
+      const rijen = await allePaginas<{
+        gid?: string
+        name?: string
+        completed?: boolean
+        created_at?: string
+        html_notes?: string
+      }>(pat, `/tasks/${taskGid}/subtasks`, 'name,completed,created_at,html_notes', 'Subtaken ophalen')
+      return rijen.filter((r) => r.gid).map((r) => ({
+        gid: String(r.gid),
+        naam: String(r.name ?? ''),
+        completed: Boolean(r.completed),
+        createdAt: String(r.created_at ?? ''),
+        html: String(r.html_notes ?? ''),
+      }))
+    },
+    async maakSubtaak(parentGid, naam, assigneeGid) {
+      const data: Record<string, unknown> = { name: naam }
+      if (assigneeGid) data.assignee = assigneeGid
+      const { status, body } = await asanaFetch(pat, `/tasks/${parentGid}/subtasks`, { method: 'POST', body: JSON.stringify({ data }) })
+      if (!ok(status) || !body.data?.gid) throw new Error(`Subtaak "${naam}" aanmaken mislukt (${status}: ${errorText(body)})`)
+      return String(body.data.gid)
+    },
+    async werkTaakBij(gid, stand) {
+      const data: Record<string, unknown> = {}
+      if (stand.naam !== undefined) data.name = stand.naam
+      if (stand.completed !== undefined) data.completed = stand.completed
+      const { status, body } = await asanaFetch(pat, `/tasks/${gid}`, { method: 'PUT', body: JSON.stringify({ data }) })
+      if (!ok(status)) throw new Error(`Taak bijwerken mislukt (${status}: ${errorText(body)})`)
+    },
+    async listBestanden(taskGid) {
+      const rijen = await allePaginas<{
+        gid?: string
+        name?: string
+        size?: number | null
+        created_at?: string
+        host?: string
+        view_url?: string | null
+        permanent_url?: string | null
+      }>(pat, `/attachments?parent=${taskGid}`, 'name,size,created_at,host,view_url,permanent_url', 'Bestanden ophalen')
+      return rijen.filter((r) => r.gid).map((r) => ({
+        gid: String(r.gid),
+        naam: String(r.name ?? 'bestand'),
+        bytes: typeof r.size === 'number' ? r.size : null,
+        createdAt: String(r.created_at ?? ''),
+        host: String(r.host ?? 'asana'),
+        viewUrl: r.view_url ?? r.permanent_url ?? null,
+      }))
+    },
+    async downloadBestand(gid) {
+      // De downloadlink is maar kort geldig, dus vlak voor het downloaden ophalen.
+      const { status, body } = await asanaFetch(pat, `/attachments/${gid}?opt_fields=name,download_url`, { method: 'GET' })
+      const url = body.data?.download_url
+      if (!ok(status) || typeof url !== 'string') throw new Error(`Downloadlink van bestand ${gid} ophalen mislukt (${status}: ${errorText(body)})`)
+      const res = await fetch(url, { signal: AbortSignal.timeout(120_000) })
+      if (!res.ok) throw new Error(`Bestand "${String(body.data?.name ?? gid)}" downloaden mislukt (${res.status})`)
+      const mime = res.headers.get('content-type')?.split(';')[0]?.trim() || 'application/octet-stream'
+      return { bytes: new Uint8Array(await res.arrayBuffer()), mime }
+    },
+    async rondAf(taskGid, klaarSectieGid) {
+      if (klaarSectieGid) {
+        const verplaats = await asanaFetch(pat, `/sections/${klaarSectieGid}/addTask`, { method: 'POST', body: JSON.stringify({ data: { task: taskGid } }) })
+        if (!ok(verplaats.status)) throw new Error(`Taak naar Klaar verplaatsen mislukt (${verplaats.status}: ${errorText(verplaats.body)})`)
+      }
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}`, { method: 'PUT', body: JSON.stringify({ data: { completed: true } }) })
+      if (!ok(status)) throw new Error(`Taak afvinken mislukt (${status}: ${errorText(body)})`)
+    },
+    async gebruiker(gid) {
+      const { status, body } = await asanaFetch(pat, `/users/${gid}?opt_fields=name,email`, { method: 'GET' })
+      if (!ok(status)) throw new Error(`Gebruiker ${gid} ophalen mislukt (${status}: ${errorText(body)})`)
+      const d = (body.data ?? {}) as { name?: string; email?: string }
+      return { naam: d.name?.trim() || null, email: d.email?.trim() || null }
+    },
   }
+}
+
+/** Een lijst uit Asana, alle pagina's achter elkaar. Een taak met veel wijzigingen heeft er al snel meer dan honderd. */
+async function allePaginas<T>(pat: string, pad: string, optFields: string, wat: string): Promise<T[]> {
+  const rijen: T[] = []
+  let offset: string | null = null
+  // Een grens, zodat een kapotte offset geen eindeloze lus wordt.
+  for (let pagina = 0; pagina < 20; pagina++) {
+    const q = new URLSearchParams({ limit: '100', opt_fields: optFields })
+    if (offset) q.set('offset', offset)
+    const { status, body } = await asanaFetch(pat, `${pad}${pad.includes('?') ? '&' : '?'}${q}`, { method: 'GET' })
+    if (!ok(status)) throw new Error(`${wat} mislukt (${status}: ${errorText(body)})`)
+    const b = body as unknown as { data?: T[]; next_page?: { offset?: string } | null }
+    rijen.push(...(b.data ?? []))
+    offset = b.next_page?.offset ?? null
+    if (!offset) break
+  }
+  return rijen
 }

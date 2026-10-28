@@ -7,8 +7,8 @@
 import type { Aanvraag } from './aanvraag-schema.ts'
 import { formatDateShortNl, kortVan, taskTitle } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
-import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, waarschuwingBlok } from './mail.ts'
-import type { MailBericht } from './mail.ts'
+import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, waarschuwingBlok } from './mail.ts'
+import type { MailBericht, Thema } from './mail.ts'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 import { SPOED_WERKDAGEN } from './spoed.ts'
@@ -53,8 +53,8 @@ function spoedPeil(soort: Soort): string {
   return soort === 'intern' ? 'de deadline' : 'het event'
 }
 
-function link(href: string, tekst = href): string {
-  return `<a href="${escapeHtml(href)}" style="color:#165e5a;">${escapeHtml(tekst)}</a>`
+function link(href: string, thema: Thema, tekst = href): string {
+  return `<a href="${escapeHtml(href)}" style="color:${thema.link};">${escapeHtml(tekst)}</a>`
 }
 
 function leegOf(tekst: string, html = escapeHtml(tekst)): string {
@@ -88,6 +88,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
   const a = m.aanvraag
   const intern = a.soort === 'intern'
   const nietInAsana = !m.asanaUrl
+  const thema = themaVoor(a.locatie)
   const delen: string[] = []
 
   if (nietInAsana) {
@@ -122,18 +123,19 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Aanvraag', escapeHtml(describeRequestTypes(a.aanvraag_types, a.anders_tekst))],
       ['Design', leegOf(DESIGN_MODES.find((d) => d.key === a.design_modus)?.label ?? a.design_modus ?? '')],
       ['Spoed', spoedTekst(m.spoed)],
-      ['Website', leegOf(a.website, a.website ? link(a.website) : '')],
+      ['Website', leegOf(a.website, a.website ? link(a.website, thema) : '')],
       ['Schijf', leegOf(a.schijf_locatie)],
     ]
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   delen.push(gegevensTabel(rijen))
 
-  if (a.omschrijving) delen.push(kopje(intern ? 'Wat er gevraagd wordt' : 'Wensen en bijzonderheden'), citaat(a.omschrijving))
+  if (a.omschrijving) delen.push(kopje(intern ? 'Wat er gevraagd wordt' : 'Wensen en bijzonderheden'), citaat(a.omschrijving, thema))
   // Het menu staat normaal in de Asana-taak. Is die er niet, dan hoort het hier, anders is het weg.
-  if (nietInAsana && a.menu_tekst) delen.push(kopje('Menu'), citaat(a.menu_tekst))
+  if (nietInAsana && a.menu_tekst) delen.push(kopje('Menu'), citaat(a.menu_tekst, thema))
 
-  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana'), `<p style="margin:4px 0 0;font-size:13px;">${link(m.asanaUrl)}</p>`)
-  delen.push(`<p style="margin:20px 0 0;font-size:12px;color:#828b8d;">Aanvraag ${escapeHtml(m.aanvraagId)}</p>`)
+  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana', thema))
+  // Zonder taak is het id de enige manier om de aanvraag in Supabase terug te vinden.
+  else delen.push(`<p style="margin:20px 0 0;font-size:12px;color:#828b8d;">Aanvraag ${escapeHtml(m.aanvraagId)}</p>`)
 
   return {
     aan: [ontvangerVoor(a.locatie)],
@@ -146,7 +148,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       types: describeRequestTypes(a.aanvraag_types, a.anders_tekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n')),
+    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema),
   }
 }
 
@@ -191,6 +193,7 @@ export interface AanvullingMail {
 
 export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   const a = m.aanvraag
+  const thema = themaVoor(a.locatie)
   const delen: string[] = []
 
   if (m.asanaFout) {
@@ -206,9 +209,9 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   }
 
   delen.push(taakRegel(m.taakNaam))
-  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`, citaat(m.toelichting))
+  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`, citaat(m.toelichting, thema))
 
-  const gewijzigd = ' <span style="color:#165e5a;font-weight:bold;">(gewijzigd)</span>'
+  const gewijzigd = ` <span style="color:${thema.link};font-weight:bold;">(gewijzigd)</span>`
   const rijen: [string, string][] = []
   if (a.soort === 'intern') rijen.push(['Soort', 'Intern'])
   rijen.push(['Locatie', escapeHtml(locatieLabel(a.locatie))], ['Aanvrager', escapeHtml(a.naam)])
@@ -222,13 +225,13 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   if (a.types.length) rijen.push(['Aanvraag', escapeHtml(describeRequestTypes(a.types, m.andersTekst))])
   if (m.extraTypes.length) rijen.push(['Erbij gevraagd', `<strong>${escapeHtml(describeRequestTypes(m.extraTypes, m.andersTekst))}</strong>`])
   rijen.push(['Spoed', spoedTekst(a.spoed)])
-  if (m.link) rijen.push(['Materiaal', link(m.link)])
+  if (m.link) rijen.push(['Materiaal', link(m.link, thema)])
   if (m.schijfLocatie) rijen.push(['Schijf', escapeHtml(m.schijfLocatie)])
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   if (m.bijgewerkt.length) rijen.push(['Bijgewerkt in Asana', escapeHtml(m.bijgewerkt.join(', '))])
-  delen.push(`<div style="margin-top:20px;">${gegevensTabel(rijen)}</div>`)
+  delen.push(ruimte(gegevensTabel(rijen), 20))
 
-  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana'), `<p style="margin:4px 0 0;font-size:13px;">${link(m.asanaUrl)}</p>`)
+  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana', thema))
 
   return {
     aan: [ontvangerVoor(a.locatie)],
@@ -241,6 +244,6 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       types: describeRequestTypes(a.types, m.andersTekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n')),
+    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema),
   }
 }

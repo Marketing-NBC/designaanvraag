@@ -12,7 +12,24 @@ export interface MailBericht {
   aan: string[]
   onderwerp: string
   html: string
+  /** Waar "Beantwoorden" naartoe gaat; leeg = de afzender. */
+  antwoordAan?: string[]
+  bijlagen?: MailBijlage[]
 }
+
+export interface MailBijlage {
+  naam: string
+  mime: string
+  bytes: Uint8Array
+}
+
+/**
+ * Tot zoveel aan bijlagen gaat alles in één verzoek mee. Graph neemt hooguit 4 MB per verzoek aan,
+ * en base64 maakt een bestand een derde groter; dit laat ruimte voor de rest van de mail.
+ */
+export const MAIL_IN_EEN_KEER_BYTES = 2_500_000
+/** Stukken waarin een groot bestand naar Graph gaat: een veelvoud van 320 KiB, onder de 4 MB. */
+const UPLOAD_STUK_BYTES = 320 * 1024 * 9
 
 export interface MailClient {
   verstuur(bericht: MailBericht): Promise<void>
@@ -59,31 +76,110 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     return token.waarde
   }
 
-  return {
-    async verstuur({ aan, onderwerp, html }) {
-      if (!aan.length) throw new Error('Geen ontvanger opgegeven')
-      const res = await doFetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}/sendMail`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: {
-            subject: onderwerp,
-            body: { contentType: 'HTML', content: html },
-            toRecipients: aan.map((address) => ({ emailAddress: { address } })),
-          },
-          // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
-          saveToSentItems: false,
-        }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      })
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
-        if (res.status === 401) token = null
-        const uitleg = [body.error?.code, body.error?.message].filter(Boolean).join(': ') || 'onbekende fout'
-        throw new Error(`Mail versturen mislukt (${res.status}: ${uitleg})`)
+  const postvak = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}`
+
+  /** Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. */
+  async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS): Promise<Record<string, unknown>> {
+    const res = await doFetch(`${postvak}${pad}`, {
+      method,
+      headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeout),
+    })
+    if (!res.ok) {
+      const fout = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
+      if (res.status === 401) token = null
+      const uitleg = [fout.error?.code, fout.error?.message].filter(Boolean).join(': ') || 'onbekende fout'
+      throw new Error(`${wat} mislukt (${res.status}: ${uitleg})`)
+    }
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
+  }
+
+  function bericht({ aan, onderwerp, html, antwoordAan }: MailBericht): Record<string, unknown> {
+    const adressen = (lijst: string[]) => lijst.map((address) => ({ emailAddress: { address } }))
+    return {
+      subject: onderwerp,
+      body: { contentType: 'HTML', content: html },
+      toRecipients: adressen(aan),
+      ...(antwoordAan?.length ? { replyTo: adressen(antwoordAan) } : {}),
+    }
+  }
+
+  const bijlageJson = (b: MailBijlage) => ({
+    '@odata.type': '#microsoft.graph.fileAttachment',
+    name: b.naam,
+    contentType: b.mime,
+    contentBytes: naarBase64(b.bytes),
+  })
+
+  /**
+   * Grote bijlagen kunnen niet in één verzoek. Dan eerst een concept, de bestanden er in stukken
+   * aan, en daarna versturen. Daarvoor heeft de app naast Mail.Send ook Mail.ReadWrite nodig; zie
+   * "Mail instellen" in de README.
+   */
+  async function verstuurInStappen(m: MailBericht): Promise<void> {
+    let concept: string
+    try {
+      concept = String((await graph('/messages', 'POST', bericht(m), 'Concept aanmaken')).id ?? '')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (/\(403/.test(msg)) {
+        throw new Error(`${msg}. Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
       }
+      throw e
+    }
+    if (!concept) throw new Error('Concept aanmaken mislukt (geen id van Microsoft)')
+    try {
+      for (const b of m.bijlagen ?? []) {
+        if (b.bytes.length < MAIL_IN_EEN_KEER_BYTES) {
+          await graph(`/messages/${concept}/attachments`, 'POST', bijlageJson(b), `Bijlage "${b.naam}"`)
+          continue
+        }
+        const sessie = await graph(`/messages/${concept}/attachments/createUploadSession`, 'POST', {
+          AttachmentItem: { attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime },
+        }, `Upload van "${b.naam}" starten`)
+        const uploadUrl = String(sessie.uploadUrl ?? '')
+        if (!uploadUrl) throw new Error(`Upload van "${b.naam}" starten mislukt (geen uploadadres)`)
+        for (let van = 0; van < b.bytes.length; van += UPLOAD_STUK_BYTES) {
+          const stuk = b.bytes.subarray(van, Math.min(van + UPLOAD_STUK_BYTES, b.bytes.length))
+          // Het uploadadres is zelf de sleutel; een Authorization-header hoort er juist niet bij.
+          const res = await doFetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/octet-stream', 'Content-Range': `bytes ${van}-${van + stuk.length - 1}/${b.bytes.length}` },
+            body: stuk as Uint8Array<ArrayBuffer>,
+            signal: AbortSignal.timeout(60_000),
+          })
+          if (!res.ok) throw new Error(`Upload van "${b.naam}" mislukt (${res.status})`)
+        }
+      }
+      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', 30_000)
+    } catch (e) {
+      // Een half concept hoort niet in het postvak te blijven hangen.
+      await graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').catch(() => {})
+      throw e
+    }
+  }
+
+  return {
+    async verstuur(m) {
+      if (!m.aan.length) throw new Error('Geen ontvanger opgegeven')
+      const bijlagen = m.bijlagen ?? []
+      const totaal = bijlagen.reduce((n, b) => n + b.bytes.length, 0)
+      if (totaal > MAIL_IN_EEN_KEER_BYTES) return verstuurInStappen(m)
+      await graph('/sendMail', 'POST', {
+        message: { ...bericht(m), ...(bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}) },
+        // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
+        saveToSentItems: false,
+      }, 'Mail versturen', bijlagen.length ? 30_000 : TIMEOUT_MS)
     },
   }
+}
+
+/** Bytes als base64, in stukken: een heel bestand in één keer laat `String.fromCharCode` omvallen. */
+export function naarBase64(bytes: Uint8Array): string {
+  let binair = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binair += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binair)
 }
 
 /** Escapen voor HTML in een mail. */
@@ -92,52 +188,121 @@ export function escapeHtml(s: string): string {
 }
 
 /**
- * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen en
- * inline stijlen, want Outlook negeert vrijwel alles wat moderner is. Pockota en Area Normal zijn er
- * in een mail niet; Arial is de veilige terugval.
+ * Het lettertype, op elk element apart. De klassieke Outlook (die bij NBC en Green Village overal
+ * draait) rendert mail met Word, en Word laat een lettertype niet doorlopen naar een tabel in een
+ * tabel: zonder dit staan de gegevens in Calibri of Aptos en de rest in Arial. Pockota en Area
+ * Normal zijn er in een mail niet; Arial is de veilige terugval.
  */
-export function mailOpmaak(kop: string, inhoud: string, voet = 'Automatische melding van het designaanvraag-formulier.'): string {
+export const LETTER = 'font-family:Arial,Helvetica,sans-serif;'
+
+/** De kleuren van een mail: kop en knop, het lichte vlak achter een citaat, en links. */
+export interface Thema {
+  kleur: string
+  /** Tekst op `kleur`. */
+  opKleur: string
+  tint: string
+  link: string
+}
+
+/**
+ * Per locatie. Green Village is bijna zwart groen, met witte tekst op de kop en de knop. De lichte
+ * vlakken en de links hebben een olijftint: links in de GV-kleur zelf zouden niet van gewone tekst
+ * te onderscheiden zijn.
+ */
+export const THEMAS: Record<string, Thema> = {
+  nbc: { kleur: '#229d96', opKleur: '#ffffff', tint: '#e9f5f4', link: '#165e5a' },
+  green_village: { kleur: '#23251b', opKleur: '#ffffff', tint: '#f1f2ec', link: '#5c6049' },
+}
+
+/** Het thema van een locatie; onbekend of leeg is NBC. */
+export function themaVoor(locatie: string | null | undefined): Thema {
+  return (locatie && THEMAS[locatie]) || THEMAS.nbc
+}
+
+/**
+ * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen,
+ * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
+ * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
+ * een eigen stijl mist, zoals lijstjes uit Asana.
+ */
+export function mailOpmaak(
+  kop: string,
+  inhoud: string,
+  voet = 'Automatische melding van het designaanvraag-formulier.',
+  thema: Thema = THEMAS.nbc,
+): string {
   return `<!doctype html>
-<html lang="nl"><head><meta charset="utf-8"></head>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body,table,td,p,a,li,span,strong,em,h1,h2{${LETTER}}</style>
+</head>
 <body style="margin:0;padding:0;background:#f1f1ef;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1ef;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1ef" style="background:#f1f1ef;">
 <tr><td align="center" style="padding:24px 12px;">
-<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#0e0e0e;">
-<tr><td style="background:#229d96;color:#ffffff;padding:20px 24px;font-size:20px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
-<tr><td style="padding:24px;">${inhoud}</td></tr>
-<tr><td style="padding:16px 24px;border-top:1px solid #eaebec;color:#828b8d;font-size:12px;">${escapeHtml(voet)}</td></tr>
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
+<tr><td bgcolor="${thema.kleur}" style="background:${thema.kleur};color:${thema.opKleur};padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
+<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
+<tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
 </td></tr>
 </table>
 </body></html>`
 }
 
-/** Een knop naar de Asana-taak; een gewone link als terugval voor wie geen opmaak ziet. */
-export function knop(href: string, tekst: string): string {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px 0 4px;"><tr>`
-    + `<td style="background:#229d96;border-radius:4px;">`
-    + `<a href="${escapeHtml(href)}" style="display:inline-block;padding:10px 18px;color:#ffffff;text-decoration:none;font-weight:bold;">${escapeHtml(tekst)}</a>`
-    + `</td></tr></table>`
+/**
+ * Een knop. De opvulling zit op de cel en niet op de link: Word negeert `padding` op een link,
+ * en dan staat er een strak gekleurd vlak zonder lucht om de tekst. De ruimte erboven zit om
+ * dezelfde reden in een buitencel in plaats van in een `margin`.
+ */
+export function knop(href: string, tekst: string, thema: Thema = THEMAS.nbc): string {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 0 4px;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
+    + `<td align="center" bgcolor="${thema.kleur}" style="background:${thema.kleur};border-radius:4px;padding:12px 24px;">`
+    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:${thema.opKleur};text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
+    + `</td></tr></table></td></tr></table>`
 }
 
 /** Een tabel met label en waarde per regel. De waarde is al HTML; escapen doet de aanroeper. */
 export function gegevensTabel(rijen: [string, string][]): string {
+  const cel = `${LETTER}font-size:15px;line-height:22px;vertical-align:top;`
   const tr = rijen
-    .map(([k, v]) => `<tr><td style="padding:4px 16px 4px 0;color:#596165;vertical-align:top;white-space:nowrap;">${escapeHtml(k)}</td>`
-      + `<td style="padding:4px 0;vertical-align:top;">${v}</td></tr>`)
+    .map(([k, v]) => `<tr><td valign="top" style="${cel}padding:3px 16px 3px 0;color:#596165;white-space:nowrap;">${escapeHtml(k)}</td>`
+      + `<td valign="top" style="${cel}padding:3px 0;color:#0e0e0e;">${v}</td></tr>`)
     .join('')
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${tr}</table>`
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${tr}</table>`
+}
+
+/**
+ * Ruimte boven en onder een stuk mail. Via `padding` op een cel, want Word negeert `margin` op een
+ * `<div>` en een tabel.
+ */
+export function ruimte(html: string, boven: number, onder = 0): string {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:${boven}px 0 ${onder}px;">${html}</td></tr></table>`
+}
+
+/**
+ * Een gekleurd vlak met lucht eromheen, als tabel: Word negeert `padding` op een `<div>`, en dan
+ * plakt de tekst tegen de rand van het vlak. `boven` en `onder` is de ruimte buiten het vlak.
+ */
+export function vlak(html: string, o: { achtergrond: string; rand?: string; boven?: number; onder?: number }): string {
+  const rand = o.rand ? `border-left:4px solid ${o.rand};` : ''
+  return ruimte(
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>`
+      + `<td bgcolor="${o.achtergrond}" style="background:${o.achtergrond};${rand}padding:12px 16px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${html}</td>`
+      + `</tr></table>`,
+    o.boven ?? 0,
+    o.onder ?? 0,
+  )
 }
 
 /** Een opvallend blok voor iets wat niet goed ging, of spoed. */
 export function waarschuwingBlok(html: string): string {
-  return `<div style="background:#fff4de;border-left:4px solid #f6a304;padding:12px 16px;margin:0 0 20px;">${html}</div>`
+  return vlak(html, { achtergrond: '#fff4de', rand: '#f6a304', onder: 20 })
 }
 
 /**
  * Een citaat: wat de collega zelf typte. Regeleinden worden <br>, want Outlook kent geen
  * `white-space: pre-wrap`.
  */
-export function citaat(tekst: string): string {
-  return `<div style="background:#e9f5f4;padding:12px 16px;margin:4px 0 0;">${escapeHtml(tekst).replace(/\r?\n/g, '<br>')}</div>`
+export function citaat(tekst: string, thema: Thema = THEMAS.nbc): string {
+  return vlak(escapeHtml(tekst).replace(/\r?\n/g, '<br>'), { achtergrond: thema.tint, boven: 4 })
 }
