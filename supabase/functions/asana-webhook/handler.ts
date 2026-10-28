@@ -5,11 +5,15 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
 /**
  * Ontvangt Asana-webhooks van het project "Designaanvragen" en regelt de planning-flow:
  *  - taak naar "In planning" gesleept zonder vervaldatum → één comment met mention: kies een datum;
- *  - vervaldatum gezet terwijl de taak in "In planning" of "Mee bezig" staat → taak ook in het
+ *  - vervaldatum gezet terwijl de taak in "In planning" staat → taak ook in het
  *    planningsproject ("4. Werkplanning") zetten. De vervaldatum is een eigenschap van de taak,
  *    dus die is in beide projecten gelijk;
  *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
  *    verdwijnt en er geen aanvulling meer op kan;
+ *  - het veld Oplevermail stuurt de aanvrager de opleveringsmail, of eerst een proef naar wie op
+ *    de knop drukte (zie oplevering.ts);
+ *  - kolom en vinkje zeggen hetzelfde: naar Klaar gesleept → afgevinkt, uit Klaar gesleept → vinkje
+ *    eraf. Zo hoeft niemand twee dingen te doen, en loopt de deadline-mijlpaal mee met de kolom;
  *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
  *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
  *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
@@ -45,6 +49,16 @@ export interface Deps {
    * mee; nu is het een knop.
    */
   startHuisstijl?(asanaTaskGid: string): Promise<boolean>
+  /**
+   * De knop "Verstuur nu" in het veld Oplevermail: de opleveringsmail versturen. Geeft een korte
+   * uitkomst voor in de log. Ontbreekt de functie, dan doet de knop niets.
+   */
+  oplever?(taak: AsanaTask, opties: { proef: boolean; door: string | null }): Promise<string>
+  /**
+   * Laat werk doorlopen nadat Asana zijn antwoord heeft. Asana wacht maar even op de webhook, en
+   * bestanden downloaden en mailen duurt langer. Zonder dit wordt er gewoon gewacht (zo testen we).
+   */
+  achtergrond?(werk: Promise<unknown>): void
   now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
@@ -54,6 +68,8 @@ export interface Deps {
 
 interface AsanaEvent {
   action?: string
+  /** Wie de wijziging deed; voor de proefmail van de oplevering. */
+  user?: { gid?: string } | null
   resource?: { gid?: string; resource_type?: string }
   parent?: { gid?: string; resource_type?: string } | null
   change?: { field?: string; action?: string } | null
@@ -96,7 +112,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const projectGid = cfg.project?.gid ?? null
   const sections = cfg.sections ?? {}
   const inPlanning = sections.in_planning?.gid ?? null
-  const qualifying = [sections.in_planning?.gid, sections.mee_bezig?.gid].filter((g): g is string => Boolean(g))
+  const klaar = sections.klaar?.gid ?? null
   const planningGid = deps.planningProjectGid ?? cfg.planning_project?.gid ?? null
   const planningName = cfg.planning_project?.name ?? 'de werkplanning'
 
@@ -164,6 +180,39 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   }
 
   /**
+   * Het veld Oplevermail: "Verstuur nu" of "Stuur proef naar mij". Zelfde gang als bij de andere
+   * knoppen: het veld gaat meteen op "Bezig", zodat je ziet dat het loopt en tweemaal klikken niets
+   * extra's doet. Het versturen zelf zet hem daarna op Verstuurd, Proef verstuurd of Mislukt.
+   */
+  async function handleOpleverknop(t: AsanaTask, door: string | null): Promise<string | null> {
+    const veld = cfg.fields?.oplevermail
+    if (!veld?.gid) return null
+    const gekozen = t.customFields?.[veld.gid]?.optieGids ?? []
+    const proef = Boolean(veld.options?.proef && gekozen.includes(veld.options.proef))
+    if (!proef && !(veld.options?.verstuur && gekozen.includes(veld.options.verstuur))) return null
+    if (!deps.oplever) return 'oplevermail gevraagd, maar niet ingesteld'
+
+    const bezig = veld.options?.bezig
+    if (bezig) {
+      try {
+        await asana.updateCustomFields(t.gid, { [veld.gid]: bezig })
+      } catch (e) {
+        log('warn', 'oplevermail-veld op Bezig zetten mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+    const werk = deps.oplever(t, { proef, door }).then(
+      (uitkomst) => log('info', 'oplevermail', { gid: t.gid, uitkomst }),
+      (e) => log('error', 'oplevermail mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) }),
+    )
+    if (!deps.achtergrond) {
+      await werk
+      return 'oplevermail afgehandeld'
+    }
+    deps.achtergrond(werk)
+    return 'oplevermail gestart'
+  }
+
+  /**
    * Zet de deadline-mijlpaal gelijk met de taak. Altijd schrijven in plaats van eerst vergelijken:
    * dat scheelt een extra ophaalronde, en de mijlpaal staat in een ander project, dus deze webhook
    * hoort zijn eigen wijziging niet terug. Een fout hier mag de planning-flow niet tegenhouden.
@@ -191,14 +240,35 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
   }
 
-  async function handleTask(gid: string): Promise<string> {
-    const t = await asana.getTask(gid)
-    const ours = t.memberships.find((m) => m.project === projectGid)
+  /**
+   * De taak is naar een andere kolom gesleept: zet het vinkje gelijk met de kolom. Naar Klaar is af,
+   * uit Klaar is weer open. Alleen bij slepen: wie in een andere kolom zelf het vinkje zet, krijgt
+   * dat niet teruggedraaid. Geeft de taak terug zoals hij nu is.
+   */
+  async function volgKolom(t: AsanaTask, sectie: string | null, naar: string | undefined): Promise<AsanaTask> {
+    if (!naar || naar !== sectie || !klaar) return t
+    const moetAf = sectie === klaar
+    if (t.completed === moetAf) return t
+    try {
+      await asana.werkTaakBij(t.gid, { completed: moetAf })
+      return { ...t, completed: moetAf }
+    } catch (e) {
+      log('warn', `taak ${moetAf ? 'afvinken' : 'heropenen'} na slepen mislukt`, { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      return t
+    }
+  }
+
+  async function handleTask(gid: string, door: string | null = null, naar?: string): Promise<string> {
+    const opgehaald = await asana.getTask(gid)
+    const ours = opgehaald.memberships.find((m) => m.project === projectGid)
     if (!ours) return 'niet in ons project'
+    const t = await volgKolom(opgehaald, ours.section, naar)
     await volgDeadline(t)
 
-    // De knop staat los van de planning-flow: een menuscherm mag ook gemaakt worden
-    // als de taak al afgerond is of nog geen vervaldatum heeft.
+    // De knoppen staan los van de planning-flow: een menuscherm mag ook gemaakt worden
+    // als de taak al afgerond is of nog geen vervaldatum heeft, en opleveren kan vanuit elke kolom.
+    const oplevering = await handleOpleverknop(t, door)
+    if (oplevering) return oplevering
     const menu = await handleMenuknop(t)
     if (menu) return menu
     const huisstijl = await handleHuisstijlknop(t)
@@ -215,7 +285,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       return 'datum gevraagd'
     }
 
-    if (!section || !qualifying.includes(section)) return 'datum, maar niet in planning of mee bezig'
+    if (!section || section !== inPlanning) return 'datum, maar niet in planning'
     if (!planningGid) return 'geen planningsproject geconfigureerd'
     if (t.projects.includes(planningGid)) return 'al ingepland'
     await asana.addToProject(gid, planningGid)
@@ -264,6 +334,11 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     const tasks = new Set<string>()
+    // Wie de laatste wijziging aan een taak deed; de proefmail gaat naar die persoon.
+    const door = new Map<string, string>()
+    // Naar welke kolom van ons bord een taak gesleept is; het vinkje volgt de kolom.
+    const naar = new Map<string, string>()
+    const onzeKolommen = new Set(Object.values(sections).map((s) => s.gid))
     // Verwijderde taken apart: die kunnen we niet meer opvragen bij Asana, dus de planning-flow heeft
     // er niets te zoeken. Het enige wat telt is dat de aanvraag vervalt.
     const verwijderd = new Set<string>()
@@ -274,8 +349,14 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       // hetzelfde neer: de taak staat niet meer op het bord van Marketing.
       if (e.action === 'deleted') verwijderd.add(gid)
       else if (e.action === 'removed' && e.parent?.gid === projectGid) verwijderd.add(gid)
-      else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid === inPlanning) tasks.add(gid)
-      else if (e.action === 'changed') tasks.add(gid)
+      else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid && onzeKolommen.has(e.parent.gid)) {
+        tasks.add(gid)
+        naar.set(gid, e.parent.gid)
+      }
+      else if (e.action === 'changed') {
+        tasks.add(gid)
+        if (e.user?.gid) door.set(gid, e.user.gid)
+      }
     }
 
     const outcomes: Record<string, string> = {}
@@ -293,7 +374,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     for (const gid of tasks) {
       try {
-        outcomes[gid] = await handleTask(gid)
+        outcomes[gid] = await handleTask(gid, door.get(gid) ?? null, naar.get(gid))
       } catch (e) {
         outcomes[gid] = `fout: ${e instanceof Error ? e.message : String(e)}`
         log('error', 'webhook-taak mislukt', { gid, error: outcomes[gid] })

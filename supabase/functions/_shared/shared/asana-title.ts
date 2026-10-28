@@ -20,6 +20,9 @@ type TitleInput = Pick<Aanvraag,
 
 export const MEERDERE_DESIGNS = 'Meerdere designs'
 
+/** Wat er staat waar anders de deadline staat, bij een interne aanvraag zonder deadline. */
+export const GEEN_DEADLINE = 'Geen deadline'
+
 /** Het label van één aanvraagtype; bij "anders" de vrije tekst. */
 export function typeLabel(key: Aanvraag['aanvraag_types'][number], andersTekst: string): string {
   return key === 'anders' ? andersTekst.trim() || 'Anders' : requestTypeLabel(key)
@@ -50,7 +53,7 @@ export function kortVan(tekst: string, max = INTERN_TITEL_TEKENS): string {
  * Zonder jaartal: de titel is al lang en de echte datum staat in het veld Eventdatum.
  *
  * Een interne aanvraag: "Intern - <aanvrager> - Deadline: <deadline> - <begin van wat er
- * gevraagd wordt>".
+ * gevraagd wordt>", of "Geen deadline" waar de deadline staat als die er niet is.
  */
 export function taskTitle(a: TitleInput): string {
   const datum = (iso: string) => formatDateShortNl(iso, false)
@@ -60,7 +63,8 @@ export function taskTitle(a: TitleInput): string {
     return [
       'Intern',
       a.naam.trim(),
-      `Deadline: ${datum(a.deadline)}`,
+      // Mag ontbreken: "het mag klaar zijn wanneer het past". Dat staat er dan ook zo.
+      a.deadline ? `Deadline: ${datum(a.deadline)}` : GEEN_DEADLINE,
       kortVan(a.omschrijving ?? ''),
     ].filter(Boolean).join(' - ').slice(0, 250)
   }
@@ -69,7 +73,7 @@ export function taskTitle(a: TitleInput): string {
     a.event.trim(),
     a.event_datum ? datum(a.event_datum) : '',
     a.naam.trim(),
-    `Deadline: ${datum(a.deadline)}`,
+    a.deadline ? `Deadline: ${datum(a.deadline)}` : GEEN_DEADLINE,
     wat,
   ].filter(Boolean).join(' - ').slice(0, 250)
 }

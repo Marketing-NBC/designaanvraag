@@ -1,6 +1,7 @@
 import type { SubmitPayload, SubmitResult } from '../../../shared/aanvraag-schema'
 import type { AanvullingPayload, AanvullingResult, GevondenAanvraag } from '../../../shared/aanvulling-schema'
 import type { UploadLink, UploadlinkPayload, UploadlinkResult } from '../../../shared/bijlagen'
+import { vraagtOmMenu } from '../../../shared/request-types'
 import { COLLEGAS_MOCK } from '../data/collegas.fallback'
 
 const FUNCTIONS_URL = import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1` : null
@@ -88,6 +89,26 @@ export async function zoekInterneAanvragen(naam: string): Promise<GevondenAanvra
   }
 }
 
+/**
+ * Eén aanvraag op id, voor de knop "Feedback geven" in de opleveringsmail. Null als hij niet (meer)
+ * bestaat of als het opzoeken mislukt; dan kiest de collega hem zelf.
+ */
+export async function haalAanvraag(id: string): Promise<GevondenAanvraag | null> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    const a = [...zoekMock(''), ...zoekInternMock(COLLEGAS_MOCK[0])].find((x) => x.id === id) ?? null
+    // Bij de demo hoort een menuscherm met Grab & Go, om "Menu aanpassen" lokaal te kunnen zien.
+    return a && vraagtOmMenu(a.aanvraag_types) ? { ...a, menu: { pakket: 'grab-and-go', inhoud: null } } : a
+  }
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/aanvraag-zoeken?id=${encodeURIComponent(id)}`, { headers: { apikey: PUBLISHABLE_KEY } })
+    if (!res.ok) return null
+    const body = (await res.json()) as { resultaten?: GevondenAanvraag[] }
+    return body.resultaten?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function verstuurAanvulling(payload: AanvullingPayload): Promise<AanvullingResult> {
   if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
     await new Promise((r) => setTimeout(r, 900))
@@ -114,7 +135,7 @@ function zoekMock(q: string): GevondenAanvraag[] {
     event_datum: '2026-12-01',
     deadline: '2026-11-20',
     naam: COLLEGAS_MOCK[0],
-    aanvraag_types: ['led_kolom'],
+    aanvraag_types: ['led_kolom', 'menu_scherm'],
     anders_tekst: '',
     schijf_locatie: '',
     omschrijving: '',

@@ -8,12 +8,12 @@
  */
 import { formatDateShortNl } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
-import { escapeHtml, knop, mailOpmaak } from './mail.ts'
-import type { MailBericht } from './mail.ts'
+import { escapeHtml, knop, mailOpmaak, themaVoor } from './mail.ts'
+import type { MailBericht, Thema } from './mail.ts'
 import { LOCATIES, locatieLabel } from './request-types.ts'
 import type { Locatie } from './request-types.ts'
 
-export type SectieSleutel = 'nieuwe_aanvragen' | 'feedback' | 'in_planning' | 'mee_bezig' | 'klaar'
+export type SectieSleutel = 'nieuwe_aanvragen' | 'feedback' | 'in_planning' | 'klaar'
 
 export interface WeekTaak {
   naam: string
@@ -167,19 +167,20 @@ export function nietsTeMelden(o: Weekoverzicht): boolean {
 
 const SPOED = '<span style="display:inline-block;background:#c0392b;color:#ffffff;font-size:11px;font-weight:bold;padding:1px 6px;border-radius:3px;margin-left:6px;">SPOED</span>'
 
-function taakRegel(t: WeekTaak, extra: string[] = []): string {
+function taakRegel(t: WeekTaak, thema: Thema, extra: string[] = []): string {
   const meta = [
     t.sectieNaam ?? '',
     t.vervaldatum ? `ingepland ${dagNaam(t.vervaldatum)} ${kort(t.vervaldatum)}` : 'nog geen planningsdatum',
     ...extra,
   ].filter(Boolean)
-  return `<li style="margin:0 0 8px;"><a href="${escapeHtml(t.url)}" style="color:#165e5a;font-weight:bold;">${escapeHtml(t.naam)}</a>`
+  return `<li style="margin:0 0 8px;"><a href="${escapeHtml(t.url)}" style="color:${thema.link};font-weight:bold;">${escapeHtml(t.naam)}</a>`
     + (t.spoed ? SPOED : '')
     + `<br><span style="color:#596165;font-size:13px;">${escapeHtml(meta.join(' · '))}</span></li>`
 }
 
-function lijst(taken: WeekTaak[], extra: (t: WeekTaak) => string[] = () => []): string {
-  return `<ul style="margin:4px 0 0;padding-left:20px;">${taken.map((t) => taakRegel(t, extra(t))).join('')}</ul>`
+function lijstMet(thema: Thema, taken: WeekTaak[], extra: (t: WeekTaak) => string[] = () => []): string {
+  // Inspringen met margin: Word (de klassieke Outlook) negeert padding op een lijst.
+  return `<ul style="margin:4px 0 0 24px;padding:0;">${taken.map((t) => taakRegel(t, thema, extra(t))).join('')}</ul>`
 }
 
 function kop(tekst: string): string {
@@ -191,6 +192,8 @@ function meervoud(n: number, een: string, meer: string): string {
 }
 
 export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: string | null): MailBericht {
+  const thema = themaVoor(locatie)
+  const lijst = (taken: WeekTaak[], extra?: (t: WeekTaak) => string[]) => lijstMet(thema, taken, extra)
   const { week, letOp } = o
   const periode = `${dagNaam(week.maandag)} ${kort(week.maandag)} t/m ${dagNaam(week.zondag)} ${kort(week.zondag)}`
   const delen: string[] = [`<p style="margin:0;color:#596165;">${escapeHtml(periode)}</p>`]
@@ -242,7 +245,7 @@ export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: s
     ? lijst(o.volgendeWeek, (t) => [`deadline ${dagNaam(t.deadline!)} ${kort(t.deadline!)}`])
     : '<p style="margin:0;color:#596165;">Nog geen deadlines.</p>')
 
-  if (projectUrl) delen.push(knop(projectUrl, 'Open het bord in Asana'))
+  if (projectUrl) delen.push(knop(projectUrl, 'Open het bord in Asana', thema))
 
   const aantal = o.aantal ? meervoud(o.aantal, 'deadline', 'deadlines') + (o.spoed ? `, ${o.spoed} spoed` : '') : 'geen deadlines'
   return {
@@ -252,6 +255,7 @@ export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: s
       `Week ${week.weeknummer}: deadlines en aandachtspunten`,
       delen.join('\n'),
       'Elke maandagochtend automatisch verstuurd vanuit het designaanvraag-formulier.',
+      thema,
     ),
   }
 }

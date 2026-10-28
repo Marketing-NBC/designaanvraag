@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Aanvraag } from './shared/aanvraag-schema.ts'
+import type { Aanvraag, MenuInhoud } from './shared/aanvraag-schema.ts'
 import type { Aanvulling, GevondenAanvraag } from './shared/aanvulling-schema.ts'
 import { ZOEK_DAGEN, ZOEK_MAX_RESULTATEN, ZOEK_OMSCHRIJVING_TEKENS } from './shared/aanvulling-schema.ts'
+import { vraagtOmMenu } from './shared/request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './shared/request-types.ts'
 
 export interface AanvraagRow {
@@ -44,12 +45,15 @@ export interface AanvraagDetail extends AanvraagRow {
   event: string
   /** Null bij een interne aanvraag. */
   event_datum: string | null
-  deadline: string
+  /** Null bij een interne aanvraag zonder deadline. */
+  deadline: string | null
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
   schijf_locatie: string
   /** Bij een interne aanvraag de hele vraag; nodig voor de taaknaam in de meldingsmail. */
   omschrijving: string
+  /** Het pakket van het menu; leeg als er geen menu bij hoort. Voor "was: …" bij een nieuw menu. */
+  menu_pakket: string
 }
 
 export interface AanvullingRow {
@@ -92,6 +96,21 @@ export interface NewBijlage {
 /** Bij welke aanvraag of aanvulling een bijlage hoort; precies één van de twee. */
 export type BijlageOuder = { aanvraag_id: string } | { aanvulling_id: string }
 
+export type OpleveringStatus = 'bezig' | 'verstuurd' | 'mislukt'
+
+export interface OpleveringRow {
+  id: string
+  created_at: string
+  aanvraag_id: string
+  subtaak_gid: string
+  versie: number
+  ontvangers: string[]
+  bijlagen: { naam: string; bytes: number }[]
+  status: OpleveringStatus
+  fout: string | null
+  verstuurd_op: string | null
+}
+
 export interface NewAanvraag extends Aanvraag {
   client_request_id: string
   ip_hash: string | null
@@ -102,7 +121,8 @@ export interface NewAanvraag extends Aanvraag {
 export interface Db {
   findByClientRequestId(id: string): Promise<AanvraagRow | null>
   insert(row: NewAanvraag): Promise<AanvraagRow>
-  update(id: string, patch: Partial<AanvraagRow>): Promise<void>
+  /** Ook het menu, als een aanvulling het aanpast; dat staat niet in AanvraagRow. */
+  update(id: string, patch: Partial<AanvraagRow> & { menu_inhoud?: MenuInhoud; menu_tekst?: string; menu_pakket?: string }): Promise<void>
   /** De aanvraag achter een Asana-taak; nodig voor de knop "Genereer nu". */
   findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
@@ -116,6 +136,11 @@ export interface Db {
    * (hoofdletters daargelaten): dit is "mijn aanvragen", niet zoeken in die van anderen.
    */
   zoekInternOpNaam(naam: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  /**
+   * Eén aanvraag op id, voor de feedbacklink in de opleveringsmail. Geen grens in de tijd: feedback
+   * kan ook komen op een aanvraag van lang geleden. Wel alleen als hij nog openstaat bij Marketing.
+   */
+  zoekOpId(id: string): Promise<GevondenAanvraag | null>
   /**
    * Markeert de aanvraag bij deze Asana-taak als vervallen. Geeft terug of er een rij geraakt is,
    * zodat de webhook een taak van buiten dit project kan herkennen.
@@ -139,13 +164,24 @@ export interface Db {
   /** Bijlagen van deze ouder die nog op doorzetten wachten; voor een herhaalde verzending. */
   openBijlagenVan(ouder: BijlageOuder): Promise<BijlageRow[]>
   markeerBijlage(id: string, patch: Partial<BijlageRow> & { fout?: string | null; asana_url?: string | null }): Promise<void>
+  /** De volledige aanvraag achter een Asana-taak; voor de opleveringsmail. */
+  findDetailByAsanaTaskGid(gid: string): Promise<AanvraagDetail | null>
+  /** Het e-mailadres van een collega, op naam (hoofdletters daargelaten). Null als het er niet is. */
+  collegaEmail(naam: string): Promise<string | null>
+  /** De oplevering die van deze subtaak gemaakt is, als die er al is. */
+  findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
+  /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
+  aantalVerstuurd(aanvraagId: string): Promise<number>
+  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow>
+  updateOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<void>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving`
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket`
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
+const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
@@ -237,6 +273,21 @@ export function createDb(url: string, secretKey: string): Db {
       if (error) throw new Error(`db zoeken: ${error.message}`)
       return ((data as GevondenAanvraag[] | null) ?? []).map(alsTreffer)
     },
+    async zoekOpId(id) {
+      const { data, error } = await sb
+        .from('aanvragen')
+        .select(`${ZOEK_COLUMNS}, menu_pakket, menu_inhoud`)
+        .eq('id', id)
+        .not('asana_task_gid', 'is', null)
+        .is('vervallen_op', null)
+        .maybeSingle()
+      if (error) throw new Error(`db zoeken: ${error.message}`)
+      if (!data) return null
+      const { menu_pakket, menu_inhoud, ...rest } = data as GevondenAanvraag & { menu_pakket: string | null; menu_inhoud: MenuInhoud | null }
+      const treffer = alsTreffer(rest)
+      // Het menu alleen als er een menukaart of menuscherm is aangevraagd: dan kan het worden aangepast.
+      return { ...treffer, menu: vraagtOmMenu(treffer.aanvraag_types) ? { pakket: menu_pakket ?? menu_inhoud?.pakket ?? '', inhoud: menu_inhoud ?? null } : null }
+    },
     async markeerVervallen(asanaTaskGid, moment) {
       const { data, error } = await sb
         .from('aanvragen')
@@ -294,6 +345,41 @@ export function createDb(url: string, secretKey: string): Db {
     async markeerBijlage(id, patch) {
       const { error } = await sb.from('bijlagen').update(patch).eq('id', id)
       if (error) throw new Error(`db update bijlage: ${error.message}`)
+    },
+    async findDetailByAsanaTaskGid(gid) {
+      const { data, error } = await sb.from('aanvragen').select(DETAIL_COLUMNS)
+        .eq('asana_task_gid', gid).is('vervallen_op', null).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as AanvraagDetail | null) ?? null
+    },
+    async collegaEmail(naam) {
+      const term = veiligeZoekterm(naam)
+      if (!term) return null
+      // ilike zonder jokertekens: dezelfde naam, alleen de hoofdletters mogen verschillen.
+      const { data, error } = await sb.from('collegas').select('email').ilike('naam', term).not('email', 'is', null).limit(1)
+      if (error) throw new Error(`db collegas: ${error.message}`)
+      const email = (data as { email: string | null }[] | null)?.[0]?.email?.trim()
+      return email || null
+    },
+    async findOplevering(subtaakGid) {
+      const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS).eq('subtaak_gid', subtaakGid).maybeSingle()
+      if (error) throw new Error(`db select: ${error.message}`)
+      return (data as OpleveringRow | null) ?? null
+    },
+    async aantalVerstuurd(aanvraagId) {
+      const { count, error } = await sb.from('opleveringen').select('id', { count: 'exact', head: true })
+        .eq('aanvraag_id', aanvraagId).eq('status', 'verstuurd')
+      if (error) throw new Error(`db tellen: ${error.message}`)
+      return count ?? 0
+    },
+    async insertOplevering(row) {
+      const { data, error } = await sb.from('opleveringen').insert(row).select(OPLEVERING_COLUMNS).single()
+      if (error) throw new Error(`db insert oplevering: ${error.message}`)
+      return data as OpleveringRow
+    },
+    async updateOplevering(id, patch) {
+      const { error } = await sb.from('opleveringen').update(patch).eq('id', id)
+      if (error) throw new Error(`db update oplevering: ${error.message}`)
     },
   }
 }

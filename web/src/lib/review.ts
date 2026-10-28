@@ -32,7 +32,7 @@ export function reviewRows(d: Draft): ReviewRow[] {
     return [
       ...begin,
       { stepId: 'wens_intern', label: 'wat je aanvraagt', value: d.omschrijving },
-      { stepId: 'deadline_intern', label: 'nodig op', value: d.deadline ? formatLong(d.deadline) : '' },
+      { stepId: 'deadline_intern', label: 'nodig op', value: d.geen_deadline ? 'Geen deadline' : d.deadline ? formatLong(d.deadline) : '' },
     ]
   }
 

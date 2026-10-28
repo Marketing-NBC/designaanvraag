@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-27T14:54:12.305Z",
+  "generated_at": "2026-10-28T10:00:20.133Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -132,6 +132,24 @@
     "menukleuren": {
       "gid": "1219156544215341",
       "name": "Menukleuren",
+      "type": "text"
+    },
+    "oplevermail": {
+      "gid": "1219966842016938",
+      "name": "Oplevermail",
+      "type": "enum",
+      "options": {
+        "bezig": "1219966842016941",
+        "mislukt": "1219966842016944",
+        "verstuur": "1219966842016940",
+        "verstuurd": "1219966842016943",
+        "proef": "1219966842016939",
+        "proef_verstuurd": "1219966842016942"
+      }
+    },
+    "ook_mailen_naar": {
+      "gid": "1219967004859359",
+      "name": "Ook mailen naar",
       "type": "text"
     }
   },

@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
- * Ruimt meegestuurde bestanden op. Draait elke nacht via .github/workflows/bijlagen-opruimen.yml.
+ * Ruimt bestanden in de opslag op. Draait elke nacht via .github/workflows/bijlagen-opruimen.yml.
  *
  *   SUPABASE_URL=... SUPABASE_SECRET_KEY=... node scripts/bijlagen-opruimen.mjs [--dry-run]
  *
- * Drie passes:
+ * Vier passes:
  *  1. Verlopen      — hoort bij een aanvraag, ouder dan 30 dagen. Staat allang als bijlage bij de
  *                     taak, dus de kopie mag weg. De rij blijft als spoor.
  *  2. Achtergebleven — wel geüpload, nooit een aanvraag van gekomen, ouder dan 7 dagen.
  *  3. Verzoening    — bestanden in de opslag zonder rij in de tabel. Vangnet.
+ *  4. Verwijderde aanvragen — huisstijl (brand-assets) en menuschermen staan in een map per
+ *                     aanvraag-id. Is die aanvraag uit de tabel verwijderd, dan gaat de map ook weg.
  *
  * Geen automatische herkansing: binnen het plafond hoort doorzetten gewoon te lukken. Blijft er toch
  * iets liggen, dan komt dat in de samenvatting te staan — dan weten we dát het voorkomt voordat we
@@ -49,10 +51,10 @@ async function rest(pad, init = {}) {
 }
 
 /** Storage weigert meer dan een paar honderd paden per verzoek, dus in stukjes. */
-async function verwijderUitOpslag(paden) {
+async function verwijderUitOpslag(paden, bucket = BUCKET) {
   for (let i = 0; i < paden.length; i += 100) {
     const deel = paden.slice(i, i + 100)
-    const res = await fetch(`${base}/storage/v1/object/${BUCKET}`, {
+    const res = await fetch(`${base}/storage/v1/object/${bucket}`, {
       method: 'DELETE',
       headers: kop,
       body: JSON.stringify({ prefixes: deel }),
@@ -61,6 +63,38 @@ async function verwijderUitOpslag(paden) {
     if (!res.ok) throw new Error(`Storage delete → ${res.status}: ${(await res.text()).slice(0, 300)}`)
   }
 }
+
+/**
+ * Alles op één niveau in de opslag, bladzijde voor bladzijde. Een map herken je aan het ontbrekende
+ * id; de opslag geeft bij een map ook geen datum mee.
+ */
+async function lijst(bucket, prefix = '') {
+  const alles = []
+  for (let offset = 0; ; offset += 1000) {
+    const res = await fetch(`${base}/storage/v1/object/list/${bucket}`, {
+      method: 'POST',
+      headers: kop,
+      body: JSON.stringify({ prefix, limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } }),
+      signal: AbortSignal.timeout(30_000),
+    })
+    if (!res.ok) throw new Error(`Storage list ${bucket}/${prefix} → ${res.status}: ${(await res.text()).slice(0, 300)}`)
+    const deel = await res.json()
+    alles.push(...deel)
+    if (deel.length < 1000) return alles
+  }
+}
+
+/** Welke van deze waarden staan in de tabel? Per stukje gevraagd, zodat de URL kort blijft. */
+async function bestaand(tabel, kolom, waarden, extra = '') {
+  const gevonden = new Set()
+  for (let i = 0; i < waarden.length; i += 100) {
+    const deel = waarden.slice(i, i + 100)
+    for (const r of await rest(`${tabel}?select=${kolom}&${kolom}=in.(${deel.join(',')})${extra}`)) gevonden.add(r[kolom])
+  }
+  return gevonden
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const dagenGeleden = (n) => new Date(Date.now() - n * 86_400_000).toISOString()
 
@@ -98,36 +132,48 @@ await ruimOp(
   `status=eq.verwacht&created_at=lt.${dagenGeleden(ACHTERGEBLEVEN_DAGEN)}&aanvraag_id=is.null&aanvulling_id=is.null`,
 )
 
-// 3. Verzoening: bestanden in de opslag zonder rij. Alleen mappen die ouder zijn dan het
-//    achtergebleven-venster, anders ruimen we iemands lopende formulier op.
-{
-  const res = await fetch(`${base}/storage/v1/object/list/${BUCKET}`, {
-    method: 'POST',
-    headers: kop,
-    body: JSON.stringify({ prefix: '', limit: 1000, sortBy: { column: 'created_at', order: 'asc' } }),
-    signal: AbortSignal.timeout(30_000),
-  })
-  if (!res.ok) {
-    zeg(`- Verzoening: overgeslagen (opslag gaf HTTP ${res.status})`)
-  } else {
-    const mappen = (await res.json()).filter((o) => o.name && !o.id) // mappen hebben geen id
-    const grens = dagenGeleden(ACHTERGEBLEVEN_DAGEN)
-    const bekend = new Set((await rest('bijlagen?select=groep_id&status=neq.opgeruimd')).map((r) => r.groep_id))
-    const wees = mappen.filter((m) => !bekend.has(m.name) && (m.created_at ?? grens) < grens)
-    if (!wees.length) zeg('- Verzoening: niets te doen')
-    else if (droog) zeg(`- Verzoening: ${wees.length} map(pen) zonder administratie (proefdraai)`)
+// 3. Verzoening: bestanden in de opslag zonder rij. Alleen mappen waarvan alle bestanden ouder zijn
+//    dan het achtergebleven-venster, anders ruimen we iemands lopende formulier op. De opslag geeft
+//    een map zelf geen datum, dus de leeftijd komt van de bestanden erin.
+try {
+  const mappen = (await lijst(BUCKET)).filter((o) => o.name && !o.id).map((o) => o.name)
+  const bekend = await bestaand('bijlagen', 'groep_id', mappen.filter((m) => UUID.test(m)), '&status=neq.opgeruimd')
+  const grens = dagenGeleden(ACHTERGEBLEVEN_DAGEN)
+  const wees = []
+  for (const map of mappen.filter((m) => !bekend.has(m))) {
+    const bestanden = (await lijst(BUCKET, map)).filter((o) => o.id)
+    if (bestanden.every((o) => (o.created_at ?? '') < grens)) wees.push({ map, bestanden })
+  }
+  if (!wees.length) zeg('- Verzoening: niets te doen')
+  else if (droog) zeg(`- Verzoening: ${wees.length} map(pen) zonder administratie (proefdraai)`)
+  else {
+    for (const { map, bestanden } of wees) await verwijderUitOpslag(bestanden.map((o) => `${map}/${o.name}`))
+    zeg(`- Verzoening: ${wees.length} map(pen) zonder administratie opgeruimd`)
+  }
+} catch (e) {
+  zeg(`- Verzoening: overgeslagen (${e.message})`)
+}
+
+// 4. Verwijderde aanvragen: huisstijl en menuschermen staan per aanvraag-id in een map. Bestaat de
+//    aanvraag niet meer, dan hoort de map ook weg. Alleen mappen met een id als naam, zodat iets
+//    wat er met de hand is neergezet blijft staan. De aanvraag staat al in de tabel voordat er
+//    bestanden komen, dus een leeftijdsgrens is hier niet nodig.
+for (const [bucket, wat] of [['brand-assets', 'Huisstijl'], ['menuschermen', 'Menuschermen']]) {
+  try {
+    const mappen = (await lijst(bucket)).filter((o) => o.name && !o.id && UUID.test(o.name)).map((o) => o.name)
+    const bekend = await bestaand('aanvragen', 'id', mappen)
+    const wees = mappen.filter((m) => !bekend.has(m))
+    if (!wees.length) zeg(`- ${wat} van verwijderde aanvragen: niets te doen`)
+    else if (droog) zeg(`- ${wat} van verwijderde aanvragen: ${wees.length} map(pen) (proefdraai)`)
     else {
       for (const map of wees) {
-        const inhoud = await fetch(`${base}/storage/v1/object/list/${BUCKET}`, {
-          method: 'POST',
-          headers: kop,
-          body: JSON.stringify({ prefix: map.name, limit: 100 }),
-          signal: AbortSignal.timeout(30_000),
-        }).then((r) => (r.ok ? r.json() : []))
-        await verwijderUitOpslag(inhoud.map((o) => `${map.name}/${o.name}`))
+        const bestanden = (await lijst(bucket, map)).filter((o) => o.id)
+        await verwijderUitOpslag(bestanden.map((o) => `${map}/${o.name}`), bucket)
       }
-      zeg(`- Verzoening: ${wees.length} map(pen) zonder administratie opgeruimd`)
+      zeg(`- ${wat} van verwijderde aanvragen: ${wees.length} map(pen) opgeruimd`)
     }
+  } catch (e) {
+    zeg(`- ${wat} van verwijderde aanvragen: overgeslagen (${e.message})`)
   }
 }
 

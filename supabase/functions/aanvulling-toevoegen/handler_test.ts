@@ -35,7 +35,6 @@ const cfg: AsanaFieldsConfig = {
     nieuwe_aanvragen: { gid: 'sec-nieuw', name: 'Nieuwe aanvragen' },
     feedback: { gid: 'sec-feedback', name: 'Feedback' },
     in_planning: { gid: 'sec-planning', name: 'In planning' },
-    mee_bezig: { gid: 'sec-bezig', name: 'Mee bezig' },
     klaar: { gid: 'sec-klaar', name: 'Klaar' },
   },
   fields: {
@@ -80,6 +79,7 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     aanvraag_types: ['led_kolom'],
     anders_tekst: '',
     schijf_locatie: '',
+    menu_pakket: '',
     ...over,
   }
 }
@@ -124,6 +124,13 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     claimBijlagen: () => Promise.resolve([]),
     openBijlagenVan: () => Promise.resolve([]),
     markeerBijlage: () => Promise.resolve(),
+    zoekOpId: () => Promise.resolve(null),
+    findDetailByAsanaTaskGid: () => Promise.resolve(null),
+    collegaEmail: () => Promise.resolve(null),
+    findOplevering: () => Promise.resolve(null),
+    aantalVerstuurd: () => Promise.resolve(0),
+    insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
+    updateOplevering: () => Promise.resolve(),
   }
   return db
 }
@@ -133,10 +140,12 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
   const comments: string[] = []
   const verplaatst: string[] = []
   let heropend = 0
+  const taakBeschrijving = { html: '<body><h2>Menu</h2>\n<blockquote>Oud menu</blockquote>\n<hr/>\n<h2>Huisstijl</h2>\nx</body>', gezet: 0 }
   return {
     velden,
     comments,
     verplaatst,
+    taakBeschrijving,
     get heropend() {
       return heropend
     },
@@ -174,6 +183,19 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
     },
     bijwerkDeadline: () => Promise.resolve(),
     verwijderTaak: () => Promise.resolve(),
+    listSubtaken: () => Promise.resolve([]),
+    maakSubtaak: () => Promise.resolve('sub-x'),
+    werkTaakBij: () => Promise.resolve(),
+    listBestanden: () => Promise.resolve([]),
+    downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
+    rondAf: () => Promise.resolve(),
+    gebruiker: () => Promise.resolve({ naam: null, email: null }),
+    beschrijving: () => Promise.resolve(taakBeschrijving.html),
+    zetBeschrijving: (_gid: string, html: string) => {
+      taakBeschrijving.html = html
+      taakBeschrijving.gezet++
+      return Promise.resolve()
+    },
   }
 }
 
@@ -210,7 +232,7 @@ function deps(over: Partial<Deps> = {}): Deps {
 
 Deno.test('types worden aangevuld, nooit vervangen', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     // In Asana staat inmiddels ook een menukaart die Marketing er zelf bij zette.
     { 'f-type': { optieGids: ['o-led', 'o-menu'], datum: null, tekst: null } },
@@ -222,7 +244,7 @@ Deno.test('types worden aangevuld, nooit vervangen', () => {
 
 Deno.test('een type dat er al staat levert geen wijziging op', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-type': { optieGids: ['o-led'], datum: null, tekst: null } },
     cfg,
@@ -233,7 +255,7 @@ Deno.test('een type dat er al staat levert geen wijziging op', () => {
 
 Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -245,7 +267,7 @@ Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
 
 Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie', () => {
   const leeg = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -254,7 +276,7 @@ Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie
   assertEquals(leeg.schijfNietOvergenomen, '')
 
   const bezet = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-schijf': { optieGids: [], datum: null, tekst: 'G:\\Door Marketing gezet' } },
     cfg,
@@ -331,6 +353,16 @@ Deno.test('een verlopen deadline moet vervangen worden', async () => {
   const met = await createHandler(deps({ db }))(post(payload({ nieuwe_deadline: '2026-11-02' })))
   assertEquals(met.status, 200)
   assertEquals(db.patches, [{ deadline: '2026-11-02' }])
+})
+
+Deno.test('zonder deadline kan er niets verlopen, en kan er alsnog een bij', async () => {
+  const zonder = () => fakeDb(aanvraag({ soort: 'intern', event: '', event_datum: null, deadline: null }))
+  const res = await createHandler(deps({ db: zonder() }))(post(payload()))
+  assertEquals(res.status, 200)
+
+  const db = zonder()
+  await createHandler(deps({ db }))(post(payload({ nieuwe_deadline: '2026-11-25' })))
+  assertEquals(db.patches, [{ deadline: '2026-11-25' }])
 })
 
 Deno.test('een nieuwe deadline in het verleden wordt geweigerd', async () => {
@@ -444,22 +476,11 @@ Deno.test('een taak in Klaar gaat terug naar Feedback en wordt heropend', async 
 })
 
 Deno.test('een afgevinkte taak telt net zo goed als afgerond', async () => {
-  // Staat in Mee bezig, maar het vinkje staat aan. Ook dan kijkt niemand er nog naar om.
-  const asana = fakeAsana({ completed: true, memberships: [{ project: '111', section: 'sec-bezig' }] })
+  // Staat in In planning, maar het vinkje staat aan. Ook dan kijkt niemand er nog naar om.
+  const asana = fakeAsana({ completed: true, memberships: [{ project: '111', section: 'sec-planning' }] })
   await createHandler(deps({ asana }))(post(payload()))
   assertEquals(asana.heropend, 1)
   assertEquals(asana.verplaatst, ['sec-feedback'])
-})
-
-Deno.test('werk in Mee bezig gaat naar Feedback, maar blijft open en houdt zijn datum', async () => {
-  const asana = fakeAsana({ completed: false, assignee: 'abel', memberships: [{ project: '111', section: 'sec-bezig' }] })
-  await createHandler(deps({ asana }))(post(payload()))
-  assertEquals(asana.heropend, 0)
-  assertEquals(asana.verplaatst, ['sec-feedback'])
-  assertStringIncludes(asana.comments[0], '<a data-asana-gid="abel"/>')
-  assertStringIncludes(asana.comments[0], 'staat nu in de kolom Feedback')
-  assertEquals(asana.comments[0].includes('heropend'), false)
-  assertEquals(asana.comments[0].includes('planningsdatum'), false)
 })
 
 Deno.test('in Nieuwe aanvragen en In planning blijft de taak staan waar hij staat', async () => {
@@ -593,4 +614,59 @@ Deno.test('een aanvulling op een interne aanvraag mailt zonder event', async () 
   const [m] = mail.verstuurd
   assertEquals(m.onderwerp, 'Aanvulling: Intern - Nieuwe visitekaartjes voor het salesteam')
   assertEquals(m.html.includes('Eventdatum'), false)
+})
+
+// ── Menu aanpassen ───────────────────────────────────────────────────────────
+
+const nieuwMenu = {
+  pakket: 'lunch-basic',
+  secties: [{ kop: 'Broodjes', gerechten: [{ naam: 'Clubsandwich', ingredienten: ['kip', 'bacon'] }] }],
+}
+const menuAanvraag = () => fakeDb(aanvraag({ aanvraag_types: ['menu_scherm'], menu_pakket: 'grab-and-go' }))
+
+Deno.test('een aangepast menu komt bij de aanvraag, zodat het volgende menuscherm het gebruikt', async () => {
+  const db = menuAanvraag()
+  const asana = fakeAsana()
+  const res = await createHandler(deps({ db, asana }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon' })))
+  assertEquals(res.status, 200)
+  assertEquals((await res.json()).bijgewerkt, ['Menu'])
+  assertEquals(db.patches[0], { menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon', menu_pakket: 'lunch-basic' })
+  // In de reactie: het nieuwe pakket, het oude, en wat Marketing nu moet doen.
+  assertStringIncludes(asana.comments[0], 'Menu aangepast</strong>, pakket Basic Lunch (was Grab &amp; Go)')
+  assertStringIncludes(asana.comments[0], 'Genereer nu')
+  assertStringIncludes(asana.comments[0], 'Clubsandwich | kip | bacon')
+  // En in de taakbeschrijving, want daar maakt "Genereer nu" het scherm van.
+  assertStringIncludes(asana.taakBeschrijving.html, '<h2>Menu</h2>\n<blockquote>Broodjes\n• Clubsandwich | kip | bacon</blockquote>')
+  assertEquals(asana.taakBeschrijving.html.includes('Oud menu'), false)
+  assertStringIncludes(asana.taakBeschrijving.html, '<h2>Huisstijl</h2>')
+})
+
+Deno.test('zonder menuwijziging blijft de taakbeschrijving onaangeroerd', async () => {
+  const asana = fakeAsana()
+  await createHandler(deps({ db: menuAanvraag(), asana }))(post(payload()))
+  assertEquals(asana.taakBeschrijving.gezet, 0)
+})
+
+Deno.test('alleen het menu aanpassen mag zonder toelichting', async () => {
+  const res = await createHandler(deps({ db: menuAanvraag() }))(post(payload({ toelichting: '', menu_inhoud: nieuwMenu, menu_tekst: 'x' })))
+  assertEquals(res.status, 200)
+  const zonder = await createHandler(deps({ db: menuAanvraag() }))(post(payload({ toelichting: '' })))
+  assertEquals(zonder.status, 400)
+})
+
+Deno.test('een menu aanpassen zonder menukaart of menuscherm in de aanvraag wordt geweigerd', async () => {
+  const db = fakeDb()
+  const res = await createHandler(deps({ db }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'x' })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvulling.menu_inhoud')
+  assertEquals(db.patches, [])
+})
+
+Deno.test('hetzelfde pakket: geen "was" in de reactie, en de mail toont het nieuwe menu', async () => {
+  const asana = fakeAsana()
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag({ aanvraag_types: ['menu_scherm'], menu_pakket: 'lunch-basic' }))
+  await createHandler(deps({ db, asana, mail }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes' })))
+  assertStringIncludes(asana.comments[0], 'pakket Basic Lunch.')
+  assertStringIncludes(mail.verstuurd[0].html, 'Nieuw menu: Basic Lunch')
 })

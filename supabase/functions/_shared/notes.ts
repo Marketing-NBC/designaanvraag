@@ -41,7 +41,7 @@ function renderInterneNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Soort', soortLabel(a.soort)],
     ['Locatie', locatieLabel(a.locatie)],
     ['Aanvrager', a.naam],
-    ['Uiterlijk nodig op', formatDateNl(a.deadline)],
+    ['Uiterlijk nodig op', a.deadline ? formatDateNl(a.deadline) : 'geen deadline, het mag klaar zijn wanneer het past'],
   ]
   if (opts.bijlagen?.length) rows.push(['Meegestuurd', opts.bijlagen.join(', ')])
 
@@ -64,7 +64,7 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Aanvrager', a.naam],
     ['Event', a.event],
     ['Eventdatum', a.event_datum ? formatDateNl(a.event_datum) : 'onbekend'],
-    ['Uiterlijk nodig op', formatDateNl(a.deadline)],
+    ['Uiterlijk nodig op', a.deadline ? formatDateNl(a.deadline) : 'onbekend'],
     ['Aanvraag', describeRequestTypes(a.aanvraag_types, a.anders_tekst)],
     ['Design', modusLabel(a)],
   ]
@@ -90,8 +90,9 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   htmlLines.push('')
   if (a.menu_tekst) {
     // De culinaire invulling staat hier voluit, zodat Marketing hem kan nalezen en
-    // corrigeren. De worker maakt er het menuscherm van en hangt dat als bijlage
-    // bij deze taak.
+    // corrigeren. Wat hier staat is de basis van het menuscherm: de worker leest het
+    // menu uit deze beschrijving (shared/menu-beschrijving.ts), dus een correctie hier
+    // komt vanzelf op het volgende scherm. Kopje en blockquote moeten daarom zo blijven.
     htmlLines.push('<h2>Menu</h2>')
     htmlLines.push(`<blockquote>${escapeXml(a.menu_tekst)}</blockquote>`)
     htmlLines.push('')
@@ -142,11 +143,8 @@ export function renderAanvullingComment(v: {
    * heeft, zodat die een vermelding krijgt en het in zijn Asana-inbox belandt.
    */
   heropendVoor?: string | null
-  /**
-   * Gezet als een lopende taak (Mee bezig) naar de kolom Feedback is verplaatst; de waarde is de gid
-   * van degene die de taak heeft, voor de vermelding.
-   */
-  naarFeedbackVoor?: string | null
+  /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
+  menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
 }): string {
   const lines: string[] = []
 
@@ -158,13 +156,16 @@ export function renderAanvullingComment(v: {
     // allang gebeurd. Zonder deze regel zou de planningsdatum stilzwijgend verdwijnen.
     lines.push('De planningsdatum is eraf gehaald; kies een nieuwe zodra je weet wanneer je eraan toekomt.')
     lines.push('')
-  } else if (v.naarFeedbackVoor !== undefined) {
-    const mention = v.naarFeedbackVoor ? `<a data-asana-gid="${escapeXml(v.naarFeedbackVoor)}"/> ` : ''
-    lines.push(`${mention}<strong>Er is feedback binnengekomen; de taak staat nu in de kolom Feedback.</strong>`)
-    lines.push('')
   }
 
-  lines.push(`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '')
+  lines.push(`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '')
+  if (v.toelichting) lines.push(escapeXml(v.toelichting), '')
+
+  if (v.menu) {
+    const pakket = v.menu.vorigPakket ? `${v.menu.pakket} (was ${v.menu.vorigPakket})` : v.menu.pakket
+    lines.push(`<strong>Menu aangepast</strong>, pakket ${escapeXml(pakket)}. Het staat ook in de beschrijving; zet Menuscherm op Genereer nu om het scherm opnieuw te maken.`, '')
+    lines.push(escapeXml(v.menu.tekst), '')
+  }
 
   if (v.bijgewerkt.length) {
     lines.push(`<strong>Bijgewerkt in deze taak:</strong> ${escapeXml(v.bijgewerkt.join(', '))}`)
@@ -180,7 +181,7 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && v.naarFeedbackVoor === undefined) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && !v.menu) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

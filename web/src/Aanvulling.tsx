@@ -2,17 +2,19 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import type { AanvullingResult, GevondenAanvraag } from '../../shared/aanvulling-schema'
 import { ZOEK_MIN_TEKENS } from '../../shared/aanvulling-schema'
-import { SOORT_KEUZES, describeRequestTypes, type Soort } from '../../shared/request-types'
+import { SOORT_KEUZES, describeRequestTypes, vraagtOmMenu, type Soort } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
 import { FileField } from './components/FileField'
 import { DateField } from './components/DateField'
 import { Icon } from './components/Icon'
+import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
-import { ApiError, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
-import { useBijlagen, type Uploads } from './lib/uploads'
+import { ApiError, haalAanvraag, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
+import { useBijlagen } from './lib/uploads'
+import { PAKKETTEN_OP_SCHERM, aantalGerechten, leegMenu, naarInhoud, naarTekst, uitPakket, type MenuKeuze } from './lib/menu'
 import { formatShort, isBeforeToday, todayIso } from './lib/dates'
 
 /**
@@ -25,17 +27,27 @@ import { formatShort, isBeforeToday, todayIso } from './lib/dates'
  *
  * De eerste vraag is of het om een evenement gaat of om iets intern. Een evenement zoek je op
  * eventnaam; een interne aanvraag heeft geen event, die vind je terug op je eigen naam.
+ *
+ * Via de knop "Feedback geven" in de opleveringsmail staat de aanvraag al vast (`vooraf`). Dan
+ * vallen het kiezen en zoeken weg: je naam, je feedback, en wat er verder verandert.
+ *
+ * Hoort er een menukaart of menuscherm bij de aanvraag, dan staat onder de bijlagen "Menu
+ * aanpassen". Dat opent hetzelfde menuscherm als in het formulier, met het menu van toen erin,
+ * en voegt een stap toe na de toelichting.
  */
 
-type Stap = 'soort' | 'zoek' | 'naam' | 'kies' | 'toelichting' | 'extra'
+type Stap = 'soort' | 'zoek' | 'naam' | 'kies' | 'toelichting' | 'menu' | 'extra'
 
-const STAPPEN: Record<Soort, readonly Stap[]> = {
+const STAPPEN: Record<Soort | 'feedback', readonly Stap[]> = {
   evenement: ['soort', 'zoek', 'naam', 'toelichting', 'extra'],
   intern: ['soort', 'naam', 'kies', 'toelichting', 'extra'],
+  feedback: ['naam', 'toelichting', 'extra'],
 }
 
 interface Props {
   collegas: string[]
+  /** Id van een aanvraag die al gekozen is: de feedbacklink uit de opleveringsmail. */
+  vooraf?: string | null
   onSluit: () => void
 }
 
@@ -46,6 +58,8 @@ interface Draft {
   nieuwe_deadline: string | null
   schijf_locatie: string
   link: string
+  /** Het aangepaste menu. Null = het menu blijft zoals het bij de aanvraag staat. */
+  menu: MenuKeuze | null
 }
 
 const leeg: Draft = {
@@ -55,14 +69,22 @@ const leeg: Draft = {
   nieuwe_deadline: null,
   schijf_locatie: '',
   link: '',
+  menu: null,
 }
 
-/** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. */
+/** Het menu van de aanvraag als keuze voor het menuscherm: wat er stond, of het pakket van toen. */
+function menuVan(m: GevondenAanvraag['menu']): MenuKeuze {
+  if (m?.inhoud) return { pakket: m.inhoud.pakket, secties: m.inhoud.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map((g) => ({ ...g })) })) }
+  if (m?.pakket) return uitPakket(m.pakket)
+  return leegMenu()
+}
+
+/** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. Zonder deadline niet. */
 function deadlineVerlopen(a: Pick<GevondenAanvraag, 'deadline'> | null): boolean {
-  return Boolean(a && isBeforeToday(a.deadline))
+  return Boolean(a?.deadline && isBeforeToday(a.deadline))
 }
 
-export function Aanvulling({ collegas, onSluit }: Props) {
+export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
   const [index, setIndex] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [soort, setSoort] = useState<Soort | null>(null)
@@ -75,9 +97,35 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   const uploads = useBijlagen('aanvulling')
   const clientRequestId = useRef(crypto.randomUUID())
   const startedAt = useRef(new Date().toISOString())
+  // Via de feedbacklink: eerst de aanvraag ophalen. Lukt dat niet, dan gewoon zelf zoeken.
+  const [feedback, setFeedback] = useState<'laden' | 'ja' | 'nee'>(vooraf ? 'laden' : 'nee')
 
-  // Zolang er nog niet gekozen is, telt de route van een evenement: die is even lang.
-  const stappen = STAPPEN[soort ?? 'evenement']
+  useEffect(() => {
+    if (!vooraf) return
+    let afgebroken = false
+    void haalAanvraag(vooraf).then((a) => {
+      if (afgebroken) return
+      if (a) {
+        setSoort(a.soort)
+        setGekozen(a)
+        setFeedback('ja')
+      } else {
+        setFeedback('nee')
+        setError('We konden de aanvraag uit je mail niet meer vinden. Zoek hem hieronder op.')
+        setErrorNonce((n) => n + 1)
+      }
+    })
+    return () => {
+      afgebroken = true
+    }
+  }, [vooraf])
+
+  // Zolang er nog niet gekozen is, telt de route van een evenement: die is even lang. Wordt het menu
+  // aangepast, dan komt dat scherm direct na de toelichting.
+  const basis = STAPPEN[feedback === 'ja' ? 'feedback' : (soort ?? 'evenement')]
+  const stappen: readonly Stap[] = draft.menu ? basis.flatMap((s) => (s === 'toelichting' ? [s, 'menu' as const] : [s])) : basis
+  const heeftMenu = Boolean(gekozen && vraagtOmMenu(gekozen.aanvraag_types))
+  const [menuLaden, setMenuLaden] = useState(false)
   const stap: Stap = stappen[index]
   const verlopen = deadlineVerlopen(gekozen)
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }))
@@ -88,7 +136,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
    */
   const kies = (a: GevondenAanvraag | null) => {
     setGekozen(a)
-    setDraft((d) => ({ ...d, nieuwe_event_datum: null, nieuwe_deadline: null }))
+    setDraft((d) => ({ ...d, nieuwe_event_datum: null, nieuwe_deadline: null, menu: null }))
     setError(null)
   }
 
@@ -112,6 +160,30 @@ export function Aanvulling({ collegas, onSluit }: Props) {
     setErrorNonce((n) => n + 1)
   }
 
+  /**
+   * "Menu aanpassen": het menu van de aanvraag ophalen en het menuscherm openen. In de zoeklijst
+   * staat het menu niet; dan halen we de aanvraag nog even op. Lukt dat niet, dan begin je bij
+   * de pakketkeuze in plaats van vast te lopen.
+   */
+  async function openMenu() {
+    if (!gekozen) return
+    let menu = draft.menu
+    if (!menu) {
+      setMenuLaden(true)
+      const info = gekozen.menu !== undefined ? gekozen.menu : (await haalAanvraag(gekozen.id))?.menu
+      setMenuLaden(false)
+      menu = menuVan(info ?? null)
+      patch({ menu })
+    }
+    ga(stappen.indexOf('toelichting') + 1, 1)
+  }
+
+  /** "Menu toch niet aanpassen": terug naar de toelichting, het menu blijft zoals het was. */
+  const laatMenu = () => {
+    patch({ menu: null })
+    ga(stappen.indexOf('toelichting'), -1)
+  }
+
   function valideer(): string | null {
     if (stap === 'soort') return soort ? null : 'Maak een keuze.'
     if (stap === 'zoek' || stap === 'kies') return gekozen ? null : 'Kies de aanvraag waar het over gaat.'
@@ -123,12 +195,20 @@ export function Aanvulling({ collegas, onSluit }: Props) {
     }
     if (stap === 'toelichting') {
       const t = draft.toelichting.trim()
-      if (t.length < 5) return 'Vertel kort wat er moet veranderen.'
+      // Wie alleen het menu aanpast, hoeft er niets bij te typen: het menu zegt genoeg.
+      if (t.length < 5 && !draft.menu) return 'Vertel kort wat er moet veranderen.'
       if (t.length > 3000) return 'Houd het bij maximaal 3000 tekens.'
+      return null
+    }
+    if (stap === 'menu') {
+      if (!draft.menu?.pakket) return 'Kies een pakket.'
+      if (!aantalGerechten(draft.menu)) return 'Er staat geen enkel gerecht meer in het menu.'
       return null
     }
     // Laatste stap: alles is optioneel, behalve een nieuwe deadline als de oude al voorbij is.
     if (uploads.bezig) return 'Je bestanden worden nog geüpload — nog heel even.'
+    // Het menu kan onderweg weer zijn weggehaald; dan moet er toch iets in de toelichting staan.
+    if (draft.toelichting.trim().length < 5 && !draft.menu) return 'Vertel bij de vorige vragen kort wat er moet veranderen.'
     if (verlopen && !draft.nieuwe_deadline) return 'De deadline van deze aanvraag is al verstreken. Kies een nieuwe deadline.'
     const event = draft.nieuwe_event_datum ?? gekozen?.event_datum ?? ''
     const deadline = draft.nieuwe_deadline ?? gekozen?.deadline ?? ''
@@ -163,6 +243,8 @@ export function Aanvulling({ collegas, onSluit }: Props) {
           nieuwe_deadline: draft.nieuwe_deadline,
           schijf_locatie: draft.schijf_locatie,
           link: draft.link,
+          menu_inhoud: draft.menu ? naarInhoud(draft.menu) : null,
+          menu_tekst: draft.menu ? naarTekst(draft.menu) : '',
         },
         client_request_id: clientRequestId.current,
         started_at: startedAt.current,
@@ -191,7 +273,18 @@ export function Aanvulling({ collegas, onSluit }: Props) {
           return
         }
       }
+      // Op de pakketkeuze werken de letters, net als in het formulier.
+      if (stap === 'menu' && draft.menu && !draft.menu.pakket && el?.tagName !== 'INPUT' && !e.metaKey && !e.ctrlKey && e.key.length === 1) {
+        const pakket = PAKKETTEN_OP_SCHERM[LETTERS.indexOf(e.key.toUpperCase())]
+        if (pakket) {
+          e.preventDefault()
+          patch({ menu: uitPakket(pakket.pakket) })
+          return
+        }
+      }
       if (e.key !== 'Enter' || e.shiftKey || e.metaKey || e.ctrlKey) return
+      // Op het menuscherm doen de knoppen (Wissel, weghalen, Pakket wijzigen) hun eigen ding.
+      if (stap === 'menu' && el?.tagName === 'BUTTON' && !el.hasAttribute('data-primary-action')) return
       // Headless UI heeft met deze Enter al een naam uit de lijst gekozen.
       if (e.defaultPrevented) return
       if (el?.tagName === 'TEXTAREA') return
@@ -207,22 +300,38 @@ export function Aanvulling({ collegas, onSluit }: Props) {
 
   if (klaar) return <Gelukt result={klaar} gekozen={gekozen} onSluit={onSluit} />
 
+  if (feedback === 'laden') {
+    return (
+      <Shell progress={0} counter="" canPrev onPrev={onSluit} canNext={false} onNext={() => {}}>
+        <p className="hint" aria-live="polite">Je aanvraag wordt opgezocht…</p>
+      </Shell>
+    )
+  }
+
+  const waarover = gekozen ? (gekozen.soort === 'intern' ? gekozen.omschrijving || 'je interne aanvraag' : gekozen.event) : ''
+
   const titels: Record<Stap, string> = {
     soort: 'Is het voor een evenement of intern?',
     zoek: 'Bij welk event hoort het?',
     naam: 'Wie ben je?',
     kies: 'Over welke aanvraag gaat het?',
-    toelichting: 'Wat moet erbij of anders?',
+    toelichting: feedback === 'ja' ? 'Wat wil je anders?' : 'Wat moet erbij of anders?',
+    menu: 'Pas het menu aan',
     extra: verlopen ? 'De deadline is verstreken' : 'Verandert er nog iets aan de aanvraag?',
   }
   const hulp: Record<Stap, string | undefined> = {
     soort: 'Dan zoeken we de goede aanvraag erbij.',
     zoek: 'Typ een deel van de eventnaam. Je ziet de aanvragen van de afgelopen maanden.',
-    naam: soort === 'intern'
-      ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
-      : 'Dan weet Marketing wie deze aanvulling stuurde.',
+    naam: feedback === 'ja'
+      ? `Je geeft feedback op ${waarover}. Dan weet Marketing van wie hij komt.`
+      : soort === 'intern'
+        ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
+        : 'Dan weet Marketing wie deze aanvulling stuurde.',
     kies: 'Je interne aanvragen van de afgelopen maanden.',
-    toelichting: 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Het marketingteam krijgt er meteen bericht van.',
+    toelichting: feedback === 'ja'
+      ? 'Wat moet er anders aan het ontwerp? Hoe concreter, hoe sneller het goed is. Heb je bestanden of een screenshot met aantekeningen, voeg ze hier toe.'
+      : 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Heb je bestanden, voeg ze hier meteen toe. Het marketingteam krijgt er meteen bericht van.',
+    menu: 'Zo staat het menu nu bij je aanvraag. Wissel of verwijder gerechten, voeg er een toe, of kies onder "Pakket wijzigen" een ander pakket.',
     extra: verlopen
       ? 'Kies eerst een nieuwe deadline. De rest mag je overslaan.'
       : 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
@@ -272,8 +381,9 @@ export function Aanvulling({ collegas, onSluit }: Props) {
                 value={draft.naam}
                 onChange={(v) => {
                   patch({ naam: v })
-                  // Bij een interne aanvraag hangt de lijst hierna van je naam af.
-                  if (soort === 'intern' && gekozen) kies(null)
+                  // Bij een interne aanvraag hangt de lijst hierna van je naam af. Via de feedbacklink
+                  // staat de aanvraag al vast, en mag ook een collega feedback geven.
+                  if (soort === 'intern' && gekozen && feedback !== 'ja') kies(null)
                 }}
                 names={collegas}
                 invalid={Boolean(error)}
@@ -293,8 +403,25 @@ export function Aanvulling({ collegas, onSluit }: Props) {
                 placeholder="Bijvoorbeeld: er komen ook vlaggen bij, en de tekst op de LED-kolom moet 'Welkom' worden."
               />
             ) : null}
+            {/* De bestanden horen bij wat er moet veranderen, dus ze staan hier en niet pas op het laatste scherm. */}
+            {stap === 'toelichting' ? (
+              <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
+            ) : null}
+            {/* Alleen als er een menukaart of menuscherm bij de aanvraag hoort. */}
+            {stap === 'toelichting' && heeftMenu ? (
+              <MenuKnop aangepast={Boolean(draft.menu)} laden={menuLaden} onOpen={() => void openMenu()} onLaat={() => patch({ menu: null })} />
+            ) : null}
 
-            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} uploads={uploads} verlopen={verlopen} /> : null}
+            {stap === 'menu' && draft.menu ? (
+              <>
+                <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />
+                <button type="button" className="link menu-laat" onClick={laatMenu}>
+                  Menu toch niet aanpassen
+                </button>
+              </>
+            ) : null}
+
+            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} verlopen={verlopen} /> : null}
           </Question>
         </motion.div>
       </AnimatePresence>
@@ -310,7 +437,7 @@ export function Aanvulling({ collegas, onSluit }: Props) {
 function VondstKnop({ a, actief, onKies }: { a: GevondenAanvraag; actief: boolean; onKies: (a: GevondenAanvraag) => void }) {
   const intern = a.soort === 'intern'
   const meta = intern
-    ? [`nodig op ${formatShort(a.deadline)}`]
+    ? [a.deadline ? `nodig op ${formatShort(a.deadline)}` : 'geen deadline']
     : [a.event_datum ? formatShort(a.event_datum) : null, `aangevraagd door ${a.naam}`, describeRequestTypes(a.aanvraag_types, a.anders_tekst)]
   return (
     <button type="button" className="opt vondst" data-vondst="true" aria-pressed={actief} onClick={() => onKies(a)}>
@@ -418,24 +545,51 @@ function EigenAanvragen({ naam, gekozen, onKies }: { naam: string; gekozen: Gevo
   )
 }
 
+/**
+ * De knop onder de bijlagen. Nog niet aangepast: "Menu aanpassen". Al aangepast: zeggen dat het
+ * meegaat, met de weg terug naar het menu en de weg eruit.
+ */
+function MenuKnop({ aangepast, laden, onOpen, onLaat }: { aangepast: boolean; laden: boolean; onOpen: () => void; onLaat: () => void }) {
+  if (aangepast) {
+    return (
+      <div className="menuknop menuknop--aangepast">
+        <Icon name="check" />
+        <span className="menuknop__tekst">
+          <strong>Menu aangepast</strong>
+          <span className="menuknop__uitleg">Het nieuwe menu gaat mee met je aanvulling.</span>
+        </span>
+        <button type="button" className="link" onClick={onOpen}>bekijken</button>
+        <button type="button" className="link" onClick={onLaat}>toch niet</button>
+      </div>
+    )
+  }
+  return (
+    <button type="button" className="menuknop" onClick={onOpen} disabled={laden}>
+      <Icon name="arrow-right" />
+      <span className="menuknop__tekst">
+        <strong>{laden ? 'Menu ophalen…' : 'Menu aanpassen'}</strong>
+        <span className="menuknop__uitleg">Gerechten wisselen of een ander pakket kiezen.</span>
+      </span>
+    </button>
+  )
+}
+
 /** De wijzigingen. Leeg laten betekent: laat staan wat er staat - behalve een verlopen deadline. */
 function ExtraVelden({
   draft,
   patch,
   gekozen,
-  uploads,
   verlopen,
 }: {
   draft: Draft
   patch: (p: Partial<Draft>) => void
   gekozen: GevondenAanvraag | null
-  uploads: Uploads
   verlopen: boolean
 }) {
   const intern = gekozen?.soort === 'intern'
   return (
     <div className="extra">
-      {verlopen && gekozen ? (
+      {verlopen && gekozen?.deadline ? (
         <p className="msg msg--verlopen" role="alert">
           <Icon name="alert" />
           <span>
@@ -447,7 +601,6 @@ function ExtraVelden({
 
       <section className="extra__blok">
         <h2 className="extra__kop">{verlopen ? 'Wanneer heb je het nu nodig?' : 'Is een datum verschoven?'}</h2>
-        {verlopen ? null : <p className="extra__uitleg">Meestal niet, dus de kalender blijft dicht tot je hem nodig hebt.</p>}
         <div className="extra__datums">
           {/* Een interne aanvraag heeft geen event, dus ook geen eventdatum. */}
           {intern ? null : (
@@ -461,6 +614,7 @@ function ExtraVelden({
           )}
           <DatumRegel
             label="Deadline"
+            leeg="geen deadline"
             huidig={gekozen?.deadline ?? null}
             waarde={draft.nieuwe_deadline}
             onKies={(iso) => patch({ nieuwe_deadline: iso })}
@@ -471,12 +625,11 @@ function ExtraVelden({
       </section>
 
       <section className="extra__blok">
-        <h2 className="extra__kop">Is er materiaal?</h2>
+        <h2 className="extra__kop">Staat er materiaal op de schijf of online?</h2>
         <p className="extra__uitleg">
-          Sleep bestanden hierheen, of verwijs naar een map op de G:-schijf of een link.
+          Verwijs naar een map op de G:-schijf of een link.
           {gekozen?.schijf_locatie ? ` Bij je aanvraag staat nu: ${gekozen.schijf_locatie} — vul je iets anders in, dan geven we dat erbij door.` : ' Alles hier mag leeg blijven.'}
         </p>
-        <FileField bijlagen={uploads.bijlagen} onKies={uploads.kies} onVerwijder={uploads.verwijder} />
 
         <div className="extra__velden">
           <div>
@@ -523,9 +676,12 @@ function DatumRegel({
   onKies,
   onWis,
   verplicht = false,
+  leeg = 'onbekend',
 }: {
   label: string
   huidig: string | null
+  /** Wat er staat als er (nog) geen datum is; bij een interne aanvraag kan de deadline ontbreken. */
+  leeg?: string
   waarde: string | null
   onKies: (iso: string) => void
   onWis: () => void
@@ -538,9 +694,9 @@ function DatumRegel({
       <div className="datumregel">
         <span className="extra__label">{label}</span>
         <p className="datumregel__nu">
-          {huidig ? formatShort(huidig) : 'onbekend'}{' '}
+          {huidig ? formatShort(huidig) : leeg}{' '}
           <button type="button" className="link" onClick={() => setOpen(true)}>
-            wijzigen
+            {huidig ? 'wijzigen' : 'toevoegen'}
           </button>
         </p>
       </div>
@@ -560,7 +716,7 @@ function DatumRegel({
             setOpen(false)
           }}
         >
-          toch laten staan op {huidig ? formatShort(huidig) : 'de oude datum'}
+          {huidig ? `toch laten staan op ${formatShort(huidig)}` : `toch ${leeg}`}
         </button>
       )}
     </div>

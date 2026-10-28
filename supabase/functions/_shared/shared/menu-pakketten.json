@@ -1,0 +1,1679 @@
+{
+  "_comment": "Gegenereerd door worker/menu/pakketten-export.mjs uit de bevroren basisontwerpen. Niet met de hand bewerken.",
+  "pakketten": [
+    {
+      "pakket": "buffet",
+      "naam": "Winterbuffet",
+      "titel": "Buffet",
+      "secties": [
+        {
+          "kop": "Salade Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "gedroogde mini vijgen",
+                "spruitjes",
+                "pistache",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Rode bieten",
+              "ingredienten": [
+                "appel",
+                "gerookte makreel",
+                "mierikswortelcrème"
+              ]
+            },
+            {
+              "naam": "Thaise kip",
+              "ingredienten": [
+                "romaine",
+                "wortel",
+                "komkommer",
+                "gepofte zoete paprika"
+              ]
+            },
+            {
+              "naam": "Pompoen",
+              "ingredienten": [
+                "feta",
+                "rozijnen",
+                "rode kool",
+                "wortel"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Warme items",
+          "gerechten": [
+            {
+              "naam": "Krokante parmezaan piepers"
+            },
+            {
+              "naam": "Winterse rattatouille"
+            },
+            {
+              "naam": "Gebrande zalm",
+              "ingredienten": [
+                "zuurkool",
+                "gefermenteerde mosterd"
+              ]
+            },
+            {
+              "naam": "Coq au vin",
+              "ingredienten": [
+                "zilver uitjes",
+                "rode wijn",
+                "winterpeen"
+              ]
+            },
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "misoboterjus"
+              ]
+            },
+            {
+              "naam": "Pompoenrisotto",
+              "ingredienten": [
+                "gorgonzola",
+                "verse vijgen"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Desserts",
+          "gerechten": [
+            {
+              "naam": "Chocoladetrifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "kersen",
+                "Tony’s Chocolonely schaaf"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "diner-3gangen",
+      "naam": "Driegangenmenu sit-down diner",
+      "titel": "Diner",
+      "secties": [
+        {
+          "kop": "Op tafel",
+          "gerechten": [
+            {
+              "naam": "Zuurdesembrood",
+              "ingredienten": [
+                "roomboter",
+                "fleur de sel",
+                "limoen",
+                "olijven",
+                "zongedroogde tomaat",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "Tonijntartaar",
+                "mierikswortel",
+                "affilla cress",
+                "uiencrumble"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Voorgerecht",
+          "gerechten": [
+            {
+              "naam": "Gebakken brioche",
+              "ingredienten": [
+                "rilette van eend",
+                "gele-uienrelish",
+                "vene cress"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hoofdgerecht",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "crème van winterpeen",
+                "spaghetti van pastinaak",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Nagerecht",
+          "gerechten": [
+            {
+              "naam": "Chocoladetrifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "kersen",
+                "Tony’s Chocolonely schaaf"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "diner-4gangen",
+      "naam": "Viergangenmenu sit-down diner",
+      "titel": "Diner",
+      "secties": [
+        {
+          "kop": "Op tafel",
+          "gerechten": [
+            {
+              "naam": "Zuurdesembrood",
+              "ingredienten": [
+                "roomboter",
+                "fleur de sel",
+                "limoen",
+                "olijven",
+                "zongedroogde tomaat",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "Tonijntartaar",
+                "mierikswortel",
+                "affilla cress",
+                "uiencrumble"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Voorgerecht",
+          "gerechten": [
+            {
+              "naam": "Gebakken brioche",
+              "ingredienten": [
+                "rilette van eend",
+                "gele-uienrelish",
+                "vene cress"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Tussengerecht",
+          "gerechten": [
+            {
+              "naam": "Pompoenravioli",
+              "ingredienten": [
+                "gedroogde Italiaanse ham",
+                "saliebotersaus"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hoofdgerecht",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "crème van winterpeen",
+                "spaghetti van pastinaak",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Nagerecht",
+          "gerechten": [
+            {
+              "naam": "Chocoladetrifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "kersen",
+                "Tony’s Chocolonely schaaf"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "grab-and-go",
+      "naam": "Grab & Go",
+      "titel": "Grab & Go",
+      "secties": [
+        {
+          "kop": "Op de tafel staat het volgende klaar:",
+          "gerechten": [
+            {
+              "naam": "Tartelettes",
+              "onderdelen": [
+                {
+                  "naam": "Rundertartaar",
+                  "toelichting": [
+                    "umamicrème",
+                    "kwartelei"
+                  ]
+                },
+                {
+                  "naam": "Taleggio (vega)",
+                  "toelichting": [
+                    "romige Taleggio (kaasvulling)",
+                    "kruidencrunch"
+                  ]
+                }
+              ]
+            },
+            {
+              "naam": "Pão de queijo",
+              "ingredienten": [
+                "Braziliaanse kaasballetjes",
+                "piri piri-dip"
+              ]
+            },
+            {
+              "naam": "Bruschettaspiezen met seasonal dips",
+              "ingredienten": [
+                "(vega)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Voorgerechten",
+          "gerechten": [
+            {
+              "naam": "Gebakken brioche",
+              "ingredienten": [
+                "rilette van eend",
+                "rode-uienchutney",
+                "gele-uienrelish",
+                "vene cress"
+              ]
+            },
+            {
+              "naam": "Dutch prime beef",
+              "ingredienten": [
+                "ravigote",
+                "kruidencrunch",
+                "limoen"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hoofdgerechten",
+          "gerechten": [
+            {
+              "naam": "Winterburger",
+              "ingredienten": [
+                "rode-ui chutney",
+                "rode koolsla",
+                "chili-paprikasaus"
+              ]
+            },
+            {
+              "naam": "Schiacciata toscana",
+              "ingredienten": [
+                "burrata",
+                "parmezaan",
+                "tomatensalsa"
+              ]
+            },
+            {
+              "naam": "Pompoenravioli",
+              "ingredienten": [
+                "gedroogde Italiaanse ham",
+                "saliebotersaus"
+              ]
+            },
+            {
+              "naam": "Grip ’n dip fries",
+              "ingredienten": [
+                "coq au vin",
+                "tomatencrunch",
+                "gerookte bietenmayonaise"
+              ]
+            },
+            {
+              "naam": "Zuurkoolstamppot",
+              "ingredienten": [
+                "gebrande zalm",
+                "crumble van pancetta",
+                "gefermenteerde mosterd"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Desserts",
+          "gerechten": [
+            {
+              "naam": "Chocoladetrifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "kersen",
+                "Tony’s Chocolonely schaaf"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salade Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "gedroogde mini vijgen",
+                "spruitjes",
+                "pistache",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Rode bieten",
+              "ingredienten": [
+                "appel",
+                "gerookte makreel",
+                "mierikswortelcrème"
+              ]
+            },
+            {
+              "naam": "Thaise kip",
+              "ingredienten": [
+                "romaine",
+                "wortel",
+                "komkommer",
+                "gepofte zoete paprika"
+              ]
+            },
+            {
+              "naam": "Pompoen",
+              "ingredienten": [
+                "feta",
+                "rozijnen",
+                "rode kool",
+                "wortel"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-basic",
+      "naam": "Basic Lunch",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Broodjes",
+          "gerechten": [
+            {
+              "naam": "Volkorenpunt",
+              "ingredienten": [
+                "belegen kaas",
+                "truffelmayonaise",
+                "Lollo Bianca",
+                "komkommer (vega)"
+              ]
+            },
+            {
+              "naam": "Witte sesambol",
+              "ingredienten": [
+                "achterham",
+                "kruidenspread",
+                "botersla",
+                "tomaat"
+              ]
+            },
+            {
+              "naam": "Bruine bol",
+              "ingredienten": [
+                "kipfilet",
+                "piri-piri",
+                "rucola",
+                "rauwkost"
+              ]
+            },
+            {
+              "naam": "Meergranen stokkie",
+              "ingredienten": [
+                "geitenkaas",
+                "harissa",
+                "romaine (vega)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Warme items",
+          "gerechten": [
+            {
+              "naam": "Broodje rundvleeskroket",
+              "ingredienten": [
+                "rundvlees (halal)"
+              ]
+            },
+            {
+              "naam": "Broodje oesterzwamkroket",
+              "ingredienten": [
+                "oesterzwam (vega)"
+              ]
+            },
+            {
+              "naam": "Bospaddenstoelensoep",
+              "ingredienten": [
+                "(vega)"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-standaard",
+      "naam": "Standard Lunch",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Spaanse tortilla’s",
+          "gerechten": [
+            {
+              "naam": "Rode bieten tortilla",
+              "ingredienten": [
+                "hummus",
+                "gegrilde groenten (vega)"
+              ]
+            },
+            {
+              "naam": "Spinazie tortilla",
+              "ingredienten": [
+                "zalm",
+                "hüttenkäse"
+              ]
+            },
+            {
+              "naam": "Volkoren tortilla",
+              "ingredienten": [
+                "pulled chicken",
+                "yoghurt Madras"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Pinsa’s",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "tomatenmix",
+                "basilicumolie (vega)"
+              ]
+            },
+            {
+              "naam": "Mortadella",
+              "ingredienten": [
+                "ricotta",
+                "rucola"
+              ]
+            },
+            {
+              "naam": "Tuna melt",
+              "ingredienten": [
+                "ui",
+                "jalapeño"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Stokkies",
+          "gerechten": [
+            {
+              "naam": "Wit",
+              "ingredienten": [
+                "kip",
+                "Koreaanse kimchi-mayonaise",
+                "zoetzure rode ui",
+                "komkommer"
+              ]
+            },
+            {
+              "naam": "Meergranen",
+              "ingredienten": [
+                "avocado",
+                "komkommerspread",
+                "lente-ui",
+                "tomaat (vega)"
+              ]
+            },
+            {
+              "naam": "Kaas",
+              "ingredienten": [
+                "mosterdmayonaise",
+                "komkommer",
+                "rucola"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Warme items",
+          "gerechten": [
+            {
+              "naam": "Minestrone Bar",
+              "ingredienten": [
+                "pittige tomatenbouillon",
+                "tortellini",
+                "mozzarella",
+                "parmezaan",
+                "paprika",
+                "basilicum",
+                "bruschetta’s",
+                "tomatenmix",
+                "groene kruidenmix"
+              ]
+            },
+            {
+              "naam": "Broodje kroket of vegakroket",
+              "ingredienten": [
+                "mosterdmayonaise",
+                "rundvlees (halal) of oesterzwam (vega)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Fris & Zoet",
+          "gerechten": [
+            {
+              "naam": "Greek Yoghurt Bar",
+              "ingredienten": [
+                "Griekse yoghurt",
+                "kwark",
+                "fruit",
+                "fruitcompotes",
+                "muesli",
+                "granola",
+                "havermout"
+              ]
+            },
+            {
+              "naam": "Fruitsalade"
+            },
+            {
+              "naam": "Sweet Buns",
+              "ingredienten": [
+                "mini punt brioche",
+                "gele geslagen room",
+                "pistachecrunch",
+                "poedersuiker (vega)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salade Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "gedroogde mini vijgen",
+                "spruitjes",
+                "pistache",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Rode bieten",
+              "ingredienten": [
+                "appel",
+                "gerookte makreel",
+                "mierikswortelcrème"
+              ]
+            },
+            {
+              "naam": "Thaise kip",
+              "ingredienten": [
+                "romaine",
+                "wortel",
+                "komkommer",
+                "gepofte zoete paprika"
+              ]
+            },
+            {
+              "naam": "Pompoen",
+              "ingredienten": [
+                "feta",
+                "rozijnen",
+                "rode kool",
+                "wortel"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-vega-basic",
+      "naam": "Basic Lunch vega",
+      "titel": "Lunch vega",
+      "secties": [
+        {
+          "kop": "Broodjes",
+          "gerechten": [
+            {
+              "naam": "Volkorenpunt",
+              "ingredienten": [
+                "belegen kaas",
+                "truffelmayonaise",
+                "Lollo Bianca",
+                "komkommer"
+              ]
+            },
+            {
+              "naam": "Witte sesambol",
+              "ingredienten": [
+                "pikante hummus",
+                "botersla",
+                "tomaat"
+              ]
+            },
+            {
+              "naam": "Bruine bol",
+              "ingredienten": [
+                "kruidenspread",
+                "avocado",
+                "rucola",
+                "rauwkost"
+              ]
+            },
+            {
+              "naam": "Meergranen stokkie",
+              "ingredienten": [
+                "geitenkaas",
+                "harissa",
+                "romaine"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Warme items",
+          "gerechten": [
+            {
+              "naam": "Broodje oesterzwamkroket",
+              "ingredienten": [
+                "oesterzwam"
+              ]
+            },
+            {
+              "naam": "Bospaddenstoelensoep"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-vega-standaard",
+      "naam": "Standard Lunch vega",
+      "titel": "Lunch vega",
+      "secties": [
+        {
+          "kop": "Spaanse tortilla’s",
+          "gerechten": [
+            {
+              "naam": "Rode bieten tortilla",
+              "ingredienten": [
+                "hummus",
+                "gegrilde groenten"
+              ]
+            },
+            {
+              "naam": "Spinazie tortilla",
+              "ingredienten": [
+                "hüttenkäse",
+                "gedroogde tomaat"
+              ]
+            },
+            {
+              "naam": "Volkoren tortilla",
+              "ingredienten": [
+                "belegen komijnkaas",
+                "yoghurt Madras"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Pinsa’s",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "tomatenmix",
+                "basilicumolie"
+              ]
+            },
+            {
+              "naam": "Provolone",
+              "ingredienten": [
+                "tomatenchutney"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Stokkies",
+          "gerechten": [
+            {
+              "naam": "Wit",
+              "ingredienten": [
+                "gegrilde halloumi",
+                "Koreaanse kimchi-mayonaise",
+                "zoetzure rode ui",
+                "komkommer"
+              ]
+            },
+            {
+              "naam": "Meergranen",
+              "ingredienten": [
+                "avocado",
+                "komkommerspread",
+                "lente-ui",
+                "tomaat"
+              ]
+            },
+            {
+              "naam": "Kaas",
+              "ingredienten": [
+                "mosterdmayonaise",
+                "komkommer",
+                "rucola"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Warme items",
+          "gerechten": [
+            {
+              "naam": "Minestrone Bar",
+              "ingredienten": [
+                "pittige tomatenbouillon",
+                "tortellini",
+                "mozzarella",
+                "parmezaan",
+                "paprika",
+                "basilicum",
+                "bruschetta’s",
+                "tomatenmix",
+                "groene kruidenmix"
+              ]
+            },
+            {
+              "naam": "Broodje oesterzwamkroket",
+              "ingredienten": [
+                "oesterzwam"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Fris & Zoet",
+          "gerechten": [
+            {
+              "naam": "Greek Yoghurt Bar",
+              "ingredienten": [
+                "Griekse yoghurt",
+                "kwark",
+                "fruit",
+                "fruitcompotes",
+                "muesli",
+                "granola",
+                "havermout"
+              ]
+            },
+            {
+              "naam": "Fruitsalade"
+            },
+            {
+              "naam": "Sweet Buns",
+              "ingredienten": [
+                "mini punt brioche",
+                "gele geslagen room",
+                "pistachecrunch",
+                "poedersuiker"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salade Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "gedroogde mini vijgen",
+                "spruitjes",
+                "pistache",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Rode bieten",
+              "ingredienten": [
+                "appel",
+                "gerookte makreel",
+                "mierikswortelcréme"
+              ]
+            },
+            {
+              "naam": "Pompoen",
+              "ingredienten": [
+                "feta",
+                "rozijnen",
+                "rode kool",
+                "wortel"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "walking-dinner",
+      "naam": "Walking dinner",
+      "titel": "Diner",
+      "secties": [
+        {
+          "kop": "Op tafel",
+          "gerechten": [
+            {
+              "naam": "Zuurdesembrood",
+              "ingredienten": [
+                "roomboter",
+                "fleur de sel",
+                "limoen",
+                "olijven",
+                "zongedroogde tomaat",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "Tonijntartaar",
+                "mierikswortel",
+                "affilla cress",
+                "uiencrumble"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Tussengerecht 1",
+          "gerechten": [
+            {
+              "naam": "Gebakken brioche",
+              "ingredienten": [
+                "rilette van eend",
+                "gele-uienrelish",
+                "vene cress"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Tussengerecht 2",
+          "gerechten": [
+            {
+              "naam": "Pompoenravioli",
+              "ingredienten": [
+                "gedroogde Italiaanse ham",
+                "saliebotersaus"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hoofdgerecht",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "crème van winterpeen",
+                "spaghetti van pastinaak",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Nagerecht",
+          "gerechten": [
+            {
+              "naam": "Chocoladetrifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "kersen",
+                "Tony’s Chocolonely schaaf"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "gerechten": [
+    {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "misoboterjus"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "crème van winterpeen",
+        "spaghetti van pastinaak",
+        "sticky hoisin"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Bospaddenstoelensoep",
+      "ingredienten": [
+        "(vega)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Bospaddenstoelensoep",
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Broodje kroket of vegakroket",
+      "ingredienten": [
+        "mosterdmayonaise",
+        "rundvlees (halal) of oesterzwam (vega)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Broodje oesterzwamkroket",
+      "ingredienten": [
+        "oesterzwam (vega)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Broodje oesterzwamkroket",
+      "ingredienten": [
+        "oesterzwam"
+      ],
+      "uit": [
+        "lunch-vega-basic",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Broodje rundvleeskroket",
+      "ingredienten": [
+        "rundvlees (halal)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Bruine bol",
+      "ingredienten": [
+        "kipfilet",
+        "piri-piri",
+        "rucola",
+        "rauwkost"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Bruine bol",
+      "ingredienten": [
+        "kruidenspread",
+        "avocado",
+        "rucola",
+        "rauwkost"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Bruschettaspiezen met seasonal dips",
+      "ingredienten": [
+        "(vega)"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Burrata",
+      "ingredienten": [
+        "gedroogde mini vijgen",
+        "spruitjes",
+        "pistache",
+        "mesclun"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Burrata",
+      "ingredienten": [
+        "tomatenmix",
+        "basilicumolie (vega)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Burrata",
+      "ingredienten": [
+        "tomatenmix",
+        "basilicumolie"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Chocoladetrifle",
+      "ingredienten": [
+        "Oreo crunch",
+        "kersen",
+        "Tony’s Chocolonely schaaf"
+      ],
+      "uit": [
+        "buffet",
+        "diner-3gangen",
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Coq au vin",
+      "ingredienten": [
+        "zilver uitjes",
+        "rode wijn",
+        "winterpeen"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Dutch prime beef",
+      "ingredienten": [
+        "ravigote",
+        "kruidencrunch",
+        "limoen"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Fruitsalade",
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Gebakken brioche",
+      "ingredienten": [
+        "rilette van eend",
+        "gele-uienrelish",
+        "vene cress"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Gebakken brioche",
+      "ingredienten": [
+        "rilette van eend",
+        "rode-uienchutney",
+        "gele-uienrelish",
+        "vene cress"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Gebrande zalm",
+      "ingredienten": [
+        "zuurkool",
+        "gefermenteerde mosterd"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Greek Yoghurt Bar",
+      "ingredienten": [
+        "Griekse yoghurt",
+        "kwark",
+        "fruit",
+        "fruitcompotes",
+        "muesli",
+        "granola",
+        "havermout"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Grip ’n dip fries",
+      "ingredienten": [
+        "coq au vin",
+        "tomatencrunch",
+        "gerookte bietenmayonaise"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Kaas",
+      "ingredienten": [
+        "mosterdmayonaise",
+        "komkommer",
+        "rucola"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Krokante parmezaan piepers",
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Meergranen",
+      "ingredienten": [
+        "avocado",
+        "komkommerspread",
+        "lente-ui",
+        "tomaat (vega)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Meergranen",
+      "ingredienten": [
+        "avocado",
+        "komkommerspread",
+        "lente-ui",
+        "tomaat"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Meergranen stokkie",
+      "ingredienten": [
+        "geitenkaas",
+        "harissa",
+        "romaine (vega)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Meergranen stokkie",
+      "ingredienten": [
+        "geitenkaas",
+        "harissa",
+        "romaine"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Minestrone Bar",
+      "ingredienten": [
+        "pittige tomatenbouillon",
+        "tortellini",
+        "mozzarella",
+        "parmezaan",
+        "paprika",
+        "basilicum",
+        "bruschetta’s",
+        "tomatenmix",
+        "groene kruidenmix"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Mortadella",
+      "ingredienten": [
+        "ricotta",
+        "rucola"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Pão de queijo",
+      "ingredienten": [
+        "Braziliaanse kaasballetjes",
+        "piri piri-dip"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Pompoen",
+      "ingredienten": [
+        "feta",
+        "rozijnen",
+        "rode kool",
+        "wortel"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Pompoenravioli",
+      "ingredienten": [
+        "gedroogde Italiaanse ham",
+        "saliebotersaus"
+      ],
+      "uit": [
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Pompoenrisotto",
+      "ingredienten": [
+        "gorgonzola",
+        "verse vijgen"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Provolone",
+      "ingredienten": [
+        "tomatenchutney"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Rode bieten",
+      "ingredienten": [
+        "appel",
+        "gerookte makreel",
+        "mierikswortelcrème"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Rode bieten",
+      "ingredienten": [
+        "appel",
+        "gerookte makreel",
+        "mierikswortelcréme"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Rode bieten tortilla",
+      "ingredienten": [
+        "hummus",
+        "gegrilde groenten (vega)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Rode bieten tortilla",
+      "ingredienten": [
+        "hummus",
+        "gegrilde groenten"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Schiacciata toscana",
+      "ingredienten": [
+        "burrata",
+        "parmezaan",
+        "tomatensalsa"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Spinazie tortilla",
+      "ingredienten": [
+        "zalm",
+        "hüttenkäse"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Spinazie tortilla",
+      "ingredienten": [
+        "hüttenkäse",
+        "gedroogde tomaat"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Sweet Buns",
+      "ingredienten": [
+        "mini punt brioche",
+        "gele geslagen room",
+        "pistachecrunch",
+        "poedersuiker (vega)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Sweet Buns",
+      "ingredienten": [
+        "mini punt brioche",
+        "gele geslagen room",
+        "pistachecrunch",
+        "poedersuiker"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Tartelettes",
+      "onderdelen": [
+        {
+          "naam": "Rundertartaar",
+          "toelichting": [
+            "umamicrème",
+            "kwartelei"
+          ]
+        },
+        {
+          "naam": "Taleggio (vega)",
+          "toelichting": [
+            "romige Taleggio (kaasvulling)",
+            "kruidencrunch"
+          ]
+        }
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "Tonijntartaar",
+        "mierikswortel",
+        "affilla cress",
+        "uiencrumble"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Thaise kip",
+      "ingredienten": [
+        "romaine",
+        "wortel",
+        "komkommer",
+        "gepofte zoete paprika"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Tuna melt",
+      "ingredienten": [
+        "ui",
+        "jalapeño"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Volkoren tortilla",
+      "ingredienten": [
+        "pulled chicken",
+        "yoghurt Madras"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Volkoren tortilla",
+      "ingredienten": [
+        "belegen komijnkaas",
+        "yoghurt Madras"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Volkorenpunt",
+      "ingredienten": [
+        "belegen kaas",
+        "truffelmayonaise",
+        "Lollo Bianca",
+        "komkommer (vega)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Volkorenpunt",
+      "ingredienten": [
+        "belegen kaas",
+        "truffelmayonaise",
+        "Lollo Bianca",
+        "komkommer"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Winterburger",
+      "ingredienten": [
+        "rode-ui chutney",
+        "rode koolsla",
+        "chili-paprikasaus"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Winterse rattatouille",
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Wit",
+      "ingredienten": [
+        "kip",
+        "Koreaanse kimchi-mayonaise",
+        "zoetzure rode ui",
+        "komkommer"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Wit",
+      "ingredienten": [
+        "gegrilde halloumi",
+        "Koreaanse kimchi-mayonaise",
+        "zoetzure rode ui",
+        "komkommer"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Witte sesambol",
+      "ingredienten": [
+        "achterham",
+        "kruidenspread",
+        "botersla",
+        "tomaat"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Witte sesambol",
+      "ingredienten": [
+        "pikante hummus",
+        "botersla",
+        "tomaat"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Zuurdesembrood",
+      "ingredienten": [
+        "roomboter",
+        "fleur de sel",
+        "limoen",
+        "olijven",
+        "zongedroogde tomaat",
+        "curry dip"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Zuurkoolstamppot",
+      "ingredienten": [
+        "gebrande zalm",
+        "crumble van pancetta",
+        "gefermenteerde mosterd"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    }
+  ]
+}

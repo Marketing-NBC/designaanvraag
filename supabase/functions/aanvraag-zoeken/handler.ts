@@ -7,6 +7,8 @@ import { ZOEK_MIN_TEKENS, ZOEK_NAAM_MIN_TEKENS } from '../_shared/shared/aanvull
  * GET ?q=<eventnaam> → de recente aanvragen voor een evenement waarvan de eventnaam daarop lijkt.
  * GET ?naam=<naam>   → de recente interne aanvragen van precies deze aanvrager. Een interne
  *                      aanvraag heeft geen event, dus vind je hem terug op je eigen naam.
+ * GET ?id=<uuid>     → precies deze aanvraag. Voor de knop "Feedback geven" in de opleveringsmail:
+ *                      die opent het formulier met de aanvraag al gekozen.
  *
  * Hiermee vindt een collega zijn eerdere aanvraag terug om er iets aan toe te voegen. De pagina
  * staat op het open internet, dus dit endpoint geeft zo min mogelijk prijs: minimaal drie letters,
@@ -17,10 +19,14 @@ export interface Deps {
   env: Env
   zoek(q: string, vandaag: Date): Promise<GevondenAanvraag[]>
   zoekIntern(naam: string, vandaag: Date): Promise<GevondenAanvraag[]>
+  /** Eén aanvraag op id, als die nog openstaat; anders null. */
+  zoekOpId?(id: string): Promise<GevondenAanvraag | null>
   bumpRateLimit(key: string, window: '1 hour' | '1 day'): Promise<number>
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** Ruimer dan het indienen: zoeken is goedkoop en mensen typen letter voor letter. */
 export const ZOEK_LIMIET_PER_UUR = 120
@@ -48,8 +54,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const params = new URL(req.url).searchParams
     const q = params.get('q')?.trim() ?? ''
     const naam = params.get('naam')?.trim() ?? ''
+    const id = params.get('id')?.trim().toLowerCase() ?? ''
+    if (id && !UUID.test(id)) return json({ resultaten: [] }, 200, cors)
     // Te kort is geen fout: het formulier zoekt tijdens het typen, dus geef gewoon niets terug.
-    if (naam ? naam.length < ZOEK_NAAM_MIN_TEKENS : q.length < ZOEK_MIN_TEKENS) return json({ resultaten: [] }, 200, cors)
+    if (!id && (naam ? naam.length < ZOEK_NAAM_MIN_TEKENS : q.length < ZOEK_MIN_TEKENS)) return json({ resultaten: [] }, 200, cors)
 
     const ip = clientIp(req)
     if (ip) {
@@ -61,6 +69,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       }
     }
 
+    if (id) {
+      const gevonden = deps.zoekOpId ? await deps.zoekOpId(id) : null
+      return json({ resultaten: gevonden ? [gevonden] : [] }, 200, cors)
+    }
     const resultaten = naam ? await deps.zoekIntern(naam, now()) : await deps.zoek(q, now())
     return json({ resultaten }, 200, cors)
   }

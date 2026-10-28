@@ -8,7 +8,7 @@ Alle vijf de milestones zijn live en end-to-end getest met een echte aanvraag.
 |---|---|
 | M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ |
 | M2 Backend | Live op het Supabase-project van de Marketing-organisatie (`ommujhlzffxalltlgzti`): migraties, `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, collega's uit Supabase |
-| M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
+| M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → Feedback → In planning → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
 | M4 Huisstijl-Routine | **Live.** Routine "Huisstijl ophalen" draait op een cloud-environment, wordt door de function gestart en levert logo, huisstijl-kaart, screenshot en tekst bij de Asana-taak. Bewezen op rijksmuseum.nl, inclusief de juiste logokeuze tussen sponsorlogo's |
 | M5 Afwerking | Live (status-endpoint met reden bij mislukking, live status op het succes-scherm) |
 
@@ -27,11 +27,22 @@ bytes komen nooit door een edge function heen. Zie README → "Bestanden meestur
 
 En tot slot **heropenen**: komt er feedback op een taak die al op Klaar staat of afgevinkt is, dan
 gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsdatum, met een
-@-vermelding in de reactie. Staat de taak in Mee bezig, dan gaat hij ook naar Feedback, maar
-blijven vinkje en planningsdatum staan. Zie README → "Feedback op werk dat al af is".
+@-vermelding in de reactie. In Nieuwe aanvragen en In planning blijft de taak staan. Zie README →
+"Feedback op werk dat al af is".
+
+En daarna **opleveren**: elke aanvraag krijgt een subtaak "Oplevering". De beschrijving daarvan
+wordt de tekst van de mail en de bijlagen ervan gaan mee: wat je ziet, is wat er verstuurd wordt.
+Met het veld Oplevermail stuur je eerst een proef naar jezelf en daarna de echte mail, naar de
+aanvrager (adres uit `collegas.email`) en de adressen uit "Ook mailen naar". De mail heeft een knop
+**Feedback geven**, die het formulier opent met de aanvraag al gekozen. Na het versturen een verslag
+als reactie, de subtaak afgevinkt als "Oplevering versie N", een nieuwe lege subtaak, en de taak naar
+Klaar. Geen reactie is akkoord: er is geen akkoordknop en geen herinnering. Zie README → "Opleveren".
 
 ### Nog te doen
 
+- Opleveren aanzetten: migratie `20261028120000_oplevering.sql` (gaat mee met de Supabase-deploy),
+  **Asana-velden vernieuwen** draaien voor Oplevermail en Ook mailen naar, e-mailadressen invullen in
+  `collegas.email`, en de M365-beheerder `Mail.ReadWrite` laten toevoegen voor bijlagen boven 2,5 MB.
 - Testtaken in Asana opruimen (alles met TEST in de naam).
 - Dashboard aanzetten: grafiek op **Spoed** (en een tweede op **Aanvrager**, gefilterd op Spoed = Ja);
   in "4. Werkplanning" de kalender kleuren op **Spoed**. Dit kan alleen in de interface, de API kan

@@ -22,18 +22,30 @@ import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
+import { Icon } from './components/Icon'
 import { useBijlagen } from './lib/uploads'
-import { zichtbareStappen } from './steps'
+import { moetContactOpnemen, zichtbareStappen } from './steps'
+import { MELDING_ONTVANGERS } from '../../shared/contact'
 
 type Screen =
   | { kind: 'start' }
   | { kind: 'step'; index: number }
   | { kind: 'review' }
   | { kind: 'success'; result: SubmitResult; draft: Draft }
-  /** De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. */
-  | { kind: 'aanvulling' }
+  /**
+   * De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. Met
+   * `vooraf` staat de aanvraag al gekozen: zo komt de knop "Feedback geven" uit de opleveringsmail
+   * binnen.
+   */
+  | { kind: 'aanvulling'; vooraf?: string }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Het id uit `?feedback=` in de link van de opleveringsmail, of null. */
+function feedbackUitUrl(): string | null {
+  const id = new URLSearchParams(window.location.search).get('feedback')?.trim().toLowerCase() ?? ''
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id) ? id : null
+}
 
 function isTypingTarget(el: EventTarget | null): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false
@@ -50,7 +62,10 @@ export default function App() {
   // overzicht en het bewaarde concept lezen. Afgeleid tijdens het renderen, dus geen extra ronde.
   const volledig: Draft = useMemo(() => ({ ...draft, bijlagen: uploads.bijlagen }), [draft, uploads.bijlagen])
 
-  const [screen, setScreen] = useState<Screen>({ kind: 'start' })
+  const [screen, setScreen] = useState<Screen>(() => {
+    const vooraf = feedbackUitUrl()
+    return vooraf ? { kind: 'aanvulling', vooraf } : { kind: 'start' }
+  })
   const [dir, setDir] = useState<1 | -1>(1)
   const [error, setError] = useState<string | null>(null)
   const [errorNonce, setErrorNonce] = useState(0)
@@ -80,6 +95,15 @@ export default function App() {
 
   useEffect(() => {
     fetchCollegas(COLLEGAS_FALLBACK).then(setCollegas)
+  }, [])
+
+  // De feedbacklink heeft zijn werk gedaan zodra het scherm open is. Uit de adresbalk halen, zodat
+  // verversen of "terug naar het begin" niet weer bij dezelfde aanvraag uitkomt.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('feedback')) return
+    url.searchParams.delete('feedback')
+    window.history.replaceState(null, '', url)
   }, [])
 
   // Autosave zolang de gebruiker in het formulier zit.
@@ -182,7 +206,7 @@ export default function App() {
         locatie: volledig.locatie ?? undefined,
         naam: volledig.naam,
         soort: 'intern',
-        deadline: volledig.deadline ?? '',
+        deadline: volledig.geen_deadline ? null : (volledig.deadline ?? ''),
         omschrijving: volledig.omschrijving,
       } : {
         // ?? undefined en niet '': het schema heeft een standaard ('nbc') voor een concept
@@ -405,11 +429,20 @@ export default function App() {
   }
 
   if (screen.kind === 'aanvulling') {
-    return <Aanvulling collegas={collegas} onSluit={() => go({ kind: 'start' }, -1)} />
+    return <Aanvulling collegas={collegas} vooraf={screen.vooraf ?? null} onSluit={() => go({ kind: 'start' }, -1)} />
   }
 
   if (screen.kind === 'success') {
-    return <Success result={screen.result} website={screen.draft.website} naam={screen.draft.naam} soort={screen.draft.soort} onRestart={restart} />
+    return (
+      <Success
+        result={screen.result}
+        website={screen.draft.website}
+        naam={screen.draft.naam}
+        soort={screen.draft.soort}
+        contactMail={moetContactOpnemen(screen.draft) ? MELDING_ONTVANGERS[screen.draft.locatie ?? 'nbc'] : null}
+        onRestart={restart}
+      />
+    )
   }
 
   const progress = stepIndex / stappen.length
@@ -433,6 +466,7 @@ export default function App() {
               error={error}
               errorNonce={errorNonce}
               warning={step.warn?.(volledig) ?? null}
+              alarm={step.alarm?.(volledig) ?? null}
               goed={step.goed?.(volledig) ?? null}
               titleId={`q-${step.id}`}
               footer={
@@ -465,7 +499,31 @@ export default function App() {
                 <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} max={draft.event_datum ?? undefined} onPicked={focusPrimary} />
               ) : null}
               {step.kind === 'date' && step.id === 'deadline_intern' ? (
-                <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} onPicked={focusPrimary} />
+                <>
+                  <DateField
+                    value={draft.geen_deadline ? null : draft.deadline}
+                    onChange={(v) => patch({ deadline: v, geen_deadline: false })}
+                    onPicked={focusPrimary}
+                    leeg={draft.geen_deadline ? 'Geen deadline gekozen. Toch een datum? Kies hem hierboven.' : undefined}
+                  />
+                  {/* Voor wie geen datum heeft: dan hoeft er ook geen gekozen te worden. */}
+                  <button
+                    type="button"
+                    className="opt geen-deadline"
+                    aria-pressed={draft.geen_deadline}
+                    onClick={() => {
+                      const aan = !draft.geen_deadline
+                      patch({ geen_deadline: aan, deadline: aan ? null : draft.deadline })
+                      if (aan) focusPrimary()
+                    }}
+                  >
+                    <span className="opt__label">
+                      <strong>Geen deadline</strong>
+                      <span className="geen-deadline__uitleg">Het mag klaar zijn wanneer het past.</span>
+                    </span>
+                    <Icon name="check" className="opt__check" />
+                  </button>
+                </>
               ) : null}
               {step.kind === 'soort' ? (
                 <ChoiceList options={SOORT_KEUZES} value={draft.soort} onToggle={(k) => patch({ soort: k as Soort })} />

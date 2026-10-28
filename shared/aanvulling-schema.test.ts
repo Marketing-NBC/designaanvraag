@@ -16,6 +16,13 @@ describe('aanvullingSchema', () => {
     expect(r.link).toBe('')
   })
 
+  it('alleen een aangepast menu mag zonder toelichting, maar niet zonder gerechten', () => {
+    const menu = { pakket: 'lunch-basic', secties: [{ kop: 'Broodjes', gerechten: [{ naam: 'Clubsandwich' }] }] }
+    expect(aanvullingSchema.safeParse({ ...basis, toelichting: '', menu_inhoud: menu }).success).toBe(true)
+    const leeg = aanvullingSchema.safeParse({ ...basis, menu_inhoud: { ...menu, secties: [{ kop: 'Broodjes', gerechten: [] }] } })
+    expect(leeg.success).toBe(false)
+  })
+
   it('wijst een te korte toelichting af', () => {
     const r = aanvullingSchema.safeParse({ ...basis, toelichting: 'ja' })
     expect(r.success).toBe(false)

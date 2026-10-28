@@ -129,3 +129,32 @@ Deno.test('OPTIONS en een verkeerde methode', async () => {
   assertEquals(pre.headers.get('Access-Control-Allow-Methods'), 'GET, OPTIONS')
   assertEquals((await handler(new Request('https://fn', { method: 'POST' }))).status, 405)
 })
+
+// ── Op id: de knop "Feedback geven" in de opleveringsmail ─────────────
+
+function opId(id: string): Request {
+  return new Request(`https://fn/aanvraag-zoeken?id=${encodeURIComponent(id)}`, {
+    headers: { Origin: 'https://marketing-nbc.github.io', 'x-forwarded-for': '10.0.0.1' },
+  })
+}
+
+Deno.test('op id: precies die aanvraag', async () => {
+  const gevraagd: string[] = []
+  const res = await createHandler(deps({ zoekOpId: (id) => (gevraagd.push(id), Promise.resolve(treffer)) }))(opId(treffer.id.toUpperCase()))
+  assertEquals((await res.json()).resultaten, [treffer])
+  assertEquals(gevraagd, [treffer.id])
+})
+
+Deno.test('op id: niet gevonden of geen geldig id is een lege lijst', async () => {
+  let gevraagd = 0
+  const handler = createHandler(deps({ zoekOpId: () => (gevraagd++, Promise.resolve(null)) }))
+  assertEquals((await (await handler(opId(treffer.id))).json()).resultaten, [])
+  assertEquals((await (await handler(opId('1 or 1=1'))).json()).resultaten, [])
+  assertEquals(gevraagd, 1, 'een onzin-id gaat niet naar de database')
+})
+
+Deno.test('op id telt mee voor de uurlimiet', async () => {
+  const handler = createHandler(deps({ zoekOpId: () => Promise.resolve(treffer) }))
+  for (let i = 0; i < ZOEK_LIMIET_PER_UUR; i++) await handler(opId(treffer.id))
+  assertEquals((await handler(opId(treffer.id))).status, 429)
+})

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Kopieert shared/*.ts en shared/asana-fields.json naar supabase/functions/_shared/shared/,
+ * Kopieert shared/*.ts, shared/asana-fields.json en shared/menu-pakketten.json naar
+ * supabase/functions/_shared/shared/,
  * zodat de edge functions dezelfde schema's gebruiken zonder buiten hun map te importeren.
  * Draai na elke wijziging in shared/ (CI controleert of de kopie actueel is: --check).
  */
@@ -13,7 +14,7 @@ const src = join(root, 'shared')
 const dst = join(root, 'supabase', 'functions', '_shared', 'shared')
 const check = process.argv.includes('--check')
 
-const files = readdirSync(src).filter((f) => (f.endsWith('.ts') && !f.endsWith('.test.ts')) || f === 'asana-fields.json')
+const files = readdirSync(src).filter((f) => (f.endsWith('.ts') && !f.endsWith('.test.ts')) || f === 'asana-fields.json' || f === 'menu-pakketten.json')
 
 if (check) {
   let stale = false

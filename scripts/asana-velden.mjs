@@ -151,6 +151,32 @@ export const FIELD_SPECS = [
       ['mislukt', 'red'],
     ],
   },
+  {
+    key: 'oplevermail',
+    type: 'enum',
+    description:
+      'De knop waarmee je de aanvrager laat weten dat het ontwerp klaar is. Zet de tekst voor de '
+      + 'aanvrager in de beschrijving van de subtaak "Oplevering" en de bestanden als bijlage bij die '
+      + 'subtaak: wat daar staat, gaat de deur uit. Kies eerst "Stuur proef naar mij" om de mail zelf te '
+      + 'zien, en daarna "Verstuur nu". De aanvrager en de adressen in "Ook mailen naar" krijgen hem, met '
+      + 'een knop om feedback te geven. De rest zet zichzelf: Bezig, dan Proef verstuurd, Verstuurd (en '
+      + 'de taak naar Klaar) of Mislukt, met de reden in een reactie.',
+    options: [
+      ['proef', 'purple'],
+      ['verstuur', 'blue'],
+      ['bezig', 'yellow'],
+      ['proef_verstuurd', 'cool-gray'],
+      ['verstuurd', 'green'],
+      ['mislukt', 'red'],
+    ],
+  },
+  {
+    key: 'ook_mailen_naar',
+    type: 'text',
+    description:
+      'Wie de opleveringsmail nog meer krijgt, naast de aanvrager. E-mailadressen gescheiden door een '
+      + 'komma, ook van buiten NBC. Blijft staan voor de volgende versie.',
+  },
 ]
 
 /** De veldsleutels uit asana-field-map.json; de rest van dat bestand is geen veld. */

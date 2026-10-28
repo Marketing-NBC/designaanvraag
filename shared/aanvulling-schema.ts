@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { isoDate, normalizeUrl } from './aanvraag-schema.ts'
+import { isoDate, menuInhoudSchema, normalizeUrl } from './aanvraag-schema.ts'
+import type { MenuInhoud } from './aanvraag-schema.ts'
 import { bijlageIdsSchema } from './bijlagen.ts'
 import { REQUEST_TYPE_KEYS, type RequestTypeKey, type Soort } from './request-types.ts'
 
@@ -34,12 +35,19 @@ export interface GevondenAanvraag {
   event: string
   /** Null bij een interne aanvraag. */
   event_datum: string | null
-  deadline: string
+  /** Null bij een interne aanvraag zonder deadline. */
+  deadline: string | null
   naam: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
   /** Al ingevuld? Dan laat het formulier zien dat een nieuw pad er alleen bij wordt gemeld. */
   schijf_locatie: string
+  /**
+   * Het menu zoals het bij de aanvraag staat, voor de knop "Menu aanpassen". Alleen bij het
+   * opvragen van één aanvraag op id en alleen als er een menukaart of menuscherm is aangevraagd;
+   * in de zoeklijst staat het niet.
+   */
+  menu?: { pakket: string; inhoud: MenuInhoud | null } | null
   /**
    * Het begin van de omschrijving, ingekort tot ZOEK_OMSCHRIJVING_TEKENS. Alleen gevuld bij een
    * interne aanvraag: daar is het de enige manier om de ene van de andere te onderscheiden.
@@ -52,7 +60,8 @@ export const aanvullingSchema = z
     aanvraag_id: z.uuid(),
     /** Wie de aanvulling stuurt; hoeft niet dezelfde collega te zijn als de oorspronkelijke aanvrager. */
     naam: z.string().trim().min(1, 'Kies je naam').max(80),
-    toelichting: z.string().trim().min(5, 'Vertel kort wat er moet veranderen').max(3000, 'Maximaal 3000 tekens'),
+    /** Verplicht, behalve als alleen het menu wordt aangepast: dan zegt het menu genoeg. */
+    toelichting: z.string().trim().max(3000, 'Maximaal 3000 tekens').default(''),
     /** Types die erbij komen. Wat er al staat blijft staan; aanvullen kan nooit iets weghalen. */
     extra_types: z.array(z.enum(REQUEST_TYPE_KEYS)).default([]),
     anders_tekst: z.string().trim().max(200, 'Maximaal 200 tekens').default(''),
@@ -78,8 +87,21 @@ export const aanvullingSchema = z
         }
         return n
       }),
+    /**
+     * Het aangepaste menu, als de aanvrager op "Menu aanpassen" drukte. Null = het menu blijft
+     * zoals het was. Vervangt het menu van de aanvraag, zodat een nieuw menuscherm het gebruikt.
+     */
+    menu_inhoud: menuInhoudSchema.nullable().default(null),
+    /** Hetzelfde menu als leesbare tekst, voor de reactie in Asana en de taakbeschrijving. */
+    menu_tekst: z.string().trim().max(8000, 'Maximaal 8000 tekens').default(''),
   })
   .superRefine((a, ctx) => {
+    if (a.toelichting.length < 5 && !a.menu_inhoud) {
+      ctx.addIssue({ code: 'custom', path: ['toelichting'], message: 'Vertel kort wat er moet veranderen' })
+    }
+    if (a.menu_inhoud && !a.menu_inhoud.secties.some((s) => s.gerechten.length)) {
+      ctx.addIssue({ code: 'custom', path: ['menu_inhoud'], message: 'Er staat geen enkel gerecht meer in het menu' })
+    }
     if (a.extra_types.includes('anders') && !a.anders_tekst) {
       ctx.addIssue({ code: 'custom', path: ['anders_tekst'], message: 'Vul in wat je erbij wilt aanvragen' })
     }

@@ -1,5 +1,5 @@
 import { assertEquals, assertMatch, assertRejects } from 'jsr:@std/assert@1'
-import { createGraphMail } from './shared/mail.ts'
+import { MAIL_IN_EEN_KEER_BYTES, createGraphMail, naarBase64 } from './shared/mail.ts'
 
 const cfg = { tenantId: 'tenant-1', clientId: 'app-1', clientSecret: 'geheim', afzender: 'designaanvraag@nbcevents.nl' }
 
@@ -75,4 +75,66 @@ Deno.test('zonder ontvanger wordt er niets verstuurd', async () => {
   const { calls, fetch } = fakeFetch()
   await assertRejects(() => createGraphMail(cfg, fetch).verstuur({ ...bericht, aan: [] }))
   assertEquals(calls.length, 0)
+})
+
+Deno.test('kleine bijlagen en een antwoordadres gaan in één keer mee', async () => {
+  const { calls, fetch } = fakeFetch()
+  await createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    antwoordAan: ['marketing@nbcevents.nl'],
+    bijlagen: [{ naam: 'scherm.png', mime: 'image/png', bytes: new Uint8Array([1, 2, 3]) }],
+  })
+  const body = JSON.parse(String(calls[1].init.body))
+  assertEquals(body.message.replyTo, [{ emailAddress: { address: 'marketing@nbcevents.nl' } }])
+  assertEquals(body.message.attachments, [
+    { '@odata.type': '#microsoft.graph.fileAttachment', name: 'scherm.png', contentType: 'image/png', contentBytes: 'AQID' },
+  ])
+})
+
+Deno.test('grote bijlagen: concept, upload in stukken, dan versturen', async () => {
+  const calls: { url: string; init: RequestInit }[] = []
+  const fetch = ((input: string | URL | Request, init: RequestInit = {}) => {
+    const url = String(input)
+    calls.push({ url, init })
+    if (url.includes('login.')) return Promise.resolve(Response.json({ access_token: 'tok-1', expires_in: 3600 }))
+    if (url.endsWith('/messages')) return Promise.resolve(Response.json({ id: 'concept-1' }, { status: 201 }))
+    if (url.endsWith('/createUploadSession')) return Promise.resolve(Response.json({ uploadUrl: 'https://upload.example/sessie' }))
+    return Promise.resolve(new Response(null, { status: url.startsWith('https://upload.') ? 200 : 202 }))
+  }) as typeof globalThis.fetch
+
+  const groot = new Uint8Array(MAIL_IN_EEN_KEER_BYTES * 2)
+  await createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    bijlagen: [
+      { naam: 'klein.png', mime: 'image/png', bytes: new Uint8Array([1]) },
+      { naam: 'groot.pdf', mime: 'application/pdf', bytes: groot },
+    ],
+  })
+  const paden = calls.filter((c) => !c.url.includes('login.')).map((c) => `${c.init.method} ${c.url.replace('https://graph.microsoft.com/v1.0/users/designaanvraag%40nbcevents.nl', '')}`)
+  assertEquals(paden, [
+    'POST /messages',
+    'POST /messages/concept-1/attachments',
+    'POST /messages/concept-1/attachments/createUploadSession',
+    'PUT https://upload.example/sessie',
+    'PUT https://upload.example/sessie',
+    'POST /messages/concept-1/send',
+  ])
+  const puts = calls.filter((c) => c.url.startsWith('https://upload.'))
+  const ranges = puts.map((c) => (c.init.headers as Record<string, string>)['Content-Range'])
+  assertEquals(ranges[1], `bytes ${320 * 1024 * 9}-${groot.length - 1}/${groot.length}`)
+  assertEquals((puts[0].init.headers as Record<string, string>).Authorization, undefined, 'het uploadadres is zelf de sleutel')
+})
+
+Deno.test('zonder recht op concepten zegt de fout welk recht er mist', async () => {
+  const { fetch } = fakeFetch({ send: () => Response.json({ error: { code: 'ErrorAccessDenied', message: 'Access is denied.' } }, { status: 403 }) })
+  const e = await assertRejects(() => createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    bijlagen: [{ naam: 'groot.pdf', mime: 'application/pdf', bytes: new Uint8Array(MAIL_IN_EEN_KEER_BYTES + 1) }],
+  }))
+  assertMatch((e as Error).message, /Mail\.ReadWrite/)
+})
+
+Deno.test('base64 in stukken geeft hetzelfde als in één keer', () => {
+  const bytes = new Uint8Array(100_000).map((_, i) => i % 256)
+  assertEquals(naarBase64(bytes), btoa(String.fromCharCode(...bytes)))
 })

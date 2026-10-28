@@ -7,8 +7,8 @@
 import type { Aanvraag } from './aanvraag-schema.ts'
 import { formatDateShortNl, kortVan, taskTitle } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
-import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, waarschuwingBlok } from './mail.ts'
-import type { MailBericht } from './mail.ts'
+import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, waarschuwingBlok } from './mail.ts'
+import type { MailBericht, Thema } from './mail.ts'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 import { SPOED_WERKDAGEN } from './spoed.ts'
@@ -53,8 +53,13 @@ function spoedPeil(soort: Soort): string {
   return soort === 'intern' ? 'de deadline' : 'het event'
 }
 
-function link(href: string, tekst = href): string {
-  return `<a href="${escapeHtml(href)}" style="color:#165e5a;">${escapeHtml(tekst)}</a>`
+function link(href: string, thema: Thema, tekst = href): string {
+  return `<a href="${escapeHtml(href)}" style="color:${thema.link};">${escapeHtml(tekst)}</a>`
+}
+
+/** De deadline voor in de mail; bij een interne aanvraag mag hij ontbreken. */
+function deadlineTekst(deadline: string | null): string {
+  return deadline ? `<strong>${escapeHtml(datumLang(deadline))}</strong>` : 'Geen deadline'
 }
 
 function leegOf(tekst: string, html = escapeHtml(tekst)): string {
@@ -88,6 +93,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
   const a = m.aanvraag
   const intern = a.soort === 'intern'
   const nietInAsana = !m.asanaUrl
+  const thema = themaVoor(a.locatie)
   const delen: string[] = []
 
   if (nietInAsana) {
@@ -110,7 +116,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Soort', 'Intern'],
       ['Locatie', escapeHtml(locatieLabel(a.locatie))],
       ['Aanvrager', escapeHtml(a.naam)],
-      ['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>`],
+      ['Deadline', deadlineTekst(a.deadline)],
       ['Spoed', spoedTekst(m.spoed)],
     ]
     : [
@@ -118,22 +124,23 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Aanvrager', escapeHtml(a.naam)],
       ['Event', escapeHtml(a.event)],
       ['Eventdatum', a.event_datum ? escapeHtml(datumLang(a.event_datum)) : leegOf('')],
-      ['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>`],
+      ['Deadline', deadlineTekst(a.deadline)],
       ['Aanvraag', escapeHtml(describeRequestTypes(a.aanvraag_types, a.anders_tekst))],
       ['Design', leegOf(DESIGN_MODES.find((d) => d.key === a.design_modus)?.label ?? a.design_modus ?? '')],
       ['Spoed', spoedTekst(m.spoed)],
-      ['Website', leegOf(a.website, a.website ? link(a.website) : '')],
+      ['Website', leegOf(a.website, a.website ? link(a.website, thema) : '')],
       ['Schijf', leegOf(a.schijf_locatie)],
     ]
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   delen.push(gegevensTabel(rijen))
 
-  if (a.omschrijving) delen.push(kopje(intern ? 'Wat er gevraagd wordt' : 'Wensen en bijzonderheden'), citaat(a.omschrijving))
+  if (a.omschrijving) delen.push(kopje(intern ? 'Wat er gevraagd wordt' : 'Wensen en bijzonderheden'), citaat(a.omschrijving, thema))
   // Het menu staat normaal in de Asana-taak. Is die er niet, dan hoort het hier, anders is het weg.
-  if (nietInAsana && a.menu_tekst) delen.push(kopje('Menu'), citaat(a.menu_tekst))
+  if (nietInAsana && a.menu_tekst) delen.push(kopje('Menu'), citaat(a.menu_tekst, thema))
 
-  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana'), `<p style="margin:4px 0 0;font-size:13px;">${link(m.asanaUrl)}</p>`)
-  delen.push(`<p style="margin:20px 0 0;font-size:12px;color:#828b8d;">Aanvraag ${escapeHtml(m.aanvraagId)}</p>`)
+  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana', thema))
+  // Zonder taak is het id de enige manier om de aanvraag in Supabase terug te vinden.
+  else delen.push(`<p style="margin:20px 0 0;font-size:12px;color:#828b8d;">Aanvraag ${escapeHtml(m.aanvraagId)}</p>`)
 
   return {
     aan: [ontvangerVoor(a.locatie)],
@@ -146,7 +153,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       types: describeRequestTypes(a.aanvraag_types, a.anders_tekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n')),
+    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema),
   }
 }
 
@@ -170,7 +177,8 @@ export interface AanvullingMail {
     spoed: boolean
     /** Na deze aanvulling, dus met een eventueel nieuwe datum. Null bij een interne aanvraag. */
     eventDatum: string | null
-    deadline: string
+    /** Null bij een interne aanvraag zonder deadline. */
+    deadline: string | null
     eventDatumGewijzigd: boolean
     deadlineGewijzigd: boolean
     /** Alle types na deze aanvulling. */
@@ -183,14 +191,15 @@ export interface AanvullingMail {
   bijlagen: string[]
   /** De taak stond op Klaar of was afgevinkt en is heropend. */
   heropend: boolean
-  /** De taak stond in Mee bezig en is naar Feedback verplaatst. */
-  naarFeedback: boolean
+  /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
+  menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
 }
 
 export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   const a = m.aanvraag
+  const thema = themaVoor(a.locatie)
   const delen: string[] = []
 
   if (m.asanaFout) {
@@ -201,14 +210,18 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   }
   if (m.heropend) {
     delen.push(waarschuwingBlok('<strong>Deze taak was al afgerond en is heropend.</strong> Hij staat nu in de kolom Feedback, zonder planningsdatum.'))
-  } else if (m.naarFeedback) {
-    delen.push(waarschuwingBlok('<strong>Er is feedback op werk waar je mee bezig bent.</strong> De taak staat nu in de kolom Feedback.'))
   }
 
   delen.push(taakRegel(m.taakNaam))
-  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`, citaat(m.toelichting))
+  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`)
+  if (m.toelichting) delen.push(citaat(m.toelichting, thema))
+  if (m.menu) {
+    const pakket = m.menu.vorigPakket ? `${m.menu.pakket} (was ${m.menu.vorigPakket})` : m.menu.pakket
+    delen.push(kopje(`Nieuw menu: ${pakket}`), citaat(m.menu.tekst, thema),
+      '<p style="margin:4px 0 0;font-size:13px;color:#596165;">Zet Menuscherm in Asana op Genereer nu om het scherm opnieuw te maken.</p>')
+  }
 
-  const gewijzigd = ' <span style="color:#165e5a;font-weight:bold;">(gewijzigd)</span>'
+  const gewijzigd = ` <span style="color:${thema.link};font-weight:bold;">(gewijzigd)</span>`
   const rijen: [string, string][] = []
   if (a.soort === 'intern') rijen.push(['Soort', 'Intern'])
   rijen.push(['Locatie', escapeHtml(locatieLabel(a.locatie))], ['Aanvrager', escapeHtml(a.naam)])
@@ -218,17 +231,17 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       ['Eventdatum', (a.eventDatum ? escapeHtml(datumLang(a.eventDatum)) : leegOf('')) + (a.eventDatumGewijzigd ? gewijzigd : '')],
     )
   }
-  rijen.push(['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>` + (a.deadlineGewijzigd ? gewijzigd : '')])
+  rijen.push(['Deadline', deadlineTekst(a.deadline) + (a.deadlineGewijzigd ? gewijzigd : '')])
   if (a.types.length) rijen.push(['Aanvraag', escapeHtml(describeRequestTypes(a.types, m.andersTekst))])
   if (m.extraTypes.length) rijen.push(['Erbij gevraagd', `<strong>${escapeHtml(describeRequestTypes(m.extraTypes, m.andersTekst))}</strong>`])
   rijen.push(['Spoed', spoedTekst(a.spoed)])
-  if (m.link) rijen.push(['Materiaal', link(m.link)])
+  if (m.link) rijen.push(['Materiaal', link(m.link, thema)])
   if (m.schijfLocatie) rijen.push(['Schijf', escapeHtml(m.schijfLocatie)])
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   if (m.bijgewerkt.length) rijen.push(['Bijgewerkt in Asana', escapeHtml(m.bijgewerkt.join(', '))])
-  delen.push(`<div style="margin-top:20px;">${gegevensTabel(rijen)}</div>`)
+  delen.push(ruimte(gegevensTabel(rijen), 20))
 
-  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana'), `<p style="margin:4px 0 0;font-size:13px;">${link(m.asanaUrl)}</p>`)
+  if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana', thema))
 
   return {
     aan: [ontvangerVoor(a.locatie)],
@@ -241,6 +254,6 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       types: describeRequestTypes(a.types, m.andersTekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n')),
+    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema),
   }
 }

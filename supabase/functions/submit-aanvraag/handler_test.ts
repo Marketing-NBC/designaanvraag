@@ -69,6 +69,13 @@ function fakeDb() {
     claimBijlagen: () => Promise.resolve([]),
     openBijlagenVan: () => Promise.resolve([]),
     markeerBijlage: () => Promise.resolve(),
+    zoekOpId: () => Promise.resolve(null),
+    findDetailByAsanaTaskGid: () => Promise.resolve(null),
+    collegaEmail: () => Promise.resolve(null),
+    findOplevering: () => Promise.resolve(null),
+    aantalVerstuurd: () => Promise.resolve(0),
+    insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
+    updateOplevering: () => Promise.resolve(),
   }
   return db
 }
@@ -210,7 +217,8 @@ Deno.test('gelukte aanvraag: rij, Asana-taak en Routine', async () => {
   // Via taskTitle en niet als letterlijke tekst: zo kan deze bewering niet achterblijven
   // bij de vorm van de taaknaam. Dat gebeurde wel, en de deploy ving het op.
   assertEquals(asana.calls[0].name, taskTitle(validAanvraag as never))
-  assertEquals(asana.calls[0].subtasks, ['LED-kolom Zorgcongres 2026', 'Vlaggen Zorgcongres 2026', 'Roll-up Zorgcongres 2026'])
+  // Een subtaak per type, en altijd de subtaak Oplevering voor de opleveringsmail.
+  assertEquals(asana.calls[0].subtasks, ['LED-kolom Zorgcongres 2026', 'Vlaggen Zorgcongres 2026', 'Roll-up Zorgcongres 2026', 'Oplevering'])
   assertEquals(asana.calls[0].assigneeGid, '222')
   assertMatch(asana.calls[0].htmlNotes, /^<body>.*<\/body>$/s)
   assertMatch(asana.calls[0].htmlNotes, /&lt;groot&gt; &amp; duidelijk/)
@@ -446,13 +454,14 @@ const interneAanvraag = {
   omschrijving: 'Nieuwe visitekaartjes voor het hele salesteam, met de nieuwe functietitels erop.',
 }
 
-Deno.test('interne aanvraag: taak met eigen titel, geen subtaken en geen huisstijl', async () => {
+Deno.test('interne aanvraag: taak met eigen titel, alleen de subtaak Oplevering en geen huisstijl', async () => {
   const { handler, db, asana, routine } = setup()
   const res = await handler(post(payload({ aanvraag: interneAanvraag })))
   assertEquals(res.status, 200)
   const taak = asana.calls[0]
   assertEquals(taak.name, 'Intern - Noa - Deadline: 10 november - Nieuwe visitekaartjes voor het hele salesteam, met de…')
-  assertEquals(taak.subtasks, [])
+  // Geen subtaken per type; alleen de subtaak Oplevering, die elke aanvraag krijgt.
+  assertEquals(taak.subtasks, ['Oplevering'])
   assertMatch(taak.plainNotes, /Soort: Intern/)
   assertMatch(taak.plainNotes, /Wat er gevraagd wordt\nNieuwe visitekaartjes/)
   assertEquals(routine.texts, [])
@@ -485,6 +494,26 @@ Deno.test('interne aanvraag: spoed meet tot de deadline', async () => {
   const rij = [...db.rows.values()][0]
   assertEquals(rij.spoed, true)
   assertEquals(rij.werkdagen_tot_event, 6)
+})
+
+Deno.test('interne aanvraag zonder deadline: geen datum, geen spoed, "Geen deadline" in de naam', async () => {
+  const { handler, db, asana } = setup({ now: () => new Date('2026-11-02T10:00:00Z') })
+  const res = await handler(post(payload({ aanvraag: { ...interneAanvraag, deadline: null }, started_at: '2026-11-02T09:59:00Z' })))
+  assertEquals(res.status, 200)
+  const taak = asana.calls[0]
+  assertEquals(taak.name, 'Intern - Noa - Geen deadline - Nieuwe visitekaartjes voor het hele salesteam, met de…')
+  assertMatch(taak.plainNotes, /geen deadline, het mag klaar zijn wanneer het past/)
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.deadline, null)
+  assertEquals(rij.spoed, false)
+  assertEquals(rij.werkdagen_tot_event, null)
+})
+
+Deno.test('een evenement zonder deadline wordt geweigerd', async () => {
+  const { handler } = setup()
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, deadline: null } })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvraag.deadline')
 })
 
 Deno.test('buildCustomFields zet de soort en laat lege velden van een interne aanvraag weg', () => {
@@ -550,6 +579,18 @@ const metDeadlines = {
   ...(metKleur as object),
   deadlines_project: { gid: 'dl1', name: 'Deadlines designaanvragen' },
 } as unknown as Parameters<typeof createHandler>[0]['fields']
+
+Deno.test('zonder deadline geen mijlpaal en geen datum in het veld Deadline', async () => {
+  const db = fakeDb()
+  const asana = fakeAsana()
+  const handler = createHandler({ env, db, asana, routine: fakeRoutine(), storage: null, fields: metDeadlines,
+    now: () => new Date('2026-09-14T10:00:00Z'), log: () => {} })
+  await handler(post(payload({ aanvraag: { ...interneAanvraag, deadline: null }, started_at: '2026-09-14T09:59:00Z' })))
+  assertEquals(asana.deadlines, [])
+  const rij = [...db.rows.values()][0]
+  assertEquals(rij.asana_deadline_gid, null)
+  assertEquals(rij.asana_error, null)
+})
 
 Deno.test('elke aanvraag krijgt een mijlpaal op zijn deadline, en die wordt onthouden', async () => {
   const db = fakeDb()
@@ -827,8 +868,9 @@ Deno.test('een herhaalde verzending mailt niet nog een keer', async () => {
 
 Deno.test('een interne aanvraag mailt zonder event, met de vraag in het onderwerp', async () => {
   const mail = fakeMail()
-  const { handler } = setup({ mail })
-  await handler(post(payload({ aanvraag: interneAanvraag })))
+  // Een vaste dag ruim voor de deadline; met de echte klok wordt het vanzelf een spoedje.
+  const { handler } = setup({ mail, now: () => new Date('2026-09-14T10:00:00Z') })
+  await handler(post(payload({ aanvraag: interneAanvraag, started_at: '2026-09-14T09:59:00Z' })))
   const [m] = mail.verstuurd
   assertMatch(m.onderwerp, /^Nieuwe aanvraag: Intern - /)
   assertStringIncludes(m.html, 'Nieuwe interne aanvraag van')

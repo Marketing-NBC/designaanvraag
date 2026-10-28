@@ -2,7 +2,8 @@ name: Bijlagen opruimen
 
 # Gooit meegestuurde bestanden weg die hun tijd gehad hebben: 30 dagen na een aanvraag, en 7 dagen
 # als het formulier nooit is afgemaakt. De bijlage bij de Asana-taak blijft; alleen de kopie in de
-# opslag verdwijnt. Vereist secrets SUPABASE_PROJECT_ID en SUPABASE_SECRET_KEY.
+# opslag verdwijnt. Ook huisstijl en menuschermen van aanvragen die uit de tabel verwijderd zijn.
+# Vereist secrets SUPABASE_PROJECT_ID en SUPABASE_SECRET_KEY.
 
 on:
   schedule:
