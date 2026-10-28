@@ -142,6 +142,8 @@ export function renderAanvullingComment(v: {
    * heeft, zodat die een vermelding krijgt en het in zijn Asana-inbox belandt.
    */
   heropendVoor?: string | null
+  /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
+  menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
 }): string {
   const lines: string[] = []
 
@@ -155,7 +157,14 @@ export function renderAanvullingComment(v: {
     lines.push('')
   }
 
-  lines.push(`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '', escapeXml(v.toelichting), '')
+  lines.push(`<strong>Aanvulling van ${escapeXml(v.naam)}</strong>`, '')
+  if (v.toelichting) lines.push(escapeXml(v.toelichting), '')
+
+  if (v.menu) {
+    const pakket = v.menu.vorigPakket ? `${v.menu.pakket} (was ${v.menu.vorigPakket})` : v.menu.pakket
+    lines.push(`<strong>Menu aangepast</strong>, pakket ${escapeXml(pakket)}. Zet Menuscherm op Genereer nu om het scherm opnieuw te maken.`, '')
+    lines.push(escapeXml(v.menu.tekst), '')
+  }
 
   if (v.bijgewerkt.length) {
     lines.push(`<strong>Bijgewerkt in deze taak:</strong> ${escapeXml(v.bijgewerkt.join(', '))}`)
@@ -171,7 +180,7 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && !v.menu) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

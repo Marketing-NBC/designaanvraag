@@ -12,7 +12,9 @@ import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderAanvullingMail } from '../_shared/shared/meldingen.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
+import { vraagtOmMenu } from '../_shared/shared/request-types.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
+import pakketData from '../_shared/shared/menu-pakketten.json' with { type: 'json' }
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 
 /**
@@ -44,7 +46,13 @@ export interface Deps {
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
 
-const MAX_BODY_BYTES = 32 * 1024
+// Ruimer dan een aanvulling met alleen tekst: een aangepast menu gaat als structuur mee.
+const MAX_BODY_BYTES = 128 * 1024
+
+/** De naam van een pakket zoals de aanvrager hem kent ("Grab & Go"), of de sleutel als die onbekend is. */
+export function pakketNaam(sleutel: string): string {
+  return (pakketData as { pakketten: { pakket: string; naam: string }[] }).pakketten.find((p) => p.pakket === sleutel)?.naam ?? sleutel
+}
 /** Sneller dan dit is geen mens. */
 const MIN_FILL_MS = 3_000
 
@@ -200,6 +208,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Een interne aanvraag heeft geen event, dus ook geen eventdatum om te verschuiven.
     const aanvulling: Aanvulling = row.soort === 'intern' ? { ...invoer, nieuwe_event_datum: null } : invoer
 
+    // Een menu aanpassen kan alleen als er een menukaart of menuscherm bij de aanvraag hoort.
+    if (aanvulling.menu_inhoud && !vraagtOmMenu(row.aanvraag_types ?? [])) {
+      return json({ error: 'Bij deze aanvraag hoort geen menukaart of menuscherm, dus er is geen menu om aan te passen.', field: 'aanvulling.menu_inhoud' }, 400, cors)
+    }
+    // Wat de reactie en de mail over het nieuwe menu zeggen. Het pakket van toen alleen als het anders is.
+    const menu = aanvulling.menu_inhoud
+      ? {
+        tekst: aanvulling.menu_tekst,
+        pakket: pakketNaam(aanvulling.menu_inhoud.pakket),
+        vorigPakket: row.menu_pakket && row.menu_pakket !== aanvulling.menu_inhoud.pakket ? pakketNaam(row.menu_pakket) : null,
+      }
+      : null
+
     // Een verlopen deadline moet vervangen worden; het formulier vraagt daar al om, maar wie het
     // formulier gisteren openzette en vandaag verstuurt komt hier toch langs.
     const vandaag = vandaagInNl(now())
@@ -222,6 +243,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     const aanvullingRij = await db.insertAanvulling({ ...aanvulling, client_request_id, ip_hash: ipHash })
     log('info', 'aanvulling opgeslagen', { id: aanvullingRij.id, aanvraag: row.id, event: row.event })
+
+    // Het nieuwe menu meteen bij de aanvraag zetten, ook als Asana straks niet meewerkt: daar maakt
+    // de knop "Genereer nu" het volgende menuscherm van.
+    if (aanvulling.menu_inhoud) {
+      await db.update(row.id, { menu_inhoud: aanvulling.menu_inhoud, menu_tekst: aanvulling.menu_tekst, menu_pakket: aanvulling.menu_inhoud.pakket })
+    }
+    const menuBijgewerkt = menu ? ['Menu'] : []
 
     // Meegestuurde bestanden aan deze aanvulling hangen. Voorwaardelijk, dus ids die al ergens bij
     // horen of niet bestaan vallen vanzelf af.
@@ -268,6 +296,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijgewerkt: v.wijziging?.bijgewerkt ?? [],
           bijlagen: v.bijlagen,
           heropend: v.heropend,
+          menu,
           asanaFout: v.asanaFout,
         }))
         log('info', 'aanvulling gemaild', { id: aanvullingRij.id })
@@ -285,7 +314,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         heropend: false,
         asanaFout: 'De koppeling met Asana is niet ingesteld.',
       })
-      return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
+      return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: menuBijgewerkt } satisfies AanvullingResult, 200, cors)
     }
 
     const waarschuwingen: string[] = []
@@ -373,12 +402,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
+          menu,
         }),
       )
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       log('error', 'reactie plaatsen mislukt', { id: aanvullingRij.id, error: msg })
-      await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: wijziging.bijgewerkt, asana_error: `reactie plaatsen mislukt: ${msg}` })
+      await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt], asana_error: `reactie plaatsen mislukt: ${msg}` })
       await meld({
         taak,
         wijziging,
@@ -391,7 +421,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     await db.updateAanvulling(aanvullingRij.id, {
-      bijgewerkt: wijziging.bijgewerkt,
+      bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt],
       asana_error: waarschuwingen.length ? waarschuwingen.join('; ') : null,
     })
 
@@ -412,6 +442,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (Object.keys(patch).length) await db.update(row.id, patch)
 
     log('info', 'aanvulling in asana', { id: aanvullingRij.id, gid: row.asana_task_gid, bijgewerkt: wijziging.bijgewerkt })
-    return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: wijziging.bijgewerkt } satisfies AanvullingResult, 200, cors)
+    return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt] } satisfies AanvullingResult, 200, cors)
   }
 }

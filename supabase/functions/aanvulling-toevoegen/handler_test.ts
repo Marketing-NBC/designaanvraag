@@ -79,6 +79,7 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     aanvraag_types: ['led_kolom'],
     anders_tekst: '',
     schijf_locatie: '',
+    menu_pakket: '',
     ...over,
   }
 }
@@ -223,7 +224,7 @@ function deps(over: Partial<Deps> = {}): Deps {
 
 Deno.test('types worden aangevuld, nooit vervangen', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     // In Asana staat inmiddels ook een menukaart die Marketing er zelf bij zette.
     { 'f-type': { optieGids: ['o-led', 'o-menu'], datum: null, tekst: null } },
@@ -235,7 +236,7 @@ Deno.test('types worden aangevuld, nooit vervangen', () => {
 
 Deno.test('een type dat er al staat levert geen wijziging op', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-type': { optieGids: ['o-led'], datum: null, tekst: null } },
     cfg,
@@ -246,7 +247,7 @@ Deno.test('een type dat er al staat levert geen wijziging op', () => {
 
 Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -258,7 +259,7 @@ Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
 
 Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie', () => {
   const leeg = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -267,7 +268,7 @@ Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie
   assertEquals(leeg.schijfNietOvergenomen, '')
 
   const bezet = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '' },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-schijf': { optieGids: [], datum: null, tekst: 'G:\\Door Marketing gezet' } },
     cfg,
@@ -605,4 +606,49 @@ Deno.test('een aanvulling op een interne aanvraag mailt zonder event', async () 
   const [m] = mail.verstuurd
   assertEquals(m.onderwerp, 'Aanvulling: Intern - Nieuwe visitekaartjes voor het salesteam')
   assertEquals(m.html.includes('Eventdatum'), false)
+})
+
+// ── Menu aanpassen ───────────────────────────────────────────────────────────
+
+const nieuwMenu = {
+  pakket: 'lunch-basic',
+  secties: [{ kop: 'Broodjes', gerechten: [{ naam: 'Clubsandwich', ingredienten: ['kip', 'bacon'] }] }],
+}
+const menuAanvraag = () => fakeDb(aanvraag({ aanvraag_types: ['menu_scherm'], menu_pakket: 'grab-and-go' }))
+
+Deno.test('een aangepast menu komt bij de aanvraag, zodat het volgende menuscherm het gebruikt', async () => {
+  const db = menuAanvraag()
+  const asana = fakeAsana()
+  const res = await createHandler(deps({ db, asana }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon' })))
+  assertEquals(res.status, 200)
+  assertEquals((await res.json()).bijgewerkt, ['Menu'])
+  assertEquals(db.patches[0], { menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon', menu_pakket: 'lunch-basic' })
+  // In de reactie: het nieuwe pakket, het oude, en wat Marketing nu moet doen.
+  assertStringIncludes(asana.comments[0], 'Menu aangepast</strong>, pakket Basic Lunch (was Grab &amp; Go)')
+  assertStringIncludes(asana.comments[0], 'Genereer nu')
+  assertStringIncludes(asana.comments[0], 'Clubsandwich | kip | bacon')
+})
+
+Deno.test('alleen het menu aanpassen mag zonder toelichting', async () => {
+  const res = await createHandler(deps({ db: menuAanvraag() }))(post(payload({ toelichting: '', menu_inhoud: nieuwMenu, menu_tekst: 'x' })))
+  assertEquals(res.status, 200)
+  const zonder = await createHandler(deps({ db: menuAanvraag() }))(post(payload({ toelichting: '' })))
+  assertEquals(zonder.status, 400)
+})
+
+Deno.test('een menu aanpassen zonder menukaart of menuscherm in de aanvraag wordt geweigerd', async () => {
+  const db = fakeDb()
+  const res = await createHandler(deps({ db }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'x' })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvulling.menu_inhoud')
+  assertEquals(db.patches, [])
+})
+
+Deno.test('hetzelfde pakket: geen "was" in de reactie, en de mail toont het nieuwe menu', async () => {
+  const asana = fakeAsana()
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag({ aanvraag_types: ['menu_scherm'], menu_pakket: 'lunch-basic' }))
+  await createHandler(deps({ db, asana, mail }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes' })))
+  assertStringIncludes(asana.comments[0], 'pakket Basic Lunch.')
+  assertStringIncludes(mail.verstuurd[0].html, 'Nieuw menu: Basic Lunch')
 })

@@ -52,13 +52,15 @@ const gerechtSchema = z.object({
 })
 
 /** De culinaire invulling als structuur: het pakket met zijn onderdelen en gerechten. */
-const menuInhoudSchema = z.object({
+export const menuInhoudSchema = z.object({
   pakket: z.string().trim().min(1).max(60),
   secties: z.array(z.object({
     kop: z.string().trim().max(200).nullable(),
     gerechten: z.array(gerechtSchema).max(60),
   })).max(20),
 })
+
+export type MenuInhoud = z.output<typeof menuInhoudSchema>
 
 export const aanvraagSchema = z
   .object({

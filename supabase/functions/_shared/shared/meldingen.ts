@@ -191,6 +191,8 @@ export interface AanvullingMail {
   bijlagen: string[]
   /** De taak stond op Klaar of was afgevinkt en is heropend. */
   heropend: boolean
+  /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
+  menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
 }
@@ -211,7 +213,13 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   }
 
   delen.push(taakRegel(m.taakNaam))
-  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`, citaat(m.toelichting, thema))
+  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`)
+  if (m.toelichting) delen.push(citaat(m.toelichting, thema))
+  if (m.menu) {
+    const pakket = m.menu.vorigPakket ? `${m.menu.pakket} (was ${m.menu.vorigPakket})` : m.menu.pakket
+    delen.push(kopje(`Nieuw menu: ${pakket}`), citaat(m.menu.tekst, thema),
+      '<p style="margin:4px 0 0;font-size:13px;color:#596165;">Zet Menuscherm in Asana op Genereer nu om het scherm opnieuw te maken.</p>')
+  }
 
   const gewijzigd = ` <span style="color:${thema.link};font-weight:bold;">(gewijzigd)</span>`
   const rijen: [string, string][] = []

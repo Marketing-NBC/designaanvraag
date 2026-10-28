@@ -504,3 +504,20 @@ input, textarea, button { font-family: inherit; }
 .geen-deadline { margin-top: 16px; max-width: 420px; }
 .geen-deadline .opt__label { display: grid; gap: 2px; }
 .geen-deadline__uitleg { font: 400 15px/1.45 var(--font-body); color: var(--fg-secondary); }
+
+/* "Menu aanpassen" onder de bijlagen in het aanvulscherm: hetzelfde vak als de bijlagen, maar
+   met een doorgetrokken rand, want het is een knop en geen plek om iets in te slepen. */
+.menuknop {
+  display: flex; align-items: center; gap: 14px; width: 100%; max-width: 560px; margin-top: 12px; text-align: left;
+  padding: 18px 22px; border: 1px solid var(--border-default); border-radius: var(--r-sm);
+  background: var(--bg-surface); color: var(--fg-primary);
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+button.menuknop:hover, button.menuknop:focus-visible { border-color: var(--nbc-ink); }
+button.menuknop:disabled { opacity: .6; }
+.menuknop > svg { width: 22px; height: 22px; flex: none; color: var(--fg-secondary); }
+.menuknop--aangepast { background: var(--nbc-blue-tint); border-color: var(--nbc-ink); flex-wrap: wrap; }
+.menuknop__tekst { display: grid; gap: 3px; flex: 1; min-width: 180px; }
+.menuknop__tekst strong { font: 600 17px/1.35 var(--font-body); }
+.menuknop__uitleg { font: 400 14px/1.4 var(--font-body); color: var(--fg-secondary); }
+.menu-laat { margin-top: 20px; }

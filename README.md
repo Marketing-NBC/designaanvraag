@@ -308,6 +308,14 @@ controleert dat ook zelf. Is het event zelf ook al geweest (feedback achteraf), 
 deadline na het event liggen. Dat komt als **reactie onder de bestaande Asana-taak**, zodat je er een
 melding van krijgt en alles bij elkaar blijft.
 
+**Menu aanpassen.** Hoort er een menukaart of menuscherm bij de aanvraag, dan staat onder de
+bijlagen de knop **Menu aanpassen**. Die opent hetzelfde menuscherm als in het formulier, met het
+menu zoals het bij de aanvraag staat: gerechten wisselen, weghalen of toevoegen, of met **Pakket
+wijzigen** een ander pakket kiezen (van Grab & Go naar Lunch, bijvoorbeeld). Een toelichting is dan
+niet verplicht. Het nieuwe menu vervangt dat van de aanvraag, dus de knop **Genereer nu** in Asana
+maakt het volgende menuscherm ermee. In de reactie bij de taak en in de mail aan Marketing staat het
+nieuwe menu, met het pakket waar het eerst op stond als dat veranderde.
+
 Een aanvulling werkt daarnaast een paar velden bij, met opzet terughoudend:
 
 | Veld | Wat er gebeurt |
