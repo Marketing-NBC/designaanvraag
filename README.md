@@ -198,7 +198,9 @@ bestandsnamen staan sowieso in de taakbeschrijving, zodat je kunt bellen in plaa
 
 **Opruimen** gebeurt elke nacht via de workflow **Bijlagen opruimen** (`scripts/bijlagen-opruimen.mjs`):
 30 dagen na een aanvraag, 7 dagen als het formulier nooit is afgemaakt, plus losse bestanden zonder
-administratie. De bijlage bij de taak blijft; alleen de kopie in de opslag verdwijnt. Handmatig
+administratie. De bijlage bij de taak blijft; alleen de kopie in de opslag verdwijnt. Verwijder je
+een aanvraag uit de tabel `aanvragen`, dan gaan ook de huisstijlbestanden (`brand-assets/<id>/`) en
+menuschermen (`menuschermen/<id>/`) van die aanvraag de eerstvolgende nacht weg. Handmatig
 proefdraaien kan met de knop **Run workflow** en "Alleen laten zien wat er zou verdwijnen".
 
 In Supabase staat per bestand een rij in `bijlagen`: welk bestand, bij welke aanvraag, en of het
