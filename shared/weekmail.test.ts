@@ -15,6 +15,9 @@ function taak(over: Partial<WeekTaak> = {}): WeekTaak {
     sectie: 'mee_bezig',
     sectieNaam: 'Mee bezig',
     spoed: false,
+    afgerond: false,
+    afgerondOp: null,
+    opgeleverd: false,
     ...over,
   }
 }
@@ -143,11 +146,62 @@ describe('taakUitAsana', () => {
       sectie: 'mee_bezig',
       sectieNaam: 'Mee bezig',
       spoed: true,
+      afgerond: false,
+      afgerondOp: null,
+      opgeleverd: false,
     })
   })
 
   it('een taak die met de hand is aangemaakt, zonder velden, telt als NBC zonder deadline', () => {
     const t = taakUitAsana({ name: 'Los', memberships: [{ project: { gid: 'p1' }, section: null }] }, cfg)
     expect(t).toMatchObject({ locatie: 'nbc', deadline: null, spoed: false, sectie: null, vervaldatum: null })
+  })
+})
+
+describe('opgeleverd, nog geen reactie', () => {
+  const opgeleverd = (over: Partial<WeekTaak> = {}) =>
+    taak({ sectie: 'klaar', sectieNaam: 'Klaar', afgerond: true, afgerondOp: '2026-10-22', opgeleverd: true, ...over })
+
+  it('wat de afgelopen twee weken is opgeleverd en nog in Klaar staat, nieuwste eerst', () => {
+    const o = maakWeekoverzicht([
+      opgeleverd({ naam: 'A', afgerondOp: '2026-10-20' }),
+      opgeleverd({ naam: 'B', afgerondOp: '2026-10-23' }),
+      opgeleverd({ naam: 'Te lang geleden', afgerondOp: '2026-10-01' }),
+      opgeleverd({ naam: 'Zonder mail', opgeleverd: false }),
+      // Feedback haalt een taak uit Klaar en zet het vinkje eraf: dan is er wel gereageerd.
+      opgeleverd({ naam: 'Met feedback', sectie: 'feedback', afgerond: false, afgerondOp: null }),
+    ], MA)
+    expect(o.opgeleverd.map((t) => t.naam)).toEqual(['B', 'A'])
+  })
+
+  it('een afgevinkte taak telt verder nergens mee', () => {
+    const o = maakWeekoverzicht([opgeleverd({ sectie: 'mee_bezig', deadline: '2026-10-28' })], MA)
+    expect(o.aantal).toBe(0)
+    expect(o.letOp.nietIngepland).toEqual([])
+  })
+
+  it('staat onderaan de mail, maar is alleen geen reden voor een mail', () => {
+    const o = maakWeekoverzicht([opgeleverd({ naam: 'Zorgcongres - Torenscherm' })], MA)
+    expect(nietsTeMelden(o)).toBe(true)
+    const html = renderWeekmail(o, 'nbc', null).html
+    expect(html).toContain('Opgeleverd, nog geen reactie')
+    expect(html).toContain('opgeleverd donderdag 22 oktober')
+  })
+
+  it('leest Oplevermail en het moment van afvinken uit Asana', () => {
+    const cfg = {
+      project: { gid: 'p' },
+      fields: { oplevermail: { gid: 'veld-op' } },
+      sections: { klaar: { gid: 's-klaar', name: 'Klaar' } },
+    }
+    const t = taakUitAsana({
+      name: 'X',
+      completed: true,
+      // 23:30 in Nederland is het al de volgende dag.
+      completed_at: '2026-10-21T22:30:00Z',
+      memberships: [{ project: { gid: 'p' }, section: { gid: 's-klaar', name: 'Klaar' } }],
+      custom_fields: [{ gid: 'veld-op', enum_value: { name: 'Verstuurd' } }],
+    }, cfg)
+    expect(t).toMatchObject({ afgerond: true, afgerondOp: '2026-10-22', opgeleverd: true, sectie: 'klaar' })
   })
 })

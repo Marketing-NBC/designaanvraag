@@ -11,7 +11,7 @@ import { NameCombobox } from './components/NameCombobox'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
-import { ApiError, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
+import { ApiError, haalAanvraag, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
 import { useBijlagen } from './lib/uploads'
 import { formatShort, isBeforeToday, todayIso } from './lib/dates'
 
@@ -25,17 +25,23 @@ import { formatShort, isBeforeToday, todayIso } from './lib/dates'
  *
  * De eerste vraag is of het om een evenement gaat of om iets intern. Een evenement zoek je op
  * eventnaam; een interne aanvraag heeft geen event, die vind je terug op je eigen naam.
+ *
+ * Via de knop "Feedback geven" in de opleveringsmail staat de aanvraag al vast (`vooraf`). Dan
+ * vallen het kiezen en zoeken weg: je naam, je feedback, en wat er verder verandert.
  */
 
 type Stap = 'soort' | 'zoek' | 'naam' | 'kies' | 'toelichting' | 'extra'
 
-const STAPPEN: Record<Soort, readonly Stap[]> = {
+const STAPPEN: Record<Soort | 'feedback', readonly Stap[]> = {
   evenement: ['soort', 'zoek', 'naam', 'toelichting', 'extra'],
   intern: ['soort', 'naam', 'kies', 'toelichting', 'extra'],
+  feedback: ['naam', 'toelichting', 'extra'],
 }
 
 interface Props {
   collegas: string[]
+  /** Id van een aanvraag die al gekozen is: de feedbacklink uit de opleveringsmail. */
+  vooraf?: string | null
   onSluit: () => void
 }
 
@@ -62,7 +68,7 @@ function deadlineVerlopen(a: Pick<GevondenAanvraag, 'deadline'> | null): boolean
   return Boolean(a && isBeforeToday(a.deadline))
 }
 
-export function Aanvulling({ collegas, onSluit }: Props) {
+export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
   const [index, setIndex] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [soort, setSoort] = useState<Soort | null>(null)
@@ -75,9 +81,31 @@ export function Aanvulling({ collegas, onSluit }: Props) {
   const uploads = useBijlagen('aanvulling')
   const clientRequestId = useRef(crypto.randomUUID())
   const startedAt = useRef(new Date().toISOString())
+  // Via de feedbacklink: eerst de aanvraag ophalen. Lukt dat niet, dan gewoon zelf zoeken.
+  const [feedback, setFeedback] = useState<'laden' | 'ja' | 'nee'>(vooraf ? 'laden' : 'nee')
+
+  useEffect(() => {
+    if (!vooraf) return
+    let afgebroken = false
+    void haalAanvraag(vooraf).then((a) => {
+      if (afgebroken) return
+      if (a) {
+        setSoort(a.soort)
+        setGekozen(a)
+        setFeedback('ja')
+      } else {
+        setFeedback('nee')
+        setError('We konden de aanvraag uit je mail niet meer vinden. Zoek hem hieronder op.')
+        setErrorNonce((n) => n + 1)
+      }
+    })
+    return () => {
+      afgebroken = true
+    }
+  }, [vooraf])
 
   // Zolang er nog niet gekozen is, telt de route van een evenement: die is even lang.
-  const stappen = STAPPEN[soort ?? 'evenement']
+  const stappen = STAPPEN[feedback === 'ja' ? 'feedback' : (soort ?? 'evenement')]
   const stap: Stap = stappen[index]
   const verlopen = deadlineVerlopen(gekozen)
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }))
@@ -207,22 +235,36 @@ export function Aanvulling({ collegas, onSluit }: Props) {
 
   if (klaar) return <Gelukt result={klaar} gekozen={gekozen} onSluit={onSluit} />
 
+  if (feedback === 'laden') {
+    return (
+      <Shell progress={0} counter="" canPrev onPrev={onSluit} canNext={false} onNext={() => {}}>
+        <p className="hint" aria-live="polite">Je aanvraag wordt opgezocht…</p>
+      </Shell>
+    )
+  }
+
+  const waarover = gekozen ? (gekozen.soort === 'intern' ? gekozen.omschrijving || 'je interne aanvraag' : gekozen.event) : ''
+
   const titels: Record<Stap, string> = {
     soort: 'Is het voor een evenement of intern?',
     zoek: 'Bij welk event hoort het?',
     naam: 'Wie ben je?',
     kies: 'Over welke aanvraag gaat het?',
-    toelichting: 'Wat moet erbij of anders?',
+    toelichting: feedback === 'ja' ? 'Wat wil je anders?' : 'Wat moet erbij of anders?',
     extra: verlopen ? 'De deadline is verstreken' : 'Verandert er nog iets aan de aanvraag?',
   }
   const hulp: Record<Stap, string | undefined> = {
     soort: 'Dan zoeken we de goede aanvraag erbij.',
     zoek: 'Typ een deel van de eventnaam. Je ziet de aanvragen van de afgelopen maanden.',
-    naam: soort === 'intern'
-      ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
-      : 'Dan weet Marketing wie deze aanvulling stuurde.',
+    naam: feedback === 'ja'
+      ? `Je geeft feedback op ${waarover}. Dan weet Marketing van wie hij komt.`
+      : soort === 'intern'
+        ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
+        : 'Dan weet Marketing wie deze aanvulling stuurde.',
     kies: 'Je interne aanvragen van de afgelopen maanden.',
-    toelichting: 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Heb je bestanden, voeg ze hier meteen toe. Het marketingteam krijgt er meteen bericht van.',
+    toelichting: feedback === 'ja'
+      ? 'Wat moet er anders aan het ontwerp? Hoe concreter, hoe sneller het goed is. Heb je bestanden of een screenshot met aantekeningen, voeg ze hier toe.'
+      : 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Heb je bestanden, voeg ze hier meteen toe. Het marketingteam krijgt er meteen bericht van.',
     extra: verlopen
       ? 'Kies eerst een nieuwe deadline. De rest mag je overslaan.'
       : 'Alles hieronder mag je overslaan. Wat je leeg laat, blijft staan zoals het was.',
@@ -272,8 +314,9 @@ export function Aanvulling({ collegas, onSluit }: Props) {
                 value={draft.naam}
                 onChange={(v) => {
                   patch({ naam: v })
-                  // Bij een interne aanvraag hangt de lijst hierna van je naam af.
-                  if (soort === 'intern' && gekozen) kies(null)
+                  // Bij een interne aanvraag hangt de lijst hierna van je naam af. Via de feedbacklink
+                  // staat de aanvraag al vast, en mag ook een collega feedback geven.
+                  if (soort === 'intern' && gekozen && feedback !== 'ja') kies(null)
                 }}
                 names={collegas}
                 invalid={Boolean(error)}

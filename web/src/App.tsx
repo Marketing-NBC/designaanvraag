@@ -31,10 +31,20 @@ type Screen =
   | { kind: 'step'; index: number }
   | { kind: 'review' }
   | { kind: 'success'; result: SubmitResult; draft: Draft }
-  /** De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. */
-  | { kind: 'aanvulling' }
+  /**
+   * De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. Met
+   * `vooraf` staat de aanvraag al gekozen: zo komt de knop "Feedback geven" uit de opleveringsmail
+   * binnen.
+   */
+  | { kind: 'aanvulling'; vooraf?: string }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+
+/** Het id uit `?feedback=` in de link van de opleveringsmail, of null. */
+function feedbackUitUrl(): string | null {
+  const id = new URLSearchParams(window.location.search).get('feedback')?.trim().toLowerCase() ?? ''
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id) ? id : null
+}
 
 function isTypingTarget(el: EventTarget | null): el is HTMLElement {
   if (!(el instanceof HTMLElement)) return false
@@ -51,7 +61,10 @@ export default function App() {
   // overzicht en het bewaarde concept lezen. Afgeleid tijdens het renderen, dus geen extra ronde.
   const volledig: Draft = useMemo(() => ({ ...draft, bijlagen: uploads.bijlagen }), [draft, uploads.bijlagen])
 
-  const [screen, setScreen] = useState<Screen>({ kind: 'start' })
+  const [screen, setScreen] = useState<Screen>(() => {
+    const vooraf = feedbackUitUrl()
+    return vooraf ? { kind: 'aanvulling', vooraf } : { kind: 'start' }
+  })
   const [dir, setDir] = useState<1 | -1>(1)
   const [error, setError] = useState<string | null>(null)
   const [errorNonce, setErrorNonce] = useState(0)
@@ -81,6 +94,15 @@ export default function App() {
 
   useEffect(() => {
     fetchCollegas(COLLEGAS_FALLBACK).then(setCollegas)
+  }, [])
+
+  // De feedbacklink heeft zijn werk gedaan zodra het scherm open is. Uit de adresbalk halen, zodat
+  // verversen of "terug naar het begin" niet weer bij dezelfde aanvraag uitkomt.
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.has('feedback')) return
+    url.searchParams.delete('feedback')
+    window.history.replaceState(null, '', url)
   }, [])
 
   // Autosave zolang de gebruiker in het formulier zit.
@@ -406,7 +428,7 @@ export default function App() {
   }
 
   if (screen.kind === 'aanvulling') {
-    return <Aanvulling collegas={collegas} onSluit={() => go({ kind: 'start' }, -1)} />
+    return <Aanvulling collegas={collegas} vooraf={screen.vooraf ?? null} onSluit={() => go({ kind: 'start' }, -1)} />
   }
 
   if (screen.kind === 'success') {

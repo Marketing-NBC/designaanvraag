@@ -5,6 +5,10 @@
  *
  * "Deadline" is hier het veld Deadline: wanneer de aanvrager het af wil hebben. De vervaldatum is
  * de planning van Marketing; die staat erbij, zodat opvalt wat nog niet of te laat is ingepland.
+ *
+ * Onderaan staat wat de afgelopen twee weken is opgeleverd en waar nog geen feedback op kwam.
+ * Feedback haalt een taak uit Klaar, dus wat daar nog staat met Oplevermail op Verstuurd heeft
+ * (nog) geen reactie gehad.
  */
 import { formatDateShortNl } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
@@ -27,7 +31,16 @@ export interface WeekTaak {
   sectie: SectieSleutel | null
   sectieNaam: string | null
   spoed: boolean
+  /** Afgevinkt in Asana. */
+  afgerond: boolean
+  /** Wanneer hij is afgevinkt (YYYY-MM-DD); null als hij open is. */
+  afgerondOp: string | null
+  /** Oplevermail staat op Verstuurd: de aanvrager heeft het ontwerp gekregen. */
+  opgeleverd: boolean
 }
+
+/** Zo ver terug kijkt het blok "Opgeleverd". */
+export const OPGELEVERD_DAGEN = 14
 
 /** Wat we uit asana-fields.json nodig hebben. */
 export interface WeekmailVelden {
@@ -41,6 +54,8 @@ export interface AsanaWeekTaak {
   name?: string
   permalink_url?: string
   due_on?: string | null
+  completed?: boolean
+  completed_at?: string | null
   memberships?: { project?: { gid?: string }; section?: { gid?: string; name?: string } | null }[]
   custom_fields?: { gid?: string; date_value?: { date?: string } | null; enum_value?: { name?: string } | null }[]
 }
@@ -69,7 +84,16 @@ export function taakUitAsana(t: AsanaWeekTaak, cfg: WeekmailVelden): WeekTaak {
     sectie: sleutel ?? null,
     sectieNaam: sectie?.name ?? null,
     spoed: keuze('spoed') === 'ja',
+    afgerond: Boolean(t.completed),
+    afgerondOp: t.completed && t.completed_at ? vanTijdstip(t.completed_at) : null,
+    opgeleverd: keuze('oplevermail') === 'verstuurd',
   }
+}
+
+/** Een tijdstip uit Asana als Nederlandse datum. */
+function vanTijdstip(iso: string): string | null {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Amsterdam' }).format(d)
 }
 
 const DAGEN = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag']
@@ -119,6 +143,8 @@ export interface Weekoverzicht {
     naDeadlineIngepland: WeekTaak[]
     nietIngepland: WeekTaak[]
   }
+  /** Opgeleverd in de afgelopen OPGELEVERD_DAGEN, zonder feedback sindsdien. Nieuwste eerst. */
+  opgeleverd: WeekTaak[]
   aantal: number
   spoed: number
 }
@@ -130,7 +156,8 @@ export function maakWeekoverzicht(alle: WeekTaak[], vandaag: string): Weekoverzi
   const week = weekVan(vandaag)
   const volgendeMaandag = plusDagen(week.maandag, 7)
   const volgendeZondag = plusDagen(week.maandag, 13)
-  const open = alle.filter((t) => t.sectie !== 'klaar').sort(opDeadline)
+  const open = alle.filter((t) => t.sectie !== 'klaar' && !t.afgerond).sort(opDeadline)
+  const sinds = plusDagen(vandaag, -OPGELEVERD_DAGEN)
 
   const inWeek = (t: WeekTaak) => t.deadline !== null && t.deadline >= week.maandag && t.deadline <= week.zondag
   const dezeWeek = DAGEN.map((_, i) => {
@@ -152,6 +179,9 @@ export function maakWeekoverzicht(alle: WeekTaak[], vandaag: string): Weekoverzi
       // Wat al in Nieuwe aanvragen staat, staat daar al bij; dit is wat verder is maar geen datum heeft.
       nietIngepland: takenDezeWeek.filter((t) => !t.vervaldatum && t.sectie !== 'nieuwe_aanvragen'),
     },
+    opgeleverd: alle
+      .filter((t) => t.opgeleverd && t.afgerond && (t.sectie === 'klaar' || t.sectie === null) && t.afgerondOp !== null && t.afgerondOp >= sinds)
+      .sort((a, b) => (b.afgerondOp ?? '').localeCompare(a.afgerondOp ?? '') || a.naam.localeCompare(b.naam)),
     aantal: takenDezeWeek.length,
     spoed: takenDezeWeek.filter((t) => t.spoed).length,
   }
@@ -159,7 +189,8 @@ export function maakWeekoverzicht(alle: WeekTaak[], vandaag: string): Weekoverzi
 
 /**
  * Geen deadlines deze week en niets om op te letten: dan komt er geen mail. Een lege mail elke week
- * leert je alleen hem niet meer te lezen. Deadlines van volgende week wachten tot die maandag.
+ * leert je alleen hem niet meer te lezen. Deadlines van volgende week wachten tot die maandag, en
+ * wat is opgeleverd is goed nieuws: daar alleen komt geen mail voor.
  */
 export function nietsTeMelden(o: Weekoverzicht): boolean {
   return o.aantal === 0 && Object.values(o.letOp).every((l) => l.length === 0)
@@ -241,6 +272,12 @@ export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: s
   delen.push(o.volgendeWeek.length
     ? lijst(o.volgendeWeek, (t) => [`deadline ${dagNaam(t.deadline!)} ${kort(t.deadline!)}`])
     : '<p style="margin:0;color:#596165;">Nog geen deadlines.</p>')
+
+  if (o.opgeleverd.length) {
+    delen.push(kop('Opgeleverd, nog geen reactie'))
+    delen.push(`<p style="margin:0;color:#596165;font-size:13px;">De afgelopen ${OPGELEVERD_DAGEN} dagen opgeleverd, en sindsdien geen feedback via het formulier.</p>`)
+    delen.push(lijst(o.opgeleverd, (t) => [`opgeleverd ${dagNaam(t.afgerondOp!)} ${kort(t.afgerondOp!)}`]))
+  }
 
   if (projectUrl) delen.push(knop(projectUrl, 'Open het bord in Asana'))
 

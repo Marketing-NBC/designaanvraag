@@ -69,6 +69,13 @@ function fakeDb() {
     claimBijlagen: () => Promise.resolve([]),
     openBijlagenVan: () => Promise.resolve([]),
     markeerBijlage: () => Promise.resolve(),
+    zoekOpId: () => Promise.resolve(null),
+    findDetailByAsanaTaskGid: () => Promise.resolve(null),
+    collegaEmail: () => Promise.resolve(null),
+    findOplevering: () => Promise.resolve(null),
+    aantalVerstuurd: () => Promise.resolve(0),
+    insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
+    updateOplevering: () => Promise.resolve(),
   }
   return db
 }
@@ -827,8 +834,9 @@ Deno.test('een herhaalde verzending mailt niet nog een keer', async () => {
 
 Deno.test('een interne aanvraag mailt zonder event, met de vraag in het onderwerp', async () => {
   const mail = fakeMail()
-  const { handler } = setup({ mail })
-  await handler(post(payload({ aanvraag: interneAanvraag })))
+  // Een vaste dag ruim voor de deadline; met de echte klok wordt het vanzelf een spoedje.
+  const { handler } = setup({ mail, now: () => new Date('2026-09-14T10:00:00Z') })
+  await handler(post(payload({ aanvraag: interneAanvraag, started_at: '2026-09-14T09:59:00Z' })))
   const [m] = mail.verstuurd
   assertMatch(m.onderwerp, /^Nieuwe aanvraag: Intern - /)
   assertStringIncludes(m.html, 'Nieuwe interne aanvraag van')

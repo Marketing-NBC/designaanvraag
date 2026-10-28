@@ -6,6 +6,9 @@
  * ergens achter te blijven staan.
  */
 
+/** Het formulier zelf. De knop "Feedback geven" in de opleveringsmail wijst hierheen. */
+export const FORMULIER_URL = 'https://marketing-nbc.github.io/designaanvraag/'
+
 /** Het postvak van het marketingteam. */
 export const MARKETING_MAIL = 'marketing@nbcevents.nl'
 

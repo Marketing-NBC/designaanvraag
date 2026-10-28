@@ -30,8 +30,18 @@ gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsd
 @-vermelding in de reactie. Staat de taak in Mee bezig, dan gaat hij ook naar Feedback, maar
 blijven vinkje en planningsdatum staan. Zie README → "Feedback op werk dat al af is".
 
+En daarna **opleveren**: Marketing plaatst een reactie "Oplevering:" met de bestanden en zet het
+veld Oplevermail op Verstuur nu. De aanvrager (adres uit `collegas.email`) en de adressen uit "Ook
+mailen naar" krijgen een mail met die tekst, de bestanden en een knop **Feedback geven**, die het
+formulier opent met de aanvraag al gekozen. Daarna een verslag als reactie, het veld op Verstuurd en
+de taak naar Klaar. Met versienummers, en een blok "Opgeleverd, nog geen reactie" in het
+weekoverzicht. Zie README → "Opleveren".
+
 ### Nog te doen
 
+- Opleveren aanzetten: migratie `20261028120000_oplevering.sql` (gaat mee met de Supabase-deploy),
+  **Asana-velden vernieuwen** draaien voor Oplevermail en Ook mailen naar, e-mailadressen invullen in
+  `collegas.email`, en de M365-beheerder `Mail.ReadWrite` laten toevoegen voor bijlagen boven 2,5 MB.
 - Testtaken in Asana opruimen (alles met TEST in de naam).
 - Dashboard aanzetten: grafiek op **Spoed** (en een tweede op **Aanvrager**, gefilterd op Spoed = Ja);
   in "4. Werkplanning" de kalender kleuren op **Spoed**. Dit kan alleen in de interface, de API kan

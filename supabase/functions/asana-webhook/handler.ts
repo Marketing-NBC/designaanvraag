@@ -10,6 +10,8 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *    dus die is in beide projecten gelijk;
  *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
  *    verdwijnt en er geen aanvulling meer op kan;
+ *  - de knop "Verstuur nu" in het veld Oplevermail stuurt de aanvrager de opleveringsmail (zie
+ *    oplevering.ts);
  *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
  *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
  *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
@@ -45,6 +47,16 @@ export interface Deps {
    * mee; nu is het een knop.
    */
   startHuisstijl?(asanaTaskGid: string): Promise<boolean>
+  /**
+   * De knop "Verstuur nu" in het veld Oplevermail: de opleveringsmail versturen. Geeft een korte
+   * uitkomst voor in de log. Ontbreekt de functie, dan doet de knop niets.
+   */
+  oplever?(taak: AsanaTask): Promise<string>
+  /**
+   * Laat werk doorlopen nadat Asana zijn antwoord heeft. Asana wacht maar even op de webhook, en
+   * bestanden downloaden en mailen duurt langer. Zonder dit wordt er gewoon gewacht (zo testen we).
+   */
+  achtergrond?(werk: Promise<unknown>): void
   now?: () => Date
   cfg: AsanaFieldsConfig
   /** Overschrijft cfg.planning_project (env ASANA_PLANNING_PROJECT_GID). */
@@ -164,6 +176,37 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   }
 
   /**
+   * De knop "Verstuur nu" in het veld Oplevermail. Zelfde gang als bij de andere knoppen: het veld
+   * gaat meteen op "Bezig", zodat je ziet dat het loopt en tweemaal klikken niets extra's doet.
+   * Het versturen zelf zet hem daarna op Verstuurd of Mislukt.
+   */
+  async function handleOpleverknop(t: AsanaTask): Promise<string | null> {
+    const veld = cfg.fields?.oplevermail
+    if (!veld?.gid || !veld.options?.verstuur) return null
+    if (!(t.customFields?.[veld.gid]?.optieGids ?? []).includes(veld.options.verstuur)) return null
+    if (!deps.oplever) return 'oplevermail gevraagd, maar niet ingesteld'
+
+    const bezig = veld.options?.bezig
+    if (bezig) {
+      try {
+        await asana.updateCustomFields(t.gid, { [veld.gid]: bezig })
+      } catch (e) {
+        log('warn', 'oplevermail-veld op Bezig zetten mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+    const werk = deps.oplever(t).then(
+      (uitkomst) => log('info', 'oplevermail', { gid: t.gid, uitkomst }),
+      (e) => log('error', 'oplevermail mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) }),
+    )
+    if (!deps.achtergrond) {
+      await werk
+      return 'oplevermail afgehandeld'
+    }
+    deps.achtergrond(werk)
+    return 'oplevermail gestart'
+  }
+
+  /**
    * Zet de deadline-mijlpaal gelijk met de taak. Altijd schrijven in plaats van eerst vergelijken:
    * dat scheelt een extra ophaalronde, en de mijlpaal staat in een ander project, dus deze webhook
    * hoort zijn eigen wijziging niet terug. Een fout hier mag de planning-flow niet tegenhouden.
@@ -197,8 +240,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (!ours) return 'niet in ons project'
     await volgDeadline(t)
 
-    // De knop staat los van de planning-flow: een menuscherm mag ook gemaakt worden
-    // als de taak al afgerond is of nog geen vervaldatum heeft.
+    // De knoppen staan los van de planning-flow: een menuscherm mag ook gemaakt worden
+    // als de taak al afgerond is of nog geen vervaldatum heeft, en opleveren kan vanuit elke kolom.
+    const oplevering = await handleOpleverknop(t)
+    if (oplevering) return oplevering
     const menu = await handleMenuknop(t)
     if (menu) return menu
     const huisstijl = await handleHuisstijlknop(t)

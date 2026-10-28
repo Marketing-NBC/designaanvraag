@@ -193,6 +193,67 @@ proefdraaien kan met de knop **Run workflow** en "Alleen laten zien wat er zou v
 In Supabase staat per bestand een rij in `bijlagen`: welk bestand, bij welke aanvraag, en of het
 gelukt is.
 
+## Opleveren: de aanvrager laten weten dat het klaar is
+
+Is een ontwerp af, dan krijgt de aanvrager een mail met de bestanden en een knop **Feedback geven**.
+Zo werkt het in Asana:
+
+1. Plaats onder de taak een **reactie die begint met `Oplevering:`**. Wat je daarna typt, wordt de
+   tekst van de mail: wat er klaar is, wat er is aangepast, waar de drukbestanden staan (een pad op de
+   schijf of een link). Vet, lijstjes en links blijven staan.
+2. Sleep de **bestanden** in diezelfde reactie. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox)
+   gaan als link mee in plaats van als bijlage.
+3. Wie de mail nog meer moet krijgen, zet je in het veld **Ook mailen naar**: e-mailadressen gescheiden
+   door een komma, ook van buiten NBC. Je mag ze ook uit Outlook plakken (`Jan Jansen <jan@klant.nl>`).
+   Het veld blijft staan voor een volgende versie.
+4. Zet het veld **Oplevermail** op **Verstuur nu**.
+
+Het veld springt meteen op *Bezig*. Is de mail de deur uit, dan:
+
+- staat er een **reactie met een verslag**: aan wie, welke bijlagen, welke versie;
+- springt het veld op **Verstuurd**;
+- gaat de taak naar **Klaar** en wordt hij **afgevinkt**.
+
+Lukt het niet, dan gaat er **niets** de deur uit. Het veld springt op **Mislukt** en er komt een
+reactie met de reden, met een @-vermelding van wie de Oplevering-reactie schreef. Los het op en zet
+het veld opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: er is geen reactie die met `Oplevering:`
+begint, er is geen ontvanger, in "Ook mailen naar" staat iets wat geen adres is, of de bestanden zijn
+te groot.
+
+**De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat:
+Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
+lezen het. Staat er geen adres, dan gaan alleen de adressen uit "Ook mailen naar" mee. Is dat ook
+leeg, dan gaat er niets uit. Antwoordt iemand toch op de mail, dan komt dat bij het marketingpostvak
+van de locatie terecht in plaats van bij het afzenderpostvak waar niemand kijkt; de mail zelf vraagt
+om feedback via de knop.
+
+**Welke bestanden.** Asana zegt via de API niet welk bestand bij welke reactie hoort. Daarom gaan de
+bestanden mee die tussen **30 minuten vóór en 2 minuten ná** de Oplevering-reactie bij de taak zijn
+gezet. In het verslag staat precies welke dat waren, zodat je kunt controleren dat het klopt.
+
+**Te groot.** Samen mogen de bijlagen **20 MB** zijn; daarboven komen ze bij veel ontvangers niet
+meer aan. Is het meer, dan gaat er niets uit en vraagt de reactie je om de bestanden op de schijf of
+in SharePoint te zetten en de link of het pad in een nieuwe Oplevering-reactie te plakken. Boven de
+2,5 MB is daarnaast het recht `Mail.ReadWrite` nodig (zie **Mail instellen**, stap 4).
+
+**Versies.** De eerste oplevering is versie 1. Komt er feedback en lever je opnieuw op, dan heet de
+mail "Versie 2 klaar: …". Elke Oplevering-reactie gaat maar één keer de deur uit: voor een nieuwe
+versie plaats je een nieuwe reactie. Na een mislukte poging mag dezelfde reactie wel opnieuw.
+
+**Feedback geven.** De knop opent het formulier met de aanvraag al gekozen: geen zoeken, alleen naam,
+feedback (met bestanden) en eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus
+de taak gaat terug naar **Feedback**, zoals hieronder beschreven.
+
+**Weekoverzicht.** Onderaan de maandagmail staat **Opgeleverd, nog geen reactie**: wat de afgelopen
+twee weken is opgeleverd en nog in Klaar staat. Alleen daarvoor komt er geen mail.
+
+**Zelf terugzien.** Supabase → Table editor → `opleveringen`: per oplevering de versie, ontvangers,
+bijlagen, status (`bezig`, `verstuurd`, `mislukt`) en de reden als het misging.
+
+**Eenmalig instellen:** draai Actions → **Asana-velden vernieuwen** met "Ontbrekende velden aanmaken"
+aan. Dat maakt de velden **Oplevermail** en **Ook mailen naar** en zet hun gids in
+`shared/asana-fields.json`. Zet daarna de e-mailadressen bij de collega's in Supabase.
+
 ## Feedback op werk dat al af is
 
 Een taak die in **Klaar** staat, wordt niet meer bekeken. Maar juist daarna komt de feedback. Dus:
@@ -373,6 +434,11 @@ organisatie. Zolang dit niet is ingesteld, gaat er geen mail uit en werkt de res
 4. **Recht om te mailen, alleen vanuit dit postvak.** Zo is het bij NBC ingericht:
    - Entra → App registrations → de app → API permissions → Microsoft Graph → **Application
      permissions** → `Mail.Send`, en dan *Grant admin consent*. Niet *Delegated*: dan mag de app niets.
+   - Voor de **opleveringsmail met bijlagen boven de 2,5 MB** ook `Mail.ReadWrite` (Application). Graph
+     neemt maar 4 MB per verzoek aan; grotere bijlagen gaan via een concept dat in stukken wordt
+     gevuld, en daarvoor moet de app een concept kunnen maken. De beperking hieronder geldt ook voor
+     dit recht. Zonder `Mail.ReadWrite` werkt alles, behalve een oplevering met grote bijlagen: die
+     springt op Mislukt met een reden die dit recht noemt.
    - Dat recht mag namens élk postvak in de organisatie mailen. Beperk het daarom in Exchange tot
      `designaanvraag@nbcevents.nl`. Maak een **mail-enabled security group**
      `designaanvraag-app@nbcevents.nl` met het postvak als enig lid, en dan in Exchange Online
@@ -512,7 +578,8 @@ voor titels, Area Normal voor de rest.
 ## Collega's
 
 De namenlijst komt uit de Supabase-tabel `collegas` (Table editor → collegas: naam toevoegen,
-`actief` uitzetten om iemand te verbergen). Die lijst is een hulp om snel te kiezen, geen
+`actief` uitzetten om iemand te verbergen). In de kolom `email` staat waar de opleveringsmail naartoe
+gaat als die collega de aanvraag deed; die kolom is niet publiek. Die lijst is een hulp om snel te kiezen, geen
 toegangscontrole: wie er niet in staat typt zijn naam gewoon zelf. Fallback: `web/src/data/collegas.fallback.ts`.
 
 ## Aanvragen bekijken

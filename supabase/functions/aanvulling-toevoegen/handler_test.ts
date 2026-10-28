@@ -124,6 +124,13 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     claimBijlagen: () => Promise.resolve([]),
     openBijlagenVan: () => Promise.resolve([]),
     markeerBijlage: () => Promise.resolve(),
+    zoekOpId: () => Promise.resolve(null),
+    findDetailByAsanaTaskGid: () => Promise.resolve(null),
+    collegaEmail: () => Promise.resolve(null),
+    findOplevering: () => Promise.resolve(null),
+    aantalVerstuurd: () => Promise.resolve(0),
+    insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
+    updateOplevering: () => Promise.resolve(),
   }
   return db
 }
@@ -174,6 +181,10 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
     },
     bijwerkDeadline: () => Promise.resolve(),
     verwijderTaak: () => Promise.resolve(),
+    listReacties: () => Promise.resolve([]),
+    listBestanden: () => Promise.resolve([]),
+    downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
+    rondAf: () => Promise.resolve(),
   }
 }
 

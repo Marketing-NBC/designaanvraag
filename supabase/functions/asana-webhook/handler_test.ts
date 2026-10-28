@@ -25,6 +25,12 @@ const cfg: AsanaFieldsConfig = {
       options: { opnieuw: 'opt-opnieuw', bezig: 'opt-hs-bezig',
                  klaar_huisstijl: 'opt-hs-klaar', mislukt: 'opt-hs-mislukt' },
     },
+    oplevermail: {
+      gid: 'veld-oplever',
+      name: 'Oplevermail',
+      type: 'enum',
+      options: { verstuur: 'opt-verstuur', bezig: 'opt-op-bezig', verstuurd: 'opt-verstuurd', mislukt: 'opt-op-mislukt' },
+    },
   },
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
@@ -83,11 +89,23 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async verwijderTaak(gid) {
       verwijderd.push(gid)
     },
+    listReacties: () => Promise.resolve([]),
+    listBestanden: () => Promise.resolve([]),
+    downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
+    rondAf: () => Promise.resolve(),
   }
   return { client, added, posted, gezet, mijlpalen, verwijderd }
 }
 
-function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Record<string, string[]>; secrets?: string[]; aanvragen?: string[]; zonderRoutine?: boolean; mijlpalen?: Record<string, string> } = {}) {
+function setup(tasks: Record<string, Partial<AsanaTask>>, opts: {
+  comments?: Record<string, string[]>
+  secrets?: string[]
+  aanvragen?: string[]
+  zonderRoutine?: boolean
+  mijlpalen?: Record<string, string>
+  oplever?: (t: AsanaTask) => Promise<string>
+  achtergrond?: (werk: Promise<unknown>) => void
+} = {}) {
   const store = fakeStore(opts.secrets)
   const asana = fakeAsana(tasks, opts.comments)
   // Welke taken een aanvraag in onze database hebben; standaard allemaal die in `tasks` staan.
@@ -117,6 +135,8 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: { comments?: Rec
       return Promise.resolve(true)
     },
     deadlineVan: opts.mijlpalen ? (gid) => Promise.resolve(opts.mijlpalen?.[gid] ?? null) : undefined,
+    oplever: opts.oplever,
+    achtergrond: opts.achtergrond,
   })
   return { handler, store, asana, vervallen, gestart }
 }
@@ -391,4 +411,63 @@ Deno.test('een weggegooide taak neemt zijn mijlpaal mee', async () => {
   await handler(await signed([verwijderd('t1')]))
   assertEquals(asana.verwijderd, ['m1'])
   assertEquals(vervallen.length, 1)
+})
+
+// ── De knop "Verstuur nu" (Oplevermail) ──────────────────────────────
+
+const opleverKnop = (optie = 'opt-verstuur') => ({ customFields: { 'veld-oplever': { optieGids: [optie], datum: null, tekst: null } } })
+
+Deno.test('Verstuur nu zet het veld op Bezig en start de oplevering', async () => {
+  const opgeleverd: string[] = []
+  const { handler, asana } = setup({ t1: opleverKnop() }, {
+    oplever: (t) => (opgeleverd.push(t.gid), Promise.resolve('verstuurd')),
+  })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(res.status, 200)
+  assertEquals(opgeleverd, ['t1'])
+  assertEquals(asana.gezet[0], ['t1', { 'veld-oplever': 'opt-op-bezig' }])
+})
+
+Deno.test('de oplevering loopt na het antwoord aan Asana door', async () => {
+  // Bestanden downloaden en mailen duurt langer dan Asana op een webhook wacht.
+  const lopend: Promise<unknown>[] = []
+  let klaar = false
+  const { handler } = setup({ t1: opleverKnop() }, {
+    oplever: async () => {
+      await new Promise((r) => setTimeout(r, 5))
+      klaar = true
+      return 'verstuurd'
+    },
+    achtergrond: (werk) => lopend.push(werk),
+  })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  assertMatch(JSON.stringify(await res.json()), /oplevermail gestart/)
+  assertEquals(klaar, false, 'het antwoord wacht niet op de mail')
+  await Promise.all(lopend)
+  assertEquals(klaar, true)
+})
+
+Deno.test('Bezig, Verstuurd en Mislukt starten niets', async () => {
+  for (const optie of ['opt-op-bezig', 'opt-verstuurd', 'opt-op-mislukt']) {
+    const opgeleverd: string[] = []
+    const { handler } = setup({ t1: opleverKnop(optie) }, { oplever: (t) => (opgeleverd.push(t.gid), Promise.resolve('x')) })
+    await handler(await signed([veldGewijzigd('t1')]))
+    assertEquals(opgeleverd, [], `${optie} hoort niets te starten`)
+  }
+})
+
+Deno.test('een afgeronde taak kan opnieuw worden opgeleverd', async () => {
+  // Na feedback komt er een versie 2; de taak kan dan al in Klaar staan.
+  const opgeleverd: string[] = []
+  const { handler } = setup({ t1: { completed: true, ...opleverKnop() } }, {
+    oplever: (t) => (opgeleverd.push(t.gid), Promise.resolve('verstuurd')),
+  })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(opgeleverd, ['t1'])
+})
+
+Deno.test('een fout in de oplevering laat de webhook niet omvallen', async () => {
+  const { handler } = setup({ t1: opleverKnop() }, { oplever: () => Promise.reject(new Error('stuk')) })
+  const res = await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(res.status, 200)
 })

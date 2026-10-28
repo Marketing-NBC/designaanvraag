@@ -9,6 +9,7 @@ const handler = createHandler({
   env,
   zoek: (q, vandaag) => db.zoekOpEvent(q, vandaag),
   zoekIntern: (naam, vandaag) => db.zoekInternOpNaam(naam, vandaag),
+  zoekOpId: (id) => db.zoekOpId(id),
   bumpRateLimit: (key, window) => db.bumpRateLimit(key, window),
 })
 

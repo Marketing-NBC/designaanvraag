@@ -12,7 +12,24 @@ export interface MailBericht {
   aan: string[]
   onderwerp: string
   html: string
+  /** Waar "Beantwoorden" naartoe gaat; leeg = de afzender. */
+  antwoordAan?: string[]
+  bijlagen?: MailBijlage[]
 }
+
+export interface MailBijlage {
+  naam: string
+  mime: string
+  bytes: Uint8Array
+}
+
+/**
+ * Tot zoveel aan bijlagen gaat alles in één verzoek mee. Graph neemt hooguit 4 MB per verzoek aan,
+ * en base64 maakt een bestand een derde groter; dit laat ruimte voor de rest van de mail.
+ */
+export const MAIL_IN_EEN_KEER_BYTES = 2_500_000
+/** Stukken waarin een groot bestand naar Graph gaat: een veelvoud van 320 KiB, onder de 4 MB. */
+const UPLOAD_STUK_BYTES = 320 * 1024 * 9
 
 export interface MailClient {
   verstuur(bericht: MailBericht): Promise<void>
@@ -59,31 +76,110 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     return token.waarde
   }
 
-  return {
-    async verstuur({ aan, onderwerp, html }) {
-      if (!aan.length) throw new Error('Geen ontvanger opgegeven')
-      const res = await doFetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}/sendMail`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: {
-            subject: onderwerp,
-            body: { contentType: 'HTML', content: html },
-            toRecipients: aan.map((address) => ({ emailAddress: { address } })),
-          },
-          // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
-          saveToSentItems: false,
-        }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      })
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
-        if (res.status === 401) token = null
-        const uitleg = [body.error?.code, body.error?.message].filter(Boolean).join(': ') || 'onbekende fout'
-        throw new Error(`Mail versturen mislukt (${res.status}: ${uitleg})`)
+  const postvak = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}`
+
+  /** Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. */
+  async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS): Promise<Record<string, unknown>> {
+    const res = await doFetch(`${postvak}${pad}`, {
+      method,
+      headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeout),
+    })
+    if (!res.ok) {
+      const fout = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
+      if (res.status === 401) token = null
+      const uitleg = [fout.error?.code, fout.error?.message].filter(Boolean).join(': ') || 'onbekende fout'
+      throw new Error(`${wat} mislukt (${res.status}: ${uitleg})`)
+    }
+    return (await res.json().catch(() => ({}))) as Record<string, unknown>
+  }
+
+  function bericht({ aan, onderwerp, html, antwoordAan }: MailBericht): Record<string, unknown> {
+    const adressen = (lijst: string[]) => lijst.map((address) => ({ emailAddress: { address } }))
+    return {
+      subject: onderwerp,
+      body: { contentType: 'HTML', content: html },
+      toRecipients: adressen(aan),
+      ...(antwoordAan?.length ? { replyTo: adressen(antwoordAan) } : {}),
+    }
+  }
+
+  const bijlageJson = (b: MailBijlage) => ({
+    '@odata.type': '#microsoft.graph.fileAttachment',
+    name: b.naam,
+    contentType: b.mime,
+    contentBytes: naarBase64(b.bytes),
+  })
+
+  /**
+   * Grote bijlagen kunnen niet in één verzoek. Dan eerst een concept, de bestanden er in stukken
+   * aan, en daarna versturen. Daarvoor heeft de app naast Mail.Send ook Mail.ReadWrite nodig; zie
+   * "Mail instellen" in de README.
+   */
+  async function verstuurInStappen(m: MailBericht): Promise<void> {
+    let concept: string
+    try {
+      concept = String((await graph('/messages', 'POST', bericht(m), 'Concept aanmaken')).id ?? '')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (/\(403/.test(msg)) {
+        throw new Error(`${msg}. Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
       }
+      throw e
+    }
+    if (!concept) throw new Error('Concept aanmaken mislukt (geen id van Microsoft)')
+    try {
+      for (const b of m.bijlagen ?? []) {
+        if (b.bytes.length < MAIL_IN_EEN_KEER_BYTES) {
+          await graph(`/messages/${concept}/attachments`, 'POST', bijlageJson(b), `Bijlage "${b.naam}"`)
+          continue
+        }
+        const sessie = await graph(`/messages/${concept}/attachments/createUploadSession`, 'POST', {
+          AttachmentItem: { attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime },
+        }, `Upload van "${b.naam}" starten`)
+        const uploadUrl = String(sessie.uploadUrl ?? '')
+        if (!uploadUrl) throw new Error(`Upload van "${b.naam}" starten mislukt (geen uploadadres)`)
+        for (let van = 0; van < b.bytes.length; van += UPLOAD_STUK_BYTES) {
+          const stuk = b.bytes.subarray(van, Math.min(van + UPLOAD_STUK_BYTES, b.bytes.length))
+          // Het uploadadres is zelf de sleutel; een Authorization-header hoort er juist niet bij.
+          const res = await doFetch(uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/octet-stream', 'Content-Range': `bytes ${van}-${van + stuk.length - 1}/${b.bytes.length}` },
+            body: stuk as Uint8Array<ArrayBuffer>,
+            signal: AbortSignal.timeout(60_000),
+          })
+          if (!res.ok) throw new Error(`Upload van "${b.naam}" mislukt (${res.status})`)
+        }
+      }
+      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', 30_000)
+    } catch (e) {
+      // Een half concept hoort niet in het postvak te blijven hangen.
+      await graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').catch(() => {})
+      throw e
+    }
+  }
+
+  return {
+    async verstuur(m) {
+      if (!m.aan.length) throw new Error('Geen ontvanger opgegeven')
+      const bijlagen = m.bijlagen ?? []
+      const totaal = bijlagen.reduce((n, b) => n + b.bytes.length, 0)
+      if (totaal > MAIL_IN_EEN_KEER_BYTES) return verstuurInStappen(m)
+      await graph('/sendMail', 'POST', {
+        message: { ...bericht(m), ...(bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}) },
+        // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
+        saveToSentItems: false,
+      }, 'Mail versturen', bijlagen.length ? 30_000 : TIMEOUT_MS)
     },
   }
+}
+
+/** Bytes als base64, in stukken: een heel bestand in één keer laat `String.fromCharCode` omvallen. */
+export function naarBase64(bytes: Uint8Array): string {
+  let binair = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) binair += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binair)
 }
 
 /** Escapen voor HTML in een mail. */
