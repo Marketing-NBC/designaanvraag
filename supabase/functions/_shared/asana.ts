@@ -129,6 +129,9 @@ export interface AsanaTaskClient {
   rondAf(taskGid: string, klaarSectieGid: string | null): Promise<void>
   /** Naam en e-mailadres van een Asana-gebruiker; voor de proefmail. */
   gebruiker(gid: string): Promise<{ naam: string | null; email: string | null }>
+  /** De beschrijving van een taak als HTML, zoals Asana hem bewaart. */
+  beschrijving(taskGid: string): Promise<string>
+  zetBeschrijving(taskGid: string, html: string): Promise<void>
 }
 
 /**
@@ -554,6 +557,15 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
       }
       const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}`, { method: 'PUT', body: JSON.stringify({ data: { completed: true } }) })
       if (!ok(status)) throw new Error(`Taak afvinken mislukt (${status}: ${errorText(body)})`)
+    },
+    async beschrijving(taskGid) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}?opt_fields=html_notes`, { method: 'GET' })
+      if (!ok(status)) throw new Error(`Beschrijving ophalen mislukt (${status}: ${errorText(body)})`)
+      return String(body.data?.html_notes ?? '')
+    },
+    async zetBeschrijving(taskGid, html) {
+      const { status, body } = await asanaFetch(pat, `/tasks/${taskGid}`, { method: 'PUT', body: JSON.stringify({ data: { html_notes: html } }) })
+      if (!ok(status)) throw new Error(`Beschrijving bijwerken mislukt (${status}: ${errorText(body)})`)
     },
     async gebruiker(gid) {
       const { status, body } = await asanaFetch(pat, `/users/${gid}?opt_fields=name,email`, { method: 'GET' })

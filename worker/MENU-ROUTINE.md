@@ -66,11 +66,16 @@ node worker/menu-publiceer.mjs --aanvraag-id <uuid>
 
 Eén commando doet alles, in deze volgorde:
 
-1. De aanvraag ophalen. Normaal staat `menu_inhoud` gevuld: dat is wat de aanvrager in het
-   formulier heeft aangeklikt, als structuur. Die gaat altijd voor.
-2. Staat die er niet (een aanvraag van voor het keuzescherm, of met de hand aangeleverd), dan de
-   `menu_tekst` uitlezen: een kopje per gang, daaronder de gerechten met een bolletje,
-   ingrediënten achter een `|`.
+1. De aanvraag ophalen, en het menu onder het kopje **Menu** in de **taakbeschrijving** in Asana.
+   Die beschrijving is leidend: daar corrigeert Marketing het menu (zie `worker/menu/bron.mjs`).
+   Staat daar hetzelfde als in het formulier, dan wordt `menu_inhoud` gebruikt: dat is wat de
+   aanvrager heeft aangeklikt, als structuur. Is het in de beschrijving veranderd, dan wordt die
+   tekst gebruikt, en staat dat als melding in de reactie. Zonder kopje Menu in de beschrijving
+   valt het terug op `menu_inhoud`, en anders op `menu_tekst`.
+2. Een menu als tekst wordt uitgelezen: een kopje per gang, daaronder de gerechten met een
+   bolletje, ingrediënten achter een `|`. Een gerecht met onderdelen (de Tartelettes van Grab & Go)
+   staat in tekst op één regel; is die regel ongewijzigd, dan komt het gerecht met zijn onderdelen
+   uit de gerechtenlijst van het formulier terug.
 3. Het basisontwerp erbij zoeken. Staat `menu_pakket` gevuld, dan is dat het pakket en wordt er
    niets geraden; wijken de kopjes daarvan af, dan komt dat als melding mee. Alleen zonder dat
    veld leidt het script het pakket af uit de kopjes — en dat is niet zonder risico: haal een

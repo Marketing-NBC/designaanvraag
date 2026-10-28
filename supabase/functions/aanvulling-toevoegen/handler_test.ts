@@ -140,10 +140,12 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
   const comments: string[] = []
   const verplaatst: string[] = []
   let heropend = 0
+  const taakBeschrijving = { html: '<body><h2>Menu</h2>\n<blockquote>Oud menu</blockquote>\n<hr/>\n<h2>Huisstijl</h2>\nx</body>', gezet: 0 }
   return {
     velden,
     comments,
     verplaatst,
+    taakBeschrijving,
     get heropend() {
       return heropend
     },
@@ -188,6 +190,12 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
     gebruiker: () => Promise.resolve({ naam: null, email: null }),
+    beschrijving: () => Promise.resolve(taakBeschrijving.html),
+    zetBeschrijving: (_gid: string, html: string) => {
+      taakBeschrijving.html = html
+      taakBeschrijving.gezet++
+      return Promise.resolve()
+    },
   }
 }
 
@@ -627,6 +635,16 @@ Deno.test('een aangepast menu komt bij de aanvraag, zodat het volgende menuscher
   assertStringIncludes(asana.comments[0], 'Menu aangepast</strong>, pakket Basic Lunch (was Grab &amp; Go)')
   assertStringIncludes(asana.comments[0], 'Genereer nu')
   assertStringIncludes(asana.comments[0], 'Clubsandwich | kip | bacon')
+  // En in de taakbeschrijving, want daar maakt "Genereer nu" het scherm van.
+  assertStringIncludes(asana.taakBeschrijving.html, '<h2>Menu</h2>\n<blockquote>Broodjes\n• Clubsandwich | kip | bacon</blockquote>')
+  assertEquals(asana.taakBeschrijving.html.includes('Oud menu'), false)
+  assertStringIncludes(asana.taakBeschrijving.html, '<h2>Huisstijl</h2>')
+})
+
+Deno.test('zonder menuwijziging blijft de taakbeschrijving onaangeroerd', async () => {
+  const asana = fakeAsana()
+  await createHandler(deps({ db: menuAanvraag(), asana }))(post(payload()))
+  assertEquals(asana.taakBeschrijving.gezet, 0)
 })
 
 Deno.test('alleen het menu aanpassen mag zonder toelichting', async () => {

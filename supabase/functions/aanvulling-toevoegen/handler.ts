@@ -10,6 +10,7 @@ import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import { taskTitle } from '../_shared/shared/asana-title.ts'
 import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderAanvullingMail } from '../_shared/shared/meldingen.ts'
+import { vervangMenuInBeschrijving } from '../_shared/shared/menu-beschrijving.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
 import { vraagtOmMenu } from '../_shared/shared/request-types.ts'
@@ -373,6 +374,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           }
         }
         log('info', 'afgeronde taak heropend', { id: aanvullingRij.id, gid: row.asana_task_gid })
+      }
+    }
+
+    // Het nieuwe menu ook in de taakbeschrijving: die is de basis van het menuscherm. Zou daar het
+    // oude menu blijven staan, dan maakt "Genereer nu" het oude menu weer.
+    if (menu) {
+      try {
+        const html = await deps.asana.beschrijving(row.asana_task_gid)
+        await deps.asana.zetBeschrijving(row.asana_task_gid, vervangMenuInBeschrijving(html, menu.tekst))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        waarschuwingen.push(`menu in de taakbeschrijving bijwerken mislukt: ${msg}`)
+        log('warn', 'menu in beschrijving bijwerken mislukt', { id: aanvullingRij.id, error: msg })
       }
     }
 

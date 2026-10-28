@@ -534,6 +534,14 @@ opnieuw proberen is dezelfde Run now.
 
 ## Routine instellen (menuschermen)
 
+**Waar het menu vandaan komt.** De taakbeschrijving in Asana is leidend: wat onder het kopje
+**Menu** staat, wordt gegenereerd. Wil je een gerecht anders, pas het daar aan en zet Menuscherm
+op Genereer nu. Laat het kopje "Menu" en het citaatblok eronder staan; daaraan herkent de worker
+het menu. Is er in de beschrijving niets veranderd, dan gebruikt hij het menu zoals het in het
+formulier is aangeklikt (dat geeft hetzelfde scherm). Past de aanvrager het menu aan via "Menu
+aanpassen", dan wordt het kopje Menu in de beschrijving ook vervangen. Let op: een aanpassing van
+de aanvrager overschrijft dus wat Marketing daar eerder met de hand veranderde.
+
 Het menuscherm wordt niet in de browser gemaakt maar in de worker, net als de huisstijl. Je hebt er
 een tweede Routine voor nodig; de environment `designaanvraag-worker` uit de vorige paragraaf kan
 hij delen.

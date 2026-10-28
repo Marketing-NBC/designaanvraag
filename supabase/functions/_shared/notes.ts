@@ -90,8 +90,9 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   htmlLines.push('')
   if (a.menu_tekst) {
     // De culinaire invulling staat hier voluit, zodat Marketing hem kan nalezen en
-    // corrigeren. De worker maakt er het menuscherm van en hangt dat als bijlage
-    // bij deze taak.
+    // corrigeren. Wat hier staat is de basis van het menuscherm: de worker leest het
+    // menu uit deze beschrijving (shared/menu-beschrijving.ts), dus een correctie hier
+    // komt vanzelf op het volgende scherm. Kopje en blockquote moeten daarom zo blijven.
     htmlLines.push('<h2>Menu</h2>')
     htmlLines.push(`<blockquote>${escapeXml(a.menu_tekst)}</blockquote>`)
     htmlLines.push('')
@@ -162,7 +163,7 @@ export function renderAanvullingComment(v: {
 
   if (v.menu) {
     const pakket = v.menu.vorigPakket ? `${v.menu.pakket} (was ${v.menu.vorigPakket})` : v.menu.pakket
-    lines.push(`<strong>Menu aangepast</strong>, pakket ${escapeXml(pakket)}. Zet Menuscherm op Genereer nu om het scherm opnieuw te maken.`, '')
+    lines.push(`<strong>Menu aangepast</strong>, pakket ${escapeXml(pakket)}. Het staat ook in de beschrijving; zet Menuscherm op Genereer nu om het scherm opnieuw te maken.`, '')
     lines.push(escapeXml(v.menu.tekst), '')
   }
 

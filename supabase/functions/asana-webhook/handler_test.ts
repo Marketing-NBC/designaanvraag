@@ -99,6 +99,8 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
     gebruiker: () => Promise.resolve({ naam: null, email: null }),
+    beschrijving: () => Promise.resolve(''),
+    zetBeschrijving: () => Promise.resolve(),
   }
   return { client, added, posted, gezet, mijlpalen, verwijderd, vinkjes }
 }
