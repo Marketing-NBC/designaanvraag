@@ -10,9 +10,12 @@ import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import { taskTitle } from '../_shared/shared/asana-title.ts'
 import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderAanvullingMail } from '../_shared/shared/meldingen.ts'
+import { vervangMenuInBeschrijving } from '../_shared/shared/menu-beschrijving.ts'
 import type { Aanvulling, AanvullingResult } from '../_shared/shared/aanvulling-schema.ts'
 import { aanvullingPayloadSchema } from '../_shared/shared/aanvulling-schema.ts'
+import { vraagtOmMenu } from '../_shared/shared/request-types.ts'
 import type { RequestTypeKey } from '../_shared/shared/request-types.ts'
+import pakketData from '../_shared/shared/menu-pakketten.json' with { type: 'json' }
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 
 /**
@@ -44,7 +47,13 @@ export interface Deps {
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
 
-const MAX_BODY_BYTES = 32 * 1024
+// Ruimer dan een aanvulling met alleen tekst: een aangepast menu gaat als structuur mee.
+const MAX_BODY_BYTES = 128 * 1024
+
+/** De naam van een pakket zoals de aanvrager hem kent ("Grab & Go"), of de sleutel als die onbekend is. */
+export function pakketNaam(sleutel: string): string {
+  return (pakketData as { pakketten: { pakket: string; naam: string }[] }).pakketten.find((p) => p.pakket === sleutel)?.naam ?? sleutel
+}
 /** Sneller dan dit is geen mens. */
 const MIN_FILL_MS = 3_000
 
@@ -200,13 +209,27 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Een interne aanvraag heeft geen event, dus ook geen eventdatum om te verschuiven.
     const aanvulling: Aanvulling = row.soort === 'intern' ? { ...invoer, nieuwe_event_datum: null } : invoer
 
+    // Een menu aanpassen kan alleen als er een menukaart of menuscherm bij de aanvraag hoort.
+    if (aanvulling.menu_inhoud && !vraagtOmMenu(row.aanvraag_types ?? [])) {
+      return json({ error: 'Bij deze aanvraag hoort geen menukaart of menuscherm, dus er is geen menu om aan te passen.', field: 'aanvulling.menu_inhoud' }, 400, cors)
+    }
+    // Wat de reactie en de mail over het nieuwe menu zeggen. Het pakket van toen alleen als het anders is.
+    const menu = aanvulling.menu_inhoud
+      ? {
+        tekst: aanvulling.menu_tekst,
+        pakket: pakketNaam(aanvulling.menu_inhoud.pakket),
+        vorigPakket: row.menu_pakket && row.menu_pakket !== aanvulling.menu_inhoud.pakket ? pakketNaam(row.menu_pakket) : null,
+      }
+      : null
+
     // Een verlopen deadline moet vervangen worden; het formulier vraagt daar al om, maar wie het
     // formulier gisteren openzette en vandaag verstuurt komt hier toch langs.
     const vandaag = vandaagInNl(now())
     if (aanvulling.nieuwe_deadline && aanvulling.nieuwe_deadline < vandaag) {
       return json({ error: 'Die deadline is al geweest. Kies een datum vanaf vandaag.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
-    if (!aanvulling.nieuwe_deadline && row.deadline < vandaag) {
+    // Zonder deadline (een interne aanvraag mag dat) is er niets wat kan verlopen.
+    if (!aanvulling.nieuwe_deadline && row.deadline && row.deadline < vandaag) {
       return json({ error: 'De deadline van deze aanvraag is al verstreken. Kies een nieuwe deadline.', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
 
@@ -215,12 +238,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // achteraf - dan is er geen grens meer: een nieuwe deadline ligt dan altijd na het event.
     const effectiefEvent = aanvulling.nieuwe_event_datum ?? row.event_datum
     const effectieveDeadline = aanvulling.nieuwe_deadline ?? row.deadline
-    if (effectiefEvent && effectiefEvent >= vandaag && effectieveDeadline > effectiefEvent) {
+    if (effectiefEvent && effectiefEvent >= vandaag && effectieveDeadline && effectieveDeadline > effectiefEvent) {
       return json({ error: 'De deadline kan niet na het event liggen', field: 'aanvulling.nieuwe_deadline' }, 400, cors)
     }
 
     const aanvullingRij = await db.insertAanvulling({ ...aanvulling, client_request_id, ip_hash: ipHash })
     log('info', 'aanvulling opgeslagen', { id: aanvullingRij.id, aanvraag: row.id, event: row.event })
+
+    // Het nieuwe menu meteen bij de aanvraag zetten, ook als Asana straks niet meewerkt: daar maakt
+    // de knop "Genereer nu" het volgende menuscherm van.
+    if (aanvulling.menu_inhoud) {
+      await db.update(row.id, { menu_inhoud: aanvulling.menu_inhoud, menu_tekst: aanvulling.menu_tekst, menu_pakket: aanvulling.menu_inhoud.pakket })
+    }
+    const menuBijgewerkt = menu ? ['Menu'] : []
 
     // Meegestuurde bestanden aan deze aanvulling hangen. Voorwaardelijk, dus ids die al ergens bij
     // horen of niet bestaan vallen vanzelf af.
@@ -233,7 +263,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       wijziging: Wijziging | null
       bijlagen: string[]
       heropend: boolean
-      naarFeedback: boolean
       asanaFout: string | null
     }) => {
       if (!deps.mail) return
@@ -268,7 +297,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijgewerkt: v.wijziging?.bijgewerkt ?? [],
           bijlagen: v.bijlagen,
           heropend: v.heropend,
-          naarFeedback: v.naarFeedback,
+          menu,
           asanaFout: v.asanaFout,
         }))
         log('info', 'aanvulling gemaild', { id: aanvullingRij.id })
@@ -284,10 +313,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         wijziging: null,
         bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
         heropend: false,
-        naarFeedback: false,
         asanaFout: 'De koppeling met Asana is niet ingesteld.',
       })
-      return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
+      return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: menuBijgewerkt } satisfies AanvullingResult, 200, cors)
     }
 
     const waarschuwingen: string[] = []
@@ -312,18 +340,14 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Terugzetten in beeld: naar de kolom Feedback, vinkje eraf, planningsdatum eraf. Dat laatste
     // omdat een oude datum in de werkplanning niets meer zegt.
     //
-    // Staat hij in Mee bezig, dan gaat hij ook naar Feedback, maar blijven vinkje en datum staan:
-    // het werk loopt nog en de planning klopt nog. In Nieuwe aanvragen en In planning blijft hij
-    // waar hij is, want daar is nog niets om feedback op te geven.
+    // In Nieuwe aanvragen en In planning blijft hij waar hij is: daar wordt er nog aan gewerkt, en
+    // de aanvulling komt gewoon als reactie bij de rest.
     let heropendVoor: string | null | undefined
-    let naarFeedbackVoor: string | null | undefined
     if (taak) {
       // De sectie uit ónze projectkoppeling halen: een taak zit ook in "4. Werkplanning".
       const onzeSectie = taak.memberships.find((m) => m.project === projectGid)?.section ?? null
       const klaarGid = cfg.sections?.klaar?.gid ?? null
-      const meeBezigGid = cfg.sections?.mee_bezig?.gid ?? null
       const afgerond = taak.completed || (klaarGid !== null && onzeSectie === klaarGid)
-      const bezig = !afgerond && meeBezigGid !== null && onzeSectie === meeBezigGid
 
       if (afgerond) {
         heropendVoor = taak.assignee
@@ -334,9 +358,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           waarschuwingen.push(`taak heropenen mislukt: ${msg}`)
           log('warn', 'taak heropenen mislukt', { id: aanvullingRij.id, error: msg })
         }
-      }
 
-      if (afgerond || bezig) {
         const feedbackGid = cfg.sections?.feedback?.gid ?? null
         if (!feedbackGid) {
           // De setup-workflow heeft de kolom nog niet gemaakt. Bij afgerond werk zijn vinkje en datum
@@ -345,14 +367,26 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         } else {
           try {
             await deps.asana.moveToSection(row.asana_task_gid, feedbackGid)
-            if (bezig) naarFeedbackVoor = taak.assignee
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
             waarschuwingen.push(`taak naar Feedback verplaatsen mislukt: ${msg}`)
             log('warn', 'taak verplaatsen mislukt', { id: aanvullingRij.id, error: msg })
           }
         }
-        log('info', afgerond ? 'afgeronde taak heropend' : 'lopende taak naar Feedback', { id: aanvullingRij.id, gid: row.asana_task_gid })
+        log('info', 'afgeronde taak heropend', { id: aanvullingRij.id, gid: row.asana_task_gid })
+      }
+    }
+
+    // Het nieuwe menu ook in de taakbeschrijving: die is de basis van het menuscherm. Zou daar het
+    // oude menu blijven staan, dan maakt "Genereer nu" het oude menu weer.
+    if (menu) {
+      try {
+        const html = await deps.asana.beschrijving(row.asana_task_gid)
+        await deps.asana.zetBeschrijving(row.asana_task_gid, vervangMenuInBeschrijving(html, menu.tekst))
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        waarschuwingen.push(`menu in de taakbeschrijving bijwerken mislukt: ${msg}`)
+        log('warn', 'menu in beschrijving bijwerken mislukt', { id: aanvullingRij.id, error: msg })
       }
     }
 
@@ -382,27 +416,26 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
-          naarFeedbackVoor,
+          menu,
         }),
       )
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       log('error', 'reactie plaatsen mislukt', { id: aanvullingRij.id, error: msg })
-      await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: wijziging.bijgewerkt, asana_error: `reactie plaatsen mislukt: ${msg}` })
+      await db.updateAanvulling(aanvullingRij.id, { bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt], asana_error: `reactie plaatsen mislukt: ${msg}` })
       await meld({
         taak,
         wijziging,
         // Wat niet als bijlage bij de taak kwam, staat in elk geval bij naam in de mail.
         bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
         heropend: heropendVoor !== undefined,
-        naarFeedback: naarFeedbackVoor !== undefined,
         asanaFout: `De reactie kon niet bij de taak worden gezet: ${msg}`,
       })
       return json({ error: 'De aanvulling is bewaard, maar kwam niet bij Marketing terecht. Laat het even weten aan het marketingteam.' }, 502, cors)
     }
 
     await db.updateAanvulling(aanvullingRij.id, {
-      bijgewerkt: wijziging.bijgewerkt,
+      bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt],
       asana_error: waarschuwingen.length ? waarschuwingen.join('; ') : null,
     })
 
@@ -411,7 +444,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       wijziging,
       bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
       heropend: heropendVoor !== undefined,
-      naarFeedback: naarFeedbackVoor !== undefined,
       asanaFout: null,
     })
 
@@ -424,6 +456,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     if (Object.keys(patch).length) await db.update(row.id, patch)
 
     log('info', 'aanvulling in asana', { id: aanvullingRij.id, gid: row.asana_task_gid, bijgewerkt: wijziging.bijgewerkt })
-    return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: wijziging.bijgewerkt } satisfies AanvullingResult, 200, cors)
+    return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [...wijziging.bijgewerkt, ...menuBijgewerkt] } satisfies AanvullingResult, 200, cors)
   }
 }

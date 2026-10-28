@@ -20,6 +20,12 @@ overzicht. Een interne aanvraag heeft geen event, eventdatum, website of huissti
 taak dan `Intern - <aanvrager> - Deadline: <deadline> - <begin van de omschrijving>`, en het veld
 **Soort** (Evenement blauw, Intern roze) staat als gekleurd label op de kaart.
 
+Een interne aanvraag mag ook **zonder deadline**: onder de kalender staat de keuze **Geen deadline**
+("het mag klaar zijn wanneer het past"). In de taaknaam staat dan `Geen deadline` in plaats van de
+datum, het veld Deadline blijft leeg, er komt geen mijlpaal in de deadline-agenda en het telt nooit
+als spoed. Komt er later toch een datum, dan kan die via "Iets aanvullen of wijzigen". Bij een
+evenement blijft de deadline verplicht.
+
 **Je naam** kies je uit de lijst, maar wie er niet tussen staat typt gewoon zijn naam: iedereen kan een
 aanvraag doen.
 
@@ -110,7 +116,7 @@ nieuwe token aan (Account preferences → Access Tokens, naam bijvoorbeeld
 2. Kies één van twee:
    - **Nieuw project laten aanmaken:** Actions → **Asana-project aanmaken** → Run workflow, met de
      naam van het project en de link naar een bestaand project in hetzelfde team. De workflow maakt
-     het project (bordweergave, secties "Nieuwe aanvragen" → "In planning" → "Mee bezig" → "Klaar"),
+     het project (bordweergave, secties "Nieuwe aanvragen" → "Feedback" → "In planning" → "Klaar"),
      neemt de leden over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
      `shared/asana-fields.json`. Opnieuw draaien is veilig: bestaande onderdelen worden hergebruikt.
    - **Bestaand project gebruiken:** Actions → **Asana-velden vernieuwen** → Run workflow, met de link
@@ -136,13 +142,17 @@ alle gegevens in de beschrijving.
   subtaak `Oplevering`, voor de opleveringsmail (zie **Opleveren** hieronder).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
-- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Mee bezig → Klaar. De volgorde komt uit
+- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Klaar. De volgorde komt uit
   `scripts/asana-field-map.json`; die bepaalt ook de volgorde op het bord.
 - **Planning-flow (webhook):** sleept Marketing een taak naar **In planning** zonder vervaldatum, dan
   plaatst de function `asana-webhook` één comment met een mention: kies een vervaldatum. Zodra er
-  een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
+  een vervaldatum staat in "In planning", komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
+- **Klaar en het vinkje lopen gelijk:** sleep je een taak naar **Klaar**, dan wordt hij afgevinkt;
+  sleep je hem er weer uit, dan gaat het vinkje eraf. De deadline-mijlpaal volgt het vinkje, dus die
+  verdwijnt dan ook uit de deadline-agenda (of komt terug). Alleen slepen telt: vink je zelf een taak
+  af in een andere kolom, dan blijft dat zo.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
   function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
   Dat geldt ook voor een naam die niet in de Supabase-tabel `collegas` staat: iedereen mag een
@@ -271,11 +281,8 @@ function hem terug in beeld:
 - de **planningsdatum gaat eraf**, zodat er geen verlopen datum in "4. Werkplanning" blijft hangen;
 - de reactie begint met een **@-vermelding**, zodat het in je Asana-inbox landt.
 
-Staat de taak in **Mee bezig**, dan gaat hij ook naar **Feedback**, met een @-vermelding in de
-reactie. Vinkje en planningsdatum blijven dan staan: het werk loopt nog en de planning klopt nog.
-
-In **Nieuwe aanvragen** en **In planning** blijft de taak waar hij staat; daar is nog niets om feedback
-op te geven, dus een aanvulling is daar gewoon extra informatie.
+In **Nieuwe aanvragen** en **In planning** blijft de taak waar hij staat: daar wordt er nog aan
+gewerkt, dus een aanvulling is daar gewoon extra informatie.
 
 De reactie vraagt meteen om een nieuwe planningsdatum. Dat moet, want de webhook vraagt daar maar
 **één keer per taak** om, en bij een afgeronde taak is dat allang gebeurd.
@@ -300,6 +307,14 @@ duidelijke melding en moet hij een nieuwe deadline kiezen voordat hij kan verstu
 controleert dat ook zelf. Is het event zelf ook al geweest (feedback achteraf), dan mag de nieuwe
 deadline na het event liggen. Dat komt als **reactie onder de bestaande Asana-taak**, zodat je er een
 melding van krijgt en alles bij elkaar blijft.
+
+**Menu aanpassen.** Hoort er een menukaart of menuscherm bij de aanvraag, dan staat onder de
+bijlagen de knop **Menu aanpassen**. Die opent hetzelfde menuscherm als in het formulier, met het
+menu zoals het bij de aanvraag staat: gerechten wisselen, weghalen of toevoegen, of met **Pakket
+wijzigen** een ander pakket kiezen (van Grab & Go naar Lunch, bijvoorbeeld). Een toelichting is dan
+niet verplicht. Het nieuwe menu vervangt dat van de aanvraag, dus de knop **Genereer nu** in Asana
+maakt het volgende menuscherm ermee. In de reactie bij de taak en in de mail aan Marketing staat het
+nieuwe menu, met het pakket waar het eerst op stond als dat veranderde.
 
 Een aanvulling werkt daarnaast een paar velden bij, met opzet terughoudend:
 
@@ -518,6 +533,14 @@ Mislukt een extractie, dan staat de reden in Asana (comment) en in `aanvragen.br
 opnieuw proberen is dezelfde Run now.
 
 ## Routine instellen (menuschermen)
+
+**Waar het menu vandaan komt.** De taakbeschrijving in Asana is leidend: wat onder het kopje
+**Menu** staat, wordt gegenereerd. Wil je een gerecht anders, pas het daar aan en zet Menuscherm
+op Genereer nu. Laat het kopje "Menu" en het citaatblok eronder staan; daaraan herkent de worker
+het menu. Is er in de beschrijving niets veranderd, dan gebruikt hij het menu zoals het in het
+formulier is aangeklikt (dat geeft hetzelfde scherm). Past de aanvrager het menu aan via "Menu
+aanpassen", dan wordt het kopje Menu in de beschrijving ook vervangen. Let op: een aanpassing van
+de aanvrager overschrijft dus wat Marketing daar eerder met de hand veranderde.
 
 Het menuscherm wordt niet in de browser gemaakt maar in de worker, net als de huisstijl. Je hebt er
 een tweede Routine voor nodig; de environment `designaanvraag-worker` uit de vorige paragraaf kan

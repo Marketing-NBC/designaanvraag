@@ -22,6 +22,7 @@ import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage
 import { emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
+import { Icon } from './components/Icon'
 import { useBijlagen } from './lib/uploads'
 import { moetContactOpnemen, zichtbareStappen } from './steps'
 import { MELDING_ONTVANGERS } from '../../shared/contact'
@@ -205,7 +206,7 @@ export default function App() {
         locatie: volledig.locatie ?? undefined,
         naam: volledig.naam,
         soort: 'intern',
-        deadline: volledig.deadline ?? '',
+        deadline: volledig.geen_deadline ? null : (volledig.deadline ?? ''),
         omschrijving: volledig.omschrijving,
       } : {
         // ?? undefined en niet '': het schema heeft een standaard ('nbc') voor een concept
@@ -498,7 +499,31 @@ export default function App() {
                 <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} max={draft.event_datum ?? undefined} onPicked={focusPrimary} />
               ) : null}
               {step.kind === 'date' && step.id === 'deadline_intern' ? (
-                <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} onPicked={focusPrimary} />
+                <>
+                  <DateField
+                    value={draft.geen_deadline ? null : draft.deadline}
+                    onChange={(v) => patch({ deadline: v, geen_deadline: false })}
+                    onPicked={focusPrimary}
+                    leeg={draft.geen_deadline ? 'Geen deadline gekozen. Toch een datum? Kies hem hierboven.' : undefined}
+                  />
+                  {/* Voor wie geen datum heeft: dan hoeft er ook geen gekozen te worden. */}
+                  <button
+                    type="button"
+                    className="opt geen-deadline"
+                    aria-pressed={draft.geen_deadline}
+                    onClick={() => {
+                      const aan = !draft.geen_deadline
+                      patch({ geen_deadline: aan, deadline: aan ? null : draft.deadline })
+                      if (aan) focusPrimary()
+                    }}
+                  >
+                    <span className="opt__label">
+                      <strong>Geen deadline</strong>
+                      <span className="geen-deadline__uitleg">Het mag klaar zijn wanneer het past.</span>
+                    </span>
+                    <Icon name="check" className="opt__check" />
+                  </button>
+                </>
               ) : null}
               {step.kind === 'soort' ? (
                 <ChoiceList options={SOORT_KEUZES} value={draft.soort} onToggle={(k) => patch({ soort: k as Soort })} />

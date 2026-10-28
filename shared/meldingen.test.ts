@@ -45,7 +45,7 @@ describe('melding bij een aanvulling', () => {
         naam: 'Britt', locatie: 'green_village', soort: 'evenement', event: 'Testevent', omschrijving: '', spoed: false,
         eventDatum: '2026-11-20', deadline: '2026-11-13', eventDatumGewijzigd: false, deadlineGewijzigd: true, types: ['vlaggen'],
       },
-      taakNaam: 'Testevent', asanaUrl: 'https://app.asana.com/x', bijgewerkt: [], bijlagen: [], heropend: false, naarFeedback: false, asanaFout: null,
+      taakNaam: 'Testevent', asanaUrl: 'https://app.asana.com/x', bijgewerkt: [], bijlagen: [], heropend: false, asanaFout: null,
     })
     expect(html).toContain('bgcolor="#23251b"')
     expect(html.match(/https:\/\/app\.asana\.com\/x/g)).toHaveLength(1)

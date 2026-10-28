@@ -20,6 +20,7 @@ import { addComment, getTask, uploadAttachment } from './lib/asana.mjs'
 import { log, outDirFor, parseArgs, UUID_RE } from './lib/config.mjs'
 import { menuIsBruikbaar, renderMenuComment, renderMenuFailureComment } from './lib/notes.mjs'
 import { kleurenVerslag } from './menu/kleuren.mjs'
+import { herstelOnderdelen, kiesMenuBron } from './menu/bron.mjs'
 import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
 import { renderMenu, pakketten, pakketkenmerken } from './menu/render.mjs'
 
@@ -36,6 +37,12 @@ if (!id && !args.data && !args.tekst) {
   process.exit(2)
 }
 
+/** De gerechten zoals het formulier ze kent, met hun onderdelen (shared/menu-pakketten.json). */
+function formulierGerechten() {
+  const pad = new URL('../shared/menu-pakketten.json', import.meta.url)
+  return JSON.parse(readFileSync(pad, 'utf8')).gerechten ?? []
+}
+
 /** Een bestandsnaam die het in Asana en in Storage doet. */
 function veiligeNaam(deel) {
   return String(deel).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)
@@ -49,10 +56,25 @@ const invoerNotities = []
 if (id) {
   const { getAanvraag } = await import('./lib/supabase.mjs')
   aanvraag = await getAanvraag(id)
-  // --data wint van wat er in de database staat; zo kun je een scherm opnieuw
-  // draaien met aangepaste inhoud zonder eerst de aanvraag bij te werken.
-  inhoud = inhoud ?? aanvraag.menu_inhoud ?? null
-  ruweTekst = ruweTekst ?? aanvraag.menu_tekst ?? null
+  // --data en --tekst winnen van alles; zo kun je een scherm opnieuw draaien met
+  // aangepaste inhoud zonder eerst iets bij te werken. Anders is de taakbeschrijving
+  // in Asana leidend: daar corrigeert Marketing het menu. Zie menu/bron.mjs.
+  if (!inhoud && !ruweTekst) {
+    let beschrijvingHtml = null
+    if (aanvraag.asana_task_gid) {
+      try {
+        beschrijvingHtml = (await getTask(aanvraag.asana_task_gid)).html_notes ?? null
+      } catch (e) {
+        // De beschrijving niet kunnen lezen mag het scherm niet kosten: dan het formulier.
+        log('taakbeschrijving niet gelezen', { error: e.message })
+        invoerNotities.push('De taakbeschrijving kon niet gelezen worden; het menu uit het formulier is gebruikt.')
+      }
+    }
+    const bron = kiesMenuBron({ beschrijvingHtml, aanvraag })
+    inhoud = bron.inhoud
+    ruweTekst = bron.tekst
+    if (bron.notitie) invoerNotities.push(bron.notitie)
+  }
 }
 
 /**
@@ -62,7 +84,10 @@ if (id) {
  * correctie met de hand.
  */
 if (!inhoud && ruweTekst && ruweTekst.trim()) {
-  const { secties, opmerkingen } = leesMenuTekst(ruweTekst)
+  const gelezen = leesMenuTekst(ruweTekst)
+  const { opmerkingen } = gelezen
+  // Tekst verliest de opbouw van gerechten met onderdelen; die halen we uit de bibliotheek terug.
+  const secties = herstelOnderdelen(gelezen.secties, formulierGerechten())
   if (!secties.length) {
     await afbreken('De menu-invulling is niet te lezen: er staan geen gerechten in. '
       + 'Verwacht wordt een kopje per gang en daaronder de gerechten met een bolletje ervoor.')

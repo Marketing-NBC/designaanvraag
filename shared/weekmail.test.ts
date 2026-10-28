@@ -12,8 +12,8 @@ function taak(over: Partial<WeekTaak> = {}): WeekTaak {
     deadline: '2026-10-28',
     eventdatum: '2026-12-11',
     vervaldatum: '2026-10-27',
-    sectie: 'mee_bezig',
-    sectieNaam: 'Mee bezig',
+    sectie: 'in_planning',
+    sectieNaam: 'In planning',
     spoed: false,
     ...over,
   }
@@ -122,7 +122,7 @@ describe('taakUitAsana', () => {
   const cfg = {
     project: { gid: 'p1' },
     fields: { deadline: { gid: 'f-dl' }, eventdatum: { gid: 'f-ev' }, spoed: { gid: 'f-sp' }, locatie: { gid: 'f-loc' } },
-    sections: { mee_bezig: { gid: 's-bezig', name: 'Mee bezig' } },
+    sections: { in_planning: { gid: 's-plan', name: 'In planning' } },
   }
 
   it('leest velden, kolom en locatie uit', () => {
@@ -132,7 +132,7 @@ describe('taakUitAsana', () => {
       due_on: '2026-10-27',
       memberships: [
         { project: { gid: 'planning' }, section: { gid: 's-andere', name: 'Week 44' } },
-        { project: { gid: 'p1' }, section: { gid: 's-bezig', name: 'Mee bezig' } },
+        { project: { gid: 'p1' }, section: { gid: 's-plan', name: 'In planning' } },
       ],
       custom_fields: [
         { gid: 'f-dl', date_value: { date: '2026-10-28' } },
@@ -148,8 +148,8 @@ describe('taakUitAsana', () => {
       deadline: '2026-10-28',
       eventdatum: '2026-12-11',
       vervaldatum: '2026-10-27',
-      sectie: 'mee_bezig',
-      sectieNaam: 'Mee bezig',
+      sectie: 'in_planning',
+      sectieNaam: 'In planning',
       spoed: true,
     })
   })

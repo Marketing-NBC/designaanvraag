@@ -35,7 +35,6 @@ const cfg: AsanaFieldsConfig = {
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
     in_planning: { gid: 'sec-plan' },
-    mee_bezig: { gid: 'sec-bezig' },
     klaar: { gid: 'sec-klaar' },
   },
   planning_project: { gid: 'werk1', name: '4. Werkplanning' },
@@ -60,6 +59,7 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
   const gezet: [string, Record<string, unknown>][] = []
   const mijlpalen: [string, { dueOn: string; completed: boolean }][] = []
   const verwijderd: string[] = []
+  const vinkjes: [string, boolean | undefined][] = []
   const client: AsanaTaskClient = {
     async getTask(gid) {
       const t = tasks[gid]
@@ -91,13 +91,18 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     },
     listSubtaken: () => Promise.resolve([]),
     maakSubtaak: () => Promise.resolve('sub-x'),
-    werkTaakBij: () => Promise.resolve(),
+    async werkTaakBij(gid, stand) {
+      vinkjes.push([gid, stand.completed])
+      tasks[gid] = { ...tasks[gid], completed: stand.completed ?? tasks[gid]?.completed }
+    },
     listBestanden: () => Promise.resolve([]),
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
     gebruiker: () => Promise.resolve({ naam: null, email: null }),
+    beschrijving: () => Promise.resolve(''),
+    zetBeschrijving: () => Promise.resolve(),
   }
-  return { client, added, posted, gezet, mijlpalen, verwijderd }
+  return { client, added, posted, gezet, mijlpalen, verwijderd, vinkjes }
 }
 
 function setup(tasks: Record<string, Partial<AsanaTask>>, opts: {
@@ -202,20 +207,22 @@ Deno.test('datum gekozen in In planning → in werkplanning gezet, met bevestigi
   assertEquals(asana.added.length, 1)
 })
 
-Deno.test('datum in Nieuwe aanvragen of Klaar → niets; Mee bezig → wel inplannen', async () => {
+Deno.test('datum in Nieuwe aanvragen, Feedback of Klaar → niets; alleen In planning plant in', async () => {
   const { handler, asana } = setup({
     nieuw: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-nieuw' }] },
+    feedback: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-feedback' }] },
     klaar: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-klaar' }] },
-    bezig: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-bezig' }] },
+    plan: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-plan' }] },
     ander: { dueOn: '2026-10-20', memberships: [{ project: 'proj9', section: 'x' }] },
   })
-  const res = await handler(await signed([dueChanged('nieuw'), dueChanged('klaar'), dueChanged('bezig'), dueChanged('ander')]))
+  const res = await handler(await signed([dueChanged('nieuw'), dueChanged('feedback'), dueChanged('klaar'), dueChanged('plan'), dueChanged('ander')]))
   const body = await res.json()
-  assertEquals(body.handled.nieuw, 'datum, maar niet in planning of mee bezig')
-  assertEquals(body.handled.klaar, 'datum, maar niet in planning of mee bezig')
-  assertEquals(body.handled.bezig, 'ingepland')
+  assertEquals(body.handled.nieuw, 'datum, maar niet in planning')
+  assertEquals(body.handled.feedback, 'datum, maar niet in planning')
+  assertEquals(body.handled.klaar, 'datum, maar niet in planning')
+  assertEquals(body.handled.plan, 'ingepland')
   assertEquals(body.handled.ander, 'niet in ons project')
-  assertEquals(asana.added, [['bezig', 'werk1']])
+  assertEquals(asana.added, [['plan', 'werk1']])
 })
 
 Deno.test('naar In planning zonder datum als de vraag al gesteld is → niets', async () => {
@@ -490,4 +497,56 @@ Deno.test('Verstuur nu is geen proef', async () => {
   const { handler } = setup({ t1: opleverKnop() }, { oplever: (_t, opties) => (gevraagd.push(opties), Promise.resolve('x')) })
   await handler(await signed([veldGewijzigd('t1')]))
   assertEquals(gevraagd, [{ proef: false, door: null }])
+})
+
+// ── Kolom en vinkje ───────────────────────────────────────────────────
+
+const naarKolom = (gid: string, sectie: string) => ({ action: 'added', resource: { gid, resource_type: 'task' }, parent: { gid: sectie, resource_type: 'section' } })
+const deadline = (datum: string) => ({ 'veld-deadline': { optieGids: [], datum, tekst: null } })
+
+Deno.test('naar Klaar gesleept: de taak wordt afgevinkt, en de deadline-mijlpaal ook', async () => {
+  const { handler, asana } = setup({
+    t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-klaar' }], customFields: deadline('2026-11-13') },
+  }, { mijlpalen: { t1: 'mijl1' } })
+  await handler(await signed([naarKolom('t1', 'sec-klaar')]))
+  assertEquals(asana.vinkjes, [['t1', true]])
+  assertEquals(asana.mijlpalen, [['mijl1', { dueOn: '2026-11-13', completed: true }]])
+})
+
+Deno.test('uit Klaar gesleept: het vinkje gaat eraf, en de mijlpaal gaat weer open', async () => {
+  const { handler, asana } = setup({
+    t1: { completed: true, memberships: [{ project: 'proj1', section: 'sec-plan' }], customFields: deadline('2026-11-13') },
+  }, { mijlpalen: { t1: 'mijl1' } })
+  await handler(await signed([naarKolom('t1', 'sec-plan')]))
+  assertEquals(asana.vinkjes, [['t1', false]])
+  assertEquals(asana.mijlpalen, [['mijl1', { dueOn: '2026-11-13', completed: false }]])
+})
+
+Deno.test('al afgevinkt in Klaar, of open in een andere kolom: niets te doen', async () => {
+  const { handler, asana } = setup({
+    a: { completed: true, memberships: [{ project: 'proj1', section: 'sec-klaar' }] },
+    b: { completed: false, memberships: [{ project: 'proj1', section: 'sec-nieuw' }] },
+  })
+  await handler(await signed([naarKolom('a', 'sec-klaar'), naarKolom('b', 'sec-nieuw')]))
+  assertEquals(asana.vinkjes, [])
+})
+
+Deno.test('zelf het vinkje zetten in een andere kolom wordt niet teruggedraaid', async () => {
+  // Alleen slepen telt; een gewone wijziging aan een afgevinkte taak buiten Klaar laten we staan.
+  const { handler, asana } = setup({ t1: { completed: true, memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
+  await handler(await signed([dueChanged('t1')]))
+  assertEquals(asana.vinkjes, [])
+})
+
+Deno.test('een sleepbeurt die alweer achterhaald is, telt niet', async () => {
+  // Asana meldt "naar Klaar", maar de taak staat inmiddels alweer in In planning.
+  const { handler, asana } = setup({ t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
+  await handler(await signed([naarKolom('t1', 'sec-klaar')]))
+  assertEquals(asana.vinkjes, [])
+})
+
+Deno.test('naar een kolom van een ander project gesleept: niets', async () => {
+  const { handler, asana } = setup({ t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
+  await handler(await signed([naarKolom('t1', 'werkplanning-week-44')]))
+  assertEquals(asana.vinkjes, [])
 })

@@ -184,6 +184,18 @@ describe('evenement of intern', () => {
     if (r.success) expect([r.data.event, r.data.event_datum, r.data.design_modus]).toEqual(['', null, null])
   })
 
+  it('intern: zonder deadline mag ook, "het mag klaar zijn wanneer het past"', () => {
+    const r = aanvraagSchema.safeParse({ ...intern, deadline: null })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.deadline).toBeNull()
+  })
+
+  it('een evenement zonder deadline wordt geweigerd', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, deadline: null })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues.map((i) => i.path[0])).toContain('deadline')
+  })
+
   it('intern: zonder omschrijving gaat het niet', () => {
     const r = aanvraagSchema.safeParse({ ...intern, omschrijving: '' })
     expect(r.success).toBe(false)

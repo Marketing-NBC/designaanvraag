@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Aanvraag } from './shared/aanvraag-schema.ts'
+import type { Aanvraag, MenuInhoud } from './shared/aanvraag-schema.ts'
 import type { Aanvulling, GevondenAanvraag } from './shared/aanvulling-schema.ts'
 import { ZOEK_DAGEN, ZOEK_MAX_RESULTATEN, ZOEK_OMSCHRIJVING_TEKENS } from './shared/aanvulling-schema.ts'
+import { vraagtOmMenu } from './shared/request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './shared/request-types.ts'
 
 export interface AanvraagRow {
@@ -44,12 +45,15 @@ export interface AanvraagDetail extends AanvraagRow {
   event: string
   /** Null bij een interne aanvraag. */
   event_datum: string | null
-  deadline: string
+  /** Null bij een interne aanvraag zonder deadline. */
+  deadline: string | null
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
   schijf_locatie: string
   /** Bij een interne aanvraag de hele vraag; nodig voor de taaknaam in de meldingsmail. */
   omschrijving: string
+  /** Het pakket van het menu; leeg als er geen menu bij hoort. Voor "was: …" bij een nieuw menu. */
+  menu_pakket: string
 }
 
 export interface AanvullingRow {
@@ -117,7 +121,8 @@ export interface NewAanvraag extends Aanvraag {
 export interface Db {
   findByClientRequestId(id: string): Promise<AanvraagRow | null>
   insert(row: NewAanvraag): Promise<AanvraagRow>
-  update(id: string, patch: Partial<AanvraagRow>): Promise<void>
+  /** Ook het menu, als een aanvulling het aanpast; dat staat niet in AanvraagRow. */
+  update(id: string, patch: Partial<AanvraagRow> & { menu_inhoud?: MenuInhoud; menu_tekst?: string; menu_pakket?: string }): Promise<void>
   /** De aanvraag achter een Asana-taak; nodig voor de knop "Genereer nu". */
   findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
@@ -172,7 +177,7 @@ export interface Db {
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving`
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket`
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
@@ -271,13 +276,17 @@ export function createDb(url: string, secretKey: string): Db {
     async zoekOpId(id) {
       const { data, error } = await sb
         .from('aanvragen')
-        .select(ZOEK_COLUMNS)
+        .select(`${ZOEK_COLUMNS}, menu_pakket, menu_inhoud`)
         .eq('id', id)
         .not('asana_task_gid', 'is', null)
         .is('vervallen_op', null)
         .maybeSingle()
       if (error) throw new Error(`db zoeken: ${error.message}`)
-      return data ? alsTreffer(data as GevondenAanvraag) : null
+      if (!data) return null
+      const { menu_pakket, menu_inhoud, ...rest } = data as GevondenAanvraag & { menu_pakket: string | null; menu_inhoud: MenuInhoud | null }
+      const treffer = alsTreffer(rest)
+      // Het menu alleen als er een menukaart of menuscherm is aangevraagd: dan kan het worden aangepast.
+      return { ...treffer, menu: vraagtOmMenu(treffer.aanvraag_types) ? { pakket: menu_pakket ?? menu_inhoud?.pakket ?? '', inhoud: menu_inhoud ?? null } : null }
     },
     async markeerVervallen(asanaTaskGid, moment) {
       const { data, error } = await sb

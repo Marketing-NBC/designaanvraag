@@ -148,9 +148,10 @@ export const STEPS: StepDef[] = [
     kind: 'date',
     toon: isIntern,
     title: 'Wanneer heb je het nodig?',
-    help: 'De dag waarop het klaar moet zijn.',
+    help: 'De dag waarop het klaar moet zijn. Geen haast? Kies dan onderaan "Geen deadline".',
     validate: (d) => {
-      if (!d.deadline) return 'Kies de datum waarop je het nodig hebt.'
+      if (d.geen_deadline) return null
+      if (!d.deadline) return 'Kies de datum waarop je het nodig hebt, of "Geen deadline".'
       if (isBeforeToday(d.deadline)) return 'Die datum is al geweest.'
       return null
     },

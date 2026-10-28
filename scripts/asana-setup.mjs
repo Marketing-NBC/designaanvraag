@@ -39,7 +39,7 @@ const norm = (s) => String(s ?? '').trim().toLowerCase()
 const warnings = []
 const summary = []
 
-const SECTIONS = Object.values(map.sections ?? { a: 'Nieuwe aanvragen', b: 'In planning', c: 'Mee bezig', d: 'Klaar' })
+const SECTIONS = Object.values(map.sections ?? { a: 'Nieuwe aanvragen', b: 'Feedback', c: 'In planning', d: 'Klaar' })
 
 // 1. Workspace, team en leden van het voorbeeldproject
 const like = await asana(

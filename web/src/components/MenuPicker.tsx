@@ -269,7 +269,7 @@ export function MenuPicker({ menu, onChange }: Props) {
         <span className="menu__pakket">{pakket?.naam}</span>
         <span className="menu__telling">{aantalGerechten(menu)} gerechten</span>
         <button type="button" className="menu__wissel" onClick={() => { setOpen(null); onChange(leegMenu()) }}>
-          Ander pakket
+          Pakket wijzigen
         </button>
       </div>
 

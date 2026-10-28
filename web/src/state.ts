@@ -12,6 +12,8 @@ export interface Draft {
   event: string
   event_datum: string | null
   deadline: string | null
+  /** Alleen bij een interne aanvraag: "het mag klaar zijn wanneer het past", dus geen deadline. */
+  geen_deadline: boolean
   website: string
   schijf_locatie: string
   /** Alleen de gegevens over de bestanden; de bestanden zelf staan nooit in het concept. */
@@ -32,6 +34,7 @@ export const emptyDraft = (): Draft => ({
   event: '',
   event_datum: null,
   deadline: null,
+  geen_deadline: false,
   website: '',
   schijf_locatie: '',
   bijlagen: [],

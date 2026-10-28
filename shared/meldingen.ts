@@ -57,6 +57,11 @@ function link(href: string, thema: Thema, tekst = href): string {
   return `<a href="${escapeHtml(href)}" style="color:${thema.link};">${escapeHtml(tekst)}</a>`
 }
 
+/** De deadline voor in de mail; bij een interne aanvraag mag hij ontbreken. */
+function deadlineTekst(deadline: string | null): string {
+  return deadline ? `<strong>${escapeHtml(datumLang(deadline))}</strong>` : 'Geen deadline'
+}
+
 function leegOf(tekst: string, html = escapeHtml(tekst)): string {
   return tekst ? html : '<span style="color:#828b8d;">niet opgegeven</span>'
 }
@@ -111,7 +116,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Soort', 'Intern'],
       ['Locatie', escapeHtml(locatieLabel(a.locatie))],
       ['Aanvrager', escapeHtml(a.naam)],
-      ['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>`],
+      ['Deadline', deadlineTekst(a.deadline)],
       ['Spoed', spoedTekst(m.spoed)],
     ]
     : [
@@ -119,7 +124,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Aanvrager', escapeHtml(a.naam)],
       ['Event', escapeHtml(a.event)],
       ['Eventdatum', a.event_datum ? escapeHtml(datumLang(a.event_datum)) : leegOf('')],
-      ['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>`],
+      ['Deadline', deadlineTekst(a.deadline)],
       ['Aanvraag', escapeHtml(describeRequestTypes(a.aanvraag_types, a.anders_tekst))],
       ['Design', leegOf(DESIGN_MODES.find((d) => d.key === a.design_modus)?.label ?? a.design_modus ?? '')],
       ['Spoed', spoedTekst(m.spoed)],
@@ -172,7 +177,8 @@ export interface AanvullingMail {
     spoed: boolean
     /** Na deze aanvulling, dus met een eventueel nieuwe datum. Null bij een interne aanvraag. */
     eventDatum: string | null
-    deadline: string
+    /** Null bij een interne aanvraag zonder deadline. */
+    deadline: string | null
     eventDatumGewijzigd: boolean
     deadlineGewijzigd: boolean
     /** Alle types na deze aanvulling. */
@@ -185,8 +191,8 @@ export interface AanvullingMail {
   bijlagen: string[]
   /** De taak stond op Klaar of was afgevinkt en is heropend. */
   heropend: boolean
-  /** De taak stond in Mee bezig en is naar Feedback verplaatst. */
-  naarFeedback: boolean
+  /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
+  menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
 }
@@ -204,12 +210,16 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   }
   if (m.heropend) {
     delen.push(waarschuwingBlok('<strong>Deze taak was al afgerond en is heropend.</strong> Hij staat nu in de kolom Feedback, zonder planningsdatum.'))
-  } else if (m.naarFeedback) {
-    delen.push(waarschuwingBlok('<strong>Er is feedback op werk waar je mee bezig bent.</strong> De taak staat nu in de kolom Feedback.'))
   }
 
   delen.push(taakRegel(m.taakNaam))
-  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`, citaat(m.toelichting, thema))
+  delen.push(`<p style="margin:0;font-weight:bold;">Aanvulling van ${escapeHtml(m.naam)}</p>`)
+  if (m.toelichting) delen.push(citaat(m.toelichting, thema))
+  if (m.menu) {
+    const pakket = m.menu.vorigPakket ? `${m.menu.pakket} (was ${m.menu.vorigPakket})` : m.menu.pakket
+    delen.push(kopje(`Nieuw menu: ${pakket}`), citaat(m.menu.tekst, thema),
+      '<p style="margin:4px 0 0;font-size:13px;color:#596165;">Zet Menuscherm in Asana op Genereer nu om het scherm opnieuw te maken.</p>')
+  }
 
   const gewijzigd = ` <span style="color:${thema.link};font-weight:bold;">(gewijzigd)</span>`
   const rijen: [string, string][] = []
@@ -221,7 +231,7 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       ['Eventdatum', (a.eventDatum ? escapeHtml(datumLang(a.eventDatum)) : leegOf('')) + (a.eventDatumGewijzigd ? gewijzigd : '')],
     )
   }
-  rijen.push(['Deadline', `<strong>${escapeHtml(datumLang(a.deadline))}</strong>` + (a.deadlineGewijzigd ? gewijzigd : '')])
+  rijen.push(['Deadline', deadlineTekst(a.deadline) + (a.deadlineGewijzigd ? gewijzigd : '')])
   if (a.types.length) rijen.push(['Aanvraag', escapeHtml(describeRequestTypes(a.types, m.andersTekst))])
   if (m.extraTypes.length) rijen.push(['Erbij gevraagd', `<strong>${escapeHtml(describeRequestTypes(m.extraTypes, m.andersTekst))}</strong>`])
   rijen.push(['Spoed', spoedTekst(a.spoed)])
