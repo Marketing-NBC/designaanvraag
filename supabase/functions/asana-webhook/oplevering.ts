@@ -3,18 +3,25 @@ import type { Db, OpleveringRow } from '../_shared/db.ts'
 import { MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
 import {
-  bijlagenBijReactie, laatsteOpleveringReactie, leesOntvangers, reactieAlsMailHtml, renderOpleveringMail, teGrootMelding,
-  uniekeAdressen, verslagMislukt, verslagVerstuurd,
+  OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
+  verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 
 /**
- * De knop "Verstuur nu" in het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
+ * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
  *
- * De mail is de nieuwste reactie die met "Oplevering:" begint, met de bestanden die daarbij in
- * Asana zijn gezet. Hij gaat naar de aanvrager (het adres staat bij de collega in Supabase) en naar
- * de adressen in het veld "Ook mailen naar". Lukt het, dan komt er een verslag als reactie, gaat het
- * veld op Verstuurd en de taak naar Klaar. Lukt het niet, dan wordt er niets half verstuurd: het
+ * De mail komt uit de subtaak "Oplevering": de beschrijving is de tekst, de bijlagen zijn de
+ * bestanden. Wat Marketing in die subtaak ziet, is wat er verstuurd wordt. De mail gaat naar de
+ * aanvrager (het adres staat bij de collega in Supabase) en naar de adressen in het veld "Ook
+ * mailen naar".
+ *
+ * "Stuur proef naar mij" stuurt precies dezelfde mail alleen naar wie op de knop drukte. Er wordt
+ * dan niets afgevinkt of geteld.
+ *
+ * "Verstuur nu" verstuurt hem echt. Daarna een verslag als reactie, het veld op Verstuurd, de
+ * subtaak afgevinkt en hernoemd naar zijn versie, een nieuwe lege subtaak Oplevering voor een
+ * volgende versie, en de taak naar Klaar. Lukt het niet, dan wordt er niets half verstuurd: het
  * veld gaat op Mislukt en de reden staat in een reactie.
  */
 
@@ -28,46 +35,54 @@ export interface OpleverDeps {
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
 
+export interface OpleverOpties {
+  /** Alleen een proefmail naar wie op de knop drukte. */
+  proef: boolean
+  /** De Asana-gebruiker die het veld omzette, als Asana dat meegaf. */
+  door: string | null
+}
+
 /** Zolang een poging "bezig" is, start een tweede druk op de knop er geen tweede naast. */
 const BEZIG_GELDIG_MS = 10 * 60_000
 
 /** Een fout die als reden in Asana komt te staan. Andere fouten zijn onverwacht en krijgen een algemene zin. */
 class Weigering extends Error {}
 
-export function createOplever(deps: OpleverDeps): (taak: AsanaTask) => Promise<string> {
+export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: OpleverOpties) => Promise<string> {
   const { asana, db, cfg } = deps
   const now = deps.now ?? (() => new Date())
   const log = deps.log ?? ((level, msg, extra) => console[level === 'info' ? 'log' : level](msg, extra ?? ''))
   const veld = cfg.fields?.oplevermail
 
-  async function zetVeld(taakGid: string, optie: 'verstuurd' | 'mislukt'): Promise<void> {
+  const fout = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
+  async function zetVeld(taakGid: string, optie: 'verstuurd' | 'proef_verstuurd' | 'mislukt'): Promise<void> {
     const gid = veld?.options?.[optie]
     if (!veld?.gid || !gid) return
     try {
       await asana.updateCustomFields(taakGid, { [veld.gid]: gid })
     } catch (e) {
-      log('warn', `oplevermail-veld op ${optie} zetten mislukt`, { gid: taakGid, error: e instanceof Error ? e.message : String(e) })
+      log('warn', `oplevermail-veld op ${optie} zetten mislukt`, { gid: taakGid, error: fout(e) })
     }
   }
 
-  async function mislukt(taak: AsanaTask, reden: string, vermeld: string | null, rij: OpleveringRow | null): Promise<string> {
+  async function mislukt(taak: AsanaTask, reden: string, opties: OpleverOpties, rij: OpleveringRow | null): Promise<string> {
     if (rij) {
       await db.updateOplevering(rij.id, { status: 'mislukt', fout: reden }).catch((e) => {
-        log('warn', 'oplevering op mislukt zetten mislukt', { id: rij.id, error: e instanceof Error ? e.message : String(e) })
+        log('warn', 'oplevering op mislukt zetten mislukt', { id: rij.id, error: fout(e) })
       })
     }
     try {
-      await asana.addComment(taak.gid, verslagMislukt(reden, vermeld ?? taak.assignee))
+      await asana.addComment(taak.gid, verslagMislukt(reden, opties.door ?? taak.assignee, opties.proef))
     } catch (e) {
-      log('error', 'reactie bij mislukte oplevering plaatsen mislukt', { gid: taak.gid, error: e instanceof Error ? e.message : String(e) })
+      log('error', 'reactie bij mislukte oplevering plaatsen mislukt', { gid: taak.gid, error: fout(e) })
     }
     await zetVeld(taak.gid, 'mislukt')
-    return `oplevermail niet verstuurd: ${reden}`
+    return `${opties.proef ? 'proefmail' : 'oplevermail'} niet verstuurd: ${reden}`
   }
 
-  return async (taak) => {
+  return async (taak, { proef, door }) => {
     let rij: OpleveringRow | null = null
-    let vermeld: string | null = null
     try {
       if (!deps.mail) throw new Weigering('Het mailen is nog niet ingesteld (zie "Mail instellen" in de README).')
 
@@ -76,19 +91,24 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask) => Promise<s
         throw new Weigering('Deze taak hoort niet bij een aanvraag uit het formulier, dus er is geen aanvrager en geen feedbackknop om naar te verwijzen.')
       }
 
-      const reactie = laatsteOpleveringReactie(await asana.listReacties(taak.gid))
-      if (!reactie) {
-        throw new Weigering('Er staat nog geen reactie die begint met "Oplevering:". Schrijf daarin wat je wil zeggen, zet de bestanden erbij, en druk dan op de knop.')
+      const subtaak = openOpleverSubtaak(await asana.listSubtaken(taak.gid))
+      if (!subtaak) {
+        // Een taak van voor deze functie, of de vorige versie is net verstuurd en de nieuwe lege
+        // subtaak is weggegooid. Dan maken we hem, zodat je meteen ziet waar het moet.
+        await asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee)
+        throw new Weigering('Er stond geen open subtaak "Oplevering"; die staat er nu. Zet daar de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
       }
-      vermeld = reactie.auteurGid
 
-      const bestaand = await db.findOplevering(reactie.gid)
-      if (bestaand?.status === 'verstuurd') {
-        throw new Weigering(`Deze reactie is al verstuurd${bestaand.versie > 1 ? ` als versie ${bestaand.versie}` : ''}. Voor een nieuwe oplevering plaats je een nieuwe reactie "Oplevering:".`)
-      }
-      if (bestaand?.status === 'bezig' && now().getTime() - Date.parse(bestaand.created_at) < BEZIG_GELDIG_MS) {
-        // Twee keer op de knop gedrukt, of Asana stuurde de wijziging dubbel. De eerste loopt nog.
-        return 'oplevermail al bezig'
+      if (!proef) {
+        const bestaand = await db.findOplevering(subtaak.gid)
+        if (bestaand?.status === 'verstuurd') {
+          throw new Weigering(`Deze subtaak Oplevering is al verstuurd als versie ${bestaand.versie}. Vink hem af en maak een nieuwe subtaak "Oplevering" voor de volgende versie.`)
+        }
+        if (bestaand?.status === 'bezig' && now().getTime() - Date.parse(bestaand.created_at) < BEZIG_GELDIG_MS) {
+          // Twee keer op de knop gedrukt, of Asana stuurde de wijziging dubbel. De eerste loopt nog.
+          return 'oplevermail al bezig'
+        }
+        rij = bestaand
       }
 
       // Ontvangers: de aanvrager en wie er in "Ook mailen naar" staat.
@@ -103,18 +123,34 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask) => Promise<s
         throw new Weigering(`Er is geen ontvanger: bij ${aanvraag.naam} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
       }
 
-      const keuze = bijlagenBijReactie(await asana.listBestanden(taak.gid), reactie)
+      const keuze = verdeelBijlagen(await asana.listBestanden(subtaak.gid))
+      const berichtHtml = beschrijvingAlsMailHtml(subtaak.html)
+      if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length) {
+        throw new Weigering('De subtaak Oplevering is nog leeg. Zet de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
+      }
       const teGroot = teGrootMelding(keuze)
       if (teGroot) throw new Weigering(teGroot)
 
+      // Wie drukte: diens naam staat onder het bericht, en een proef gaat naar diens adres.
+      let wie: { naam: string | null; email: string | null } = { naam: null, email: null }
+      if (door) {
+        try {
+          wie = await asana.gebruiker(door)
+        } catch (e) {
+          log('warn', 'gebruiker ophalen mislukt', { door, error: fout(e) })
+        }
+      }
+      const marketing = MELDING_ONTVANGERS[aanvraag.locatie] ?? MELDING_ONTVANGERS.nbc
       const versie = (await db.aantalVerstuurd(aanvraag.id)) + 1
       const bijlagenAdmin = keuze.bestanden.map((b) => ({ naam: b.naam, bytes: b.bytes ?? 0 }))
-      if (bestaand) {
-        // Een eerdere poging met deze reactie mislukte (of bleef hangen): dezelfde rij opnieuw.
-        rij = { ...bestaand, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status: 'bezig', fout: null }
-        await db.updateOplevering(bestaand.id, { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status: 'bezig', fout: null, created_at: now().toISOString() })
-      } else {
-        rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, comment_gid: reactie.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin })
+
+      if (!proef) {
+        if (rij) {
+          // Een eerdere poging met deze subtaak mislukte (of bleef hangen): dezelfde rij opnieuw.
+          await db.updateOplevering(rij.id, { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status: 'bezig', fout: null, created_at: now().toISOString() })
+        } else {
+          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin })
+        }
       }
 
       const bijlagen: MailBijlage[] = []
@@ -126,9 +162,12 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask) => Promise<s
       const echtTeGroot = teGrootMelding({ ...keuze, totaalBytes: bijlagen.reduce((n, b) => n + b.bytes.length, 0) })
       if (echtTeGroot) throw new Weigering(echtTeGroot)
 
+      // Een proef gaat naar wie drukte. Weten we dat niet, dan naar het marketingpostvak: dan kijkt
+      // in elk geval iemand van het team mee voordat het echt de deur uit gaat.
+      const proefNaar = wie.email ?? marketing
       const bericht = renderOpleveringMail({
-        aan,
-        antwoordAan: [MELDING_ONTVANGERS[aanvraag.locatie] ?? MELDING_ONTVANGERS.nbc],
+        aan: proef ? [proefNaar] : aan,
+        antwoordAan: [marketing],
         aanvraagId: aanvraag.id,
         versie,
         soort: aanvraag.soort,
@@ -137,45 +176,53 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask) => Promise<s
         omschrijving: aanvraag.omschrijving,
         types: aanvraag.aanvraag_types ?? [],
         andersTekst: aanvraag.anders_tekst,
-        berichtHtml: reactieAlsMailHtml(reactie.html || reactie.tekst),
-        afzenderNaam: reactie.auteurNaam,
+        berichtHtml,
+        afzenderNaam: wie.naam,
         bijlagen: bijlagen.map((b) => ({ naam: b.naam, bytes: b.bytes.length })),
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
+        proef: proef ? { echteOntvangers: aan } : null,
       })
       try {
         await deps.mail.verstuur({ ...bericht, bijlagen })
       } catch (e) {
-        throw new Weigering(`Microsoft weigerde de mail: ${e instanceof Error ? e.message : String(e)}`)
+        throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
+      }
+
+      const linkNamen = keuze.links.map((l) => l.naam)
+      if (proef) {
+        log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
+        try {
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen }))
+        } catch (e) {
+          log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
+        }
+        await zetVeld(taak.gid, 'proef_verstuurd')
+        return 'proefmail verstuurd'
       }
 
       const moment = now()
-      await db.updateOplevering(rij.id, { status: 'verstuurd', fout: null, verstuurd_op: moment.toISOString() })
+      const datum = vandaagInNl(moment)
+      await db.updateOplevering(rij!.id, { status: 'verstuurd', fout: null, verstuurd_op: moment.toISOString() })
       log('info', 'opleveringsmail verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, versie, ontvangers: aan.length, bijlagen: bijlagen.length })
 
       // Vanaf hier is de mail de deur uit. Wat nog misgaat is administratie, en mag geen "Mislukt" opleveren.
-      try {
-        await asana.addComment(taak.gid, verslagVerstuurd({
-          versie,
-          aan,
-          bijlagen: bijlagen.map((b) => b.naam),
-          links: keuze.links.map((l) => l.naam),
-          datum: vandaagInNl(moment),
-        }))
-      } catch (e) {
-        log('warn', 'verslag van oplevering plaatsen mislukt', { gid: taak.gid, error: e instanceof Error ? e.message : String(e) })
+      const nazorg = async (wat: string, stap: () => Promise<unknown>) => {
+        try {
+          await stap()
+        } catch (e) {
+          log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
+        }
       }
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum })))
       await zetVeld(taak.gid, 'verstuurd')
-      try {
-        await asana.rondAf(taak.gid, cfg.sections?.klaar?.gid ?? null)
-      } catch (e) {
-        log('warn', 'taak afronden na oplevering mislukt', { gid: taak.gid, error: e instanceof Error ? e.message : String(e) })
-      }
+      await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
+      await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))
+      await nazorg('taak afronden', () => asana.rondAf(taak.gid, cfg.sections?.klaar?.gid ?? null))
       return `oplevermail verstuurd (versie ${versie})`
     } catch (e) {
-      if (e instanceof Weigering) return mislukt(taak, e.message, vermeld, rij)
-      const msg = e instanceof Error ? e.message : String(e)
-      log('error', 'oplevermail mislukt', { gid: taak.gid, error: msg })
-      return mislukt(taak, `Er ging iets mis aan onze kant (${msg}).`, vermeld, rij)
+      if (e instanceof Weigering) return mislukt(taak, e.message, { proef, door }, rij)
+      log('error', 'oplevermail mislukt', { gid: taak.gid, error: fout(e) })
+      return mislukt(taak, `Er ging iets mis aan onze kant (${fout(e)}).`, { proef, door }, rij)
     }
   }
 }

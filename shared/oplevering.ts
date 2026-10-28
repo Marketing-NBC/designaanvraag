@@ -1,17 +1,18 @@
 /**
  * De opleveringsmail: Marketing laat weten dat het ontwerp klaar is.
  *
- * Zo gaat het in Asana: Marketing plaatst onder de taak een reactie die begint met "Oplevering:",
- * met de bestanden erbij, en zet het veld Oplevermail op "Verstuur nu". De aanvrager krijgt dan een
- * mail met die tekst, die bestanden en een knop om feedback te geven. Extra ontvangers staan in het
- * veld "Ook mailen naar".
+ * Zo gaat het in Asana: elke aanvraag heeft een subtaak "Oplevering". De beschrijving daarvan is de
+ * tekst van de mail, de bijlagen ervan zijn precies de bestanden die meegaan. Wat je in die subtaak
+ * ziet, is wat er verstuurd wordt. Daarna zet Marketing het veld Oplevermail op de hoofdtaak op
+ * "Verstuur nu", of eerst op "Stuur proef naar mij". Extra ontvangers staan in het veld "Ook mailen
+ * naar".
  *
  * Puur: gegevens erin, keuzes en HTML eruit. Ophalen uit Asana en versturen doet de webhook.
  */
 import { formatDateShortNl, kortVan } from './asana-title.ts'
 import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL } from './contact.ts'
-import { escapeHtml, gegevensTabel, knop, mailOpmaak } from './mail.ts'
+import { escapeHtml, gegevensTabel, knop, mailOpmaak, waarschuwingBlok } from './mail.ts'
 import type { MailBericht } from './mail.ts'
 import { describeRequestTypes } from './request-types.ts'
 import type { RequestTypeKey, Soort } from './request-types.ts'
@@ -19,43 +20,41 @@ import type { RequestTypeKey, Soort } from './request-types.ts'
 /**
  * Samen niet meer dan dit aan bijlagen. Een mail van 20 MB wordt na het inpakken zo'n 27 MB, en
  * daar houden de meeste postvakken op (Gmail bij 25 MB, Outlook standaard bij 35 MB). Wat groter
- * is hoort op de schijf of in SharePoint, met de link of het pad in de reactie.
+ * is hoort op de schijf of in SharePoint, met de link of het pad in de beschrijving.
  */
 export const MAX_OPLEVERING_BYTES = 20 * 1024 * 1024
 
-/**
- * Bestanden die zoveel eerder dan de reactie bij de taak kwamen, horen er nog bij. Asana zegt niet
- * welk bestand bij welke reactie hoort, dus kijken we naar het moment: een bestand dat je in het
- * reactievak sleept, staat er al voordat je de tekst af hebt en op Verstuur drukt.
- */
-export const BIJLAGE_VENSTER_VOOR_MS = 30 * 60_000
-/** En zoveel erna: het uploaden van een groot bestand kan nog even doorlopen. */
-export const BIJLAGE_VENSTER_NA_MS = 2 * 60_000
+/** De naam van de subtaak waar de oplevering in klaargezet wordt. */
+export const OPLEVER_SUBTAAK = 'Oplevering'
 
-/** Zo begint de reactie die de mail wordt. Hoofdletters en een spatie voor de dubbele punt mogen. */
-const MARKERING = /^\s*oplevering\s*:\s*/i
-
-export function isOpleveringReactie(tekst: string): boolean {
-  return MARKERING.test(tekst)
+/** Een subtaak waarvan de naam met "Oplevering" begint; hoofdletters maken niet uit. */
+export function isOpleverSubtaak(naam: string): boolean {
+  return /^\s*oplevering\b/i.test(naam)
 }
 
-export interface Reactie {
+export interface Subtaak {
   gid: string
+  naam: string
+  completed: boolean
   /** ISO-tijdstip. */
   createdAt: string
-  /** Platte tekst, voor het herkennen van "Oplevering:". */
-  tekst: string
-  /** De opgemaakte tekst zoals Asana hem bewaart; daar maken we de mail van. */
+  /** De opgemaakte beschrijving zoals Asana hem bewaart; daar maken we de mail van. */
   html: string
-  auteurGid: string | null
-  auteurNaam: string | null
 }
 
-/** De nieuwste reactie die met "Oplevering:" begint, of null. */
-export function laatsteOpleveringReactie(reacties: Reactie[]): Reactie | null {
-  const kandidaten = reacties.filter((r) => isOpleveringReactie(r.tekst))
-  if (!kandidaten.length) return null
-  return kandidaten.reduce((a, b) => (Date.parse(b.createdAt) >= Date.parse(a.createdAt) ? b : a))
+/**
+ * De subtaak die nu opgeleverd wordt: de open (niet afgevinkte) Oplevering-subtaak. Zijn er
+ * meer, dan de nieuwste. Afgevinkte zijn eerdere versies die al verstuurd zijn.
+ */
+export function openOpleverSubtaak(subtaken: Subtaak[]): Subtaak | null {
+  const open = subtaken.filter((s) => !s.completed && isOpleverSubtaak(s.naam))
+  if (!open.length) return null
+  return open.reduce((a, b) => (Date.parse(b.createdAt) >= Date.parse(a.createdAt) ? b : a))
+}
+
+/** Na het versturen: "Oplevering versie 2 - verstuurd 28 oktober". */
+export function verstuurdeSubtaakNaam(versie: number, datum: string): string {
+  return `${OPLEVER_SUBTAAK} versie ${versie} - verstuurd ${formatDateShortNl(datum, false)}`
 }
 
 export interface AsanaBestand {
@@ -78,19 +77,13 @@ export interface BijlageKeuze {
   totaalBytes: number
 }
 
-/** De bestanden die bij deze reactie horen: wat er rond het moment van de reactie bij de taak kwam. */
-export function bijlagenBijReactie(bestanden: AsanaBestand[], reactie: Pick<Reactie, 'createdAt'>): BijlageKeuze {
-  const moment = Date.parse(reactie.createdAt)
-  const erbij = bestanden
-    .filter((b) => {
-      const t = Date.parse(b.createdAt)
-      return Number.isFinite(t) && t >= moment - BIJLAGE_VENSTER_VOOR_MS && t <= moment + BIJLAGE_VENSTER_NA_MS
-    })
-    .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
-  const geupload = erbij.filter((b) => b.host === 'asana')
+/** De bijlagen van de subtaak, in de volgorde waarin ze erbij kwamen. */
+export function verdeelBijlagen(bestanden: AsanaBestand[]): BijlageKeuze {
+  const op = [...bestanden].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+  const geupload = op.filter((b) => b.host === 'asana')
   return {
     bestanden: geupload,
-    links: erbij.filter((b) => b.host !== 'asana' && b.viewUrl),
+    links: op.filter((b) => b.host !== 'asana' && b.viewUrl),
     totaalBytes: geupload.reduce((n, b) => n + (b.bytes ?? 0), 0),
   }
 }
@@ -99,8 +92,8 @@ export function bijlagenBijReactie(bestanden: AsanaBestand[], reactie: Pick<Reac
 export function teGrootMelding(keuze: BijlageKeuze, max = MAX_OPLEVERING_BYTES): string | null {
   if (keuze.totaalBytes <= max) return null
   const lijst = keuze.bestanden.map((b) => `${b.naam} (${formatBytes(b.bytes ?? 0)})`).join(', ')
-  return `De bestanden zijn samen ${formatBytes(keuze.totaalBytes)}, en er past hooguit ${formatBytes(max)} in een mail: ${lijst}. `
-    + 'Zet ze op de schijf of in SharePoint en zet de link of het pad in een nieuwe reactie "Oplevering:", zonder de bestanden erbij.'
+  return `De bestanden in de subtaak Oplevering zijn samen ${formatBytes(keuze.totaalBytes)}, en er past hooguit ${formatBytes(max)} in een mail: ${lijst}. `
+    + 'Zet ze op de schijf of in SharePoint, haal ze uit de subtaak en zet de link of het pad in de beschrijving.'
 }
 
 const EMAIL = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}$/i
@@ -165,25 +158,17 @@ function attribuut(attrs: string, naam: string): string | null {
 }
 
 /**
- * De reactie uit Asana als HTML voor in de mail, zonder "Oplevering:" ervoor. Alleen eenvoudige
- * opmaak blijft over: vet, cursief, lijstjes, citaten en links. Een vermelding van een collega of
- * een andere taak wordt gewone tekst: de ontvanger kan niet in Asana.
+ * De beschrijving van de subtaak als HTML voor in de mail. Alleen eenvoudige opmaak blijft over:
+ * vet, cursief, lijstjes, citaten en links. Een vermelding van een collega of een andere taak
+ * wordt gewone tekst: de ontvanger kan niet in Asana.
  */
-export function reactieAlsMailHtml(asanaHtml: string): string {
+export function beschrijvingAlsMailHtml(asanaHtml: string): string {
   const uit: string[] = []
   const open: string[] = []
-  let markeringWeg = false
   // In een vermelding: de tekst blijft, de link niet.
   let inVermelding = 0
 
-  const tekst = (ruw: string) => {
-    let t = ontEntiteit(ruw)
-    if (!markeringWeg && t.trim()) {
-      t = t.replace(MARKERING, '')
-      markeringWeg = true
-    }
-    return escapeHtml(t).replace(/\r?\n/g, '<br>')
-  }
+  const tekst = (ruw: string) => escapeHtml(ontEntiteit(ruw)).replace(/\r?\n/g, '<br>')
 
   for (const m of asanaHtml.matchAll(/<(\/?)([a-z0-9]+)([^>]*)>|([^<]+)/gi)) {
     if (m[4] !== undefined) {
@@ -238,7 +223,6 @@ export function reactieAlsMailHtml(asanaHtml: string): string {
   }
   while (open.length) uit.push(`</${open.pop()}>`)
   return uit.join('')
-    // "<strong>Oplevering:</strong>" laat een lege <strong> achter.
     .replace(/<(strong|em|u|s|code)>\s*<\/\1>/g, '')
     .replace(/^(\s|<br>)+|(\s|<br>)+$/g, '')
 }
@@ -263,12 +247,14 @@ export interface OpleveringMail {
   omschrijving: string
   types: RequestTypeKey[]
   andersTekst: string
-  /** De reactie, al omgezet met reactieAlsMailHtml. */
+  /** De beschrijving van de subtaak, al omgezet met beschrijvingAlsMailHtml. */
   berichtHtml: string
-  /** Wie de reactie schreef; staat onder het bericht. */
+  /** Wie op de knop drukte; staat onder het bericht. */
   afzenderNaam: string | null
   bijlagen: { naam: string; bytes: number }[]
   links: { naam: string; url: string }[]
+  /** Een proefmail: alleen naar wie hem vroeg, met bovenaan wie de echte mail zou krijgen. */
+  proef?: { echteOntvangers: string[] } | null
 }
 
 /** "EY - 11 december - Torenscherm", of bij intern "Intern - Nieuwe visitekaartjes…". */
@@ -283,6 +269,12 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   const nieuweVersie = m.versie > 1
   const delen: string[] = []
 
+  if (m.proef) {
+    delen.push(waarschuwingBlok(
+      `<strong>Proefmail.</strong> Alleen jij krijgt deze. De echte mail gaat naar ${escapeHtml(opsomming(m.proef.echteOntvangers))}. `
+        + 'De knop werkt echt: klik er niet op, anders komt er feedback bij de taak.',
+    ))
+  }
   delen.push(`<p style="margin:0 0 16px;">Hoi,</p>`)
   delen.push(`<p style="margin:0 0 16px;">${nieuweVersie
     ? `Versie ${m.versie} van ${intern ? 'je aanvraag' : `het design voor <strong>${escapeHtml(m.event)}</strong>`} staat klaar, met je feedback verwerkt.`
@@ -318,7 +310,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   return {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
-    onderwerp: `${nieuweVersie ? `Versie ${m.versie} klaar` : 'Klaar'}: ${waarover(m)}`.slice(0, 250),
+    onderwerp: `${m.proef ? '[PROEF] ' : ''}${nieuweVersie ? `Versie ${m.versie} klaar` : 'Klaar'}: ${waarover(m)}`.slice(0, 250),
     html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.'),
   }
 }
@@ -330,6 +322,15 @@ function escapeAsana(s: string): string {
 function opsomming(woorden: string[]): string {
   if (woorden.length <= 1) return woorden.join('')
   return `${woorden.slice(0, -1).join(', ')} en ${woorden[woorden.length - 1]}`
+}
+
+/** De reactie in Asana na een proefmail: waar hij heen ging en wie de echte krijgt. */
+export function verslagProef(v: { naar: string; aan: string[]; bijlagen: string[]; links: string[] }): string {
+  const delen = [`Proefmail gestuurd naar ${escapeAsana(v.naar)}. De echte mail gaat naar ${escapeAsana(opsomming(v.aan))}`]
+  delen[0] += v.bijlagen.length ? `, met ${escapeAsana(opsomming(v.bijlagen))}.` : v.links.length ? '.' : ', zonder bijlagen.'
+  if (v.links.length) delen.push(`Als link: ${escapeAsana(v.links.join(', '))}.`)
+  delen.push('Klopt alles, zet Oplevermail dan op Verstuur nu.')
+  return `<body>${delen.join(' ')}</body>`
 }
 
 /** De reactie in Asana na een geslaagde mail: wie, wat en welke versie. */
@@ -345,8 +346,8 @@ export function verslagVerstuurd(v: { versie: number; aan: string[]; bijlagen: s
  * De reactie in Asana als er niets verstuurd is. Met een vermelding, zodat het in je Asana-inbox
  * landt; je zit misschien al op de volgende taak te wachten tot hij verstuurd is.
  */
-export function verslagMislukt(reden: string, vermeldGid: string | null): string {
+export function verslagMislukt(reden: string, vermeldGid: string | null, proef = false): string {
   const vermelding = vermeldGid ? `<a data-asana-gid="${escapeAsana(vermeldGid)}"/> ` : ''
-  return `<body>${vermelding}De opleveringsmail is <strong>niet</strong> verstuurd. ${escapeAsana(reden)} `
-    + 'Zet Oplevermail daarna opnieuw op Verstuur nu.</body>'
+  return `<body>${vermelding}De ${proef ? 'proefmail' : 'opleveringsmail'} is <strong>niet</strong> verstuurd. ${escapeAsana(reden)} `
+    + 'Zet Oplevermail daarna opnieuw op Verstuur nu (of eerst op Stuur proef naar mij).</body>'
 }

@@ -98,7 +98,7 @@ export interface OpleveringRow {
   id: string
   created_at: string
   aanvraag_id: string
-  comment_gid: string
+  subtaak_gid: string
   versie: number
   ontvangers: string[]
   bijlagen: { naam: string; bytes: number }[]
@@ -163,11 +163,11 @@ export interface Db {
   findDetailByAsanaTaskGid(gid: string): Promise<AanvraagDetail | null>
   /** Het e-mailadres van een collega, op naam (hoofdletters daargelaten). Null als het er niet is. */
   collegaEmail(naam: string): Promise<string | null>
-  /** De oplevering die van deze reactie gemaakt is, als die er al is. */
-  findOplevering(commentGid: string): Promise<OpleveringRow | null>
+  /** De oplevering die van deze subtaak gemaakt is, als die er al is. */
+  findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
   aantalVerstuurd(aanvraagId: string): Promise<number>
-  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'comment_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow>
+  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow>
   updateOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<void>
 }
 
@@ -176,7 +176,7 @@ const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
-const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, comment_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op'
+const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
@@ -352,8 +352,8 @@ export function createDb(url: string, secretKey: string): Db {
       const email = (data as { email: string | null }[] | null)?.[0]?.email?.trim()
       return email || null
     },
-    async findOplevering(commentGid) {
-      const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS).eq('comment_gid', commentGid).maybeSingle()
+    async findOplevering(subtaakGid) {
+      const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS).eq('subtaak_gid', subtaakGid).maybeSingle()
       if (error) throw new Error(`db select: ${error.message}`)
       return (data as OpleveringRow | null) ?? null
     },

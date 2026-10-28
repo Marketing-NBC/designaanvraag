@@ -1,59 +1,59 @@
 import { describe, expect, it } from 'vitest'
 import {
-  bijlagenBijReactie, feedbackUrl, isOpleveringReactie, laatsteOpleveringReactie, leesOntvangers, reactieAlsMailHtml,
-  renderOpleveringMail, teGrootMelding, uniekeAdressen, verslagMislukt, verslagVerstuurd, type AsanaBestand, type OpleveringMail,
-  type Reactie,
+  beschrijvingAlsMailHtml, feedbackUrl, isOpleverSubtaak, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding,
+  uniekeAdressen, verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam, type AsanaBestand,
+  type OpleveringMail, type Subtaak,
 } from './oplevering'
 
-describe('de reactie herkennen', () => {
-  it('begint met Oplevering:, hoofdletters en spaties maken niet uit', () => {
-    expect(isOpleveringReactie('Oplevering: hier is het')).toBe(true)
-    expect(isOpleveringReactie('  oplevering : hier is het')).toBe(true)
-    expect(isOpleveringReactie('OPLEVERING:')).toBe(true)
-    expect(isOpleveringReactie('De oplevering: volgt morgen')).toBe(false)
-    expect(isOpleveringReactie('Oplevering volgt')).toBe(false)
+describe('de subtaak Oplevering', () => {
+  const sub = (gid: string, naam: string, completed = false, createdAt = '2026-10-01T10:00:00Z'): Subtaak =>
+    ({ gid, naam, completed, createdAt, html: '' })
+
+  it('herkent de naam, hoofdletters maken niet uit', () => {
+    expect(isOpleverSubtaak('Oplevering')).toBe(true)
+    expect(isOpleverSubtaak('oplevering versie 2')).toBe(true)
+    expect(isOpleverSubtaak('Torenscherm Zorgcongres')).toBe(false)
+    expect(isOpleverSubtaak('Opleveringen archief')).toBe(false)
   })
 
-  it('de nieuwste telt', () => {
-    const r = (gid: string, createdAt: string, tekst = 'Oplevering: x'): Reactie =>
-      ({ gid, createdAt, tekst, html: '', auteurGid: null, auteurNaam: null })
-    const gekozen = laatsteOpleveringReactie([
-      r('a', '2026-10-01T10:00:00Z'),
-      r('b', '2026-10-03T10:00:00Z'),
-      r('c', '2026-10-04T10:00:00Z', 'Dank je!'),
-      r('d', '2026-10-02T10:00:00Z'),
-    ])
-    expect(gekozen?.gid).toBe('b')
-    expect(laatsteOpleveringReactie([r('c', '2026-10-04T10:00:00Z', 'Dank je!')])).toBeNull()
+  it('de open subtaak telt; afgevinkte zijn eerdere versies', () => {
+    expect(openOpleverSubtaak([
+      sub('v1', 'Oplevering versie 1 - verstuurd 20 oktober', true),
+      sub('scherm', 'Torenscherm Zorgcongres'),
+      sub('nu', 'Oplevering', false, '2026-10-21T10:00:00Z'),
+    ])?.gid).toBe('nu')
+    expect(openOpleverSubtaak([sub('v1', 'Oplevering versie 1', true)])).toBeNull()
+  })
+
+  it('zijn er twee open, dan de nieuwste', () => {
+    expect(openOpleverSubtaak([sub('a', 'Oplevering', false, '2026-10-01T10:00:00Z'), sub('b', 'Oplevering', false, '2026-10-05T10:00:00Z')])?.gid).toBe('b')
+  })
+
+  it('na het versturen heet hij naar zijn versie', () => {
+    expect(verstuurdeSubtaakNaam(2, '2026-10-28')).toBe('Oplevering versie 2 - verstuurd 28 oktober')
   })
 })
 
-describe('bestanden bij de reactie', () => {
+describe('bijlagen van de subtaak', () => {
   const b = (gid: string, createdAt: string, over: Partial<AsanaBestand> = {}): AsanaBestand =>
     ({ gid, naam: `${gid}.png`, bytes: 100, createdAt, host: 'asana', viewUrl: null, ...over })
-  const reactie = { createdAt: '2026-10-28T10:00:00Z' }
 
-  it('alleen wat rond het moment van de reactie bij de taak kwam', () => {
-    const keuze = bijlagenBijReactie([
-      b('oud', '2026-10-28T09:00:00Z'),
-      b('ervoor', '2026-10-28T09:45:00Z'),
-      b('erna', '2026-10-28T10:01:00Z'),
-      b('later', '2026-10-28T10:30:00Z'),
-    ], reactie)
-    expect(keuze.bestanden.map((x) => x.gid)).toEqual(['ervoor', 'erna'])
+  it('alles wat erbij staat, in de volgorde waarin het erbij kwam', () => {
+    const keuze = verdeelBijlagen([b('tweede', '2026-10-28T10:00:00Z'), b('eerste', '2026-10-28T09:00:00Z')])
+    expect(keuze.bestanden.map((x) => x.gid)).toEqual(['eerste', 'tweede'])
     expect(keuze.totaalBytes).toBe(200)
   })
 
   it('een koppeling naar OneDrive of Google Drive gaat als link, niet als bijlage', () => {
-    const keuze = bijlagenBijReactie([b('map', '2026-10-28T09:59:00Z', { host: 'onedrive', bytes: null, viewUrl: 'https://x/map' })], reactie)
+    const keuze = verdeelBijlagen([b('map', '2026-10-28T09:59:00Z', { host: 'onedrive', bytes: null, viewUrl: 'https://x/map' })])
     expect(keuze.bestanden).toEqual([])
     expect(keuze.links.map((x) => x.gid)).toEqual(['map'])
   })
 
   it('te groot geeft een melding met de grootte; wat past niet', () => {
-    const keuze = bijlagenBijReactie([b('groot', '2026-10-28T09:59:00Z', { bytes: 21 * 1024 * 1024 })], reactie)
+    const keuze = verdeelBijlagen([b('groot', '2026-10-28T09:59:00Z', { bytes: 21 * 1024 * 1024 })])
     expect(teGrootMelding(keuze)).toMatch(/samen 21,0 MB, en er past hooguit 20,0 MB/)
-    expect(teGrootMelding(bijlagenBijReactie([b('klein', '2026-10-28T09:59:00Z')], reactie))).toBeNull()
+    expect(teGrootMelding(verdeelBijlagen([b('klein', '2026-10-28T09:59:00Z')]))).toBeNull()
   })
 })
 
@@ -80,33 +80,33 @@ describe('ontvangers', () => {
   })
 })
 
-describe('de reactie als mail', () => {
-  it('zonder het woord Oplevering:, ook als dat vet staat', () => {
-    expect(reactieAlsMailHtml('<body><strong>Oplevering:</strong> Hier is het torenscherm.</body>')).toBe('Hier is het torenscherm.')
-    expect(reactieAlsMailHtml('<body>Oplevering: Hier is het.</body>')).toBe('Hier is het.')
-  })
-
+describe('de beschrijving als mail', () => {
   it('regels, lijstjes en links blijven', () => {
-    const html = reactieAlsMailHtml('<body>Oplevering: twee dingen:\n<ul>\n<li>torenscherm</li>\n<li>vlag</li>\n</ul>Zie <a href="https://wetransfer.com/x">WeTransfer</a></body>')
-    expect(html).toContain('twee dingen:<br>')
+    const html = beschrijvingAlsMailHtml('<body>Twee dingen:\n<ul>\n<li>torenscherm</li>\n<li>vlag</li>\n</ul>Zie <a href="https://wetransfer.com/x">WeTransfer</a></body>')
+    expect(html).toContain('Twee dingen:<br>')
     expect(html).toContain('<ul style="margin:4px 0 4px 20px;padding:0;"><li style="margin:0 0 2px;">torenscherm</li><li style="margin:0 0 2px;">vlag</li></ul>')
     expect(html).toContain('<a href="https://wetransfer.com/x" style="color:#165e5a;">WeTransfer</a>')
   })
 
   it('een vermelding of een taaklink wordt gewone tekst', () => {
-    const html = reactieAlsMailHtml('<body>Oplevering: met dank aan <a data-asana-gid="123" data-asana-type="user" href="https://app.asana.com/0/profile/123">@Devi</a><a data-asana-gid="9"/>.</body>')
-    expect(html).toBe('met dank aan @Devi.')
+    const html = beschrijvingAlsMailHtml('<body>Met dank aan <a data-asana-gid="123" data-asana-type="user" href="https://app.asana.com/0/profile/123">@Devi</a><a data-asana-gid="9"/>.</body>')
+    expect(html).toBe('Met dank aan @Devi.')
   })
 
   it('geen scripts, afbeeldingen of javascript-links', () => {
-    const html = reactieAlsMailHtml('<body>Oplevering: <script>alert(1)</script><img src="x" onerror="y"><a href="javascript:alert(1)">klik</a> &lt;b&gt;</body>')
+    const html = beschrijvingAlsMailHtml('<body><script>alert(1)</script><img src="x" onerror="y"><a href="javascript:alert(1)">klik</a> &lt;b&gt;</body>')
     expect(html).not.toMatch(/<script|<img|javascript:/)
     expect(html).toContain('klik')
     expect(html).toContain('&lt;b&gt;')
   })
 
   it('een losse sluittag breekt de opmaak niet', () => {
-    expect(reactieAlsMailHtml('<body>Oplevering: <em>schuin</strong> en recht</body>')).toBe('<em>schuin en recht</em>')
+    expect(beschrijvingAlsMailHtml('<body><em>schuin</strong> en recht</body>')).toBe('<em>schuin en recht</em>')
+  })
+
+  it('een lege beschrijving is leeg', () => {
+    expect(beschrijvingAlsMailHtml('<body></body>')).toBe('')
+    expect(beschrijvingAlsMailHtml('<body>\n</body>')).toBe('')
   })
 })
 
@@ -153,6 +153,14 @@ describe('de mail', () => {
     expect(m.html).toContain('Je aanvraag staat klaar.')
   })
 
+  it('een proefmail zegt dat, en wie de echte krijgt', () => {
+    const m = renderOpleveringMail({ ...basis, aan: ['abel@nbcevents.nl'], proef: { echteOntvangers: ['britt@nbcevents.nl', 'jan@klant.nl'] } })
+    expect(m.aan).toEqual(['abel@nbcevents.nl'])
+    expect(m.onderwerp).toBe('[PROEF] Klaar: Zorgcongres - 11 december - Torenscherm, Vlaggen')
+    expect(m.html).toContain('De echte mail gaat naar britt@nbcevents.nl en jan@klant.nl')
+    expect(m.html).toContain('Hier is het.')
+  })
+
   it('de feedbacklink kiest de aanvraag', () => {
     expect(feedbackUrl('abc')).toBe('https://marketing-nbc.github.io/designaanvraag/?feedback=abc')
   })
@@ -166,7 +174,15 @@ describe('het verslag in Asana', () => {
 
   it('een mislukte poging vermeldt iemand en zegt wat je dan doet', () => {
     expect(verslagMislukt('Geen <ontvanger>.', 'devi')).toBe(
-      '<body><a data-asana-gid="devi"/> De opleveringsmail is <strong>niet</strong> verstuurd. Geen &lt;ontvanger&gt;. Zet Oplevermail daarna opnieuw op Verstuur nu.</body>',
+      '<body><a data-asana-gid="devi"/> De opleveringsmail is <strong>niet</strong> verstuurd. Geen &lt;ontvanger&gt;. '
+        + 'Zet Oplevermail daarna opnieuw op Verstuur nu (of eerst op Stuur proef naar mij).</body>',
     )
+    expect(verslagMislukt('x', null, true)).toMatch(/^<body>De proefmail is <strong>niet<\/strong> verstuurd/)
+  })
+
+  it('na een proef: waarheen, en wie de echte krijgt', () => {
+    expect(verslagProef({ naar: 'abel@nbcevents.nl', aan: ['britt@nbcevents.nl', 'jan@klant.nl'], bijlagen: ['a.png', 'b.pdf'], links: [] }))
+      .toBe('<body>Proefmail gestuurd naar abel@nbcevents.nl. De echte mail gaat naar britt@nbcevents.nl en jan@klant.nl, met a.png en b.pdf. '
+        + 'Klopt alles, zet Oplevermail dan op Verstuur nu.</body>')
   })
 })

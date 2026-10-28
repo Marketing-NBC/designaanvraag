@@ -30,12 +30,13 @@ gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsd
 @-vermelding in de reactie. Staat de taak in Mee bezig, dan gaat hij ook naar Feedback, maar
 blijven vinkje en planningsdatum staan. Zie README → "Feedback op werk dat al af is".
 
-En daarna **opleveren**: Marketing plaatst een reactie "Oplevering:" met de bestanden en zet het
-veld Oplevermail op Verstuur nu. De aanvrager (adres uit `collegas.email`) en de adressen uit "Ook
-mailen naar" krijgen een mail met die tekst, de bestanden en een knop **Feedback geven**, die het
-formulier opent met de aanvraag al gekozen. Daarna een verslag als reactie, het veld op Verstuurd en
-de taak naar Klaar. Met versienummers, en een blok "Opgeleverd, nog geen reactie" in het
-weekoverzicht. Zie README → "Opleveren".
+En daarna **opleveren**: elke aanvraag krijgt een subtaak "Oplevering". De beschrijving daarvan
+wordt de tekst van de mail en de bijlagen ervan gaan mee: wat je ziet, is wat er verstuurd wordt.
+Met het veld Oplevermail stuur je eerst een proef naar jezelf en daarna de echte mail, naar de
+aanvrager (adres uit `collegas.email`) en de adressen uit "Ook mailen naar". De mail heeft een knop
+**Feedback geven**, die het formulier opent met de aanvraag al gekozen. Na het versturen een verslag
+als reactie, de subtaak afgevinkt als "Oplevering versie N", een nieuwe lege subtaak, en de taak naar
+Klaar. Geen reactie is akkoord: er is geen akkoordknop en geen herinnering. Zie README → "Opleveren".
 
 ### Nog te doen
 

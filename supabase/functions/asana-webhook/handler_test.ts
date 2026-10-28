@@ -29,7 +29,7 @@ const cfg: AsanaFieldsConfig = {
       gid: 'veld-oplever',
       name: 'Oplevermail',
       type: 'enum',
-      options: { verstuur: 'opt-verstuur', bezig: 'opt-op-bezig', verstuurd: 'opt-verstuurd', mislukt: 'opt-op-mislukt' },
+      options: { proef: 'opt-proef', verstuur: 'opt-verstuur', bezig: 'opt-op-bezig', proef_verstuurd: 'opt-proef-verstuurd', verstuurd: 'opt-verstuurd', mislukt: 'opt-op-mislukt' },
     },
   },
   sections: {
@@ -89,10 +89,13 @@ function fakeAsana(tasks: Record<string, Partial<AsanaTask>>, comments: Record<s
     async verwijderTaak(gid) {
       verwijderd.push(gid)
     },
-    listReacties: () => Promise.resolve([]),
+    listSubtaken: () => Promise.resolve([]),
+    maakSubtaak: () => Promise.resolve('sub-x'),
+    werkTaakBij: () => Promise.resolve(),
     listBestanden: () => Promise.resolve([]),
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
+    gebruiker: () => Promise.resolve({ naam: null, email: null }),
   }
   return { client, added, posted, gezet, mijlpalen, verwijderd }
 }
@@ -103,7 +106,7 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: {
   aanvragen?: string[]
   zonderRoutine?: boolean
   mijlpalen?: Record<string, string>
-  oplever?: (t: AsanaTask) => Promise<string>
+  oplever?: (t: AsanaTask, opties: { proef: boolean; door: string | null }) => Promise<string>
   achtergrond?: (werk: Promise<unknown>) => void
 } = {}) {
   const store = fakeStore(opts.secrets)
@@ -447,8 +450,8 @@ Deno.test('de oplevering loopt na het antwoord aan Asana door', async () => {
   assertEquals(klaar, true)
 })
 
-Deno.test('Bezig, Verstuurd en Mislukt starten niets', async () => {
-  for (const optie of ['opt-op-bezig', 'opt-verstuurd', 'opt-op-mislukt']) {
+Deno.test('Bezig, Proef verstuurd, Verstuurd en Mislukt starten niets', async () => {
+  for (const optie of ['opt-op-bezig', 'opt-proef-verstuurd', 'opt-verstuurd', 'opt-op-mislukt']) {
     const opgeleverd: string[] = []
     const { handler } = setup({ t1: opleverKnop(optie) }, { oplever: (t) => (opgeleverd.push(t.gid), Promise.resolve('x')) })
     await handler(await signed([veldGewijzigd('t1')]))
@@ -470,4 +473,21 @@ Deno.test('een fout in de oplevering laat de webhook niet omvallen', async () =>
   const { handler } = setup({ t1: opleverKnop() }, { oplever: () => Promise.reject(new Error('stuk')) })
   const res = await handler(await signed([veldGewijzigd('t1')]))
   assertEquals(res.status, 200)
+})
+
+Deno.test('Stuur proef naar mij geeft door wie drukte', async () => {
+  const gevraagd: unknown[] = []
+  const { handler, asana } = setup({ t1: opleverKnop('opt-proef') }, {
+    oplever: (t, opties) => (gevraagd.push([t.gid, opties]), Promise.resolve('proefmail verstuurd')),
+  })
+  await handler(await signed([{ ...veldGewijzigd('t1'), user: { gid: 'devi', resource_type: 'user' } }]))
+  assertEquals(gevraagd, [['t1', { proef: true, door: 'devi' }]])
+  assertEquals(asana.gezet[0], ['t1', { 'veld-oplever': 'opt-op-bezig' }])
+})
+
+Deno.test('Verstuur nu is geen proef', async () => {
+  const gevraagd: unknown[] = []
+  const { handler } = setup({ t1: opleverKnop() }, { oplever: (_t, opties) => (gevraagd.push(opties), Promise.resolve('x')) })
+  await handler(await signed([veldGewijzigd('t1')]))
+  assertEquals(gevraagd, [{ proef: false, door: null }])
 })

@@ -264,7 +264,8 @@ for (const s of scenarios) {
     }
   }
 
-  const verwachteSubtaken = subtaskTitles(s.aanvraag)
+  // Plus de subtaak Oplevering, die elke aanvraag krijgt voor de opleveringsmail.
+  const verwachteSubtaken = [...subtaskTitles(s.aanvraag), 'Oplevering']
   const subtaken = (await asana(`/tasks/${gid}/subtasks?opt_fields=name`)) ?? []
   check(
     subtaken.length === verwachteSubtaken.length && verwachteSubtaken.every((n) => subtaken.some((st) => st.name === n)),

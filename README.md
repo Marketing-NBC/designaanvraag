@@ -132,7 +132,8 @@ alle gegevens in de beschrijving.
   bijvoorbeeld `EY - 11 december - Britt - Deadline: 9 december - Torenscherm`. Het event
   staat vooraan omdat je daarop zoekt; zonder jaartal, want de titel is al lang en de echte
   datum staat in het veld Eventdatum. Bij meer dan één type is `<wat>` altijd
-  `Meerdere designs`, met per type een subtaak (`Torenscherm EY`).
+  `Meerdere designs`, met per type een subtaak (`Torenscherm EY`). Elke taak krijgt daarnaast de
+  subtaak `Oplevering`, voor de opleveringsmail (zie **Opleveren** hieronder).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
 - **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Mee bezig → Klaar. De volgorde komt uit
@@ -196,29 +197,36 @@ gelukt is.
 ## Opleveren: de aanvrager laten weten dat het klaar is
 
 Is een ontwerp af, dan krijgt de aanvrager een mail met de bestanden en een knop **Feedback geven**.
-Zo werkt het in Asana:
+Alles wat in die mail komt, zet je klaar in de subtaak **Oplevering**. Elke aanvraag krijgt die
+subtaak vanzelf.
 
-1. Plaats onder de taak een **reactie die begint met `Oplevering:`**. Wat je daarna typt, wordt de
-   tekst van de mail: wat er klaar is, wat er is aangepast, waar de drukbestanden staan (een pad op de
-   schijf of een link). Vet, lijstjes en links blijven staan.
-2. Sleep de **bestanden** in diezelfde reactie. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox)
-   gaan als link mee in plaats van als bijlage.
-3. Wie de mail nog meer moet krijgen, zet je in het veld **Ook mailen naar**: e-mailadressen gescheiden
-   door een komma, ook van buiten NBC. Je mag ze ook uit Outlook plakken (`Jan Jansen <jan@klant.nl>`).
-   Het veld blijft staan voor een volgende versie.
-4. Zet het veld **Oplevermail** op **Verstuur nu**.
+1. Open de subtaak **Oplevering**. De **beschrijving** wordt de tekst van de mail: wat er klaar is,
+   wat er is aangepast, waar de drukbestanden staan (een pad op de schijf of een link). Vet,
+   lijstjes en links blijven staan.
+2. Zet de **bestanden** als bijlage bij die subtaak. Precies die bestanden gaan mee, niet die van de
+   hoofdtaak. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox) gaan als link mee.
+3. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
+   e-mailadressen gescheiden door een komma, ook van buiten NBC. Je mag ze ook uit Outlook plakken
+   (`Jan Jansen <jan@klant.nl>`). Het veld blijft staan voor een volgende versie.
+4. Zet het veld **Oplevermail** op de hoofdtaak op **Stuur proef naar mij**. Jij krijgt dan precies de
+   mail die de aanvrager krijgt, met `[PROEF]` in het onderwerp en bovenaan wie de echte zou krijgen.
+   Het veld springt op *Proef verstuurd*. Er wordt niets afgevinkt of geteld.
+5. Klopt alles, zet het veld dan op **Verstuur nu**.
 
 Het veld springt meteen op *Bezig*. Is de mail de deur uit, dan:
 
 - staat er een **reactie met een verslag**: aan wie, welke bijlagen, welke versie;
 - springt het veld op **Verstuurd**;
+- wordt de subtaak **afgevinkt** en hernoemd naar `Oplevering versie 1 - verstuurd 28 oktober`;
+- staat er een **nieuwe lege subtaak Oplevering** klaar voor een eventuele volgende versie;
 - gaat de taak naar **Klaar** en wordt hij **afgevinkt**.
 
 Lukt het niet, dan gaat er **niets** de deur uit. Het veld springt op **Mislukt** en er komt een
-reactie met de reden, met een @-vermelding van wie de Oplevering-reactie schreef. Los het op en zet
-het veld opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: er is geen reactie die met `Oplevering:`
-begint, er is geen ontvanger, in "Ook mailen naar" staat iets wat geen adres is, of de bestanden zijn
-te groot.
+reactie met de reden, met een @-vermelding van wie op de knop drukte. Los het op en zet het veld
+opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: de subtaak is leeg, er is geen ontvanger, in
+"Ook mailen naar" staat iets wat geen adres is, of de bestanden zijn te groot. Heeft een taak (nog)
+geen open subtaak Oplevering, bijvoorbeeld een taak van voor deze functie, dan maakt de knop hem aan
+en vraagt hij je die te vullen.
 
 **De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat:
 Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
@@ -227,25 +235,23 @@ leeg, dan gaat er niets uit. Antwoordt iemand toch op de mail, dan komt dat bij 
 van de locatie terecht in plaats van bij het afzenderpostvak waar niemand kijkt; de mail zelf vraagt
 om feedback via de knop.
 
-**Welke bestanden.** Asana zegt via de API niet welk bestand bij welke reactie hoort. Daarom gaan de
-bestanden mee die tussen **30 minuten vóór en 2 minuten ná** de Oplevering-reactie bij de taak zijn
-gezet. In het verslag staat precies welke dat waren, zodat je kunt controleren dat het klopt.
+**De proefmail** gaat naar het Asana-adres van wie het veld omzette. Is dat niet te achterhalen, dan
+gaat hij naar het marketingpostvak van de locatie. De knop Feedback geven werkt in de proef echt:
+klik er niet op.
 
 **Te groot.** Samen mogen de bijlagen **20 MB** zijn; daarboven komen ze bij veel ontvangers niet
 meer aan. Is het meer, dan gaat er niets uit en vraagt de reactie je om de bestanden op de schijf of
-in SharePoint te zetten en de link of het pad in een nieuwe Oplevering-reactie te plakken. Boven de
-2,5 MB is daarnaast het recht `Mail.ReadWrite` nodig (zie **Mail instellen**, stap 4).
+in SharePoint te zetten en de link of het pad in de beschrijving te plakken. Boven de 2,5 MB is
+daarnaast het recht `Mail.ReadWrite` nodig (zie **Mail instellen**, stap 4).
 
-**Versies.** De eerste oplevering is versie 1. Komt er feedback en lever je opnieuw op, dan heet de
-mail "Versie 2 klaar: …". Elke Oplevering-reactie gaat maar één keer de deur uit: voor een nieuwe
-versie plaats je een nieuwe reactie. Na een mislukte poging mag dezelfde reactie wel opnieuw.
+**Versies.** De eerste oplevering is versie 1. Komt er feedback en lever je opnieuw op vanuit de
+nieuwe subtaak, dan heet de mail "Versie 2 klaar: …". Een verstuurde subtaak gaat nooit een tweede
+keer de deur uit. Na een mislukte poging mag dezelfde subtaak wel opnieuw.
 
-**Feedback geven.** De knop opent het formulier met de aanvraag al gekozen: geen zoeken, alleen naam,
-feedback (met bestanden) en eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus
-de taak gaat terug naar **Feedback**, zoals hieronder beschreven.
-
-**Weekoverzicht.** Onderaan de maandagmail staat **Opgeleverd, nog geen reactie**: wat de afgelopen
-twee weken is opgeleverd en nog in Klaar staat. Alleen daarvoor komt er geen mail.
+**Geen reactie is akkoord.** Er is geen akkoordknop en geen herinnering. Wie iets anders wil, gebruikt
+de knop **Feedback geven**. Die opent het formulier met de aanvraag al gekozen: geen zoeken, alleen
+naam, feedback (met bestanden) en eventueel een nieuwe deadline. Dat komt binnen als gewone
+aanvulling, dus de taak gaat terug naar **Feedback**, zoals hieronder beschreven.
 
 **Zelf terugzien.** Supabase → Table editor → `opleveringen`: per oplevering de versie, ontvangers,
 bijlagen, status (`bezig`, `verstuurd`, `mislukt`) en de reden als het misging.

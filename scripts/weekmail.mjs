@@ -21,7 +21,7 @@ import { MELDING_AFZENDER } from '../shared/contact.ts'
 import { createGraphMail } from '../shared/mail.ts'
 import { LOCATIE_KEYS, locatieLabel } from '../shared/request-types.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
-import { OPGELEVERD_DAGEN, maakWeekoverzicht, nietsTeMelden, renderWeekmail, taakUitAsana } from '../shared/weekmail.ts'
+import { maakWeekoverzicht, nietsTeMelden, renderWeekmail, taakUitAsana } from '../shared/weekmail.ts'
 
 const API = process.env.ASANA_API ?? 'https://app.asana.com/api/1.0'
 
@@ -52,21 +52,17 @@ if (!proef && (!ms.tenantId || !ms.clientId || !ms.clientSecret)) {
   fail('MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET zijn nodig om te mailen. Zonder die drie kan alleen --proef.')
 }
 
-/**
- * Alle open taken van het project, plus wat er de laatste weken is afgevinkt (voor het blok
- * "Opgeleverd"). Asana geeft ze per honderd.
- */
+/** Alle open taken van het project; Asana geeft ze per honderd. */
 async function openTaken() {
-  const sinds = new Date(Date.parse(`${vandaag}T00:00:00Z`) - (OPGELEVERD_DAGEN + 1) * 86_400_000).toISOString()
   const optFields = [
-    'name', 'permalink_url', 'due_on', 'completed', 'completed_at',
+    'name', 'permalink_url', 'due_on',
     'memberships.project.gid', 'memberships.section.gid', 'memberships.section.name',
     'custom_fields.gid', 'custom_fields.date_value.date', 'custom_fields.enum_value.name',
   ].join(',')
   const taken = []
   let offset = null
   do {
-    const q = new URLSearchParams({ completed_since: sinds, opt_fields: optFields, limit: '100' })
+    const q = new URLSearchParams({ completed_since: 'now', opt_fields: optFields, limit: '100' })
     if (offset) q.set('offset', offset)
     const res = await fetch(`${API}/projects/${projectGid}/tasks?${q}`, {
       headers: { Authorization: `Bearer ${pat}`, Accept: 'application/json' },
@@ -81,7 +77,7 @@ async function openTaken() {
 }
 
 const taken = (await openTaken()).map((t) => taakUitAsana(t, fields))
-regels.push(`### Weekoverzicht ${vandaag}`, '', `${taken.filter((t) => !t.afgerond).length} open taken in Asana.`, '')
+regels.push(`### Weekoverzicht ${vandaag}`, '', `${taken.length} open taken in Asana.`, '')
 
 const mail = proef ? null : createGraphMail({ ...ms, afzender: process.env.MAIL_AFZENDER || MELDING_AFZENDER })
 if (proef) mkdirSync('weekmail-proef', { recursive: true })

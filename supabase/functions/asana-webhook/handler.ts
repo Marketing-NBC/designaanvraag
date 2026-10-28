@@ -10,8 +10,8 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *    dus die is in beide projecten gelijk;
  *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
  *    verdwijnt en er geen aanvulling meer op kan;
- *  - de knop "Verstuur nu" in het veld Oplevermail stuurt de aanvrager de opleveringsmail (zie
- *    oplevering.ts);
+ *  - het veld Oplevermail stuurt de aanvrager de opleveringsmail, of eerst een proef naar wie op
+ *    de knop drukte (zie oplevering.ts);
  *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
  *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
  *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
@@ -51,7 +51,7 @@ export interface Deps {
    * De knop "Verstuur nu" in het veld Oplevermail: de opleveringsmail versturen. Geeft een korte
    * uitkomst voor in de log. Ontbreekt de functie, dan doet de knop niets.
    */
-  oplever?(taak: AsanaTask): Promise<string>
+  oplever?(taak: AsanaTask, opties: { proef: boolean; door: string | null }): Promise<string>
   /**
    * Laat werk doorlopen nadat Asana zijn antwoord heeft. Asana wacht maar even op de webhook, en
    * bestanden downloaden en mailen duurt langer. Zonder dit wordt er gewoon gewacht (zo testen we).
@@ -66,6 +66,8 @@ export interface Deps {
 
 interface AsanaEvent {
   action?: string
+  /** Wie de wijziging deed; voor de proefmail van de oplevering. */
+  user?: { gid?: string } | null
   resource?: { gid?: string; resource_type?: string }
   parent?: { gid?: string; resource_type?: string } | null
   change?: { field?: string; action?: string } | null
@@ -176,14 +178,16 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   }
 
   /**
-   * De knop "Verstuur nu" in het veld Oplevermail. Zelfde gang als bij de andere knoppen: het veld
-   * gaat meteen op "Bezig", zodat je ziet dat het loopt en tweemaal klikken niets extra's doet.
-   * Het versturen zelf zet hem daarna op Verstuurd of Mislukt.
+   * Het veld Oplevermail: "Verstuur nu" of "Stuur proef naar mij". Zelfde gang als bij de andere
+   * knoppen: het veld gaat meteen op "Bezig", zodat je ziet dat het loopt en tweemaal klikken niets
+   * extra's doet. Het versturen zelf zet hem daarna op Verstuurd, Proef verstuurd of Mislukt.
    */
-  async function handleOpleverknop(t: AsanaTask): Promise<string | null> {
+  async function handleOpleverknop(t: AsanaTask, door: string | null): Promise<string | null> {
     const veld = cfg.fields?.oplevermail
-    if (!veld?.gid || !veld.options?.verstuur) return null
-    if (!(t.customFields?.[veld.gid]?.optieGids ?? []).includes(veld.options.verstuur)) return null
+    if (!veld?.gid) return null
+    const gekozen = t.customFields?.[veld.gid]?.optieGids ?? []
+    const proef = Boolean(veld.options?.proef && gekozen.includes(veld.options.proef))
+    if (!proef && !(veld.options?.verstuur && gekozen.includes(veld.options.verstuur))) return null
     if (!deps.oplever) return 'oplevermail gevraagd, maar niet ingesteld'
 
     const bezig = veld.options?.bezig
@@ -194,7 +198,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         log('warn', 'oplevermail-veld op Bezig zetten mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
       }
     }
-    const werk = deps.oplever(t).then(
+    const werk = deps.oplever(t, { proef, door }).then(
       (uitkomst) => log('info', 'oplevermail', { gid: t.gid, uitkomst }),
       (e) => log('error', 'oplevermail mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) }),
     )
@@ -234,7 +238,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
   }
 
-  async function handleTask(gid: string): Promise<string> {
+  async function handleTask(gid: string, door: string | null = null): Promise<string> {
     const t = await asana.getTask(gid)
     const ours = t.memberships.find((m) => m.project === projectGid)
     if (!ours) return 'niet in ons project'
@@ -242,7 +246,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     // De knoppen staan los van de planning-flow: een menuscherm mag ook gemaakt worden
     // als de taak al afgerond is of nog geen vervaldatum heeft, en opleveren kan vanuit elke kolom.
-    const oplevering = await handleOpleverknop(t)
+    const oplevering = await handleOpleverknop(t, door)
     if (oplevering) return oplevering
     const menu = await handleMenuknop(t)
     if (menu) return menu
@@ -309,6 +313,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
 
     const tasks = new Set<string>()
+    // Wie de laatste wijziging aan een taak deed; de proefmail gaat naar die persoon.
+    const door = new Map<string, string>()
     // Verwijderde taken apart: die kunnen we niet meer opvragen bij Asana, dus de planning-flow heeft
     // er niets te zoeken. Het enige wat telt is dat de aanvraag vervalt.
     const verwijderd = new Set<string>()
@@ -320,7 +326,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       if (e.action === 'deleted') verwijderd.add(gid)
       else if (e.action === 'removed' && e.parent?.gid === projectGid) verwijderd.add(gid)
       else if (e.action === 'added' && e.parent?.resource_type === 'section' && e.parent.gid === inPlanning) tasks.add(gid)
-      else if (e.action === 'changed') tasks.add(gid)
+      else if (e.action === 'changed') {
+        tasks.add(gid)
+        if (e.user?.gid) door.set(gid, e.user.gid)
+      }
     }
 
     const outcomes: Record<string, string> = {}
@@ -338,7 +347,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     for (const gid of tasks) {
       try {
-        outcomes[gid] = await handleTask(gid)
+        outcomes[gid] = await handleTask(gid, door.get(gid) ?? null)
       } catch (e) {
         outcomes[gid] = `fout: ${e instanceof Error ? e.message : String(e)}`
         log('error', 'webhook-taak mislukt', { gid, error: outcomes[gid] })

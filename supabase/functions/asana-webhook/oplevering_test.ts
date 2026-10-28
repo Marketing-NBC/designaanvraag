@@ -2,7 +2,7 @@ import { assert, assertEquals, assertMatch, assertStringIncludes } from 'jsr:@st
 import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import type { AanvraagDetail, OpleveringRow } from '../_shared/db.ts'
 import type { MailBericht } from '../_shared/shared/mail.ts'
-import type { AsanaBestand, Reactie } from '../_shared/shared/oplevering.ts'
+import type { AsanaBestand, Subtaak } from '../_shared/shared/oplevering.ts'
 import { createOplever, type OpleverDeps } from './oplevering.ts'
 
 const cfg: AsanaFieldsConfig = {
@@ -13,7 +13,10 @@ const cfg: AsanaFieldsConfig = {
       gid: 'veld-oplever',
       name: 'Oplevermail',
       type: 'enum',
-      options: { verstuur: 'opt-verstuur', bezig: 'opt-bezig', verstuurd: 'opt-verstuurd', mislukt: 'opt-mislukt' },
+      options: {
+        proef: 'opt-proef', verstuur: 'opt-verstuur', bezig: 'opt-bezig',
+        proef_verstuurd: 'opt-proef-verstuurd', verstuurd: 'opt-verstuurd', mislukt: 'opt-mislukt',
+      },
     },
     ook_mailen_naar: { gid: 'veld-ook', name: 'Ook mailen naar', type: 'text' },
   },
@@ -21,6 +24,8 @@ const cfg: AsanaFieldsConfig = {
 }
 
 const NU = new Date('2026-10-28T10:00:00Z')
+const ECHT = { proef: false, door: 'devi' }
+const PROEF = { proef: true, door: 'devi' }
 
 const aanvraag = {
   id: '11111111-2222-4333-8444-555555555555',
@@ -36,14 +41,13 @@ const aanvraag = {
   omschrijving: '',
 } as unknown as AanvraagDetail
 
-function reactie(over: Partial<Reactie> = {}): Reactie {
+function subtaak(over: Partial<Subtaak> = {}): Subtaak {
   return {
-    gid: 'story-1',
-    createdAt: '2026-10-28T09:55:00Z',
-    tekst: 'Oplevering: hierbij het torenscherm.',
-    html: '<body><strong>Oplevering:</strong> hierbij het torenscherm.</body>',
-    auteurGid: 'devi',
-    auteurNaam: 'Devi',
+    gid: 'sub-1',
+    naam: 'Oplevering',
+    completed: false,
+    createdAt: '2026-10-20T09:00:00Z',
+    html: '<body>Hierbij het torenscherm.</body>',
     ...over,
   }
 }
@@ -66,14 +70,16 @@ function ook(tekst: string): Partial<AsanaTask> {
 }
 
 function setup(opts: {
-  reacties?: Reactie[]
-  bestanden?: AsanaBestand[]
+  subtaken?: Subtaak[]
+  /** Bijlagen per (sub)taak-gid; standaard één bestand op sub-1. */
+  bestanden?: Record<string, AsanaBestand[]>
   email?: string | null
   aanvraag?: AanvraagDetail | null
   eerder?: OpleveringRow | null
   verstuurd?: number
   mailFout?: string
   zonderMail?: boolean
+  gebruiker?: { naam: string | null; email: string | null } | 'fout'
 } = {}) {
   const comments: string[] = []
   const velden: Record<string, unknown>[] = []
@@ -81,15 +87,23 @@ function setup(opts: {
   const gemaild: MailBericht[] = []
   const rijen: OpleveringRow[] = opts.eerder ? [opts.eerder] : []
   const downloads: string[] = []
+  const gemaakt: string[] = []
+  const bijgewerkt: [string, { naam?: string; completed?: boolean }][] = []
+  const bestanden = opts.bestanden ?? { 'sub-1': [bestand()] }
 
   const asana = {
-    listReacties: () => Promise.resolve(opts.reacties ?? [reactie()]),
-    listBestanden: () => Promise.resolve(opts.bestanden ?? [bestand()]),
+    listSubtaken: () => Promise.resolve(opts.subtaken ?? [subtaak()]),
+    maakSubtaak: (parent: string, naam: string, assignee: string | null) => (gemaakt.push(`${parent}:${naam}:${assignee}`), Promise.resolve('sub-nieuw')),
+    werkTaakBij: (gid: string, stand: { naam?: string; completed?: boolean }) => (bijgewerkt.push([gid, stand]), Promise.resolve()),
+    listBestanden: (gid: string) => Promise.resolve(bestanden[gid] ?? []),
     downloadBestand: (gid: string) => {
       downloads.push(gid)
-      const b = (opts.bestanden ?? [bestand()]).find((x) => x.gid === gid)
+      const b = Object.values(bestanden).flat().find((x) => x.gid === gid)
       return Promise.resolve({ bytes: new Uint8Array(b?.bytes ?? 10), mime: 'image/png' })
     },
+    gebruiker: () => opts.gebruiker === 'fout'
+      ? Promise.reject(new Error('403'))
+      : Promise.resolve(opts.gebruiker ?? { naam: 'Devi de Vries', email: 'devi@nbcevents.nl' }),
     addComment: (_gid: string, html: string) => (comments.push(html), Promise.resolve()),
     updateCustomFields: (_gid: string, v: Record<string, unknown>) => (velden.push(v), Promise.resolve([])),
     rondAf: (gid: string, sectie: string | null) => (afgerond.push(`${gid}:${sectie}`), Promise.resolve()),
@@ -98,7 +112,7 @@ function setup(opts: {
   const db: OpleverDeps['db'] = {
     findDetailByAsanaTaskGid: () => Promise.resolve(opts.aanvraag === undefined ? aanvraag : opts.aanvraag),
     collegaEmail: () => Promise.resolve(opts.email === undefined ? 'britt@nbcevents.nl' : opts.email),
-    findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.comment_gid === gid) ?? null),
+    findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.subtaak_gid === gid) ?? null),
     aantalVerstuurd: () => Promise.resolve(opts.verstuurd ?? 0),
     insertOplevering: (r) => {
       const rij: OpleveringRow = { ...r, id: `op-${rijen.length + 1}`, created_at: NU.toISOString(), status: 'bezig', fout: null, verstuurd_op: null }
@@ -121,12 +135,14 @@ function setup(opts: {
   }
 
   const oplever = createOplever({ asana, db, mail, cfg, now: () => NU, log: () => {} })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads }
+  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt }
 }
 
-Deno.test('de reactie wordt de mail: aan de aanvrager, met de bestanden en een feedbackknop', async () => {
+// ── Echt versturen ────────────────────────────────────────────────────
+
+Deno.test('de subtaak wordt de mail: beschrijving als tekst, bijlagen mee, feedbackknop erbij', async () => {
   const s = setup()
-  const uitkomst = await s.oplever(taak())
+  const uitkomst = await s.oplever(taak(), ECHT)
 
   assertEquals(uitkomst, 'oplevermail verstuurd (versie 1)')
   assertEquals(s.gemaild.length, 1)
@@ -135,125 +151,137 @@ Deno.test('de reactie wordt de mail: aan de aanvrager, met de bestanden en een f
   assertEquals(m.antwoordAan, ['marketing@nbcevents.nl'], 'een antwoord verdwijnt niet in een postvak dat niemand leest')
   assertEquals(m.onderwerp, 'Klaar: Zorgcongres - 11 december - Torenscherm')
   assertEquals(m.bijlagen?.map((b) => b.naam), ['torenscherm.png'])
-  assertStringIncludes(m.html, 'hierbij het torenscherm.')
-  assert(!/Oplevering:/.test(m.html), 'het woord Oplevering: zelf hoort niet in de mail')
+  assertStringIncludes(m.html, 'Hierbij het torenscherm.')
+  assertStringIncludes(m.html, 'Devi de Vries, Marketing')
   assertStringIncludes(m.html, `?feedback=${aanvraag.id}`)
+  assert(!m.html.includes('Proefmail'))
 })
 
-Deno.test('na het versturen: verslag in Asana, veld op Verstuurd, taak naar Klaar', async () => {
+Deno.test('alleen de bijlagen van de subtaak gaan mee, niet die van de hoofdtaak', async () => {
+  const s = setup({ bestanden: { 't1': [bestand({ gid: 'logo', naam: 'logo-opdrachtgever.png' })], 'sub-1': [bestand({ gid: 'v1' })] } })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.downloads, ['v1'])
+})
+
+Deno.test('na het versturen: verslag, veld op Verstuurd, subtaak afgevinkt, een nieuwe lege, taak naar Klaar', async () => {
   const s = setup()
-  await s.oplever(taak())
+  await s.oplever(taak(), ECHT)
   assertMatch(s.comments[0], /Opleveringsmail verstuurd op 28 oktober 2026 aan britt@nbcevents\.nl\. Bijlagen: torenscherm\.png\./)
   assertEquals(s.velden, [{ 'veld-oplever': 'opt-verstuurd' }])
+  assertEquals(s.bijgewerkt, [['sub-1', { naam: 'Oplevering versie 1 - verstuurd 28 oktober', completed: true }]])
+  assertEquals(s.gemaakt, ['t1:Oplevering:abel'])
   assertEquals(s.afgerond, ['t1:sec-klaar'])
   assertEquals(s.rijen[0].status, 'verstuurd')
-  assertEquals(s.rijen[0].versie, 1)
+  assertEquals(s.rijen[0].subtaak_gid, 'sub-1')
 })
 
 Deno.test('"Ook mailen naar" komt erbij, zonder dubbelen', async () => {
   const s = setup()
-  await s.oplever(taak(ook('jan@klant.nl, Britt@NBCevents.nl; Piet <piet@klant.nl>')))
+  await s.oplever(taak(ook('jan@klant.nl, Britt@NBCevents.nl; Piet <piet@klant.nl>')), ECHT)
   assertEquals(s.gemaild[0].aan, ['britt@nbcevents.nl', 'jan@klant.nl', 'piet@klant.nl'])
 })
 
 Deno.test('zonder adres bij de aanvrager gaan alleen de extra adressen mee', async () => {
   const s = setup({ email: null })
-  await s.oplever(taak(ook('jan@klant.nl')))
+  await s.oplever(taak(ook('jan@klant.nl')), ECHT)
   assertEquals(s.gemaild[0].aan, ['jan@klant.nl'])
 })
 
-Deno.test('helemaal geen ontvanger: niets verstuurd, met uitleg en vermelding', async () => {
+Deno.test('helemaal geen ontvanger: niets verstuurd, met uitleg en vermelding van wie drukte', async () => {
   const s = setup({ email: null })
-  const uitkomst = await s.oplever(taak())
+  const uitkomst = await s.oplever(taak(), ECHT)
   assertMatch(uitkomst, /niet verstuurd/)
   assertEquals(s.gemaild, [])
   assertMatch(s.comments[0], /data-asana-gid="devi"/)
   assertMatch(s.comments[0], /bij Britt staat geen e-mailadres/)
   assertEquals(s.velden, [{ 'veld-oplever': 'opt-mislukt' }])
   assertEquals(s.afgerond, [])
+  assertEquals(s.bijgewerkt, [])
 })
 
 Deno.test('een verkeerd adres houdt de hele mail tegen', async () => {
   const s = setup()
-  await s.oplever(taak(ook('jan@klant.nl, piet-at-klant')))
+  await s.oplever(taak(ook('jan@klant.nl, piet-at-klant')), ECHT)
   assertEquals(s.gemaild, [])
   assertMatch(s.comments[0], /piet-at-klant/)
 })
 
-Deno.test('zonder reactie "Oplevering:" gaat er niets uit', async () => {
-  const s = setup({ reacties: [reactie({ tekst: 'Bijna klaar!', html: '<body>Bijna klaar!</body>' })] })
-  await s.oplever(taak())
+Deno.test('zonder open subtaak Oplevering: die wordt gemaakt, en er gaat niets uit', async () => {
+  const s = setup({ subtaken: [subtaak({ naam: 'Oplevering versie 1 - verstuurd 20 oktober', completed: true }), subtaak({ gid: 'x', naam: 'Torenscherm' })] })
+  await s.oplever(taak(), ECHT)
   assertEquals(s.gemaild, [])
-  assertMatch(s.comments[0], /begint met &quot;Oplevering:&quot;|begint met "Oplevering:"/)
-  // Niemand schreef een Oplevering-reactie; dan krijgt de eigenaar van de taak de vermelding.
-  assertMatch(s.comments[0], /data-asana-gid="abel"/)
+  assertEquals(s.gemaakt, ['t1:Oplevering:abel'])
+  assertMatch(s.comments[0], /subtaak &quot;Oplevering&quot;|subtaak "Oplevering"/)
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-mislukt' }])
 })
 
-Deno.test('de nieuwste Oplevering-reactie telt, met alleen de bestanden van dat moment', async () => {
-  const s = setup({
-    reacties: [
-      reactie({ gid: 'oud', createdAt: '2026-10-20T09:00:00Z', tekst: 'Oplevering: eerste versie', html: '<body>Oplevering: eerste versie</body>' }),
-      reactie({ gid: 'nieuw', createdAt: '2026-10-28T09:55:00Z', tekst: 'oplevering : tweede versie', html: '<body>oplevering : tweede versie</body>' }),
-    ],
-    bestanden: [
-      bestand({ gid: 'logo', naam: 'logo-opdrachtgever.png', createdAt: '2026-10-01T08:00:00Z' }),
-      bestand({ gid: 'v1', naam: 'versie1.png', createdAt: '2026-10-20T08:59:00Z' }),
-      bestand({ gid: 'v2', naam: 'versie2.png', createdAt: '2026-10-28T09:40:00Z' }),
-      bestand({ gid: 'map', naam: 'Ontwerpen', host: 'onedrive', bytes: null, viewUrl: 'https://onedrive.example/map', createdAt: '2026-10-28T09:56:00Z' }),
-    ],
-  })
-  await s.oplever(taak())
-  assertEquals(s.downloads, ['v2'])
-  assertStringIncludes(s.gemaild[0].html, 'tweede versie')
+Deno.test('een lege subtaak gaat niet de deur uit', async () => {
+  const s = setup({ subtaken: [subtaak({ html: '<body></body>' })], bestanden: {} })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.gemaild, [])
+  assertMatch(s.comments[0], /nog leeg/)
+})
+
+Deno.test('alleen bestanden, zonder tekst, mag wel', async () => {
+  const s = setup({ subtaken: [subtaak({ html: '<body></body>' })] })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.gemaild.length, 1)
+})
+
+Deno.test('een gekoppeld bestand gaat als link mee', async () => {
+  const s = setup({ bestanden: { 'sub-1': [bestand({ gid: 'map', naam: 'Ontwerpen', host: 'onedrive', bytes: null, viewUrl: 'https://onedrive.example/map' })] } })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.downloads, [])
   assertStringIncludes(s.gemaild[0].html, 'https://onedrive.example/map')
-  assertEquals(s.rijen[0].comment_gid, 'nieuw')
+  assertMatch(s.comments[0], /Als link: Ontwerpen\./)
 })
 
 Deno.test('na eerdere opleveringen heet het versie 2', async () => {
   const s = setup({ verstuurd: 1 })
-  await s.oplever(taak())
+  await s.oplever(taak(), ECHT)
   assertMatch(s.gemaild[0].onderwerp, /^Versie 2 klaar: Zorgcongres/)
   assertMatch(s.comments[0], /versie 2/)
+  assertEquals(s.bijgewerkt[0][1].naam, 'Oplevering versie 2 - verstuurd 28 oktober')
 })
 
-Deno.test('dezelfde reactie gaat geen tweede keer de deur uit', async () => {
+Deno.test('dezelfde subtaak gaat geen tweede keer de deur uit', async () => {
   const eerder: OpleveringRow = {
-    id: 'op-1', created_at: '2026-10-27T10:00:00Z', aanvraag_id: aanvraag.id, comment_gid: 'story-1', versie: 1,
+    id: 'op-1', created_at: '2026-10-27T10:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
     ontvangers: ['britt@nbcevents.nl'], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z',
   }
   const s = setup({ eerder })
-  await s.oplever(taak())
+  await s.oplever(taak(), ECHT)
   assertEquals(s.gemaild, [])
-  assertMatch(s.comments[0], /al verstuurd/)
+  assertMatch(s.comments[0], /al verstuurd als versie 1/)
 })
 
 Deno.test('een tweede druk terwijl de eerste nog loopt doet niets', async () => {
   const eerder: OpleveringRow = {
-    id: 'op-1', created_at: '2026-10-28T09:59:00Z', aanvraag_id: aanvraag.id, comment_gid: 'story-1', versie: 1,
+    id: 'op-1', created_at: '2026-10-28T09:59:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
     ontvangers: [], bijlagen: [], status: 'bezig', fout: null, verstuurd_op: null,
   }
   const s = setup({ eerder })
-  assertEquals(await s.oplever(taak()), 'oplevermail al bezig')
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail al bezig')
   assertEquals(s.gemaild, [])
   assertEquals(s.comments, [])
   assertEquals(s.velden, [])
 })
 
-Deno.test('na een mislukte poging kan dezelfde reactie opnieuw', async () => {
+Deno.test('na een mislukte poging kan dezelfde subtaak opnieuw', async () => {
   const eerder: OpleveringRow = {
-    id: 'op-1', created_at: '2026-10-28T09:00:00Z', aanvraag_id: aanvraag.id, comment_gid: 'story-1', versie: 1,
+    id: 'op-1', created_at: '2026-10-28T09:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
     ontvangers: [], bijlagen: [], status: 'mislukt', fout: 'geen ontvanger', verstuurd_op: null,
   }
   const s = setup({ eerder })
-  await s.oplever(taak())
+  await s.oplever(taak(), ECHT)
   assertEquals(s.gemaild.length, 1)
   assertEquals(s.rijen.length, 1, 'dezelfde rij, geen tweede')
   assertEquals(s.rijen[0].status, 'verstuurd')
 })
 
 Deno.test('te grote bestanden: niets verstuurd, met de grootte en wat je dan doet', async () => {
-  const s = setup({ bestanden: [bestand({ bytes: 15_000_000 }), bestand({ gid: 'att-2', naam: 'vlag.pdf', bytes: 9_000_000 })] })
-  await s.oplever(taak())
+  const s = setup({ bestanden: { 'sub-1': [bestand({ bytes: 15_000_000 }), bestand({ gid: 'att-2', naam: 'vlag.pdf', bytes: 9_000_000 })] } })
+  await s.oplever(taak(), ECHT)
   assertEquals(s.gemaild, [])
   assertEquals(s.downloads, [], 'eerst kijken, dan pas downloaden')
   assertMatch(s.comments[0], /samen 22,9 MB/)
@@ -262,19 +290,76 @@ Deno.test('te grote bestanden: niets verstuurd, met de grootte en wat je dan doe
 
 Deno.test('een weigering van Microsoft wordt Mislukt, en de taak blijft staan', async () => {
   const s = setup({ mailFout: 'Mail versturen mislukt (403: ErrorAccessDenied)' })
-  await s.oplever(taak())
+  await s.oplever(taak(), ECHT)
   assertMatch(s.comments[0], /Microsoft weigerde de mail/)
   assertEquals(s.velden, [{ 'veld-oplever': 'opt-mislukt' }])
   assertEquals(s.afgerond, [])
+  assertEquals(s.bijgewerkt, [])
   assertEquals(s.rijen[0].status, 'mislukt')
 })
 
 Deno.test('zonder ingestelde mail of zonder aanvraag blijft het niet stil', async () => {
   const zonderMail = setup({ zonderMail: true })
-  await zonderMail.oplever(taak())
+  await zonderMail.oplever(taak(), ECHT)
   assertMatch(zonderMail.comments[0], /Mail instellen/)
 
   const handmatig = setup({ aanvraag: null })
-  await handmatig.oplever(taak())
+  await handmatig.oplever(taak(), ECHT)
   assertMatch(handmatig.comments[0], /hoort niet bij een aanvraag uit het formulier/)
+})
+
+Deno.test('weten we niet wie drukte, dan vermeldt de foutmelding de eigenaar van de taak', async () => {
+  const s = setup({ email: null })
+  await s.oplever(taak(), { proef: false, door: null })
+  assertMatch(s.comments[0], /data-asana-gid="abel"/)
+})
+
+// ── Proefmail ─────────────────────────────────────────────────────────
+
+Deno.test('een proef gaat alleen naar wie drukte, met dezelfde inhoud', async () => {
+  const s = setup()
+  const uitkomst = await s.oplever(taak(ook('jan@klant.nl')), PROEF)
+  assertEquals(uitkomst, 'proefmail verstuurd')
+  const m = s.gemaild[0]
+  assertEquals(m.aan, ['devi@nbcevents.nl'])
+  assertMatch(m.onderwerp, /^\[PROEF\] Klaar: Zorgcongres/)
+  assertStringIncludes(m.html, 'De echte mail gaat naar britt@nbcevents.nl en jan@klant.nl')
+  assertStringIncludes(m.html, 'Hierbij het torenscherm.')
+  assertEquals(m.bijlagen?.map((b) => b.naam), ['torenscherm.png'])
+})
+
+Deno.test('een proef telt niet en rondt niets af', async () => {
+  const s = setup()
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.rijen, [])
+  assertEquals(s.bijgewerkt, [])
+  assertEquals(s.gemaakt, [])
+  assertEquals(s.afgerond, [])
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-proef-verstuurd' }])
+  assertMatch(s.comments[0], /Proefmail gestuurd naar devi@nbcevents\.nl\. De echte mail gaat naar britt@nbcevents\.nl, met torenscherm\.png\./)
+})
+
+Deno.test('een proef van een al verstuurde versie mag gewoon', async () => {
+  // Na het versturen staat er een nieuwe lege subtaak; maar ook als iemand de oude terugzet, is
+  // een proef onschuldig.
+  const eerder: OpleveringRow = {
+    id: 'op-1', created_at: '2026-10-27T10:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
+    ontvangers: [], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z',
+  }
+  const s = setup({ eerder })
+  assertEquals(await s.oplever(taak(), PROEF), 'proefmail verstuurd')
+})
+
+Deno.test('weten we het adres van wie drukte niet, dan gaat de proef naar het marketingpostvak', async () => {
+  const s = setup({ gebruiker: 'fout' })
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.gemaild[0].aan, ['marketing@nbcevents.nl'])
+  assert(!s.gemaild[0].html.includes(', Marketing</p>'), 'zonder naam geen ondertekening')
+})
+
+Deno.test('een mislukte proef zegt dat het om de proef ging', async () => {
+  const s = setup({ email: null })
+  await s.oplever(taak(), PROEF)
+  assertMatch(s.comments[0], /De proefmail is <strong>niet<\/strong> verstuurd/)
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-mislukt' }])
 })

@@ -181,10 +181,13 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
     },
     bijwerkDeadline: () => Promise.resolve(),
     verwijderTaak: () => Promise.resolve(),
-    listReacties: () => Promise.resolve([]),
+    listSubtaken: () => Promise.resolve([]),
+    maakSubtaak: () => Promise.resolve('sub-x'),
+    werkTaakBij: () => Promise.resolve(),
     listBestanden: () => Promise.resolve([]),
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
+    gebruiker: () => Promise.resolve({ naam: null, email: null }),
   }
 }
 
