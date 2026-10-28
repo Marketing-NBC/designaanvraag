@@ -33,7 +33,7 @@ async function mark(p, marks) {
     }, { bb, n, pad });
   }
 }
-const W = 1120, H = 760;
+const W = 1280, H = 760;
 async function shot(p, name, marks = []) {
   await p.mouse.move(2, 2);
   await p.waitForTimeout(800);
@@ -73,7 +73,6 @@ async function stappen(b) {
   await kiesDatum(p, 1, 20);
   await next(p);
   await p.getByPlaceholder('www.event.nl').fill('www.zorgcongres.nl');
-  await shot(p, 'g05-website', [[p.getByPlaceholder('www.event.nl'), 1, 6]]);
   await next(p);
   await p.getByRole('heading', { name: /schijf/ }).waitFor();
   await p.waitForTimeout(400);
@@ -111,10 +110,13 @@ async function stappen(b) {
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Intern' }).click();
-  await shot(p, 'g20-intern', [[p.getByRole('radio', { name: 'Intern' }), 1, 5]]);
   await next(p);
   await p.locator('#f-wens-intern').fill('Nieuwe visitekaartjes voor het salesteam, met de nieuwe functietitels. Acht personen; de namen en titels staan in de mail van 20 oktober.');
   await shot(p, 'g21-intern-wens', [[p.locator('#f-wens-intern'), 1, 6]]);
+  await next(p);
+  await p.getByRole('button', { name: /Geen deadline/ }).click();
+  await p.setViewportSize({ width: W, height: 900 });
+  await shot(p, 'g22-intern-deadline', [[L(p, '.date'), 1, 6], [p.getByRole('button', { name: /Geen deadline/ }), 2, 6]]);
   await p.close();
 
   // ── Menu ──
@@ -144,10 +146,10 @@ async function stappen(b) {
   await shot(p, 'g40-aanv-zoek', [[p.locator('#a-zoek'), 1, 6], [L(p, '.vondst'), 2, 5]]);
   await next(p); await naam(p); await next(p);
   await p.locator('#a-toelichting').fill('De opdrachtgever wil op de torenschermen ook het logo van de hoofdsponsor. Het logo zit in de bijlage.');
-  await shot(p, 'g41-aanv-wat', [[p.locator('#a-toelichting'), 1, 6]]);
+  await shot(p, 'g41-aanv-wat', [[p.locator('#a-toelichting'), 1, 6], [L(p, '.bijlagen__zone'), 2, 5], [p.getByRole('button', { name: /Menu aanpassen/ }), 3, 5]]);
   await next(p);
-  await p.setViewportSize({ width: 1120, height: 860 });
-  await shot(p, 'g42-aanv-extra', [[L(p, '.extra__datums'), 1, 6], [L(p, '.bijlagen__zone'), 2, 5], [L(p, '.extra__velden'), 3, 6]]);
+  await p.setViewportSize({ width: W, height: 860 });
+  await shot(p, 'g42-aanv-extra', [[L(p, '.extra__datums'), 1, 6], [L(p, '.extra__velden'), 2, 6]]);
   await p.close();
 
   p = await start(b);
@@ -159,12 +161,40 @@ async function stappen(b) {
   await p.locator('#a-toelichting').fill('Feedback: op de vlag staat de verkeerde datum.');
   await next(p);
   await p.locator('.datumregel').last().locator('button.date__day:not([disabled])', { hasText: /^30$/ }).last().click();
-  await p.setViewportSize({ width: 1120, height: 900 }); await p.locator('.q__head').first().scrollIntoViewIfNeeded();
+  await p.setViewportSize({ width: W, height: 900 }); await p.locator('.q__head').first().scrollIntoViewIfNeeded();
   await shot(p, 'g43-aanv-verlopen', [[L(p, '.msg--verlopen'), 1, 6], [p.locator('.datumregel').last(), 2, 6]]);
+  await p.close();
+  // ── Krappe eventdatum: over twee werkdagen ──
+  p = await start(b);
+  await p.getByRole('button', { name: 'Start' }).click();
+  await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
+  await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  const krap = await p.evaluate(() => { const d = new Date(); let n = 0; while (n < 2) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; } return { dag: d.getDate(), maanden: (d.getFullYear() - new Date().getFullYear()) * 12 + d.getMonth() - new Date().getMonth() }; });
+  await kiesDatum(p, krap.maanden, krap.dag);
+  await p.setViewportSize({ width: W, height: 880 });
+  await shot(p, 'g04-krap', [[L(p, '.msg--verlopen'), 1, 6]]);
+  await p.close();
+
+  // ── De knop Feedback geven uit de opleveringsmail ──
+  p = await b.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 2, locale: 'nl-NL', timezoneId: 'Europe/Amsterdam' });
+  await p.goto(URL + '?feedback=3f2504e0-4f89-41d3-9a0c-0305e82c3301');
+  await p.getByPlaceholder('Typ of kies je naam').waitFor();
+  await naam(p);
+  await shot(p, 'g51-feedback', [[L(p, '.q__head'), 1, 8], [p.getByPlaceholder('Typ of kies je naam'), 2, 6]]);
+  await p.close();
+
+  // ── De opleveringsmail zelf, zoals hij in je inbox staat (zie mail.mts) ──
+  p = await b.newPage({ viewport: { width: 820, height: 880 }, deviceScaleFactor: 2 });
+  await p.goto('file://' + path.join(__dirname, 'mail', 'inbox.html'));
+  const mail = p.frameLocator('iframe');
+  await mail.getByText('Feedback geven').first().waitFor();
+  await shot(p, 'g50-mail', [[p.locator('.kop'), 1, 6], [mail.locator('td', { hasText: /^Bijlagen$/ }).locator('xpath=..'), 2, 4], [mail.locator('a', { hasText: 'Feedback geven' }).locator('xpath=ancestor::table[1]'), 3, 6]]);
   await p.close();
 }
 
 (async () => {
+  require('child_process').execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', path.join(__dirname, 'mail.mts')], { stdio: 'inherit' });
   const b = await chromium.launch({ args: ['--no-proxy-server'] });
   await stappen(b);
   await b.close();
