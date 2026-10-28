@@ -116,6 +116,7 @@ describe('de mail', () => {
     antwoordAan: ['marketing@nbcevents.nl'],
     aanvraagId: '11111111-2222-4333-8444-555555555555',
     versie: 1,
+    locatie: 'nbc',
     soort: 'evenement',
     event: 'Zorgcongres',
     eventDatum: '2026-12-11',
@@ -161,6 +162,14 @@ describe('de mail', () => {
     expect(m.html).toContain('Hier is het.')
   })
 
+  it('Green Village krijgt zijn eigen kleur, met donkere tekst op kop en knop', () => {
+    const gv = renderOpleveringMail({ ...basis, locatie: 'green_village' }).html
+    expect(gv).toContain('bgcolor="#a2a68f"')
+    expect(gv).toMatch(/background:#a2a68f;color:#0e0e0e;/)
+    expect(gv).not.toContain('#229d96')
+    expect(renderOpleveringMail(basis).html).toContain('bgcolor="#229d96"')
+  })
+
   it('de feedbacklink kiest de aanvraag', () => {
     expect(feedbackUrl('abc')).toBe('https://marketing-nbc.github.io/designaanvraag/?feedback=abc')
   })
@@ -190,7 +199,7 @@ describe('het verslag in Asana', () => {
 describe('opmaak voor de klassieke Outlook', () => {
   // Outlook rendert met Word: padding op een link of div en margin op een tabel tellen daar niet.
   const m = renderOpleveringMail({
-    aan: ['a@x.nl'], antwoordAan: ['m@x.nl'], aanvraagId: 'id', versie: 1, soort: 'evenement', event: 'E', eventDatum: null,
+    aan: ['a@x.nl'], antwoordAan: ['m@x.nl'], aanvraagId: 'id', versie: 1, locatie: 'nbc', soort: 'evenement', event: 'E', eventDatum: null,
     omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, bijlagen: [], links: [],
   })
 

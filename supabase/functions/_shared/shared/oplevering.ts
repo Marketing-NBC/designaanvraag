@@ -12,10 +12,10 @@
 import { formatDateShortNl, kortVan } from './asana-title.ts'
 import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL } from './contact.ts'
-import { escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, vlak, waarschuwingBlok } from './mail.ts'
-import type { MailBericht } from './mail.ts'
+import { THEMAS, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, vlak, waarschuwingBlok } from './mail.ts'
+import type { MailBericht, Thema } from './mail.ts'
 import { describeRequestTypes } from './request-types.ts'
-import type { RequestTypeKey, Soort } from './request-types.ts'
+import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 
 /**
  * Samen niet meer dan dit aan bijlagen. Een mail van 20 MB wordt na het inpakken zo'n 27 MB, en
@@ -163,7 +163,7 @@ function attribuut(attrs: string, naam: string): string | null {
  * vet, cursief, lijstjes, citaten en links. Een vermelding van een collega of een andere taak
  * wordt gewone tekst: de ontvanger kan niet in Asana.
  */
-export function beschrijvingAlsMailHtml(asanaHtml: string): string {
+export function beschrijvingAlsMailHtml(asanaHtml: string, thema: Thema = THEMAS.nbc): string {
   const uit: string[] = []
   const open: string[] = []
   // In een vermelding: de tekst blijft, de link niet.
@@ -206,7 +206,7 @@ export function beschrijvingAlsMailHtml(asanaHtml: string): string {
         continue
       }
       open.push('a')
-      uit.push(`<a href="${escapeHtml(href)}" style="color:#165e5a;">`)
+      uit.push(`<a href="${escapeHtml(href)}" style="color:${thema.link};">`)
     } else if (TOEGESTAAN[tag]) {
       const doel = TOEGESTAAN[tag]
       if (sluit) {
@@ -241,6 +241,8 @@ export interface OpleveringMail {
   antwoordAan: string[]
   aanvraagId: string
   versie: number
+  /** Bepaalt de kleuren: NBC-teal of de olijftint van Green Village. */
+  locatie: Locatie
   soort: Soort
   /** Leeg bij een interne aanvraag. */
   event: string
@@ -248,7 +250,7 @@ export interface OpleveringMail {
   omschrijving: string
   types: RequestTypeKey[]
   andersTekst: string
-  /** De beschrijving van de subtaak, al omgezet met beschrijvingAlsMailHtml. */
+  /** De beschrijving van de subtaak, al omgezet met beschrijvingAlsMailHtml (met hetzelfde thema). */
   berichtHtml: string
   /** Wie op de knop drukte; staat onder het bericht. */
   afzenderNaam: string | null
@@ -268,6 +270,7 @@ function waarover(m: Pick<OpleveringMail, 'soort' | 'event' | 'eventDatum' | 'om
 export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   const intern = m.soort === 'intern'
   const nieuweVersie = m.versie > 1
+  const thema = themaVoor(m.locatie)
   const delen: string[] = []
 
   if (m.proef) {
@@ -282,7 +285,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
     : `${intern ? 'Je aanvraag' : `Het design voor <strong>${escapeHtml(m.event)}</strong>`} staat klaar.`}</p>`)
 
   if (m.berichtHtml) {
-    delen.push(vlak(m.berichtHtml, { achtergrond: '#e9f5f4', onder: 4 }))
+    delen.push(vlak(m.berichtHtml, { achtergrond: thema.tint, onder: 4 }))
     if (m.afzenderNaam) delen.push(`<p style="margin:0 0 16px;color:#596165;font-size:13px;">${escapeHtml(m.afzenderNaam)}, Marketing</p>`)
   }
 
@@ -298,21 +301,21 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
     rijen.push(['Bijlagen', m.bijlagen.map((b) => `${escapeHtml(b.naam)} <span style="color:#828b8d;">(${escapeHtml(formatBytes(b.bytes))})</span>`).join('<br>')])
   }
   if (m.links.length) {
-    rijen.push(['Bestanden', m.links.map((l) => `<a href="${escapeHtml(l.url)}" style="color:#165e5a;">${escapeHtml(l.naam)}</a>`).join('<br>')])
+    rijen.push(['Bestanden', m.links.map((l) => `<a href="${escapeHtml(l.url)}" style="color:${thema.link};">${escapeHtml(l.naam)}</a>`).join('<br>')])
   }
   delen.push(ruimte(gegevensTabel(rijen), 16))
 
   delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Iets aan te passen?</p>`)
   delen.push(`<p style="margin:4px 0 0;">Geef je feedback via de knop hieronder. Dan komt hij meteen bij de juiste aanvraag terecht, `
     + `en kun je er bestanden en een nieuwe deadline bij doen. Is alles goed, dan hoef je niets te doen.</p>`)
-  delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven'))
+  delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
 
   const kop = nieuweVersie ? `Versie ${m.versie} staat klaar` : 'Je design staat klaar'
   return {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
     onderwerp: `${m.proef ? '[PROEF] ' : ''}${nieuweVersie ? `Versie ${m.versie} klaar` : 'Klaar'}: ${waarover(m)}`.slice(0, 250),
-    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.'),
+    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.', thema),
   }
 }
 

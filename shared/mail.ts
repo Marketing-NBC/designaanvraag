@@ -195,13 +195,42 @@ export function escapeHtml(s: string): string {
  */
 export const LETTER = 'font-family:Arial,Helvetica,sans-serif;'
 
+/** De kleuren van een mail: kop en knop, het lichte vlak achter een citaat, en links. */
+export interface Thema {
+  kleur: string
+  /** Tekst op `kleur`. */
+  opKleur: string
+  tint: string
+  link: string
+}
+
+/**
+ * Per locatie. Green Village is een zachte olijftint; wit daarop is te zwak (contrast zo'n 2,5:1),
+ * dus daar staat donkere tekst op de kop en de knop. Links zijn een donkere variant van de kleur,
+ * zodat ze op wit goed leesbaar zijn.
+ */
+export const THEMAS: Record<string, Thema> = {
+  nbc: { kleur: '#229d96', opKleur: '#ffffff', tint: '#e9f5f4', link: '#165e5a' },
+  green_village: { kleur: '#a2a68f', opKleur: '#0e0e0e', tint: '#f1f2ec', link: '#5c6049' },
+}
+
+/** Het thema van een locatie; onbekend of leeg is NBC. */
+export function themaVoor(locatie: string | null | undefined): Thema {
+  return (locatie && THEMAS[locatie]) || THEMAS.nbc
+}
+
 /**
  * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen,
  * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
  * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
  * een eigen stijl mist, zoals lijstjes uit Asana.
  */
-export function mailOpmaak(kop: string, inhoud: string, voet = 'Automatische melding van het designaanvraag-formulier.'): string {
+export function mailOpmaak(
+  kop: string,
+  inhoud: string,
+  voet = 'Automatische melding van het designaanvraag-formulier.',
+  thema: Thema = THEMAS.nbc,
+): string {
   return `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body,table,td,p,a,li,span,strong,em,h1,h2{${LETTER}}</style>
@@ -210,7 +239,7 @@ export function mailOpmaak(kop: string, inhoud: string, voet = 'Automatische mel
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f1ef" style="background:#f1f1ef;">
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
-<tr><td bgcolor="#229d96" style="background:#229d96;color:#ffffff;padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
+<tr><td bgcolor="${thema.kleur}" style="background:${thema.kleur};color:${thema.opKleur};padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
 <tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
@@ -224,11 +253,11 @@ export function mailOpmaak(kop: string, inhoud: string, voet = 'Automatische mel
  * en dan staat er een strak gekleurd vlak zonder lucht om de tekst. De ruimte erboven zit om
  * dezelfde reden in een buitencel in plaats van in een `margin`.
  */
-export function knop(href: string, tekst: string): string {
+export function knop(href: string, tekst: string, thema: Thema = THEMAS.nbc): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 0 4px;">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
-    + `<td align="center" bgcolor="#229d96" style="background:#229d96;border-radius:4px;padding:12px 24px;">`
-    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:#ffffff;text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
+    + `<td align="center" bgcolor="${thema.kleur}" style="background:${thema.kleur};border-radius:4px;padding:12px 24px;">`
+    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:${thema.opKleur};text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
     + `</td></tr></table></td></tr></table>`
 }
 
@@ -274,6 +303,6 @@ export function waarschuwingBlok(html: string): string {
  * Een citaat: wat de collega zelf typte. Regeleinden worden <br>, want Outlook kent geen
  * `white-space: pre-wrap`.
  */
-export function citaat(tekst: string): string {
-  return vlak(escapeHtml(tekst).replace(/\r?\n/g, '<br>'), { achtergrond: '#e9f5f4', boven: 4 })
+export function citaat(tekst: string, thema: Thema = THEMAS.nbc): string {
+  return vlak(escapeHtml(tekst).replace(/\r?\n/g, '<br>'), { achtergrond: thema.tint, boven: 4 })
 }

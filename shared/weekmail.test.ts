@@ -86,6 +86,14 @@ describe('nietsTeMelden', () => {
 })
 
 describe('renderWeekmail', () => {
+  it('kleurt per locatie', () => {
+    expect(renderWeekmail(maakWeekoverzicht([taak()], MA), 'nbc', null).html).toContain('bgcolor="#229d96"')
+    const gv = renderWeekmail(maakWeekoverzicht([taak({ locatie: 'green_village' })], MA), 'green_village', 'https://app.asana.com/p').html
+    expect(gv).toContain('bgcolor="#a2a68f"')
+    expect(gv).toContain('color:#5c6049;font-weight:bold;')
+    expect(gv).not.toContain('#229d96')
+  })
+
   it('noemt de week, het aantal deadlines en spoed in het onderwerp', () => {
     const m = renderWeekmail(maakWeekoverzicht([taak(), taak({ spoed: true })], MA), 'nbc', 'https://app.asana.com/project')
     expect(m.aan).toEqual(['marketing@nbcevents.nl'])

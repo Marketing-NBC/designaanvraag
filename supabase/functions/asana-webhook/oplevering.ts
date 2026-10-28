@@ -1,6 +1,7 @@
 import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import type { Db, OpleveringRow } from '../_shared/db.ts'
 import { MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
+import { themaVoor } from '../_shared/shared/mail.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
 import {
   OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
@@ -124,7 +125,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       }
 
       const keuze = verdeelBijlagen(await asana.listBestanden(subtaak.gid))
-      const berichtHtml = beschrijvingAlsMailHtml(subtaak.html)
+      const berichtHtml = beschrijvingAlsMailHtml(subtaak.html, themaVoor(aanvraag.locatie))
       if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length) {
         throw new Weigering('De subtaak Oplevering is nog leeg. Zet de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
       }
@@ -170,6 +171,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         antwoordAan: [marketing],
         aanvraagId: aanvraag.id,
         versie,
+        locatie: aanvraag.locatie,
         soort: aanvraag.soort,
         event: aanvraag.event,
         eventDatum: aanvraag.event_datum,
