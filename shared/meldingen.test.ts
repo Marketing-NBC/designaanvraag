@@ -27,11 +27,11 @@ describe('melding bij een nieuwe aanvraag', () => {
     expect(nieuw({ asanaUrl: null, asanaFout: 'Asana gaf 500' }).html).toContain('Aanvraag abc-123')
   })
 
-  it('NBC in teal, Green Village in de olijftint met donkere tekst', () => {
+  it('NBC in teal, Green Village in zijn eigen donkergroen met witte tekst', () => {
     expect(nieuw().html).toContain('bgcolor="#229d96"')
     const gv = nieuw({ aanvraag: { ...aanvraag, locatie: 'green_village' } }).html
-    expect(gv).toContain('bgcolor="#a2a68f"')
-    expect(gv).toMatch(/background:#a2a68f;color:#0e0e0e;/)
+    expect(gv).toContain('bgcolor="#23251b"')
+    expect(gv).toMatch(/background:#23251b;color:#ffffff;/)
     expect(gv).not.toContain('#229d96')
     expect(gv).toContain('background:#f1f2ec')
   })
@@ -47,7 +47,7 @@ describe('melding bij een aanvulling', () => {
       },
       taakNaam: 'Testevent', asanaUrl: 'https://app.asana.com/x', bijgewerkt: [], bijlagen: [], heropend: false, naarFeedback: false, asanaFout: null,
     })
-    expect(html).toContain('bgcolor="#a2a68f"')
+    expect(html).toContain('bgcolor="#23251b"')
     expect(html.match(/https:\/\/app\.asana\.com\/x/g)).toHaveLength(1)
     expect(html).toContain('color:#5c6049;font-weight:bold;">(gewijzigd)')
   })

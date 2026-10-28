@@ -394,8 +394,8 @@ maandagochtend een weekoverzicht. Wat Marketing zelf in Asana doet levert geen m
 De afzender is `designaanvraag@nbcevents.nl`, zodat je in je inbox meteen ziet waar het over gaat.
 De adressen staan in `shared/contact.ts`.
 
-**Opmaak.** Een NBC-mail heeft een kop en knop in NBC-teal (`#229d96`), een Green Village-mail in de
-GV-olijftint (`#a2a68f`) met donkere tekst, want wit is daarop slecht leesbaar. Dat geldt voor alle
+**Opmaak.** Een NBC-mail heeft een kop en knop in NBC-teal (`#229d96`), een Green Village-mail in het
+GV-donkergroen (`#23251b`). Allebei met witte tekst. Dat geldt voor alle
 mails: aanvraag, aanvulling, weekoverzicht en oplevering. De kleuren staan in `THEMAS` in
 `shared/mail.ts`. De opmaak is gebouwd voor de klassieke Outlook, die mail met Word rendert: ruimte
 zit op tabelcellen en niet op links of divs, en elke cel noemt zelf het lettertype.

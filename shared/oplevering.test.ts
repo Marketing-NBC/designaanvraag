@@ -162,10 +162,10 @@ describe('de mail', () => {
     expect(m.html).toContain('Hier is het.')
   })
 
-  it('Green Village krijgt zijn eigen kleur, met donkere tekst op kop en knop', () => {
+  it('Green Village krijgt zijn eigen kleur, met witte tekst op kop en knop', () => {
     const gv = renderOpleveringMail({ ...basis, locatie: 'green_village' }).html
-    expect(gv).toContain('bgcolor="#a2a68f"')
-    expect(gv).toMatch(/background:#a2a68f;color:#0e0e0e;/)
+    expect(gv).toContain('bgcolor="#23251b"')
+    expect(gv).toMatch(/background:#23251b;color:#ffffff;/)
     expect(gv).not.toContain('#229d96')
     expect(renderOpleveringMail(basis).html).toContain('bgcolor="#229d96"')
   })

@@ -205,13 +205,13 @@ export interface Thema {
 }
 
 /**
- * Per locatie. Green Village is een zachte olijftint; wit daarop is te zwak (contrast zo'n 2,5:1),
- * dus daar staat donkere tekst op de kop en de knop. Links zijn een donkere variant van de kleur,
- * zodat ze op wit goed leesbaar zijn.
+ * Per locatie. Green Village is bijna zwart groen, met witte tekst op de kop en de knop. De lichte
+ * vlakken en de links hebben een olijftint: links in de GV-kleur zelf zouden niet van gewone tekst
+ * te onderscheiden zijn.
  */
 export const THEMAS: Record<string, Thema> = {
   nbc: { kleur: '#229d96', opKleur: '#ffffff', tint: '#e9f5f4', link: '#165e5a' },
-  green_village: { kleur: '#a2a68f', opKleur: '#0e0e0e', tint: '#f1f2ec', link: '#5c6049' },
+  green_village: { kleur: '#23251b', opKleur: '#ffffff', tint: '#f1f2ec', link: '#5c6049' },
 }
 
 /** Het thema van een locatie; onbekend of leeg is NBC. */
