@@ -5,7 +5,7 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
 /**
  * Ontvangt Asana-webhooks van het project "Designaanvragen" en regelt de planning-flow:
  *  - taak naar "In planning" gesleept zonder vervaldatum → één comment met mention: kies een datum;
- *  - vervaldatum gezet terwijl de taak in "In planning" of "Mee bezig" staat → taak ook in het
+ *  - vervaldatum gezet terwijl de taak in "In planning" staat → taak ook in het
  *    planningsproject ("4. Werkplanning") zetten. De vervaldatum is een eigenschap van de taak,
  *    dus die is in beide projecten gelijk;
  *  - taak weggegooid of uit het project gehaald → de aanvraag vervalt, zodat hij uit het zoekscherm
@@ -110,7 +110,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const projectGid = cfg.project?.gid ?? null
   const sections = cfg.sections ?? {}
   const inPlanning = sections.in_planning?.gid ?? null
-  const qualifying = [sections.in_planning?.gid, sections.mee_bezig?.gid].filter((g): g is string => Boolean(g))
   const planningGid = deps.planningProjectGid ?? cfg.planning_project?.gid ?? null
   const planningName = cfg.planning_project?.name ?? 'de werkplanning'
 
@@ -264,7 +263,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       return 'datum gevraagd'
     }
 
-    if (!section || !qualifying.includes(section)) return 'datum, maar niet in planning of mee bezig'
+    if (!section || section !== inPlanning) return 'datum, maar niet in planning'
     if (!planningGid) return 'geen planningsproject geconfigureerd'
     if (t.projects.includes(planningGid)) return 'al ingepland'
     await asana.addToProject(gid, planningGid)

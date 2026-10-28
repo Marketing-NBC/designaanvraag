@@ -35,7 +35,6 @@ const cfg: AsanaFieldsConfig = {
   sections: {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
     in_planning: { gid: 'sec-plan' },
-    mee_bezig: { gid: 'sec-bezig' },
     klaar: { gid: 'sec-klaar' },
   },
   planning_project: { gid: 'werk1', name: '4. Werkplanning' },
@@ -202,20 +201,22 @@ Deno.test('datum gekozen in In planning → in werkplanning gezet, met bevestigi
   assertEquals(asana.added.length, 1)
 })
 
-Deno.test('datum in Nieuwe aanvragen of Klaar → niets; Mee bezig → wel inplannen', async () => {
+Deno.test('datum in Nieuwe aanvragen, Feedback of Klaar → niets; alleen In planning plant in', async () => {
   const { handler, asana } = setup({
     nieuw: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-nieuw' }] },
+    feedback: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-feedback' }] },
     klaar: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-klaar' }] },
-    bezig: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-bezig' }] },
+    plan: { dueOn: '2026-10-20', memberships: [{ project: 'proj1', section: 'sec-plan' }] },
     ander: { dueOn: '2026-10-20', memberships: [{ project: 'proj9', section: 'x' }] },
   })
-  const res = await handler(await signed([dueChanged('nieuw'), dueChanged('klaar'), dueChanged('bezig'), dueChanged('ander')]))
+  const res = await handler(await signed([dueChanged('nieuw'), dueChanged('feedback'), dueChanged('klaar'), dueChanged('plan'), dueChanged('ander')]))
   const body = await res.json()
-  assertEquals(body.handled.nieuw, 'datum, maar niet in planning of mee bezig')
-  assertEquals(body.handled.klaar, 'datum, maar niet in planning of mee bezig')
-  assertEquals(body.handled.bezig, 'ingepland')
+  assertEquals(body.handled.nieuw, 'datum, maar niet in planning')
+  assertEquals(body.handled.feedback, 'datum, maar niet in planning')
+  assertEquals(body.handled.klaar, 'datum, maar niet in planning')
+  assertEquals(body.handled.plan, 'ingepland')
   assertEquals(body.handled.ander, 'niet in ons project')
-  assertEquals(asana.added, [['bezig', 'werk1']])
+  assertEquals(asana.added, [['plan', 'werk1']])
 })
 
 Deno.test('naar In planning zonder datum als de vraag al gesteld is → niets', async () => {

@@ -13,7 +13,7 @@ import type { MailBericht, Thema } from './mail.ts'
 import { LOCATIES, locatieLabel } from './request-types.ts'
 import type { Locatie } from './request-types.ts'
 
-export type SectieSleutel = 'nieuwe_aanvragen' | 'feedback' | 'in_planning' | 'mee_bezig' | 'klaar'
+export type SectieSleutel = 'nieuwe_aanvragen' | 'feedback' | 'in_planning' | 'klaar'
 
 export interface WeekTaak {
   naam: string

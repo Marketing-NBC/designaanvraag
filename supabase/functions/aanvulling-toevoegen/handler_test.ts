@@ -35,7 +35,6 @@ const cfg: AsanaFieldsConfig = {
     nieuwe_aanvragen: { gid: 'sec-nieuw', name: 'Nieuwe aanvragen' },
     feedback: { gid: 'sec-feedback', name: 'Feedback' },
     in_planning: { gid: 'sec-planning', name: 'In planning' },
-    mee_bezig: { gid: 'sec-bezig', name: 'Mee bezig' },
     klaar: { gid: 'sec-klaar', name: 'Klaar' },
   },
   fields: {
@@ -458,22 +457,11 @@ Deno.test('een taak in Klaar gaat terug naar Feedback en wordt heropend', async 
 })
 
 Deno.test('een afgevinkte taak telt net zo goed als afgerond', async () => {
-  // Staat in Mee bezig, maar het vinkje staat aan. Ook dan kijkt niemand er nog naar om.
-  const asana = fakeAsana({ completed: true, memberships: [{ project: '111', section: 'sec-bezig' }] })
+  // Staat in In planning, maar het vinkje staat aan. Ook dan kijkt niemand er nog naar om.
+  const asana = fakeAsana({ completed: true, memberships: [{ project: '111', section: 'sec-planning' }] })
   await createHandler(deps({ asana }))(post(payload()))
   assertEquals(asana.heropend, 1)
   assertEquals(asana.verplaatst, ['sec-feedback'])
-})
-
-Deno.test('werk in Mee bezig gaat naar Feedback, maar blijft open en houdt zijn datum', async () => {
-  const asana = fakeAsana({ completed: false, assignee: 'abel', memberships: [{ project: '111', section: 'sec-bezig' }] })
-  await createHandler(deps({ asana }))(post(payload()))
-  assertEquals(asana.heropend, 0)
-  assertEquals(asana.verplaatst, ['sec-feedback'])
-  assertStringIncludes(asana.comments[0], '<a data-asana-gid="abel"/>')
-  assertStringIncludes(asana.comments[0], 'staat nu in de kolom Feedback')
-  assertEquals(asana.comments[0].includes('heropend'), false)
-  assertEquals(asana.comments[0].includes('planningsdatum'), false)
 })
 
 Deno.test('in Nieuwe aanvragen en In planning blijft de taak staan waar hij staat', async () => {

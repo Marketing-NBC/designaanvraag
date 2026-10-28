@@ -233,7 +233,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       wijziging: Wijziging | null
       bijlagen: string[]
       heropend: boolean
-      naarFeedback: boolean
       asanaFout: string | null
     }) => {
       if (!deps.mail) return
@@ -268,7 +267,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijgewerkt: v.wijziging?.bijgewerkt ?? [],
           bijlagen: v.bijlagen,
           heropend: v.heropend,
-          naarFeedback: v.naarFeedback,
           asanaFout: v.asanaFout,
         }))
         log('info', 'aanvulling gemaild', { id: aanvullingRij.id })
@@ -284,7 +282,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         wijziging: null,
         bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
         heropend: false,
-        naarFeedback: false,
         asanaFout: 'De koppeling met Asana is niet ingesteld.',
       })
       return json({ aanvulling_id: aanvullingRij.id, bijgewerkt: [] } satisfies AanvullingResult, 200, cors)
@@ -312,18 +309,14 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     // Terugzetten in beeld: naar de kolom Feedback, vinkje eraf, planningsdatum eraf. Dat laatste
     // omdat een oude datum in de werkplanning niets meer zegt.
     //
-    // Staat hij in Mee bezig, dan gaat hij ook naar Feedback, maar blijven vinkje en datum staan:
-    // het werk loopt nog en de planning klopt nog. In Nieuwe aanvragen en In planning blijft hij
-    // waar hij is, want daar is nog niets om feedback op te geven.
+    // In Nieuwe aanvragen en In planning blijft hij waar hij is: daar wordt er nog aan gewerkt, en
+    // de aanvulling komt gewoon als reactie bij de rest.
     let heropendVoor: string | null | undefined
-    let naarFeedbackVoor: string | null | undefined
     if (taak) {
       // De sectie uit ónze projectkoppeling halen: een taak zit ook in "4. Werkplanning".
       const onzeSectie = taak.memberships.find((m) => m.project === projectGid)?.section ?? null
       const klaarGid = cfg.sections?.klaar?.gid ?? null
-      const meeBezigGid = cfg.sections?.mee_bezig?.gid ?? null
       const afgerond = taak.completed || (klaarGid !== null && onzeSectie === klaarGid)
-      const bezig = !afgerond && meeBezigGid !== null && onzeSectie === meeBezigGid
 
       if (afgerond) {
         heropendVoor = taak.assignee
@@ -334,9 +327,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           waarschuwingen.push(`taak heropenen mislukt: ${msg}`)
           log('warn', 'taak heropenen mislukt', { id: aanvullingRij.id, error: msg })
         }
-      }
 
-      if (afgerond || bezig) {
         const feedbackGid = cfg.sections?.feedback?.gid ?? null
         if (!feedbackGid) {
           // De setup-workflow heeft de kolom nog niet gemaakt. Bij afgerond werk zijn vinkje en datum
@@ -345,14 +336,13 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         } else {
           try {
             await deps.asana.moveToSection(row.asana_task_gid, feedbackGid)
-            if (bezig) naarFeedbackVoor = taak.assignee
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e)
             waarschuwingen.push(`taak naar Feedback verplaatsen mislukt: ${msg}`)
             log('warn', 'taak verplaatsen mislukt', { id: aanvullingRij.id, error: msg })
           }
         }
-        log('info', afgerond ? 'afgeronde taak heropend' : 'lopende taak naar Feedback', { id: aanvullingRij.id, gid: row.asana_task_gid })
+        log('info', 'afgeronde taak heropend', { id: aanvullingRij.id, gid: row.asana_task_gid })
       }
     }
 
@@ -382,7 +372,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           schijfNietOvergenomen: wijziging.schijfNietOvergenomen,
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
-          naarFeedbackVoor,
         }),
       )
     } catch (e) {
@@ -395,7 +384,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         // Wat niet als bijlage bij de taak kwam, staat in elk geval bij naam in de mail.
         bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
         heropend: heropendVoor !== undefined,
-        naarFeedback: naarFeedbackVoor !== undefined,
         asanaFout: `De reactie kon niet bij de taak worden gezet: ${msg}`,
       })
       return json({ error: 'De aanvulling is bewaard, maar kwam niet bij Marketing terecht. Laat het even weten aan het marketingteam.' }, 502, cors)
@@ -411,7 +399,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       wijziging,
       bijlagen: bijlageRijen.map((b) => b.bestandsnaam),
       heropend: heropendVoor !== undefined,
-      naarFeedback: naarFeedbackVoor !== undefined,
       asanaFout: null,
     })
 

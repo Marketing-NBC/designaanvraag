@@ -16,7 +16,7 @@ export interface AsanaFieldsConfig {
   project: { gid: string; name?: string; url?: string; workspace_gid?: string } | null
   assignee: { gid: string; name?: string } | null
   fields: Record<string, AsanaField>
-  /** Secties van het bord (nieuwe_aanvragen, in_planning, mee_bezig, klaar). */
+  /** Secties van het bord (nieuwe_aanvragen, feedback, in_planning, klaar). */
   sections?: Record<string, { gid: string; name?: string }>
   /** Project waar ingeplande taken ook in komen ("4. Werkplanning"). */
   planning_project?: { gid: string; name?: string; url?: string } | null

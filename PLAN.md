@@ -8,7 +8,7 @@ Alle vijf de milestones zijn live en end-to-end getest met een echte aanvraag.
 |---|---|
 | M1 Formulier | Live op https://marketing-nbc.github.io/designaanvraag/ |
 | M2 Backend | Live op het Supabase-project van de Marketing-organisatie (`ommujhlzffxalltlgzti`): migraties, `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, collega's uit Supabase |
-| M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → In planning → Mee bezig → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
+| M3 Asana | Live: project "Designaanvragen" (bord, secties Nieuwe aanvragen → Feedback → In planning → Klaar, 8 custom fields). Taaknaam `<wat> <event> - <eventdatum> - <aanvrager>`, subtaken per type, geen automatische vervaldatum. Planning-flow via `asana-webhook` |
 | M4 Huisstijl-Routine | **Live.** Routine "Huisstijl ophalen" draait op een cloud-environment, wordt door de function gestart en levert logo, huisstijl-kaart, screenshot en tekst bij de Asana-taak. Bewezen op rijksmuseum.nl, inclusief de juiste logokeuze tussen sponsorlogo's |
 | M5 Afwerking | Live (status-endpoint met reden bij mislukking, live status op het succes-scherm) |
 
@@ -27,8 +27,8 @@ bytes komen nooit door een edge function heen. Zie README → "Bestanden meestur
 
 En tot slot **heropenen**: komt er feedback op een taak die al op Klaar staat of afgevinkt is, dan
 gaat hij naar de kolom Feedback, gaat het vinkje eraf en verdwijnt de planningsdatum, met een
-@-vermelding in de reactie. Staat de taak in Mee bezig, dan gaat hij ook naar Feedback, maar
-blijven vinkje en planningsdatum staan. Zie README → "Feedback op werk dat al af is".
+@-vermelding in de reactie. In Nieuwe aanvragen en In planning blijft de taak staan. Zie README →
+"Feedback op werk dat al af is".
 
 En daarna **opleveren**: elke aanvraag krijgt een subtaak "Oplevering". De beschrijving daarvan
 wordt de tekst van de mail en de bijlagen ervan gaan mee: wat je ziet, is wat er verstuurd wordt.

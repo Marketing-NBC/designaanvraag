@@ -110,7 +110,7 @@ nieuwe token aan (Account preferences → Access Tokens, naam bijvoorbeeld
 2. Kies één van twee:
    - **Nieuw project laten aanmaken:** Actions → **Asana-project aanmaken** → Run workflow, met de
      naam van het project en de link naar een bestaand project in hetzelfde team. De workflow maakt
-     het project (bordweergave, secties "Nieuwe aanvragen" → "In planning" → "Mee bezig" → "Klaar"),
+     het project (bordweergave, secties "Nieuwe aanvragen" → "Feedback" → "In planning" → "Klaar"),
      neemt de leden over, maakt de custom fields uit `scripts/asana-field-map.json` aan en commit
      `shared/asana-fields.json`. Opnieuw draaien is veilig: bestaande onderdelen worden hergebruikt.
    - **Bestaand project gebruiken:** Actions → **Asana-velden vernieuwen** → Run workflow, met de link
@@ -136,11 +136,11 @@ alle gegevens in de beschrijving.
   subtaak `Oplevering`, voor de opleveringsmail (zie **Opleveren** hieronder).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
-- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Mee bezig → Klaar. De volgorde komt uit
+- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Klaar. De volgorde komt uit
   `scripts/asana-field-map.json`; die bepaalt ook de volgorde op het bord.
 - **Planning-flow (webhook):** sleept Marketing een taak naar **In planning** zonder vervaldatum, dan
   plaatst de function `asana-webhook` één comment met een mention: kies een vervaldatum. Zodra er
-  een vervaldatum staat (in "In planning" of "Mee bezig"), komt de taak automatisch ook in het
+  een vervaldatum staat in "In planning", komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
@@ -271,11 +271,8 @@ function hem terug in beeld:
 - de **planningsdatum gaat eraf**, zodat er geen verlopen datum in "4. Werkplanning" blijft hangen;
 - de reactie begint met een **@-vermelding**, zodat het in je Asana-inbox landt.
 
-Staat de taak in **Mee bezig**, dan gaat hij ook naar **Feedback**, met een @-vermelding in de
-reactie. Vinkje en planningsdatum blijven dan staan: het werk loopt nog en de planning klopt nog.
-
-In **Nieuwe aanvragen** en **In planning** blijft de taak waar hij staat; daar is nog niets om feedback
-op te geven, dus een aanvulling is daar gewoon extra informatie.
+In **Nieuwe aanvragen** en **In planning** blijft de taak waar hij staat: daar wordt er nog aan
+gewerkt, dus een aanvulling is daar gewoon extra informatie.
 
 De reactie vraagt meteen om een nieuwe planningsdatum. Dat moet, want de webhook vraagt daar maar
 **één keer per taak** om, en bij een afgeronde taak is dat allang gebeurd.

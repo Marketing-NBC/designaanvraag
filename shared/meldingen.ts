@@ -185,8 +185,6 @@ export interface AanvullingMail {
   bijlagen: string[]
   /** De taak stond op Klaar of was afgevinkt en is heropend. */
   heropend: boolean
-  /** De taak stond in Mee bezig en is naar Feedback verplaatst. */
-  naarFeedback: boolean
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
 }
@@ -204,8 +202,6 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   }
   if (m.heropend) {
     delen.push(waarschuwingBlok('<strong>Deze taak was al afgerond en is heropend.</strong> Hij staat nu in de kolom Feedback, zonder planningsdatum.'))
-  } else if (m.naarFeedback) {
-    delen.push(waarschuwingBlok('<strong>Er is feedback op werk waar je mee bezig bent.</strong> De taak staat nu in de kolom Feedback.'))
   }
 
   delen.push(taakRegel(m.taakNaam))
