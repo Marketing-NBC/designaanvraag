@@ -33,6 +33,5 @@ kan. Zo staat het in de gids:
   ook "Neem nu even contact op met het marketingteam". Moet dat mee veranderen? De gids zegt nu:
   "Is het erg krap? Dan herinnert het formulier je eraan om contact op te nemen met Marketing."
   Verandert het bedankscherm, pas dan ook die zin aan in `docs/gids-projecten/bron/bouw.py`.
-- Na de wijziging kan de screenshot van de rode melding (`g04-krap` in
-  `docs/gids-projecten/bron/screenshots.cjs`) weer in hoofdstuk 2 van de gids, naast die van de
-  oranje melding.
+- De gids beschrijft de meldingen nu zonder screenshot. Wil je er na de wijziging een bij (`g04-krap`
+  in `docs/gids-projecten/bron/screenshots.cjs`), let dan op: de gids mag hooguit zeven pagina's zijn.
