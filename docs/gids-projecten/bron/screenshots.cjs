@@ -60,7 +60,7 @@ async function stappen(b) {
   // ── Evenement ──
   let p = await start(b);
   await shot(p, 'omslag');
-  await shot(p, 'g01-start', [[p.getByRole('button', { name: 'Start' }), 1, 8], [p.getByRole('button', { name: 'Iets aanvullen of wijzigen' }), 2, 6]]);
+  await shot(p, 'g01-start', [[p.getByRole('button', { name: 'Start' }), 1, 8]]);
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click();
   await shot(p, 'g02-vraag', [[L(p, '.q__head'), 1, 8], [p.getByRole('radio', { name: 'NBC' }), 2, 5], [L(p, '.q__footer'), 3, 8], [L(p, '.navdock'), 4, 6]]);
@@ -68,11 +68,12 @@ async function stappen(b) {
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
   await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
   await kiesDatum(p, 2, 1);
-  await shot(p, 'g03-eventdatum', [[L(p, '.date__nav, .date__head'), 1, 6], [L(p, 'button.date__day[aria-pressed="true"]'), 2, 5], [L(p, '.msg'), 3, 6]]);
+  await shot(p, 'g03-eventdatum', [[L(p, '.date__nav, .date__head'), 1, 6], [L(p, 'button.date__day[aria-pressed="true"]'), 2, 5]]);
   await next(p);
   await kiesDatum(p, 1, 20);
   await next(p);
   await p.getByPlaceholder('www.event.nl').fill('www.zorgcongres.nl');
+  await shot(p, 'g05-website', [[p.getByPlaceholder('www.event.nl'), 1, 6]]);
   await next(p);
   await p.getByRole('heading', { name: /schijf/ }).waitFor();
   await p.waitForTimeout(400);
@@ -149,7 +150,7 @@ async function stappen(b) {
   await shot(p, 'g41-aanv-wat', [[p.locator('#a-toelichting'), 1, 6], [L(p, '.bijlagen__zone'), 2, 5], [p.getByRole('button', { name: /Menu aanpassen/ }), 3, 5]]);
   await next(p);
   await p.setViewportSize({ width: W, height: 860 });
-  await shot(p, 'g42-aanv-extra', [[L(p, '.extra__datums'), 1, 6], [L(p, '.extra__velden'), 2, 6]]);
+  await shot(p, 'g42-aanv-extra', [[L(p, '.extra__datums'), 1, 6]]);
   await p.close();
 
   p = await start(b);
@@ -174,6 +175,18 @@ async function stappen(b) {
   await kiesDatum(p, krap.maanden, krap.dag);
   await p.setViewportSize({ width: W, height: 880 });
   await shot(p, 'g04-krap', [[L(p, '.msg--verlopen'), 1, 6]]);
+  await p.close();
+
+  // ── Event over ongeveer anderhalve week: de oranje melding ──
+  p = await start(b);
+  await p.getByRole('button', { name: 'Start' }).click();
+  await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
+  await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  const oranje = await p.evaluate(() => { const d = new Date(); let n = 0; while (n < 7) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; } return { dag: d.getDate(), maanden: (d.getFullYear() - new Date().getFullYear()) * 12 + d.getMonth() - new Date().getMonth() }; });
+  await kiesDatum(p, oranje.maanden, oranje.dag);
+  await p.setViewportSize({ width: W, height: 860 });
+  await shot(p, 'g04-oranje', [[L(p, '.msg--warn'), 1, 6]]);
   await p.close();
 
   // ── De knop Feedback geven uit de opleveringsmail ──

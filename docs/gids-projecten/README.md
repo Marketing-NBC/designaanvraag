@@ -1,8 +1,10 @@
 # Gids voor projecten
 
 **[Designs aanvragen - Handleiding voor projecten.pdf](Designs%20aanvragen%20-%20Handleiding%20voor%20projecten.pdf)**: de
-handleiding van het formulier voor projectleiders. Elf pagina's, in de opmaak van de drankgids: een
-screenshot in een Windows-venster met oranje genummerde kaders, en de uitleg ernaast.
+handleiding van het formulier voor projectleiders. Twaalf pagina's, in de opmaak van de drankgids: een
+screenshot in een Windows-venster met oranje genummerde kaders, en de uitleg ernaast. Tekst en
+indeling zijn van de manager van Marketing (oktober 2026); wensen voor de app die daaruit kwamen staan
+in [app-wensen.md](../app-wensen.md).
 
 Het Word-bestand ernaast is de bron. Kleine tekstwijzigingen kun je daar direct in maken en opnieuw als
 PDF opslaan. Verandert het formulier zelf, maak de screenshots dan opnieuw:
