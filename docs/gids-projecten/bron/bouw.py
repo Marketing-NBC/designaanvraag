@@ -43,6 +43,11 @@ def p_met(delen, ppr=''):
 def p(t='', ppr=''):
     return f'<w:p><w:pPr>{ppr}</w:pPr>{runs(t)}</w:p>'
 
+def nieuwe_pagina():
+    """Een pagina-einde, zoals in Word met Ctrl+Enter: het volgende hoofdstuk begint bovenaan."""
+    return ('<w:p><w:pPr><w:spacing w:line="259" w:lineRule="auto"/><w:rPr><w:rFonts w:ascii="Pockota Med" w:hAnsi="Pockota Med"/>'
+            '<w:sz w:val="36"/></w:rPr></w:pPr><w:r><w:br w:type="page"/></w:r></w:p>')
+
 def kop1(t):
     """Een hoofdstuk loopt door op dezelfde pagina; de kop blijft bij wat erop volgt."""
     return f'<w:p><w:pPr><w:pStyle w:val="Kop1"/><w:keepNext/><w:spacing w:before="280"/></w:pPr>{runs(t)}</w:p>'
@@ -249,6 +254,7 @@ B.append(stap('g51-feedback',
     bol('Zodra je feedback is verwerkt, ontvang je opnieuw een e-mail. Hierin vind je de aangepaste versie, bijvoorbeeld met het onderwerp ‘Versie 2 klaar’.')))
 
 # 5
+B.append(nieuwe_pagina())
 B.append(kop1('5.  Aanvullen of wijzigen'))
 B.append(intro('Iets vergeten, een extra design nodig of is de datum gewijzigd? Pas dan je bestaande aanvraag aan. Klik op het startscherm op ‘Iets aanvullen of wijzigen’ en kies voor ‘Voor een evenement’ of ‘Intern’.'))
 B.append(stap('g40-aanv-zoek',
@@ -265,6 +271,7 @@ B.append(stap('g43-aanv-verlopen',
     bol('Kies eerst een nieuwe deadline. Zonder nieuwe deadline kun je de wijziging niet versturen.')))
 
 # 6
+B.append(nieuwe_pagina())
 B.append(kop1('6.  Spoed en vragen'))
 B.append(intro('Je aanvraag komt bij marketing binnen als taak. Marketing ontvangt een e-mail en ziet de aanvraag in de lijst. Vervolgens plant marketing de aanvraag in. Is er iets onduidelijk, dan neemt marketing contact met je op. Zodra het design klaar is, ontvang je een e-mail met de bestanden (zie hoofdstuk 4).'))
 B.append(kop2('Krappe deadlines'))
