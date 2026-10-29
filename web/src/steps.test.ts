@@ -3,7 +3,7 @@ import { SPOED_WERKDAGEN } from '../../shared/spoed'
 import { moetContactOpnemen, STEPS, zichtbareStappen } from './steps'
 import type { RequestTypeKey } from '../../shared/request-types'
 import { gerechtVan, leegMenu, uitPakket } from './lib/menu'
-import { emptyDraft, type Draft } from './state'
+import { alleenTeKiezenTypes, emptyDraft, type Draft } from './state'
 
 const eventStap = STEPS.find((s) => s.id === 'event_datum')!
 
@@ -56,6 +56,24 @@ describe('bevestiging op de eventdatum', () => {
 
   it('zegt niets over een datum die al geweest is', () => {
     expect(eventStap.goed?.(draft('2026-09-01'))).toBeNull()
+  })
+})
+
+describe('volgorde van de vragen', () => {
+  it('vraagt standaard of custom direct na de deadline, vóór wat je wilt aanvragen', () => {
+    const ids = zichtbareStappen({ metMenu: false, soort: 'evenement' }).map((s) => s.id)
+    expect(ids[ids.indexOf('deadline') + 1]).toBe('design_modus')
+    expect(ids.indexOf('design_modus')).toBeLessThan(ids.indexOf('aanvraag_types'))
+  })
+})
+
+describe('designkeuze en aanvraagtypes', () => {
+  it('gooit bij standaard designs weg wat daar niet te kiezen is', () => {
+    const d = { ...emptyDraft(), locatie: 'nbc' as const, aanvraag_types: ['led_kolom', 'vlaggen', 'anders'] as RequestTypeKey[], anders_tekst: 'Roll-up' }
+    const uit = alleenTeKiezenTypes({ ...d, design_modus: 'standaard' })
+    expect(uit.aanvraag_types).toEqual(['led_kolom'])
+    expect(uit.anders_tekst).toBe('')
+    expect(alleenTeKiezenTypes({ ...d, design_modus: 'custom' }).aanvraag_types).toEqual(d.aanvraag_types)
   })
 })
 

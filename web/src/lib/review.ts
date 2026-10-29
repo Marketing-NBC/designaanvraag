@@ -44,6 +44,7 @@ export function reviewRows(d: Draft): ReviewRow[] {
     { stepId: 'event', label: 'event', value: d.event },
     { stepId: 'event_datum', label: 'eventdatum', value: d.event_datum ? formatLong(d.event_datum) : '' },
     { stepId: 'deadline', label: 'uiterlijk nodig op', value: d.deadline ? formatLong(d.deadline) : '' },
+    { stepId: 'design_modus', label: 'design', value: modus },
     { stepId: 'website', label: 'website', value: d.website.trim() || 'niet opgegeven' },
     { stepId: 'schijf_locatie', label: 'locatie op de schijf', value: d.schijf_locatie || 'Niet ingevuld', muted: !d.schijf_locatie },
     { stepId: 'bijlagen', label: 'meegestuurd', value: bijlagenRegel, muted: !gereed.length },
@@ -52,9 +53,6 @@ export function reviewRows(d: Draft): ReviewRow[] {
   if (vraagtOmMenu(d.aanvraag_types)) {
     rijen.push({ stepId: 'menu', label: 'menu', value: menuSamenvatting(d.menu), muted: !d.menu.pakket })
   }
-  rijen.push(
-    { stepId: 'design_modus', label: 'design', value: modus },
-    { stepId: 'omschrijving', label: 'wensen en bijzonderheden', value: d.omschrijving || 'Niet ingevuld', muted: !d.omschrijving },
-  )
+  rijen.push({ stepId: 'omschrijving', label: 'wensen en bijzonderheden', value: d.omschrijving || 'Niet ingevuld', muted: !d.omschrijving })
   return rijen
 }

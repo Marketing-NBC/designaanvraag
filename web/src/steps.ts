@@ -221,6 +221,15 @@ export const STEPS: StepDef[] = [
     alarm: deadlineAlarm,
   },
   {
+    id: 'design_modus',
+    kind: 'single',
+    toon: isEvenement,
+    title: 'Standaard designs of volledig custom?',
+    // Komt vóór "Wat wil je aanvragen?": bij standaard designs valt daar minder te kiezen.
+    help: 'Dit bepaalt wat je straks kunt aanvragen.',
+    validate: (d) => (d.design_modus ? null : 'Maak een keuze.'),
+  },
+  {
     id: 'website',
     kind: 'url',
     toon: isEvenement,
@@ -301,13 +310,6 @@ export const STEPS: StepDef[] = [
         ? `"${eigen[0]}" staat niet in de gerechtenlijst. Marketing kijkt daarnaar.`
         : `${eigen.length} gerechten staan niet in de gerechtenlijst. Marketing kijkt daarnaar.`
     },
-  },
-  {
-    id: 'design_modus',
-    kind: 'single',
-    toon: isEvenement,
-    title: 'Standaard designs of volledig custom?',
-    validate: (d) => (d.design_modus ? null : 'Maak een keuze.'),
   },
   {
     id: 'omschrijving',
