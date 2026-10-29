@@ -22,18 +22,22 @@ async function mark(p, marks) {
     const l = typeof loc === 'string' ? p.locator(loc).first() : loc;
     const bb = await l.boundingBox();
     if (!bb) { console.log('geen box voor', n); continue; }
-    await p.evaluate(({ bb, n, pad }) => {
+    await p.evaluate(({ bb, n, pad, nummers }) => {
       const d = document.createElement('div'); d.className = 'gids-mark';
       Object.assign(d.style, { position: 'fixed', left: (bb.x - pad) + 'px', top: (bb.y - pad) + 'px', width: (bb.width + 2 * pad) + 'px', height: (bb.height + 2 * pad) + 'px',
         border: '3px solid #E8590C', borderRadius: '12px', zIndex: 99999, pointerEvents: 'none', boxSizing: 'border-box' });
-      const b = document.createElement('div'); b.textContent = n;
+      if (nummers) {
+        const b = document.createElement('div'); b.textContent = n;
       Object.assign(b.style, { position: 'absolute', right: '-15px', top: '-15px', width: '28px', height: '28px', borderRadius: '50%', background: '#E8590C', color: '#fff',
         font: '800 16px/28px "Area Normal", Arial, sans-serif', textAlign: 'center', boxShadow: '0 0 0 2px #fff' });
-      d.appendChild(b); document.body.appendChild(d);
-    }, { bb, n, pad });
+      d.appendChild(b);
+      } document.body.appendChild(d);
+    }, { bb, n, pad, nummers: NUMMERS });
   }
 }
 const W = 1280, H = 760;
+// De gids heeft bolletjes in plaats van nummers, dus de kaders krijgen geen nummer.
+const NUMMERS = false;
 async function shot(p, name, marks = []) {
   await p.mouse.move(2, 2);
   await p.waitForTimeout(800);
@@ -72,6 +76,9 @@ async function stappen(b) {
   await next(p);
   await kiesDatum(p, 1, 20);
   await next(p);
+  await p.getByRole('radio', { name: /Standaard designs/ }).click();
+  await shot(p, 'g08-modus', [[p.getByRole('radio', { name: /Standaard designs/ }), 1, 6], [p.getByRole('radio', { name: /Volledig custom/ }), 2, 6]]);
+  await next(p);
   await p.getByPlaceholder('www.event.nl').fill('www.zorgcongres.nl');
   await shot(p, 'g05-website', [[p.getByPlaceholder('www.event.nl'), 1, 6]]);
   await next(p);
@@ -83,13 +90,11 @@ async function stappen(b) {
   await p.waitForTimeout(1500);
   await shot(p, 'g06-bestanden', [[L(p, '.bijlagen__zone'), 1, 6], [L(p, '.bijlage'), 2, 6]]);
   await next(p);
-  await p.keyboard.press('a'); await p.keyboard.press('b'); await p.keyboard.press('g');
+  await p.locator('.opt', { hasText: 'LED-kolom' }).first().click();
+  await p.locator('.opt', { hasText: 'Torenscherm' }).first().click();
   await shot(p, 'g07-types', [[p.locator('.opt', { hasText: 'Torenscherm' }), 1, 5]]);
   await next(p);
-  await p.getByRole('radio', { name: /Standaard designs/ }).click();
-  await shot(p, 'g08-modus', [[p.getByRole('radio', { name: /Standaard designs/ }), 1, 6], [p.getByRole('radio', { name: /Volledig custom/ }), 2, 6]]);
-  await next(p);
-  await p.locator('#f-omschrijving').fill('Welkomsttekst op de torenschermen: "Welkom bij het Zorgcongres 2026".\nVier vlaggen voor de ingang, in de kleuren van het logo.');
+  await p.locator('#f-omschrijving').fill('Welkomsttekst op de torenschermen: "Welkom bij het Zorgcongres 2026".\nOp de LED-kolom het logo van de opdrachtgever.');
   await shot(p, 'g09-wensen', [[p.locator('#f-omschrijving'), 1, 6], [L(p, '[data-primary-action]'), 2, 6]]);
   await next(p);
   await p.getByRole('heading', { name: 'Klopt dit?' }).waitFor();
@@ -128,9 +133,10 @@ async function stappen(b) {
   await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
   await kiesDatum(p, 2, 1); await next(p);
   await kiesDatum(p, 1, 20); await next(p);
+  await p.getByRole('radio', { name: /Standaard designs/ }).click(); await next(p);
   await next(p); await next(p); await next(p);
   await p.getByRole('heading', { name: 'Wat wil je aanvragen?' }).waitFor();
-  await p.keyboard.press('f');
+  await p.locator('.opt', { hasText: 'Menu scherm' }).first().click();
   await next(p);
   await shot(p, 'g31-menu-pakket', [[L(p, '.pakket'), 1, 5]]);
   await L(p, '.pakket').click();

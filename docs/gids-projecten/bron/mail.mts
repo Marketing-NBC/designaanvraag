@@ -9,15 +9,15 @@ import { themaVoor } from '../../../shared/mail.ts'
 
 const hier = dirname(fileURLToPath(import.meta.url))
 const bericht = beschrijvingAlsMailHtml(
-  '<body>Hierbij de designs voor de torenschermen, de LED-kolom en de vlaggen. De drukbestanden van de vlaggen staan op <strong>G:\\Events\\2026\\Zorgcongres</strong>.</body>',
+  '<body>Hierbij de designs voor de torenschermen en de LED-kolom. De bronbestanden staan op <strong>G:\\Events\\2026\\Zorgcongres</strong>.</body>',
   themaVoor('nbc'),
 )
 const m = renderOpleveringMail({
   aan: ['noa.mulder@nbcevents.nl'], antwoordAan: ['marketing@nbcevents.nl'],
   aanvraagId: '3f2504e0-4f89-41d3-9a0c-0305e82c3301', versie: 1, locatie: 'nbc', soort: 'evenement',
-  event: 'Zorgcongres 2026', eventDatum: '2026-12-01', omschrijving: '', types: ['led_kolom', 'torenscherm', 'vlaggen'], andersTekst: '',
+  event: 'Zorgcongres 2026', eventDatum: '2026-12-01', omschrijving: '', types: ['led_kolom', 'torenscherm'], andersTekst: '',
   berichtHtml: bericht, afzenderNaam: 'Sanne', links: [], proef: null,
-  bijlagen: [{ naam: 'Torenscherm Zorgcongres.jpg', bytes: 1843000 }, { naam: 'LED-kolom Zorgcongres.mp4', bytes: 6200000 }, { naam: 'Vlag Zorgcongres.pdf', bytes: 2400000 }],
+  bijlagen: [{ naam: 'Torenscherm Zorgcongres.jpg', bytes: 1843000 }, { naam: 'LED-kolom Zorgcongres.mp4', bytes: 6200000 }],
 })
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 const inbox = `<!doctype html><html><head><meta charset="utf-8"><style>
