@@ -115,7 +115,7 @@ def cel(w, inhoud, vul=None, mar='<w:tcMar><w:top w:w="90" w:type="dxa"/><w:left
     shd = f'<w:shd w:val="clear" w:color="auto" w:fill="{vul}"/>' if vul else ''
     return f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/>{shd}{mar}</w:tcPr>{inhoud}</w:tc>'
 
-def tabel(kop, rijen, ws=(3200, 5815)):
+def tabel(kop, rijen, ws=(3969, 5046)):
     def r(cellen, koprij=False):
         out = ''
         for w, t in zip(ws, cellen):
@@ -225,7 +225,7 @@ B.append(stap('g22-intern-deadline',
 
 # 3
 B.append(kop1('3.  Een menukaart of menuscherm'))
-B.append(intro('Selecteer bij ‘Wat wil je aanvragen?’ de optie ‘Menukaart print’, ‘Menu scherm’ of beide. ‘Menukaart print’ kun je alleen kiezen bij ‘Volledig custom’. Er verschijnt vervolgens een extra vraag: om welk menu gaat het?'))
+B.append(intro('Selecteer bij ‘Wat wil je aanvragen?’ de optie ‘Menukaart print’, ‘Menu scherm’ of beide. Er verschijnt vervolgens een extra vraag: om welk menu gaat het?'))
 B.append(los(bol('Kies het gewenste pakket. Onder de pakketnaam zie je welke gangen zijn inbegrepen.')))
 B.append(intro('Pas het menu aan waar nodig:'))
 B.append(stap('g32-menu-inhoud',
