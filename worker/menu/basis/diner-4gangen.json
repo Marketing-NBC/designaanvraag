@@ -324,13 +324,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Gebakken brioche",
+          "tekst": "Pulled chicken",
           "regels": [
             {
               "baseline": 786.72,
               "runs": [
                 {
-                  "tekst": "Gebakken brioche",
+                  "tekst": "Pulled chicken",
                   "x": 0.09,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
@@ -342,13 +342,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele-uienrelish | vene cress",
+          "tekst": "roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise",
           "regels": [
             {
               "baseline": 854.92,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele-uienrelish | ",
+                  "tekst": "roodlof | mozzarella | gefermenteerde ",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -360,7 +360,19 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "vene cress",
+                  "tekst": "mosterd | gekarameliseerde pecan noten | ",
+                  "x": 0.09,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 964.92,
+              "runs": [
+                {
+                  "tekst": "citrus mayonaise",
                   "x": 0.09,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -375,7 +387,7 @@
           "tekst": "Tussengerecht",
           "regels": [
             {
-              "baseline": 1059.96,
+              "baseline": 1114.96,
               "runs": [
                 {
                   "tekst": "Tussengerecht",
@@ -393,7 +405,7 @@
           "tekst": "Pompoenravioli",
           "regels": [
             {
-              "baseline": 1221.0,
+              "baseline": 1276.0,
               "runs": [
                 {
                   "tekst": "Pompoenravioli",
@@ -411,7 +423,7 @@
           "tekst": "gedroogde Italiaanse ham | saliebotersaus",
           "regels": [
             {
-              "baseline": 1289.2,
+              "baseline": 1344.2,
               "runs": [
                 {
                   "tekst": "gedroogde Italiaanse ham | saliebotersaus",
@@ -429,7 +441,7 @@
           "tekst": "Hoofdgerecht",
           "regels": [
             {
-              "baseline": 1439.24,
+              "baseline": 1494.24,
               "runs": [
                 {
                   "tekst": "Hoofdgerecht",
@@ -447,7 +459,7 @@
           "tekst": "Boneless short ribs",
           "regels": [
             {
-              "baseline": 1600.28,
+              "baseline": 1655.28,
               "runs": [
                 {
                   "tekst": "Boneless short ribs",
@@ -465,7 +477,7 @@
           "tekst": "crème van winterpeen | spaghetti van pastinaak | sticky hoisin",
           "regels": [
             {
-              "baseline": 1668.48,
+              "baseline": 1723.48,
               "runs": [
                 {
                   "tekst": "crème van winterpeen | spaghetti van ",
@@ -477,7 +489,7 @@
               ]
             },
             {
-              "baseline": 1723.48,
+              "baseline": 1778.48,
               "runs": [
                 {
                   "tekst": "pastinaak | sticky hoisin",

@@ -184,6 +184,9 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
   const tartelettes = inhoud.secties[0].gerechten[0]
   assert.ok(Array.isArray(tartelettes.onderdelen), 'Tartelettes komt niet als opsomming terug')
   tartelettes.onderdelen.push({ naam: 'Gerookte paling' })
+  // Sinds Pulled chicken over drie regels loopt zit de eerste kolom tot de onderrand
+  // vol; zonder Dutch prime beef is er weer ruimte voor een onderdeel erbij.
+  inhoud.secties[1].gerechten = inhoud.secties[1].gerechten.filter((g) => g.naam !== 'Dutch prime beef')
 
   const { meldingen } = await renderMenu(inhoud)
   assert.deepEqual(meldingen.botsingen, [], 'de langere opsomming raakt een blob')
@@ -195,16 +198,16 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
 
 test('past een onderdeel er niet meer bij, dan wordt dat gemeld', { timeout: 120_000 }, async () => {
   // De eerste kolom van Grab & Go zit vol: sinds "Bruschettaspiezen met seasonal
-  // dips (vega)" over drie regels loopt is er nog ruimte voor een kale naam, niet
-  // voor een naam met een toelichting erbij. Dan hoort het scherm niet stilletjes
-  // door te lopen maar als onbruikbaar terug te komen.
+  // dips (vega)" en Pulled chicken over drie regels lopen is er geen ruimte meer
+  // voor een onderdeel erbij. Dan hoort het scherm niet stilletjes door te lopen
+  // maar als onbruikbaar terug te komen.
   const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
   inhoud.secties[0].gerechten[0].onderdelen.push({
     naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcr\u00e8me'] })
 
   const { meldingen } = await renderMenu(inhoud)
-  assert.equal(meldingen.overloop.length, 1)
-  assert.match(meldingen.overloop[0], /onder de onderrand/)
+  assert.ok(meldingen.overloop.length > 0, 'de overloop wordt niet gemeld')
+  for (const melding of meldingen.overloop) assert.match(melding, /onder de onderrand/)
   assert.ok(!menuIsBruikbaar(meldingen), 'zo\u2019n scherm mag nooit goedgekeurd worden')
 })
 

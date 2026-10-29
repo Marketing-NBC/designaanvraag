@@ -252,34 +252,6 @@
       "ingrGrootte": null,
       "ingrRegels": null
     },
-    "56|gebakken brioche rilette van eend rode-uienchutney gele-uienrelish vene cress": {
-      "naam": "Gebakken brioche",
-      "ingredienten": [
-        "rilette van eend",
-        "rode-uienchutney",
-        "gele-uienrelish",
-        "vene cress"
-      ],
-      "bron": "grab-and-go",
-      "naamGrootte": 56.0,
-      "naamRegels": [
-        {
-          "tekst": "Gebakken brioche",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 38.0,
-      "ingrRegels": [
-        {
-          "tekst": "rilette van eend | rode-uienchutney |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "gele-uienrelish | vene cress",
-          "offset": 50.01
-        }
-      ]
-    },
     "56|gebrande zalm zuurkool gefermenteerde mosterd": {
       "naam": "Gebrande zalm",
       "ingredienten": [
@@ -598,6 +570,39 @@
         {
           "tekst": "tomatenchutney",
           "offset": 0.0
+        }
+      ]
+    },
+    "56|pulled chicken roodlof mozzarella gefermenteerde mosterd gekarameliseerde pecan noten citrus mayonaise": {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "roodlof",
+        "mozzarella",
+        "gefermenteerde mosterd",
+        "gekarameliseerde pecan noten",
+        "citrus mayonaise"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "roodlof | mozzarella | gefermenteerde",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mosterd | gekarameliseerde pecan",
+          "offset": 50.01
+        },
+        {
+          "tekst": "noten | citrus mayonaise",
+          "offset": 100.02
         }
       ]
     },
@@ -1336,33 +1341,6 @@
         }
       ]
     },
-    "61.6|gebakken brioche rilette van eend gele-uienrelish vene cress": {
-      "naam": "Gebakken brioche",
-      "ingredienten": [
-        "rilette van eend",
-        "gele-uienrelish",
-        "vene cress"
-      ],
-      "bron": "diner-3gangen",
-      "naamGrootte": 61.6,
-      "naamRegels": [
-        {
-          "tekst": "Gebakken brioche",
-          "offset": 0.0
-        }
-      ],
-      "ingrGrootte": 41.8,
-      "ingrRegels": [
-        {
-          "tekst": "rilette van eend | gele-uienrelish |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "vene cress",
-          "offset": 55.0
-        }
-      ]
-    },
     "61.6|gerookte hoenderfilet gel van basilicum en appel gepofte boekweit mustard cress": {
       "naam": "Gerookte hoenderfilet",
       "ingredienten": [
@@ -1492,6 +1470,39 @@
         {
           "tekst": "gedroogde Italiaanse ham | saliebotersaus",
           "offset": 0.0
+        }
+      ]
+    },
+    "61.6|pulled chicken roodlof mozzarella gefermenteerde mosterd gekarameliseerde pecan noten citrus mayonaise": {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "roodlof",
+        "mozzarella",
+        "gefermenteerde mosterd",
+        "gekarameliseerde pecan noten",
+        "citrus mayonaise"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "roodlof | mozzarella | gefermenteerde",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mosterd | gekarameliseerde pecan",
+          "offset": 55.0
+        },
+        {
+          "tekst": "noten | citrus mayonaise",
+          "offset": 110.0
         }
       ]
     },
@@ -2090,22 +2101,6 @@
         }
       ]
     },
-    "ingr|38|rilette van eend | rode-uienchutney | gele-uienrelish | vene cress": {
-      "soort": "ingr",
-      "grootte": 38.0,
-      "tekst": "rilette van eend | rode-uienchutney | gele-uienrelish | vene cress",
-      "bron": "grab-and-go",
-      "regels": [
-        {
-          "tekst": "rilette van eend | rode-uienchutney |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "gele-uienrelish | vene cress",
-          "offset": 50.01
-        }
-      ]
-    },
     "ingr|38|rode-ui chutney | rode koolsla | chili-paprikasaus": {
       "soort": "ingr",
       "grootte": 38.0,
@@ -2135,6 +2130,26 @@
         {
           "tekst": "paprika",
           "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "roodlof | mozzarella | gefermenteerde",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mosterd | gekarameliseerde pecan",
+          "offset": 50.01
+        },
+        {
+          "tekst": "noten | citrus mayonaise",
+          "offset": 100.02
         }
       ]
     },
@@ -2462,19 +2477,23 @@
         }
       ]
     },
-    "ingr|41.8|rilette van eend | gele-uienrelish | vene cress": {
+    "ingr|41.8|roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise": {
       "soort": "ingr",
       "grootte": 41.8,
-      "tekst": "rilette van eend | gele-uienrelish | vene cress",
+      "tekst": "roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise",
       "bron": "diner-3gangen",
       "regels": [
         {
-          "tekst": "rilette van eend | gele-uienrelish |",
+          "tekst": "roodlof | mozzarella | gefermenteerde",
           "offset": 0.0
         },
         {
-          "tekst": "vene cress",
+          "tekst": "mosterd | gekarameliseerde pecan",
           "offset": 55.0
+        },
+        {
+          "tekst": "noten | citrus mayonaise",
+          "offset": 110.0
         }
       ]
     },
@@ -2662,18 +2681,6 @@
         }
       ]
     },
-    "naam|56|gebakken brioche": {
-      "soort": "naam",
-      "grootte": 56.0,
-      "tekst": "Gebakken brioche",
-      "bron": "grab-and-go",
-      "regels": [
-        {
-          "tekst": "Gebakken brioche",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|56|gebrande zalm": {
       "soort": "naam",
       "grootte": 56.0,
@@ -2814,6 +2821,18 @@
       "regels": [
         {
           "tekst": "Provolone",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pulled chicken": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pulled chicken",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Pulled chicken",
           "offset": 0.0
         }
       ]
@@ -3102,18 +3121,6 @@
         }
       ]
     },
-    "naam|61.6|gebakken brioche": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Gebakken brioche",
-      "bron": "diner-3gangen",
-      "regels": [
-        {
-          "tekst": "Gebakken brioche",
-          "offset": 0.0
-        }
-      ]
-    },
     "naam|61.6|gerookte hoenderfilet": {
       "soort": "naam",
       "grootte": 61.6,
@@ -3162,6 +3169,18 @@
       "regels": [
         {
           "tekst": "Pompoenravioli",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|pulled chicken": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Pulled chicken",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Pulled chicken",
           "offset": 0.0
         }
       ]

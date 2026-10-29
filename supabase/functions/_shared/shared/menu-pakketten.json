@@ -134,11 +134,13 @@
           "kop": "Voorgerecht",
           "gerechten": [
             {
-              "naam": "Gebakken brioche",
+              "naam": "Pulled chicken",
               "ingredienten": [
-                "rilette van eend",
-                "gele-uienrelish",
-                "vene cress"
+                "roodlof",
+                "mozzarella",
+                "gefermenteerde mosterd",
+                "gekarameliseerde pecan noten",
+                "citrus mayonaise"
               ]
             }
           ]
@@ -205,11 +207,13 @@
           "kop": "Voorgerecht",
           "gerechten": [
             {
-              "naam": "Gebakken brioche",
+              "naam": "Pulled chicken",
               "ingredienten": [
-                "rilette van eend",
-                "gele-uienrelish",
-                "vene cress"
+                "roodlof",
+                "mozzarella",
+                "gefermenteerde mosterd",
+                "gekarameliseerde pecan noten",
+                "citrus mayonaise"
               ]
             }
           ]
@@ -300,12 +304,13 @@
           "kop": "Voorgerechten",
           "gerechten": [
             {
-              "naam": "Gebakken brioche",
+              "naam": "Pulled chicken",
               "ingredienten": [
-                "rilette van eend",
-                "rode-uienchutney",
-                "gele-uienrelish",
-                "vene cress"
+                "roodlof",
+                "mozzarella",
+                "gefermenteerde mosterd",
+                "gekarameliseerde pecan noten",
+                "citrus mayonaise"
               ]
             },
             {
@@ -933,11 +938,13 @@
           "kop": "Tussengerecht 1",
           "gerechten": [
             {
-              "naam": "Gebakken brioche",
+              "naam": "Pulled chicken",
               "ingredienten": [
-                "rilette van eend",
-                "gele-uienrelish",
-                "vene cress"
+                "roodlof",
+                "mozzarella",
+                "gefermenteerde mosterd",
+                "gekarameliseerde pecan noten",
+                "citrus mayonaise"
               ]
             }
           ]
@@ -1172,31 +1179,6 @@
       ]
     },
     {
-      "naam": "Gebakken brioche",
-      "ingredienten": [
-        "rilette van eend",
-        "gele-uienrelish",
-        "vene cress"
-      ],
-      "uit": [
-        "diner-3gangen",
-        "diner-4gangen",
-        "walking-dinner"
-      ]
-    },
-    {
-      "naam": "Gebakken brioche",
-      "ingredienten": [
-        "rilette van eend",
-        "rode-uienchutney",
-        "gele-uienrelish",
-        "vene cress"
-      ],
-      "uit": [
-        "grab-and-go"
-      ]
-    },
-    {
       "naam": "Gebrande zalm",
       "ingredienten": [
         "zuurkool",
@@ -1379,6 +1361,22 @@
       ],
       "uit": [
         "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "roodlof",
+        "mozzarella",
+        "gefermenteerde mosterd",
+        "gekarameliseerde pecan noten",
+        "citrus mayonaise"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
       ]
     },
     {

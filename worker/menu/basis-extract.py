@@ -62,6 +62,25 @@ WOORDCORRECTIES = [
 ]
 
 
+# Gerechten die uit het repertoire zijn gegaan, met wat ervoor in de plaats kwam. Ze
+# zijn met de hand uit de bevroren basisontwerpen gehaald (de engine zette het nieuwe
+# gerecht, de rest van de kolom schoof mee), maar het .ai-bestand heeft ze nog. Een
+# nieuwe extractie zou ze dus stilletjes terugzetten; daarom stopt hij hier tot het
+# .ai is bijgewerkt. Staat het gerecht er niet meer in, dan kan de regel weg.
+VERVALLEN_GERECHTEN = {
+    'Gebakken brioche': 'Pulled chicken | roodlof | mozzarella | gefermenteerde mosterd | '
+                        'gekarameliseerde pecan noten | citrus mayonaise',
+}
+
+
+def vervallen_gerechten_zoeken(alles: dict) -> list:
+    return [f'{pakket}: "{alinea["tekst"]}" is vervangen door "{VERVALLEN_GERECHTEN[alinea["tekst"]]}"'
+            for pakket, data in alles.items()
+            for kolom in data['kolommen']
+            for alinea in kolom['alineas']
+            if alinea['soort'] == 'naam' and alinea['tekst'] in VERVALLEN_GERECHTEN]
+
+
 def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
     for fout, goed in WOORDCORRECTIES:
         nieuw = re.sub(rf'\b{re.escape(fout)}\b', goed, tekst)
@@ -1048,6 +1067,10 @@ def main():
     # gerechtenbibliotheek hebben de pagina's naast elkaar nodig.
     alles = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
              for pagina_nr, naam in PAKKETTEN}
+    vervallen = vervallen_gerechten_zoeken(alles)
+    if vervallen:
+        raise SystemExit('Het .ai-bestand bevat nog gerechten die uit het repertoire zijn '
+                         'gegaan. Pas eerst het ontwerp aan:\n  ' + '\n  '.join(vervallen))
     kaders_delen(alles)
     # De voorbeeldpagina's delen hun tekstkaders niet: dat zijn geen pakketten, en
     # hun kolommen staan net ergens anders. Hun gerechten tellen wel mee.
