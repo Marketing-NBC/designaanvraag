@@ -36,8 +36,8 @@ def kop1(t):
     """Een hoofdstuk loopt door op dezelfde pagina; de kop blijft bij wat erop volgt."""
     return f'<w:p><w:pPr><w:pStyle w:val="Kop1"/><w:keepNext/><w:spacing w:before="280"/></w:pPr>{runs(t)}</w:p>'
 
-def kop2(t, voor=240):
-    return f'<w:p><w:pPr><w:pStyle w:val="Kop2"/><w:keepNext/><w:spacing w:before="{voor}"/></w:pPr>{runs(t)}</w:p>'
+def kop2(t):
+    return f'<w:p><w:pPr><w:pStyle w:val="Kop2"/></w:pPr>{runs(t)}</w:p>'
 
 def intro(t):
     return p(t, '<w:keepNext/>')
@@ -51,16 +51,15 @@ def bol(t):
 
 KADER = '<w:pBdr><w:left w:val="single" w:sz="24" w:space="8" w:color="F6A304"/></w:pBdr><w:shd w:val="clear" w:color="auto" w:fill="FDF3E4"/><w:ind w:left="198"/>'
 def kader(kop, tekst):
-    """Een geel vlak met een oranje streep links; de tekst staat in het midden, met evenveel ruimte boven als onder."""
-    midden = '<w:jc w:val="center"/>'
+    """Een geel vlak met een oranje streep links, met evenveel ruimte boven als onder de tekst."""
     # Een lege regel ervoor, anders groeit het vlak vast aan een tabel erboven
     return (p('', '<w:keepNext/><w:spacing w:after="0" w:line="160" w:lineRule="exact"/>') + f'<w:tbl><w:tblPr><w:tblW w:w="{BREEDTE}" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="single" w:sz="24" w:space="0" w:color="F6A304"/>'
             '<w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr>'
             f'<w:tblGrid><w:gridCol w:w="{BREEDTE}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr><w:tc><w:tcPr><w:tcW w:w="{BREEDTE}" w:type="dxa"/>'
             '<w:shd w:val="clear" w:color="auto" w:fill="FDF3E4"/><w:tcMar><w:top w:w="170" w:type="dxa"/><w:left w:w="240" w:type="dxa"/><w:bottom w:w="170" w:type="dxa"/><w:right w:w="240" w:type="dxa"/></w:tcMar>'
             '<w:vAlign w:val="center"/></w:tcPr>'
-            f'<w:p><w:pPr><w:keepNext/>{midden}<w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr>{BOLD}</w:rPr><w:t xml:space="preserve">{escape(kop)}</w:t></w:r></w:p>'
-            f'<w:p><w:pPr>{midden}<w:spacing w:before="0" w:after="0"/></w:pPr>{runs(tekst)}</w:p>'
+            f'<w:p><w:pPr><w:keepNext/><w:spacing w:after="0"/></w:pPr><w:r><w:rPr>{BOLD}</w:rPr><w:t xml:space="preserve">{escape(kop)}</w:t></w:r></w:p>'
+            f'<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>{runs(tekst)}</w:p>'
             '</w:tc></w:tr></w:tbl>' + p('', '<w:spacing w:after="0" w:line="160" w:lineRule="exact"/>'))
 
 def lijstpunt(t, bij_elkaar=True):
@@ -134,7 +133,7 @@ B = []
 B.append(p('', '<w:spacing w:before="200"/>'))
 B.append(f'<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr>{BOLD}<w:color w:val="165E5A"/></w:rPr><w:t xml:space="preserve">HANDLEIDING  </w:t></w:r><w:r><w:rPr>{BOLD}<w:color w:val="165E5A"/></w:rPr><w:t>OKTOBER 2026</w:t></w:r></w:p>')
 B.append('<w:p><w:pPr><w:pStyle w:val="Kop1"/><w:spacing w:after="360" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:sz w:val="54"/></w:rPr><w:t>Designs aanvragen</w:t></w:r><w:r><w:rPr><w:sz w:val="54"/></w:rPr><w:br/><w:t>bij Marketing</w:t></w:r></w:p>')
-B.append('<w:p><w:pPr><w:pStyle w:val="Kop2"/><w:spacing w:before="240"/></w:pPr><w:r><w:t>In deze handleiding</w:t></w:r></w:p>')
+B.append(kop2('In deze handleiding'))
 B.append(inhoud([
     (1, 'Het formulier in het kort', ''),
     (2, 'Een aanvraag voor een event', ''),
