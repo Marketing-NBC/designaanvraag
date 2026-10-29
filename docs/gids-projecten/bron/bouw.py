@@ -142,7 +142,7 @@ def inhoud(rijen):
 # Alleen verbeterd: taalfouten en wat niet klopt met het formulier (zie het commitbericht).
 B = []
 B.append(f'<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr>{BOLD}<w:color w:val="165E5A"/></w:rPr><w:t xml:space="preserve">HANDLEIDING  </w:t></w:r><w:r><w:rPr>{BOLD}<w:color w:val="165E5A"/></w:rPr><w:t>OKTOBER 2026</w:t></w:r></w:p>')
-B.append('<w:p><w:pPr><w:pStyle w:val="Kop1"/><w:spacing w:after="120" w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:sz w:val="54"/></w:rPr><w:t>Design aanvraag</w:t></w:r></w:p>')
+B.append('<w:p><w:pPr><w:pStyle w:val="Kop1"/><w:spacing w:line="240" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:sz w:val="54"/></w:rPr><w:t>Design aanvraag</w:t></w:r></w:p>')
 # ── De basis: zonder screenshots, tekst precies zoals Marketing hem aanleverde ─
 ZWART_BOL = lambda t: lijstpunt(t, bij_elkaar=False)
 B.append(p_met(['Via het formulier ', link('Designaanvraag', 'https://marketing-nbc.github.io/designaanvraag'), ' vraag je eenvoudig designs aan voor events en interne doeleinden, zoals visitekaartjes of posters. Volg onderstaande afspraken om je aanvraag zo soepel mogelijk te laten verlopen.']))
@@ -173,7 +173,7 @@ B.append(p('Hieronder vind je de volledige handleiding met screenshots en uitleg
 B.append('<w:p><w:pPr><w:pStyle w:val="Kop2"/><w:pageBreakBefore/></w:pPr><w:r><w:t>In deze handleiding</w:t></w:r></w:p>')
 B.append(inhoud([
     (1, 'Een aanvraag voor een event', ''),
-    (2, 'Een interne aanvraag voor NBC en Green Village', ''),
+    (2, 'Een interne aanvraag', ''),
     (3, 'Een menukaart of menuscherm', ''),
     (4, 'Je design is klaar', ''),
     (5, 'Aanvullen of wijzigen', ''),
@@ -182,7 +182,7 @@ B.append(inhoud([
 B.append(p('De screenshots in deze handleiding komen uit het formulier en tonen een fictief event. Een oranje kader laat zien waar je moet klikken.', '<w:spacing w:before="200"/>'))
 
 # 1
-B.append(kop1('1  Een aanvraag voor een event'))
+B.append(kop1('1.  Een aanvraag voor een event'))
 B.append(intro('Klik op start en kies de locatie. Selecteer je naam in de lijst. Staat je naam er niet tussen, typ hem dan zelf. Kies voor een evenement en vul de naam van het event in zoals de opdrachtgever die gebruikt.'))
 B.append(stap('g03-eventdatum',
     bol('Blader naar de juiste maand en klik de datum van het event aan. Duurt het event meerdere dagen, kies dan de eerste dag.'),
@@ -195,27 +195,27 @@ B.append(stap('g06-bestanden',
     bol('Staat er een vinkje bij een bestand, dan wordt het meegestuurd.'),
     bol('Je kunt maximaal 5 bestanden van elk 25 MB toevoegen, zoals afbeeldingen, pdf-, Word- en PowerPoint-bestanden. Zijn de bestanden groter of gaat het om bronbestanden (AI, PSD of INDD)? Upload deze dan op de G-schijf en voeg de link naar de bestanden toe aan het formulier.')))
 B.append(los(
-    bol('Vul waar mogelijk de website van het bedrijf of event in. Zo kan Marketing de juiste branding, zoals logo’s, kleuren en lettertypen, achterhalen. Is er geen website beschikbaar? Dan kun je dit veld leeg laten.'),
-    bol('Vink alles aan wat je voor het event nodig hebt. Staat jouw keuze er niet bij? Kies dan ‘Anders, namelijk…’ en beschrijf wat je nodig hebt.')))
+    bol('Vul waar mogelijk de website van het bedrijf of event in. Zo kan marketing de juiste branding, zoals logo’s, kleuren en lettertypen, achterhalen. Is er geen website beschikbaar? Dan kun je dit veld leeg laten.'),
+    bol('Vink alles aan wat je voor het event nodig hebt. Staat jouw keuze er niet bij? Kies dan ‘Anders, namelijk…’ en beschrijf wat je nodig hebt. Deze optie is er alleen bij ‘Volledig custom’.')))
 B.append(stap('g09-wensen',
-    bol('Vermeld alle informatie die Marketing nodig heeft, zoals teksten, sfeer en gewenste formaten. Gebruik Enter om een nieuwe regel te beginnen.'),
+    bol('Vermeld alle informatie die marketing nodig heeft, zoals teksten, sfeer en gewenste formaten. Gebruik Enter om een nieuwe regel te beginnen.'),
     bol('Klik daarna op ‘Naar overzicht’.'),
     bol('Wil je dat een collega een e-mail ontvangt zodra het design klaar is? Vul dan hier de naam en het e-mailadres van deze collega in.')))
 B.append(stap('g10-overzicht',
     bol('Wil je een antwoord aanpassen? Klik op ‘Wijzig’. Je keert daarna terug naar het overzicht.'),
     bol('Klik op ‘Verstuur aanvraag’ om je aanvraag definitief in te dienen.')))
 B.append(stap('g11-gelukt',
-    bol('Je aanvraag is nu ingediend bij Marketing.'),
+    bol('Je aanvraag is nu ingediend bij marketing.'),
     bol('De huisstijl wordt op de achtergrond opgehaald; je hoeft hier niet op te wachten en kunt het venster sluiten.'),
-    bol('Is het erg krap? Dan herinnert het formulier je eraan om contact op te nemen met Marketing.'),
+    bol('Is het erg krap? Dan herinnert het formulier je eraan om contact op te nemen met marketing.'),
     bol('Iets vergeten of wil je iets aanpassen? Dien geen tweede aanvraag in, maar kies ‘Iets aanvullen of wijzigen’.')))
 B.append(los(
     bol('Valt de eventdatum of deadline binnen 3 werkdagen? Dan verschijnt er een rode melding. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.'),
     bol('Valt het event binnen twee weken? Dan verschijnt er een oranje melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
-    bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er ook een melding. Je kunt de aanvraag verder invullen, maar stem de planning eerst even af met Marketing.')))
+    bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er ook een melding. Je kunt de aanvraag verder invullen, maar stem de planning eerst even af met marketing.')))
 
 # 2
-B.append(kop1('2  Een interne aanvraag'))
+B.append(kop1('2.  Een interne aanvraag'))
 B.append(intro('Gebruik deze optie voor aanvragen die niet aan een event gekoppeld zijn, zoals visitekaartjes of een poster voor de kantine. Selecteer de locatie en vul je naam in, zoals eerder beschreven. Kies vervolgens ‘Intern’. Je hoeft dan nog maar twee vragen te beantwoorden.'))
 B.append(los(bol('Beschrijf je aanvraag volledig in één keer. Vermeld wat je nodig hebt, het gewenste formaat, de teksten en voor wie het bedoeld is.')))
 B.append(stap('g22-intern-deadline',
@@ -224,8 +224,8 @@ B.append(stap('g22-intern-deadline',
     bol('Ontstaat er later alsnog een deadline? Geef dit dan door via ‘Iets aanvullen of wijzigen’.')))
 
 # 3
-B.append(kop1('3  Een menukaart of menuscherm'))
-B.append(intro('Selecteer bij ‘Wat wil je aanvragen?’ de optie ‘Menukaart print’, ‘Menu scherm’ of beide. Er verschijnt vervolgens een extra vraag: om welk menu gaat het?'))
+B.append(kop1('3.  Een menukaart of menuscherm'))
+B.append(intro('Selecteer bij ‘Wat wil je aanvragen?’ de optie ‘Menukaart print’, ‘Menu scherm’ of beide. ‘Menukaart print’ kun je alleen kiezen bij ‘Volledig custom’. Er verschijnt vervolgens een extra vraag: om welk menu gaat het?'))
 B.append(los(bol('Kies het gewenste pakket. Onder de pakketnaam zie je welke gangen zijn inbegrepen.')))
 B.append(intro('Pas het menu aan waar nodig:'))
 B.append(stap('g32-menu-inhoud',
@@ -233,12 +233,12 @@ B.append(stap('g32-menu-inhoud',
     bol('×: verwijder een gerecht.'),
     bol('+ Gerecht toevoegen: voeg een extra gerecht toe.'),
     bol('Pakket wijzigen: kies een ander pakket.'),
-    bol('Selecteer de gerechten uit de lijst. Voer je zelf een gerecht in? Dan verschijnt er een melding en beoordeelt Marketing de invoer.'),
+    bol('Selecteer de gerechten uit de lijst. Voer je zelf een gerecht in? Dan verschijnt er een melding en beoordeelt marketing de invoer.'),
     bol('Menu later aanpassen? Kies dan ‘Menu aanpassen’ via ‘Iets aanvullen of wijzigen’.')))
 
 # 4
-B.append(kop1('4  Je design is klaar'))
-B.append(intro('Zodra je design klaar is, ontvang je een e-mail van Designaanvraag (designaanvraag@nbcevents.nl).'))
+B.append(kop1('4.  Je design is klaar'))
+B.append(intro('Zodra je design klaar is, ontvang je een e-mail van designaanvraag (designaanvraag@nbcevents.nl).'))
 B.append(stap('g50-mail',
     bol('Herken de juiste e-mail aan het onderwerp. Dit begint met ‘Klaar’, gevolgd door de naam van het event en wat je hebt aangevraagd. Bij een nieuwe versie staat er bijvoorbeeld ‘Versie 2 klaar’.'),
     bol('Download je bestanden uit de e-mail. De bestanden zijn als bijlage toegevoegd. Grote drukbestanden staan op de schijf. Marketing vermeldt in de e-mail waar je deze kunt vinden.'),
@@ -251,11 +251,11 @@ B.append(stap('g51-feedback',
     bol('Zodra je feedback is verwerkt, ontvang je opnieuw een e-mail. Hierin vind je de aangepaste versie, bijvoorbeeld met het onderwerp ‘Versie 2 klaar’.')))
 
 # 5
-B.append(kop1('5  Aanvullen of wijzigen'))
+B.append(kop1('5.  Aanvullen of wijzigen'))
 B.append(intro('Iets vergeten, een extra design nodig of is de datum gewijzigd? Pas dan je bestaande aanvraag aan. Klik op het startscherm op ‘Iets aanvullen of wijzigen’ en kies voor ‘Voor een evenement’ of ‘Intern’.'))
 B.append(stap('g40-aanv-zoek',
     bol('Zoek de juiste aanvraag. Typ minimaal drie letters van de eventnaam en selecteer de juiste aanvraag. Je ziet aanvragen van de afgelopen vier maanden, ook die van collega’s.'),
-    bol('Vul daarna je naam in, zodat Marketing weet wie de wijziging doorgeeft.'),
+    bol('Vul daarna je naam in, zodat marketing weet wie de wijziging doorgeeft.'),
     bol('Bij een interne aanvraag vul je eerst je naam in en selecteer je de gewenste aanvraag uit je eigen aanvragen.')))
 B.append(stap('g41-aanv-wat',
     bol('Beschrijf wat je wilt aanvullen of wijzigen. Geef duidelijk aan wat erbij moet of wat er anders moet.'),
@@ -267,13 +267,13 @@ B.append(stap('g43-aanv-verlopen',
     bol('Kies eerst een nieuwe deadline. Zonder nieuwe deadline kun je de wijziging niet versturen.')))
 
 # 6
-B.append(kop1('6  Spoed en vragen'))
-B.append(intro('Je aanvraag komt bij Marketing binnen als taak. Marketing ontvangt een e-mail en ziet de aanvraag in de lijst. Vervolgens plant Marketing de aanvraag in. Is er iets onduidelijk, dan neemt Marketing contact met je op. Zodra het design klaar is, ontvang je een e-mail met de bestanden (zie hoofdstuk 4).'))
+B.append(kop1('6.  Spoed en vragen'))
+B.append(intro('Je aanvraag komt bij marketing binnen als taak. Marketing ontvangt een e-mail en ziet de aanvraag in de lijst. Vervolgens plant marketing de aanvraag in. Is er iets onduidelijk, dan neemt marketing contact met je op. Zodra het design klaar is, ontvang je een e-mail met de bestanden (zie hoofdstuk 4).'))
 B.append(kop2('Krappe deadlines'))
 B.append(tabel(None, [
     ('10 werkdagen of meer tot het event', 'Je bent op tijd.'),
     ('Minder dan 10 werkdagen tot het event', 'De aanvraag geldt als spoed. Besteld drukwerk (zoals een geprinte menukaart, vlaggen, banners en roll-ups) is waarschijnlijk niet meer op tijd klaar.'),
-    ('Deadline binnen 5 werkdagen', 'Dien je aanvraag in en mail daarna meteen Marketing om te bespreken wat nog mogelijk is.'),
+    ('Deadline binnen 5 werkdagen', 'Dien je aanvraag in en mail daarna meteen marketing om te bespreken wat nog mogelijk is.'),
 ]))
 B.append(kader('Spoedaanvragen worden automatisch per aanvrager bijgehouden.', 'Ze blijven als spoed geregistreerd, ook als de datum later verschuift!'))
 B.append(kop2('Wat doe je als…'))
@@ -284,8 +284,8 @@ B.append(tabel(None, [
     ('Het menu verandert', 'Kies iets aanvullen of wijzigen en vervolgens Menu aanpassen.'),
     ('De datum is verschoven', 'Kies iets aanvullen of wijzigen en klik bij de datum op wijzigen.'),
     ('Je een nieuw event wilt aanmelden', 'Start een nieuwe aanvraag via start.'),
-    ('Je je aanvraag niet kunt vinden', 'Is de aanvraag ouder dan 4 maanden of is deze niet via het formulier ingediend? Mail dan Marketing.'),
-    ('De aanvraag niet doorgaat', 'Mail Marketing, zodat de aanvraag kan worden verwijderd.'),
+    ('Je je aanvraag niet kunt vinden', 'Is de aanvraag ouder dan 4 maanden of is deze niet via het formulier ingediend? Mail dan marketing.'),
+    ('De aanvraag niet doorgaat', 'Mail marketing, zodat de aanvraag kan worden verwijderd.'),
 ]))
 B.append(kader('Twijfel je?', 'Mail marketing@nbcevents.nl (voor Green Village: marketing@green-village.nl). Liever even vragen dan gokken!'))
 
