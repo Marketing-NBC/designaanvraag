@@ -322,9 +322,6 @@ input, textarea, button { font-family: inherit; }
 /* Status op het succes-scherm */
 .success__status--done svg { color: var(--nbc-success); }
 .success__status--failed svg { color: var(--nbc-gold); }
-/* Erg krap: de collega moet nu contact opnemen. Zelfde rood als de dringende melding in het formulier. */
-.success__status--contact { background: var(--nbc-error-bg); border-color: transparent; border-left: 3px solid var(--nbc-error); }
-.success__status--contact svg { color: var(--nbc-error); }
 .success__status a { color: inherit; font-weight: 600; }
 
 /* ── Aanvulling op een bestaande aanvraag ──────────────────────── */

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SPOED_WERKDAGEN } from '../../shared/spoed'
-import { moetContactOpnemen, STEPS, zichtbareStappen } from './steps'
+import { STEPS, zichtbareStappen } from './steps'
 import type { RequestTypeKey } from '../../shared/request-types'
 import { gerechtVan, leegMenu, uitPakket } from './lib/menu'
 import { alleenTeKiezenTypes, emptyDraft, type Draft } from './state'
@@ -27,21 +27,16 @@ describe('bevestiging op de eventdatum', () => {
     // Vrijdag 16 oktober: negen werkdagen, minder dan twee weken.
     expect(eventStap.goed?.(draft('2026-10-16'))).toBeNull()
     expect(eventStap.warn?.(draft('2026-10-16'))).toContain('Drukwerk')
-    expect(eventStap.alarm?.(draft('2026-10-16'))).toBeNull()
   })
 
-  it('vraagt binnen drie werkdagen om contact met Marketing', () => {
-    // Donderdag 8 oktober: drie werkdagen (ma, di, wo).
-    expect(eventStap.alarm?.(draft('2026-10-08'))).toContain('contact')
-    expect(eventStap.warn?.(draft('2026-10-08'))).toBeNull()
-    // Vrijdag 9 oktober: vier werkdagen, dan alleen de drukwerkwaarschuwing.
-    expect(eventStap.alarm?.(draft('2026-10-09'))).toBeNull()
-    expect(eventStap.warn?.(draft('2026-10-09'))).toContain('Drukwerk')
+  it('vraagt ook vlak voor het event niet om contact: alleen de drukwerkwaarschuwing', () => {
+    // Donderdag 8 oktober: drie werkdagen (ma, di, wo). Bij spoed neemt Marketing zelf contact op.
+    expect(eventStap.warn?.(draft('2026-10-08'))).toContain('Drukwerk')
+    expect(eventStap.alarm).toBeUndefined()
   })
 
   it('waarschuwt niet als het ruim op tijd is', () => {
     expect(eventStap.warn?.(draft('2026-10-19'))).toBeNull()
-    expect(eventStap.alarm?.(draft('2026-10-19'))).toBeNull()
   })
 
   it('complimenteert vanaf precies tien werkdagen', () => {
@@ -180,25 +175,26 @@ describe('de deadline', () => {
   })
   afterEach(() => vi.useRealTimers())
 
-  it('vier werkdagen: een zachte waarschuwing', () => {
-    // Vrijdag 9 oktober.
-    expect(deadlineStap.warn?.(metDeadline('2026-10-09'))).toContain('dit zijn er 4')
-    expect(deadlineStap.alarm?.(metDeadline('2026-10-09'))).toBeNull()
+  it('minder dan vijf werkdagen: een rode melding, en Marketing beoordeelt wat er kan', () => {
+    // Vrijdag 9 oktober: vier werkdagen.
+    const tekst = deadlineStap.alarm?.(metDeadline('2026-10-09'))
+    expect(tekst).toContain('dit zijn er 4')
+    expect(tekst).toContain('Het marketingteam beoordeelt')
+    expect(tekst).not.toContain('contact')
+    expect(deadlineStap.warn).toBeUndefined()
   })
 
-  it('één werkdag: "dit is er 1", en contact opnemen', () => {
+  it('één werkdag: "dit is er 1", en geen vraag om contact', () => {
     // Dinsdag 6 oktober.
     const tekst = deadlineStap.alarm?.(metDeadline('2026-10-06'))
     expect(tekst).toContain('dit is er 1.')
-    expect(tekst).toContain('contact')
-    expect(deadlineStap.warn?.(metDeadline('2026-10-06'))).toBeNull()
-    expect(moetContactOpnemen(metDeadline('2026-10-06'))).toBe(true)
+    expect(tekst).not.toContain('contact')
   })
 
-  it('ruim op tijd: niets', () => {
-    expect(deadlineStap.warn?.(metDeadline('2026-10-20'))).toBeNull()
+  it('precies vijf werkdagen of meer: niets', () => {
+    // Maandag 12 oktober: vijf werkdagen.
+    expect(deadlineStap.alarm?.(metDeadline('2026-10-12'))).toBeNull()
     expect(deadlineStap.alarm?.(metDeadline('2026-10-20'))).toBeNull()
-    expect(moetContactOpnemen(metDeadline('2026-10-20'))).toBe(false)
   })
 
   it('menukaart print binnen twee weken: geen garantie', () => {

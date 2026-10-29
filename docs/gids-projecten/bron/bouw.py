@@ -207,12 +207,10 @@ B.append(stap('g10-overzicht',
 B.append(stap('g11-gelukt',
     bol('Je aanvraag is nu ingediend bij marketing.'),
     bol('De huisstijl wordt op de achtergrond opgehaald; je hoeft hier niet op te wachten en kunt het venster sluiten.'),
-    bol('Is het erg krap? Dan herinnert het formulier je eraan om contact op te nemen met marketing.'),
     bol('Iets vergeten of wil je iets aanpassen? Dien geen tweede aanvraag in, maar kies ‘Iets aanvullen of wijzigen’.')))
 B.append(los(
-    bol('Valt de eventdatum of deadline binnen 3 werkdagen? Dan verschijnt er een rode melding. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.'),
     bol('Valt het event binnen twee weken? Dan verschijnt er een oranje melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
-    bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er ook een melding. Je kunt de aanvraag verder invullen, maar stem de planning eerst even af met marketing.')))
+    bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er een rode melding. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.')))
 
 # 2
 B.append(kop1('2.  Een interne aanvraag'))

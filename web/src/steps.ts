@@ -1,6 +1,5 @@
 import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
 import { vraagtOmMenu, type Soort } from '../../shared/request-types'
-import { MELDING_ONTVANGERS } from '../../shared/contact'
 import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import { aantalGerechten, eigenGerechten } from './lib/menu'
@@ -40,17 +39,11 @@ export interface StepDef {
   warn?: (d: Draft) => string | null
   /** Schouderklopje: hetzelfde plekje als `warn`, maar dan omdat het gôed gaat. */
   goed?: (d: Draft) => string | null
-  /** Dringender dan `warn`: het is zo krap dat de collega na het versturen contact moet opnemen. */
+  /** Dringender dan `warn`, in het rood: het is zo krap dat Marketing moet beoordelen wat er nog kan. */
   alarm?: (d: Draft) => string | null
   /** Stap alleen tonen als dit klopt. Zonder dit is de stap er altijd. */
   toon?: (ctx: StapContext) => boolean
 }
-
-/**
- * Zoveel werkdagen of minder en het is te krap om zonder overleg te beloven: de collega moet na het
- * versturen even contact opnemen met Marketing. Geldt voor het event en voor de deadline.
- */
-export const KRAP_WERKDAGEN = 3
 
 /** Werkdagen tot de deadline, of null als die er (nog) niet is. */
 function werkdagenTotDeadline(deadline: string | null): number | null {
@@ -71,35 +64,15 @@ function ditZijnEr(n: number): string {
   return n === 1 ? 'dit is er 1' : `dit zijn er ${n}`
 }
 
-/** Het postvak van Marketing voor deze locatie; Green Village heeft een eigen. */
-function marketingMail(d: Draft): string {
-  return MELDING_ONTVANGERS[d.locatie ?? 'nbc']
-}
-
-/** Te weinig tijd voor Marketing: een zachte waarschuwing, geen blokkade. */
-function deadlineWaarschuwing(deadline: string | null): string | null {
-  const days = werkdagenTotDeadline(deadline)
-  if (days === null || days <= KRAP_WERKDAGEN || days >= MIN_LEAD_BUSINESS_DAYS) return null
-  return `Marketing heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; ${ditZijnEr(days)}. Overleg even met het team als het sneller moet.`
-}
-
-/** Zo krap dat we niets kunnen beloven: na het versturen moet er contact worden opgenomen. */
+/**
+ * Minder werkdagen dan Marketing normaal nodig heeft: een rode melding, geen blokkade. De collega
+ * hoeft zelf geen contact op te nemen; bij spoed neemt Marketing contact op.
+ */
 function deadlineAlarm(d: Draft): string | null {
   const days = werkdagenTotDeadline(d.deadline)
-  if (days === null || days > KRAP_WERKDAGEN) return null
+  if (days === null || days >= MIN_LEAD_BUSINESS_DAYS) return null
   return `Marketing heeft normaal ${MIN_LEAD_BUSINESS_DAYS} werkdagen nodig; ${ditZijnEr(days)}. `
-    + 'We kunnen dan niet beloven dat het op tijd klaar is. Verstuur je aanvraag en neem daarna meteen even contact op '
-    + `met het marketingteam (${marketingMail(d)}).`
-}
-
-/**
- * Moet de collega na het versturen contact opnemen met Marketing? Dat is zo als het event of de
- * deadline binnen KRAP_WERKDAGEN valt. Het bedankscherm herhaalt het dan nog een keer.
- */
-export function moetContactOpnemen(d: Draft): boolean {
-  const event = d.soort === 'intern' ? null : werkdagenTotEventdatum(d.event_datum)
-  const deadline = werkdagenTotDeadline(d.deadline)
-  return (event !== null && event <= KRAP_WERKDAGEN) || (deadline !== null && deadline <= KRAP_WERKDAGEN)
+    + 'Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.'
 }
 
 export const STEPS: StepDef[] = [
@@ -155,7 +128,6 @@ export const STEPS: StepDef[] = [
       if (isBeforeToday(d.deadline)) return 'Die datum is al geweest.'
       return null
     },
-    warn: (d) => deadlineWaarschuwing(d.deadline),
     alarm: deadlineAlarm,
   },
   // ── Evenement ────────────────────────────────────────────────────────────
@@ -184,8 +156,7 @@ export const STEPS: StepDef[] = [
       return null
     },
     // Ruim op tijd: een compliment. Minder dan twee weken (een spoedje): drukwerk dat we moeten
-    // bestellen haalt het dan waarschijnlijk niet. Binnen een paar werkdagen: na het versturen
-    // contact opnemen, want dan moet er overlegd worden wat er nog kan.
+    // bestellen haalt het dan waarschijnlijk niet. Hoe krap de deadline is, zegt de deadlinevraag.
     goed: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
       if (werkdagen === null || werkdagen < SPOED_WERKDAGEN) return null
@@ -193,16 +164,9 @@ export const STEPS: StepDef[] = [
     },
     warn: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
-      if (werkdagen === null || werkdagen <= KRAP_WERKDAGEN || werkdagen >= SPOED_WERKDAGEN) return null
+      if (werkdagen === null || werkdagen >= SPOED_WERKDAGEN) return null
       return 'Het event is over minder dan twee weken. Drukwerk dat we moeten bestellen, zoals een geprinte menukaart, '
         + 'is dan waarschijnlijk niet meer op tijd te krijgen.'
-    },
-    alarm: (d) => {
-      const werkdagen = werkdagenTotEventdatum(d.event_datum)
-      if (werkdagen === null || werkdagen > KRAP_WERKDAGEN) return null
-      return 'Het event is al over een paar dagen. Drukwerk dat we moeten bestellen lukt dan niet meer. '
-        + `Vul het formulier gewoon in en neem daarna meteen even contact op met het marketingteam (${marketingMail(d)}) `
-        + 'om te bespreken wat er precies gedaan moet worden.'
     },
   },
   {
@@ -217,7 +181,6 @@ export const STEPS: StepDef[] = [
       if (d.event_datum && d.deadline > d.event_datum) return 'De deadline kan niet na het event liggen.'
       return null
     },
-    warn: (d) => deadlineWaarschuwing(d.deadline),
     alarm: deadlineAlarm,
   },
   {
