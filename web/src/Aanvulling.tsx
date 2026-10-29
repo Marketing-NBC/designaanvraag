@@ -298,7 +298,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  if (klaar) return <Gelukt result={klaar} gekozen={gekozen} onSluit={onSluit} />
+  if (klaar) return <Gelukt result={klaar} gekozen={gekozen} feedback={feedback === 'ja'} onSluit={onSluit} />
 
   if (feedback === 'laden') {
     return (
@@ -409,7 +409,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
             ) : null}
             {/* Alleen als er een menukaart of menuscherm bij de aanvraag hoort. */}
             {stap === 'toelichting' && heeftMenu ? (
-              <MenuKnop aangepast={Boolean(draft.menu)} laden={menuLaden} onOpen={() => void openMenu()} onLaat={() => patch({ menu: null })} />
+              <MenuKnop feedback={feedback === 'ja'} aangepast={Boolean(draft.menu)} laden={menuLaden} onOpen={() => void openMenu()} onLaat={() => patch({ menu: null })} />
             ) : null}
 
             {stap === 'menu' && draft.menu ? (
@@ -549,14 +549,14 @@ function EigenAanvragen({ naam, gekozen, onKies }: { naam: string; gekozen: Gevo
  * De knop onder de bijlagen. Nog niet aangepast: "Menu aanpassen". Al aangepast: zeggen dat het
  * meegaat, met de weg terug naar het menu en de weg eruit.
  */
-function MenuKnop({ aangepast, laden, onOpen, onLaat }: { aangepast: boolean; laden: boolean; onOpen: () => void; onLaat: () => void }) {
+function MenuKnop({ feedback, aangepast, laden, onOpen, onLaat }: { feedback: boolean; aangepast: boolean; laden: boolean; onOpen: () => void; onLaat: () => void }) {
   if (aangepast) {
     return (
       <div className="menuknop menuknop--aangepast">
         <Icon name="check" />
         <span className="menuknop__tekst">
           <strong>Menu aangepast</strong>
-          <span className="menuknop__uitleg">Het nieuwe menu gaat mee met je aanvulling.</span>
+          <span className="menuknop__uitleg">Het nieuwe menu gaat mee met je {feedback ? 'feedback' : 'aanvulling'}.</span>
         </span>
         <button type="button" className="link" onClick={onOpen}>bekijken</button>
         <button type="button" className="link" onClick={onLaat}>toch niet</button>
@@ -723,22 +723,30 @@ function DatumRegel({
   )
 }
 
-function Gelukt({ result, gekozen, onSluit }: { result: AanvullingResult; gekozen: GevondenAanvraag | null; onSluit: () => void }) {
+/**
+ * Het eindscherm. Via de knop "Feedback geven" uit de opleveringsmail heet het overal feedback:
+ * zo noemde de mail het ook, en "aanvulling" klinkt dan alsof je iets anders hebt gestuurd.
+ */
+function Gelukt({ result, gekozen, feedback, onSluit }: { result: AanvullingResult; gekozen: GevondenAanvraag | null; feedback: boolean; onSluit: () => void }) {
+  const bij = gekozen?.event ? <> bij de aanvraag voor {gekozen.event}</> : null
   return (
     <section className="success">
       <div className="success__content">
-        <span className="eyebrow">aanvulling doorgegeven</span>
+        <span className="eyebrow">{feedback ? 'feedback doorgegeven' : 'aanvulling doorgegeven'}</span>
         <h1 className="success__title swash">Genoteerd.</h1>
         <p className="success__lead">
-          Het marketingteam heeft je aanvulling binnen{gekozen?.event ? <> bij de aanvraag voor {gekozen.event}</> : null}. Ze zien hem
-          direct bij de rest van wat je eerder doorgaf.
+          {feedback
+            ? <>Het marketingteam heeft je feedback binnen{bij}. Ze zien het direct bij de rest van wat je eerder doorgaf.</>
+            : <>Het marketingteam heeft je aanvulling binnen{bij}. Ze zien hem direct bij de rest van wat je eerder doorgaf.</>}
         </p>
         <div className={`success__status success__status--${result.bijgewerkt.length ? 'done' : 'pending'}`} aria-live="polite">
           <Icon name="check" />
           <span>
             {result.bijgewerkt.length
               ? `Meteen aangepast in je aanvraag: ${result.bijgewerkt.join(', ').toLowerCase()}.`
-              : 'Het marketingteam leest je toelichting en past aan wat nodig is.'}
+              : feedback
+                ? 'Het marketingteam leest je feedback en past het ontwerp aan.'
+                : 'Het marketingteam leest je toelichting en past aan wat nodig is.'}
           </span>
         </div>
         <div className="success__actions">

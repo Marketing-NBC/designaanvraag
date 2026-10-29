@@ -1,4 +1,4 @@
-import type { DesignMode, Locatie, RequestTypeKey, Soort } from '../../shared/request-types'
+import { typeHoortBij, type DesignMode, type Locatie, type RequestTypeKey, type Soort } from '../../shared/request-types'
 import type { Bijlage } from './lib/uploads'
 import { leegMenu, type MenuKeuze } from './lib/menu'
 
@@ -44,3 +44,15 @@ export const emptyDraft = (): Draft => ({
   menu: leegMenu(),
   omschrijving: '',
 })
+
+/**
+ * Gooit de aanvraagtypes weg die bij de locatie of de designkeuze niet (meer) te kiezen zijn.
+ * Had iemand LED-kolom aangevinkt en zet hij de aanvraag daarna op Green Village, of vinkte hij
+ * vlaggen aan en kiest hij toch standaard designs, dan staat die keuze er anders nog in terwijl
+ * hij niet meer op het scherm te zien is.
+ */
+export function alleenTeKiezenTypes(d: Draft): Draft {
+  const types = d.aanvraag_types.filter((k) => typeHoortBij(d.locatie ?? 'nbc', k, d.design_modus))
+  if (types.length === d.aanvraag_types.length) return d
+  return { ...d, aanvraag_types: types, anders_tekst: types.includes('anders') ? d.anders_tekst : '' }
+}

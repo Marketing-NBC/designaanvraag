@@ -152,6 +152,12 @@ export const aanvraagSchema = z
           path: ['aanvraag_types'],
           message: `${requestTypeLabel(k)} kan niet bij ${locatieLabel(a.locatie)} worden aangevraagd`,
         })
+      } else if (!typeHoortBij(a.locatie, k, a.design_modus)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['aanvraag_types'],
+          message: `${requestTypeLabel(k)} hoort niet bij de standaard designs; kies daarvoor "Volledig custom"`,
+        })
       }
     }
     if (a.aanvraag_types.includes('anders') && !a.anders_tekst) {

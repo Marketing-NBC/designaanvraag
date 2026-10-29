@@ -76,16 +76,45 @@ const TYPES_PER_LOCATIE: Record<Locatie, readonly RequestTypeKey[]> = {
   ],
 }
 
-/** De aanvraagtypes van een locatie, in schermvolgorde. Zonder keuze die van NBC. */
-export function requestTypesVoor(locatie: Locatie | null): RequestType[] {
-  return TYPES_PER_LOCATIE[locatie ?? 'nbc']
-    .map((k) => REQUEST_TYPES.find((t) => t.key === k))
-    .filter((t): t is RequestType => Boolean(t))
+/**
+ * Bij standaard designs valt er minder te kiezen: alleen wat we als vaste template hebben. De
+ * keuze tussen standaard en custom komt daarom vóór "Wat wil je aanvragen?". Bij custom kan alles
+ * wat de locatie heeft. Green Village heeft geen LED-kolom, dus daar blijven er twee over.
+ */
+const STANDAARD_TYPES: readonly RequestTypeKey[] = ['led_kolom', 'torenscherm', 'menu_scherm']
+
+/** Wat er bij standaard designs onder een keuze staat, zodat duidelijk is wat de template is. */
+const STANDAARD_UITLEG: Partial<Record<RequestTypeKey, string>> = {
+  led_kolom: 'Standaarden van NBC met logo',
 }
 
-/** Kan dit type bij deze locatie worden aangevraagd? */
-export function typeHoortBij(locatie: Locatie, key: RequestTypeKey): boolean {
-  return TYPES_PER_LOCATIE[locatie].includes(key)
+/** Een keuze bij "Wat wil je aanvragen?", soms met een regel uitleg eronder. */
+export interface RequestTypeOptie {
+  key: RequestTypeKey
+  label: string
+  description?: string
+}
+
+/**
+ * De aanvraagtypes van een locatie, in schermvolgorde. Zonder locatie die van NBC; bij
+ * standaard designs alleen de vaste templates.
+ */
+export function requestTypesVoor(locatie: Locatie | null, modus: DesignMode | null = null): RequestTypeOptie[] {
+  const l = locatie ?? 'nbc'
+  return TYPES_PER_LOCATIE[l]
+    .filter((k) => typeHoortBij(l, k, modus))
+    .map((k) => REQUEST_TYPES.find((t) => t.key === k))
+    .filter((t): t is RequestType => Boolean(t))
+    .map((t) => {
+      const uitleg = modus === 'standaard' ? STANDAARD_UITLEG[t.key] : undefined
+      return uitleg ? { key: t.key, label: t.label, description: uitleg } : { key: t.key, label: t.label }
+    })
+}
+
+/** Kan dit type bij deze locatie (en, als die al gekozen is, deze designkeuze) worden aangevraagd? */
+export function typeHoortBij(locatie: Locatie, key: RequestTypeKey, modus: DesignMode | null = null): boolean {
+  if (!TYPES_PER_LOCATIE[locatie].includes(key)) return false
+  return modus !== 'standaard' || STANDAARD_TYPES.includes(key)
 }
 
 export const REQUEST_TYPE_KEYS = REQUEST_TYPES.map((t) => t.key) as [RequestTypeKey, ...RequestTypeKey[]]
