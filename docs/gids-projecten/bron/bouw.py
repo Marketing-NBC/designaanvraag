@@ -149,12 +149,11 @@ B.append(p('De screenshots in deze handleiding komen uit het formulier en tonen 
 # 1
 B.append(kop1('1  Het formulier in het kort'))
 B.append(intro('Met het formulier dien je eenvoudig een designaanvraag in bij Marketing. Je vindt het formulier via marketing-nbc.github.io/designaanvraag. Voeg de link toe aan je favorieten, zodat je het formulier snel terugvindt.'))
-B.append(los(bol('**Start:** klik op deze optie om een nieuwe aanvraag in te dienen.')))
-B.append(stap('g02-vraag',
-    nummer(1, 'Het formulier toont één vraag per scherm, met een korte toelichting.'),
-    nummer(2, 'Selecteer je antwoord en klik op **‘Volgende’** of druk op Enter om verder te gaan.'),
-    nummer(3, 'Je kunt altijd terug naar een vorige vraag. De voortgangsteller onderaan laat zien hoever je bent.'),
-    bol('Je antwoorden worden automatisch bewaard. Sluit je het venster tussentijds, dan kun je later verdergaan waar je bent gebleven.')))
+# Geen screenshot in dit hoofdstuk, en het hele hoofdstuk blijft op één pagina.
+VAST = '<w:keepNext/><w:keepLines/>'
+B.append(p('**Start:** klik op deze optie om een nieuwe aanvraag in te dienen.', VAST))
+B.append(p('Het formulier toont één vraag per scherm, met een korte toelichting. Selecteer je antwoord en klik op **‘Volgende’** of druk op Enter om verder te gaan. Je kunt altijd terug naar een vorige vraag. De voortgangsteller onderaan laat zien hoever je bent.', VAST))
+B.append(p('Je antwoorden worden automatisch bewaard. Sluit je het venster tussentijds, dan kun je later verdergaan waar je bent gebleven.', VAST))
 B.append(lijstpunt('Vraag je design minimaal 10 werkdagen vóór het event aan. Is de termijn korter, dan geldt het als spoed en wordt de aanvraag als spoed geregistreerd.'))
 B.append(lijstpunt('Dien één aanvraag per event in. Vink alles aan wat je nodig hebt, zodat alles bij elkaar staat.'))
 B.append(lijstpunt('Kies standaarddesigns, tenzij de opdrachtgever om een eigen ontwerp vraagt of daarvoor betaalt.'))
