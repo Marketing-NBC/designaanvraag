@@ -63,12 +63,12 @@ async function stappen(b) {
   await shot(p, 'g01-start', [[p.getByRole('button', { name: 'Start' }), 1, 8]]);
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click();
-  await shot(p, 'g02-vraag', [[L(p, '.q__head'), 1, 8], [p.getByRole('radio', { name: 'NBC' }), 2, 5], [L(p, '.q__footer'), 3, 8], [L(p, '.navdock'), 4, 6]]);
+  await shot(p, 'g02-vraag', [[L(p, '.q__head'), 1, 8], [p.getByRole('radio', { name: 'NBC' }), 2, 5], [L(p, '.q__footer'), 2, 8], [L(p, '.navdock'), 3, 6]]);
   await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
   await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
   await kiesDatum(p, 2, 1);
-  await shot(p, 'g03-eventdatum', [[L(p, '.date__nav, .date__head'), 1, 6], [L(p, 'button.date__day[aria-pressed="true"]'), 2, 5]]);
+  await shot(p, 'g03-eventdatum', [[L(p, '.date__nav, .date__head'), 1, 6], [L(p, 'button.date__day[aria-pressed="true"]'), 1, 5]]);
   await next(p);
   await kiesDatum(p, 1, 20);
   await next(p);
@@ -144,7 +144,7 @@ async function stappen(b) {
   await p.locator('#a-zoek').fill('Zorgcon');
   await L(p, '.vondst').waitFor();
   await L(p, '.vondst').click();
-  await shot(p, 'g40-aanv-zoek', [[p.locator('#a-zoek'), 1, 6], [L(p, '.vondst'), 2, 5]]);
+  await shot(p, 'g40-aanv-zoek', [[p.locator('#a-zoek'), 1, 6], [L(p, '.vondst'), 1, 5]]);
   await next(p); await naam(p); await next(p);
   await p.locator('#a-toelichting').fill('De opdrachtgever wil op de torenschermen ook het logo van de hoofdsponsor. Het logo zit in de bijlage.');
   await shot(p, 'g41-aanv-wat', [[p.locator('#a-toelichting'), 1, 6], [L(p, '.bijlagen__zone'), 2, 5], [p.getByRole('button', { name: /Menu aanpassen/ }), 3, 5]]);
