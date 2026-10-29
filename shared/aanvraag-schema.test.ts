@@ -158,6 +158,13 @@ describe('voor welke locatie de aanvraag is', () => {
       .toMatch(/LED-kolom kan niet bij Green Village/)
   })
 
+  it('laat bij standaard designs alleen de vaste templates door', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, design_modus: 'standaard', aanvraag_types: ['led_kolom', 'torenscherm'] }).success).toBe(true)
+    const r = aanvraagSchema.safeParse({ ...valid, design_modus: 'standaard', aanvraag_types: ['led_kolom', 'vlaggen'] })
+    expect(r.success).toBe(false)
+    expect(r.success === false && r.error.issues[0]?.message).toMatch(/Vlaggen hoort niet bij de standaard designs/)
+  })
+
   it('kent geen derde locatie', () => {
     expect(aanvraagSchema.safeParse({ ...valid, locatie: 'kasteel' }).success).toBe(false)
   })

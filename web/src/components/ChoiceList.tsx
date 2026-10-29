@@ -12,7 +12,7 @@ export const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 interface CommonProps {
   options: readonly ChoiceOption[]
-  /** Kaartweergave met titel + omschrijving (voor de custom/standaard-keuze). */
+  /** Kaartweergave met titel + omschrijving (voor de custom/standaard-keuze). Zonder kaarten staat de omschrijving klein onder de naam. */
   cards?: boolean
   /** Sleutel van de "Anders"-optie die een vrij tekstveld toont. */
   otherKey?: string
@@ -75,7 +75,14 @@ export function ChoiceList(props: Props) {
                 <span className="opt__key" aria-hidden="true">
                   {letter}
                 </span>
-                <span className="opt__label">{o.label}</span>
+                {o.description ? (
+                  <span className="opt__label opt__label--uitleg">
+                    <span>{o.label}</span>
+                    <span className="opt__uitleg">{o.description}</span>
+                  </span>
+                ) : (
+                  <span className="opt__label">{o.label}</span>
+                )}
                 <Icon name="check" className="opt__check" />
               </>
             )}

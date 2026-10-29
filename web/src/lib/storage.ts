@@ -1,4 +1,4 @@
-import type { Draft } from '../state'
+import { alleenTeKiezenTypes, type Draft } from '../state'
 
 // v3: het menu bewaart de gerechten als structuur in plaats van als regel tekst, zodat
 // je er direct in kunt typen zonder dat de bolletjes van de Tartelettes wegvallen. Een
@@ -25,6 +25,9 @@ export function loadDraft(): Stored | null {
     // Een concept van voor de vraag "evenement of intern" bestond. Wie al een event had ingevuld
     // was met een evenement bezig; wie nog niet zo ver was, krijgt de vraag gewoon te zien.
     if (parsed.draft.soort === undefined) parsed.draft.soort = parsed.draft.event ? 'evenement' : null
+    // De designkeuze kwam vroeger na "Wat wil je aanvragen?". Een concept van toen kan standaard
+    // designs hebben met iets erbij dat daar nu niet meer te kiezen is.
+    parsed.draft = alleenTeKiezenTypes(parsed.draft)
     return parsed
   } catch {
     return null

@@ -2,7 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { submitPayloadSchema, type SubmitResult } from '../../shared/aanvraag-schema'
 import {
-  DESIGN_MODES, LOCATIES, REQUEST_TYPES, SOORT_KEUZES, designModesVoor, requestTypesVoor, typeHoortBij,
+  DESIGN_MODES, LOCATIES, REQUEST_TYPES, SOORT_KEUZES, designModesVoor, requestTypesVoor,
   vraagtOmMenu, type DesignMode, type Locatie, type RequestTypeKey, type Soort,
 } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
@@ -19,7 +19,7 @@ import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
 import { PAKKETTEN_OP_SCHERM, naarInhoud, naarTekst, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
-import { emptyDraft, type Draft } from './state'
+import { alleenTeKiezenTypes, emptyDraft, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
 import { Icon } from './components/Icon'
@@ -156,16 +156,16 @@ export default function App() {
   }, [])
 
   /**
-   * Van locatie wisselen gooit weg wat bij de nieuwe niet bestaat. Had iemand LED-kolom
-   * aangevinkt en zet hij de aanvraag daarna op Green Village, dan staat die keuze er
-   * anders nog in terwijl hij niet meer op het scherm te zien is.
+   * Van locatie of designkeuze wisselen gooit weg wat daarbij niet te kiezen is: bij Green Village
+   * is er geen LED-kolom, bij standaard designs alleen de vaste templates.
    */
   const kiesLocatie = useCallback((key: string) => {
-    const locatie = key as Locatie
-    setDraft((d) => {
-      const types = d.aanvraag_types.filter((k) => typeHoortBij(locatie, k))
-      return { ...d, locatie, aanvraag_types: types, anders_tekst: types.includes('anders') ? d.anders_tekst : '' }
-    })
+    setDraft((d) => alleenTeKiezenTypes({ ...d, locatie: key as Locatie }))
+    setError(null)
+  }, [])
+
+  const kiesModus = useCallback((key: string) => {
+    setDraft((d) => alleenTeKiezenTypes({ ...d, design_modus: key as DesignMode }))
     setError(null)
   }, [])
 
@@ -348,7 +348,7 @@ export default function App() {
           // dus mag de toets daar ook niets kiezen.
           const options = kind === 'locatie' ? LOCATIES
             : kind === 'soort' ? SOORT_KEUZES
-            : kind === 'multi' ? requestTypesVoor(draft.locatie)
+            : kind === 'multi' ? requestTypesVoor(draft.locatie, draft.design_modus)
             : DESIGN_MODES
           const opt = options[i]
           if (opt) {
@@ -356,7 +356,7 @@ export default function App() {
             if (kind === 'locatie') kiesLocatie(opt.key)
             else if (kind === 'soort') patch({ soort: opt.key as Soort })
             else if (kind === 'multi') toggleType(opt.key)
-            else patch({ design_modus: opt.key as DesignMode })
+            else kiesModus(opt.key)
           }
           return
         }
@@ -374,11 +374,11 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-    // draft.locatie en draft.menu.pakket staan erbij omdat de lettertoetsen erop kijken:
-    // welke lijst er op het scherm staat hangt van de locatie af, en of de pakketkeuze nog
-    // open is van het gekozen pakket. Zonder deze twee blijft de oude waarde hangen.
-  }, [screen, next, prev, go, submit, toggleType, kiesLocatie, patch, focusPrimary, metMenu, soort,
-      draft.locatie, draft.menu.pakket])
+    // draft.locatie, draft.design_modus en draft.menu.pakket staan erbij omdat de lettertoetsen
+    // erop kijken: welke lijst er op het scherm staat hangt van de locatie en de designkeuze af,
+    // en of de pakketkeuze nog open is van het gekozen pakket. Zonder deze blijft de oude waarde hangen.
+  }, [screen, next, prev, go, submit, toggleType, kiesLocatie, kiesModus, patch, focusPrimary, metMenu, soort,
+      draft.locatie, draft.design_modus, draft.menu.pakket])
 
   const variants = useMemo(
     () => ({
@@ -534,7 +534,7 @@ export default function App() {
               {step.kind === 'multi' ? (
                 <ChoiceList
                   multi
-                  options={requestTypesVoor(draft.locatie)}
+                  options={requestTypesVoor(draft.locatie, draft.design_modus)}
                   value={draft.aanvraag_types}
                   onToggle={toggleType}
                   otherKey="anders"
@@ -544,7 +544,7 @@ export default function App() {
                 />
               ) : null}
               {step.kind === 'single' ? (
-                <ChoiceList cards options={designModesVoor(draft.locatie)} value={draft.design_modus} onToggle={(k) => patch({ design_modus: k as DesignMode })} />
+                <ChoiceList cards options={designModesVoor(draft.locatie)} value={draft.design_modus} onToggle={kiesModus} />
               ) : null}
               {step.kind === 'menu' ? (
                 <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />

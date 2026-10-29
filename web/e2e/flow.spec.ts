@@ -62,6 +62,13 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '04-deadline', p)
     await page.keyboard.press('Enter')
 
+    // 6. Modus: direct na de deadline, want hij bepaalt wat er bij de aanvraagtypes te kiezen valt
+    await expect(page.getByRole('heading', { name: /Standaard designs of volledig custom/ })).toBeVisible()
+    await page.keyboard.press('b')
+    await expect(page.getByRole('radio', { name: /Volledig custom/ })).toHaveAttribute('aria-checked', 'true')
+    await shot(page, '08-modus', p)
+    await page.keyboard.press('Enter')
+
     // 6. Website: ongeldig → fout, daarna geldig
     await expect(page.getByRole('heading', { name: /website/ })).toBeVisible()
     await page.keyboard.type('geen url')
@@ -91,13 +98,6 @@ test.describe('designaanvraag-flow', () => {
     // pas de tweede Enter gaat door. Zo schiet je niet midden in een woord verder.
     await page.keyboard.press('Enter')
     await expect(page.locator('[data-primary-action]')).toBeFocused()
-    await page.keyboard.press('Enter')
-
-    // 10. Modus
-    await expect(page.getByRole('heading', { name: /Standaard designs of volledig custom/ })).toBeVisible()
-    await page.keyboard.press('b')
-    await expect(page.getByRole('radio', { name: /Volledig custom/ })).toHaveAttribute('aria-checked', 'true')
-    await shot(page, '08-modus', p)
     await page.keyboard.press('Enter')
 
     // 11. Omschrijving: Enter is hier een nieuwe regel, geen "verder"
