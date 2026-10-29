@@ -148,7 +148,7 @@ ZWART_BOL = lambda t: lijstpunt(t, bij_elkaar=False)
 B.append(p_met(['Via het formulier ', link('Designaanvraag', 'https://marketing-nbc.github.io/designaanvraag'), ' vraag je eenvoudig designs aan voor events en interne doeleinden, zoals visitekaartjes of posters. Volg onderstaande afspraken om je aanvraag zo soepel mogelijk te laten verlopen.']))
 B.append(kop2('1. Dien je aanvraag op tijd in'))
 B.append(ZWART_BOL('Vraag je design minimaal 10 werkdagen vóór het event aan.'))
-B.append(ZWART_BOL('Is de deadline korter? Dan geldt de aanvraag als spoed. Stem deadlines binnen 5 werkdagen altijd af met marketing.'))
+B.append(ZWART_BOL('Is de deadline korter? Dan geldt de aanvraag als spoed. Bij deadlines binnen 5 werkdagen neemt marketing contact met je op.'))
 B.append(ZWART_BOL('Houd er rekening mee dat drukwerk bij korte deadlines mogelijk niet op tijd klaar is.'))
 B.append(kop2('2. Dien één aanvraag per event in'))
 B.append(ZWART_BOL('Vink alle designs aan die je voor het event nodig hebt.'))
@@ -271,7 +271,7 @@ B.append(kop2('Krappe deadlines'))
 B.append(tabel(None, [
     ('10 werkdagen of meer tot het event', 'Je bent op tijd.'),
     ('Minder dan 10 werkdagen tot het event', 'De aanvraag geldt als spoed. Besteld drukwerk (zoals een geprinte menukaart, vlaggen, banners en roll-ups) is waarschijnlijk niet meer op tijd klaar.'),
-    ('Deadline binnen 5 werkdagen', 'Dien je aanvraag in en mail daarna meteen marketing om te bespreken wat nog mogelijk is.'),
+    ('Deadline binnen 5 werkdagen', 'Dien je aanvraag in. Het marketingteam beoordeelt wat er nog mogelijk is en neemt contact met je op.'),
 ]))
 B.append(kader('Spoedaanvragen worden automatisch per aanvrager bijgehouden.', 'Ze blijven als spoed geregistreerd, ook als de datum later verschuift!'))
 B.append(kop2('Wat doe je als…'))
