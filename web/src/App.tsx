@@ -24,8 +24,7 @@ import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
 import { Icon } from './components/Icon'
 import { useBijlagen } from './lib/uploads'
-import { moetContactOpnemen, zichtbareStappen } from './steps'
-import { MELDING_ONTVANGERS } from '../../shared/contact'
+import { zichtbareStappen } from './steps'
 
 type Screen =
   | { kind: 'start' }
@@ -439,7 +438,6 @@ export default function App() {
         website={screen.draft.website}
         naam={screen.draft.naam}
         soort={screen.draft.soort}
-        contactMail={moetContactOpnemen(screen.draft) ? MELDING_ONTVANGERS[screen.draft.locatie ?? 'nbc'] : null}
         onRestart={restart}
       />
     )
