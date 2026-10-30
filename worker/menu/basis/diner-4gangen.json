@@ -1,7 +1,7 @@
 {
   "pakket": "diner-4gangen",
   "bron": {
-    "bestand": "Flexibele-template-designs-V6.ai",
+    "bestand": "Flexibele-template-designs-V9.ai",
     "pagina": 8
   },
   "canvas": {
@@ -105,10 +105,10 @@
       "kop->naam": 161.04,
       "naam->ingr": 68.2,
       "ingr->naam": 128.92,
-      "ingr->kop": 150.04
+      "ingr->kop": 150.02
     },
     "regelafstand": {
-      "ingr": 55.0
+      "ingr": 55.01
     },
     "kopBaseline": null
   },
@@ -267,12 +267,12 @@
       ]
     },
     {
-      "x": 1352.0,
+      "x": 1325.0,
       "kader": {
-        "breedte": 875.19,
-        "minimaal": 864.81,
-        "maximaal": 977.59,
-        "handmatigeAfbrekingen": 1
+        "breedte": 879.77,
+        "minimaal": 869.34,
+        "maximaal": 956.17,
+        "handmatigeAfbrekingen": 0
       },
       "secties": [
         {
@@ -309,11 +309,11 @@
           "tekst": "Voorgerecht",
           "regels": [
             {
-              "baseline": 625.68,
+              "baseline": 625.67,
               "runs": [
                 {
                   "tekst": "Voorgerecht",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
                   "kleur": "#f6a107"
@@ -324,14 +324,14 @@
         },
         {
           "soort": "naam",
-          "tekst": "Gebakken brioche",
+          "tekst": "Pulled chicken",
           "regels": [
             {
-              "baseline": 786.72,
+              "baseline": 786.71,
               "runs": [
                 {
-                  "tekst": "Gebakken brioche",
-                  "x": 0.09,
+                  "tekst": "Pulled chicken",
+                  "x": -0.14,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -342,14 +342,14 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | gele-uienrelish | vene cress",
+          "tekst": "roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise",
           "regels": [
             {
-              "baseline": 854.92,
+              "baseline": 854.91,
               "runs": [
                 {
-                  "tekst": "rilette van eend | gele-uienrelish | ",
-                  "x": 0.09,
+                  "tekst": "roodlof | mozzarella | gefermenteerde ",
+                  "x": -0.14,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -360,8 +360,20 @@
               "baseline": 909.92,
               "runs": [
                 {
-                  "tekst": "vene cress",
-                  "x": 0.09,
+                  "tekst": "mosterd | gekarameliseerde pecan noten | ",
+                  "x": -0.14,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 964.93,
+              "runs": [
+                {
+                  "tekst": "citrus mayonaise",
+                  "x": -0.14,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -375,11 +387,11 @@
           "tekst": "Tussengerecht",
           "regels": [
             {
-              "baseline": 1059.96,
+              "baseline": 1114.95,
               "runs": [
                 {
                   "tekst": "Tussengerecht",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
                   "kleur": "#f6a107"
@@ -393,11 +405,11 @@
           "tekst": "Pompoenravioli",
           "regels": [
             {
-              "baseline": 1221.0,
+              "baseline": 1275.99,
               "runs": [
                 {
                   "tekst": "Pompoenravioli",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -411,11 +423,11 @@
           "tekst": "gedroogde Italiaanse ham | saliebotersaus",
           "regels": [
             {
-              "baseline": 1289.2,
+              "baseline": 1344.19,
               "runs": [
                 {
                   "tekst": "gedroogde Italiaanse ham | saliebotersaus",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -429,11 +441,11 @@
           "tekst": "Hoofdgerecht",
           "regels": [
             {
-              "baseline": 1439.24,
+              "baseline": 1494.23,
               "runs": [
                 {
                   "tekst": "Hoofdgerecht",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
                   "kleur": "#f6a107"
@@ -447,11 +459,11 @@
           "tekst": "Boneless short ribs",
           "regels": [
             {
-              "baseline": 1600.28,
+              "baseline": 1655.27,
               "runs": [
                 {
                   "tekst": "Boneless short ribs",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -465,11 +477,11 @@
           "tekst": "crème van winterpeen | spaghetti van pastinaak | sticky hoisin",
           "regels": [
             {
-              "baseline": 1668.48,
+              "baseline": 1723.47,
               "runs": [
                 {
                   "tekst": "crème van winterpeen | spaghetti van ",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -477,11 +489,11 @@
               ]
             },
             {
-              "baseline": 1723.48,
+              "baseline": 1778.48,
               "runs": [
                 {
                   "tekst": "pastinaak | sticky hoisin",
-                  "x": 0.09,
+                  "x": -0.14,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -493,11 +505,11 @@
       ]
     },
     {
-      "x": 2278.0,
+      "x": 2378.0,
       "kader": {
-        "breedte": 550.79,
-        "minimaal": 544.26,
-        "maximaal": 592.0,
+        "breedte": 550.35,
+        "minimaal": 543.82,
+        "maximaal": 591.55,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
           "diner-3gangen",
@@ -522,11 +534,11 @@
           "tekst": "Nagerecht",
           "regels": [
             {
-              "baseline": 625.68,
+              "baseline": 625.67,
               "runs": [
                 {
                   "tekst": "Nagerecht",
-                  "x": 0.28,
+                  "x": -0.16,
                   "font": "Pockota-Medium",
                   "grootte": 79.2,
                   "kleur": "#f6a107"
@@ -540,11 +552,11 @@
           "tekst": "Chocoladetrifle",
           "regels": [
             {
-              "baseline": 786.72,
+              "baseline": 786.71,
               "runs": [
                 {
                   "tekst": "Chocoladetrifle",
-                  "x": 0.28,
+                  "x": -0.16,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
                   "kleur": "#000000"
@@ -558,11 +570,11 @@
           "tekst": "Oreo crunch | kersen | Tony’s Chocolonely schaaf",
           "regels": [
             {
-              "baseline": 854.92,
+              "baseline": 854.91,
               "runs": [
                 {
                   "tekst": "Oreo crunch | kersen | ",
-                  "x": 0.28,
+                  "x": -0.16,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"
@@ -574,7 +586,7 @@
               "runs": [
                 {
                   "tekst": "Tony’s Chocolonely schaaf",
-                  "x": 0.28,
+                  "x": -0.16,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
                   "kleur": "#000000"

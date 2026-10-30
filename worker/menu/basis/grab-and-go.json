@@ -1,7 +1,7 @@
 {
   "pakket": "grab-and-go",
   "bron": {
-    "bestand": "Flexibele-template-designs-V6.ai",
+    "bestand": "Flexibele-template-designs-V9.ai",
     "pagina": 5
   },
   "canvas": {
@@ -135,8 +135,8 @@
     {
       "x": 198.0,
       "kader": {
-        "breedte": 751.1,
-        "minimaal": 742.19,
+        "breedte": 938.79,
+        "minimaal": 927.66,
         "maximaal": 948.76,
         "handmatigeAfbrekingen": 4
       },
@@ -409,13 +409,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Gebakken brioche",
+          "tekst": "Pulled chicken",
           "regels": [
             {
               "baseline": 1725.55,
               "runs": [
                 {
-                  "tekst": "Gebakken brioche",
+                  "tekst": "Pulled chicken",
                   "x": 0.3,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 56.0,
@@ -427,13 +427,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "rilette van eend | rode-uienchutney | gele-uienrelish | vene cress",
+          "tekst": "roodlof | mozzarella | gefermenteerde mosterd | gekarameliseerde pecan noten | citrus mayonaise",
           "regels": [
             {
               "baseline": 1787.55,
               "runs": [
                 {
-                  "tekst": "rilette van eend | rode-uienchutney | ",
+                  "tekst": "roodlof | mozzarella | gefermenteerde mosterd | ",
                   "x": 0.3,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -445,7 +445,7 @@
               "baseline": 1837.56,
               "runs": [
                 {
-                  "tekst": "gele-uienrelish | vene cress",
+                  "tekst": "gekarameliseerde pecan noten | citrus mayonaise",
                   "x": 0.3,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -1080,7 +1080,7 @@
     },
     {
       "kolom": 1,
-      "na": "gele-uienrelish | vene cress",
+      "na": "gekarameliseerde pecan noten | citrus ma",
       "voor": "Dutch prime beef",
       "overgang": "ingr->naam",
       "gemeten": 112.79,
