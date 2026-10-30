@@ -24,6 +24,8 @@ const env: Env = {
     msClientId: null,
     msClientSecret: null,
     mailAfzender: null,
+    ledkolomGithubToken: null,
+    ledkolomGeheim: null,
 }
 
 const GROEP = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'

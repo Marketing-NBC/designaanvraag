@@ -28,6 +28,12 @@ export interface Env {
   msClientSecret: string | null
   /** Het postvak waar de mail vandaan komt; standaard MELDING_AFZENDER. */
   mailAfzender: string | null
+  /**
+   * De 3D-preview van de ledkolom. Het token mag de build starten in NBC-3D-ledkolom-Preview; het
+   * geheim deelt deze function met die repository, zodat alleen die ophaalt en terugmeldt.
+   */
+  ledkolomGithubToken: string | null
+  ledkolomGeheim: string | null
 }
 
 const DEFAULT_ORIGINS = ['https://marketing-nbc.github.io', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://127.0.0.1:4173']
@@ -69,6 +75,8 @@ export function readEnv(): Env {
     msClientId: opt('MS_CLIENT_ID'),
     msClientSecret: opt('MS_CLIENT_SECRET'),
     mailAfzender: opt('MAIL_AFZENDER'),
+    ledkolomGithubToken: opt('LEDKOLOM_GITHUB_TOKEN'),
+    ledkolomGeheim: opt('LEDKOLOM_SECRET'),
   }
 }
 

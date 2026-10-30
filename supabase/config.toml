@@ -48,3 +48,11 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/bijlage-uploadlink/index.ts"
+
+# De repository NBC-3D-ledkolom-Preview haalt hier op welke ledkolomvideo's een 3D-preview moeten
+# worden, en meldt terug als ze online staan. Auth via het gedeelde geheim LEDKOLOM_SECRET.
+[functions.ledkolom-preview]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/ledkolom-preview/index.ts"

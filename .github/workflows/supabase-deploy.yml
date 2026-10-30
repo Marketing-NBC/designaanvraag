@@ -33,8 +33,8 @@ jobs:
       - name: deno check + test
         working-directory: supabase/functions
         run: |
-          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts
-          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/
+          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts ledkolom-preview/index.ts
+          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/ ledkolom-preview/
 
   deploy:
     name: Migraties, functions en secrets
@@ -85,9 +85,11 @@ jobs:
           MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
           ALLOWED_ORIGINS: ${{ vars.ALLOWED_ORIGINS }}
           RATE_SALT: ${{ secrets.RATE_SALT }}
+          LEDKOLOM_GITHUB_TOKEN: ${{ secrets.LEDKOLOM_GITHUB_TOKEN }}
+          LEDKOLOM_SECRET: ${{ secrets.LEDKOLOM_SECRET }}
         run: |
           args=()
-          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN MENU_ROUTINE_FIRE_URL MENU_ROUTINE_TOKEN MS_TENANT_ID MS_CLIENT_ID MS_CLIENT_SECRET MAIL_AFZENDER ALLOWED_ORIGINS RATE_SALT; do
+          for k in ASANA_PAT SB_SECRET_KEY ASANA_PROJECT_GID ASANA_ASSIGNEE_GID ASANA_PLANNING_PROJECT_GID ROUTINE_FIRE_URL ROUTINE_TOKEN MENU_ROUTINE_FIRE_URL MENU_ROUTINE_TOKEN MS_TENANT_ID MS_CLIENT_ID MS_CLIENT_SECRET MAIL_AFZENDER ALLOWED_ORIGINS RATE_SALT LEDKOLOM_GITHUB_TOKEN LEDKOLOM_SECRET; do
             v="${!k}"
             if [ -n "$v" ]; then args+=("$k=$v"); echo "  zet $k"; else echo "  overslaan $k (leeg)"; fi
           done
@@ -105,6 +107,6 @@ jobs:
           {
             echo "### Supabase deploy gelukt"
             echo
-            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`, \`…/aanvraag-status\` en \`…/asana-webhook\`"
+            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`, \`…/aanvraag-status\`, \`…/asana-webhook\` en \`…/ledkolom-preview\`"
             echo "- Migraties: \`$(ls supabase/migrations | tr '\n' ' ')\`"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -22,6 +22,8 @@ const env: Env = {
     msClientId: null,
     msClientSecret: null,
     mailAfzender: null,
+    ledkolomGithubToken: null,
+    ledkolomGeheim: null,
 }
 
 const treffer: GevondenAanvraag = {

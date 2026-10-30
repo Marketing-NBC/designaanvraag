@@ -28,6 +28,8 @@ const env: Env = {
   msClientId: null,
   msClientSecret: null,
   mailAfzender: null,
+  ledkolomGithubToken: null,
+  ledkolomGeheim: null,
 }
 
 function fakeDb() {
@@ -76,6 +78,13 @@ function fakeDb() {
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
     updateOplevering: () => Promise.resolve(),
+    pakWachtendeOplevering: () => Promise.resolve(false),
+    wachtendeOpleveringen: () => Promise.resolve([]),
+    ledkolomPreviews: () => Promise.resolve([]),
+    ledkolomPreview: () => Promise.resolve(null),
+    openLedkolomPreviews: () => Promise.resolve([]),
+    insertLedkolomPreview: () => Promise.reject(new Error('niet gebruikt')),
+    updateLedkolomPreview: () => Promise.resolve(),
   }
   return db
 }
