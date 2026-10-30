@@ -25,6 +25,8 @@ const env: Env = {
     msClientId: null,
     msClientSecret: null,
     mailAfzender: null,
+    ledkolomGithubToken: null,
+    ledkolomGeheim: null,
 }
 
 /** Eigen mapping met herkenbare gids, zodat een assertie leest als de bedoeling. */
@@ -131,6 +133,13 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
     updateOplevering: () => Promise.resolve(),
+    pakWachtendeOplevering: () => Promise.resolve(false),
+    wachtendeOpleveringen: () => Promise.resolve([]),
+    ledkolomPreviews: () => Promise.resolve([]),
+    ledkolomPreview: () => Promise.resolve(null),
+    openLedkolomPreviews: () => Promise.resolve([]),
+    insertLedkolomPreview: () => Promise.reject(new Error('niet gebruikt')),
+    updateLedkolomPreview: () => Promise.resolve(),
   }
   return db
 }
@@ -188,6 +197,7 @@ function fakeAsana(taak: Partial<AsanaTask> = {}, opts: { commentFail?: boolean;
     werkTaakBij: () => Promise.resolve(),
     listBestanden: () => Promise.resolve([]),
     downloadBestand: () => Promise.reject(new Error('niet gebruikt')),
+    downloadLink: () => Promise.reject(new Error('niet gebruikt')),
     rondAf: () => Promise.resolve(),
     gebruiker: () => Promise.resolve({ naam: null, email: null }),
     beschrijving: () => Promise.resolve(taakBeschrijving.html),

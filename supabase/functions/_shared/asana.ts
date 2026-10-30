@@ -125,6 +125,8 @@ export interface AsanaTaskClient {
   listBestanden(taskGid: string): Promise<AsanaBestand[]>
   /** De inhoud van een geüpload bestand. */
   downloadBestand(gid: string): Promise<{ bytes: Uint8Array; mime: string }>
+  /** Een verse downloadlink van een geüpload bestand; maar een paar minuten geldig. */
+  downloadLink(gid: string): Promise<string>
   /** Afvinken en in de kolom Klaar zetten. */
   rondAf(taskGid: string, klaarSectieGid: string | null): Promise<void>
   /** Naam en e-mailadres van een Asana-gebruiker; voor de proefmail. */
@@ -539,6 +541,12 @@ export function createAsanaTaskClient(pat: string): AsanaTaskClient {
         host: String(r.host ?? 'asana'),
         viewUrl: r.view_url ?? r.permanent_url ?? null,
       }))
+    },
+    async downloadLink(gid) {
+      const { status, body } = await asanaFetch(pat, `/attachments/${gid}?opt_fields=download_url`, { method: 'GET' })
+      const url = body.data?.download_url
+      if (!ok(status) || typeof url !== 'string') throw new Error(`Downloadlink van bestand ${gid} ophalen mislukt (${status}: ${errorText(body)})`)
+      return url
     },
     async downloadBestand(gid) {
       // De downloadlink is maar kort geldig, dus vlak voor het downloaden ophalen.

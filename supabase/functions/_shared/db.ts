@@ -96,7 +96,7 @@ export interface NewBijlage {
 /** Bij welke aanvraag of aanvulling een bijlage hoort; precies één van de twee. */
 export type BijlageOuder = { aanvraag_id: string } | { aanvulling_id: string }
 
-export type OpleveringStatus = 'bezig' | 'verstuurd' | 'mislukt'
+export type OpleveringStatus = 'bezig' | 'wacht_op_preview' | 'verstuurd' | 'mislukt'
 
 export interface OpleveringRow {
   id: string
@@ -109,6 +109,25 @@ export interface OpleveringRow {
   status: OpleveringStatus
   fout: string | null
   verstuurd_op: string | null
+  /** De Asana-gebruiker die op Verstuur nu drukte; voor een mail die op de 3D-preview wacht. */
+  door: string | null
+}
+
+export type LedkolomStatus = 'wacht' | 'klaar' | 'mislukt'
+
+/** Een 3D-preview van een ledkolomvideo; zie shared/ledkolom-preview.ts. */
+export interface LedkolomPreviewRow {
+  id: string
+  aanvraag_id: string
+  volgnummer: number
+  slug: string
+  naam: string
+  bijlage_gid: string
+  bestandsnaam: string
+  status: LedkolomStatus
+  fout: string | null
+  gevraagd_op: string
+  klaar_op: string | null
 }
 
 export interface NewAanvraag extends Aanvraag {
@@ -172,8 +191,22 @@ export interface Db {
   findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
   aantalVerstuurd(aanvraagId: string): Promise<number>
-  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'>): Promise<OpleveringRow>
+  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'> & Partial<Pick<OpleveringRow, 'status' | 'door'>>): Promise<OpleveringRow>
   updateOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<void>
+  /**
+   * Een wachtende oplevering oppakken om te versturen: alleen als hij nog op wacht_op_preview staat.
+   * False als iemand anders hem al oppakte; zo gaat dezelfde mail nooit twee keer de deur uit.
+   */
+  pakWachtendeOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<boolean>
+  /** Opleveringen van deze aanvraag die op een 3D-preview wachten. */
+  wachtendeOpleveringen(aanvraagId: string): Promise<OpleveringRow[]>
+  /** De 3D-previews van een aanvraag, op volgnummer. */
+  ledkolomPreviews(aanvraagId: string): Promise<LedkolomPreviewRow[]>
+  ledkolomPreview(id: string): Promise<LedkolomPreviewRow | null>
+  /** Wat de 3D-repo nog moet bouwen. */
+  openLedkolomPreviews(): Promise<LedkolomPreviewRow[]>
+  insertLedkolomPreview(row: Pick<LedkolomPreviewRow, 'aanvraag_id' | 'volgnummer' | 'slug' | 'naam' | 'bijlage_gid' | 'bestandsnaam'>): Promise<LedkolomPreviewRow>
+  updateLedkolomPreview(id: string, patch: Partial<Omit<LedkolomPreviewRow, 'id' | 'aanvraag_id' | 'slug'>>): Promise<void>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
@@ -181,7 +214,8 @@ const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
-const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op'
+const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op, door'
+const LEDKOLOM_COLUMNS = 'id, aanvraag_id, volgnummer, slug, naam, bijlage_gid, bestandsnaam, status, fout, gevraagd_op, klaar_op'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
@@ -380,6 +414,41 @@ export function createDb(url: string, secretKey: string): Db {
     async updateOplevering(id, patch) {
       const { error } = await sb.from('opleveringen').update(patch).eq('id', id)
       if (error) throw new Error(`db update oplevering: ${error.message}`)
+    },
+    async pakWachtendeOplevering(id, patch) {
+      const { data, error } = await sb.from('opleveringen').update(patch).eq('id', id).eq('status', 'wacht_op_preview').select('id')
+      if (error) throw new Error(`db update oplevering: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length > 0
+    },
+    async wachtendeOpleveringen(aanvraagId) {
+      const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS)
+        .eq('aanvraag_id', aanvraagId).eq('status', 'wacht_op_preview').order('created_at')
+      if (error) throw new Error(`db select opleveringen: ${error.message}`)
+      return (data as OpleveringRow[] | null) ?? []
+    },
+    async ledkolomPreviews(aanvraagId) {
+      const { data, error } = await sb.from('ledkolom_previews').select(LEDKOLOM_COLUMNS).eq('aanvraag_id', aanvraagId).order('volgnummer')
+      if (error) throw new Error(`db select ledkolom_previews: ${error.message}`)
+      return (data as LedkolomPreviewRow[] | null) ?? []
+    },
+    async ledkolomPreview(id) {
+      const { data, error } = await sb.from('ledkolom_previews').select(LEDKOLOM_COLUMNS).eq('id', id).maybeSingle()
+      if (error) throw new Error(`db select ledkolom_preview: ${error.message}`)
+      return (data as LedkolomPreviewRow | null) ?? null
+    },
+    async openLedkolomPreviews() {
+      const { data, error } = await sb.from('ledkolom_previews').select(LEDKOLOM_COLUMNS).eq('status', 'wacht').order('gevraagd_op')
+      if (error) throw new Error(`db select ledkolom_previews: ${error.message}`)
+      return (data as LedkolomPreviewRow[] | null) ?? []
+    },
+    async insertLedkolomPreview(row) {
+      const { data, error } = await sb.from('ledkolom_previews').insert(row).select(LEDKOLOM_COLUMNS).single()
+      if (error) throw new Error(`db insert ledkolom_preview: ${error.message}`)
+      return data as LedkolomPreviewRow
+    },
+    async updateLedkolomPreview(id, patch) {
+      const { error } = await sb.from('ledkolom_previews').update(patch).eq('id', id)
+      if (error) throw new Error(`db update ledkolom_preview: ${error.message}`)
     },
   }
 }
