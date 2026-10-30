@@ -85,7 +85,7 @@ const STANDAARD_TYPES: readonly RequestTypeKey[] = ['led_kolom', 'torenscherm', 
 
 /** Wat er bij standaard designs onder een keuze staat, zodat duidelijk is wat de template is. */
 const STANDAARD_UITLEG: Partial<Record<RequestTypeKey, string>> = {
-  led_kolom: 'Standaarden van NBC met logo',
+  led_kolom: 'Standaarden van NBC met logo van opdrachtgever/evenement',
 }
 
 /** Een keuze bij "Wat wil je aanvragen?", soms met een regel uitleg eronder. */

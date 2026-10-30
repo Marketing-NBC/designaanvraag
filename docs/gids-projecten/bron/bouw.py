@@ -214,7 +214,7 @@ B.append(stap('g11-gelukt',
     bol('De huisstijl wordt op de achtergrond opgehaald; je hoeft hier niet op te wachten en kunt het venster sluiten.'),
     bol('Iets vergeten of wil je iets aanpassen? Dien geen tweede aanvraag in, maar kies ‘Iets aanvullen of wijzigen’.')))
 B.append(los(
-    bol('Valt het event binnen twee weken? Dan verschijnt er een oranje melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
+    bol('Valt het event binnen 10 werkdagen? Dan verschijnt er een oranje melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
     bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er een rode melding. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.')))
 
 # 2

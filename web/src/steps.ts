@@ -155,7 +155,7 @@ export const STEPS: StepDef[] = [
       if (isBeforeToday(d.event_datum)) return 'Die datum is al geweest.'
       return null
     },
-    // Ruim op tijd: een compliment. Minder dan twee weken (een spoedje): drukwerk dat we moeten
+    // Ruim op tijd: een compliment. Minder dan 10 werkdagen (een spoedje): drukwerk dat we moeten
     // bestellen haalt het dan waarschijnlijk niet. Hoe krap de deadline is, zegt de deadlinevraag.
     goed: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
@@ -165,7 +165,7 @@ export const STEPS: StepDef[] = [
     warn: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
       if (werkdagen === null || werkdagen >= SPOED_WERKDAGEN) return null
-      return 'Het event is over minder dan twee weken. Drukwerk dat we moeten bestellen, zoals een geprinte menukaart, '
+      return `Het event is over minder dan ${SPOED_WERKDAGEN} werkdagen. Drukwerk dat we moeten bestellen, zoals een geprinte menukaart, `
         + 'is dan waarschijnlijk niet meer op tijd te krijgen.'
     },
   },
@@ -239,14 +239,14 @@ export const STEPS: StepDef[] = [
       if (d.aanvraag_types.includes('anders') && !d.anders_tekst.trim()) return 'Vul in wat je bij "Anders" bedoelt.'
       return null
     },
-    // Een geprinte menukaart moeten we bestellen. Ligt de deadline minder dan twee weken weg, dan
+    // Een geprinte menukaart moeten we bestellen. Ligt de deadline minder dan 10 werkdagen weg, dan
     // zeggen we het hier nog een keer, ook als het al bij de eventdatum stond.
     warn: (d) => {
       if (!d.aanvraag_types.includes('menukaart_print')) return null
       const datum = d.deadline ?? d.event_datum
       if (!datum || isBeforeToday(datum)) return null
       if (werkdagenTotEvent(datum) >= SPOED_WERKDAGEN) return null
-      return 'De deadline ligt minder dan twee weken weg. Een geprinte menukaart moeten we laten drukken, '
+      return `De deadline ligt minder dan ${SPOED_WERKDAGEN} werkdagen weg. Een geprinte menukaart moeten we laten drukken, `
         + 'dus we kunnen niet garanderen dat die op tijd klaar is.'
     },
   },
