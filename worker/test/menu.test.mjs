@@ -184,9 +184,6 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
   const tartelettes = inhoud.secties[0].gerechten[0]
   assert.ok(Array.isArray(tartelettes.onderdelen), 'Tartelettes komt niet als opsomming terug')
   tartelettes.onderdelen.push({ naam: 'Gerookte paling' })
-  // Sinds Pulled chicken over drie regels loopt zit de eerste kolom tot de onderrand
-  // vol; zonder Dutch prime beef is er weer ruimte voor een onderdeel erbij.
-  inhoud.secties[1].gerechten = inhoud.secties[1].gerechten.filter((g) => g.naam !== 'Dutch prime beef')
 
   const { meldingen } = await renderMenu(inhoud)
   assert.deepEqual(meldingen.botsingen, [], 'de langere opsomming raakt een blob')
@@ -198,16 +195,16 @@ test('er kan een onderdeel bij een opsomming', { timeout: 120_000 }, async () =>
 
 test('past een onderdeel er niet meer bij, dan wordt dat gemeld', { timeout: 120_000 }, async () => {
   // De eerste kolom van Grab & Go zit vol: sinds "Bruschettaspiezen met seasonal
-  // dips (vega)" en Pulled chicken over drie regels lopen is er geen ruimte meer
-  // voor een onderdeel erbij. Dan hoort het scherm niet stilletjes door te lopen
-  // maar als onbruikbaar terug te komen.
+  // dips (vega)" over drie regels loopt is er nog ruimte voor een kale naam, niet
+  // voor een naam met een toelichting erbij. Dan hoort het scherm niet stilletjes
+  // door te lopen maar als onbruikbaar terug te komen.
   const inhoud = inhoudVanBasis(laadBasis('grab-and-go'))
   inhoud.secties[0].gerechten[0].onderdelen.push({
     naam: 'Gerookte paling', toelichting: ['appel', 'mierikswortelcr\u00e8me'] })
 
   const { meldingen } = await renderMenu(inhoud)
-  assert.ok(meldingen.overloop.length > 0, 'de overloop wordt niet gemeld')
-  for (const melding of meldingen.overloop) assert.match(melding, /onder de onderrand/)
+  assert.equal(meldingen.overloop.length, 1)
+  assert.match(meldingen.overloop[0], /onder de onderrand/)
   assert.ok(!menuIsBruikbaar(meldingen), 'zo\u2019n scherm mag nooit goedgekeurd worden')
 })
 
@@ -792,10 +789,15 @@ test('een te lang menu levert precies het ontwerp van pagina 10 op',
   // woorden van de invuller dus, maar die van de ontwerper.
   assert.equal(opmaak.regels.length, PAGINA_10.length,
     `${opmaak.regels.length} regels, het ontwerp heeft er ${PAGINA_10.length}`)
+  // Pagina 10 had de kolommen van V6 (261, 1352, 2278). Sindsdien zijn ze in het
+  // basisontwerp opgeschoven om ruimte te maken voor Pulled chicken; het gaat hier om
+  // de kolom waarin een regel valt, dus die wordt vertaald naar de x van nu.
+  const kolomX = laadBasis('diner-4gangen').kolommen.map((k) => k.x)
+  const kolomVan = (x) => [261, 1352, 2278].indexOf(x)
   opmaak.regels.forEach((regel, i) => {
     const [x, baseline, tekst] = PAGINA_10[i]
     assert.equal(regel.tekst, tekst)
-    assert.equal(regel.x, x, `"${tekst}" staat in de verkeerde kolom`)
+    assert.equal(regel.x, kolomX[kolomVan(x)], `"${tekst}" staat in de verkeerde kolom`)
     assert.ok(Math.abs(regel.baseline - baseline) < 0.05,
       `"${tekst}" staat op ${regel.baseline}, het ontwerp zegt ${baseline}`)
   })
@@ -814,14 +816,17 @@ test('een menu dat wel past houdt de kolommen van het basisontwerp', { timeout: 
 })
 
 test('pagina 7 en 8 delen hun tekstkaders', () => {
-  // Het is dezelfde layout, dus hetzelfde kader. Leidde je dat per pagina af uit
+  // Een kolom op dezelfde plek is hetzelfde kader. Leidde je dat per pagina af uit
   // de inhoud die daar toevallig staat, dan werd kolom 3 te smal en brak een
-  // omschrijving af die in het ontwerp op een regel past.
+  // omschrijving af die in het ontwerp op een regel past. De middelste kolom staat
+  // sinds V9 per pagina net anders, dus het delen gaat per kolom.
   const drie = laadBasis('diner-3gangen')
   const vier = laadBasis('diner-4gangen')
-  assert.deepEqual(drie.kolommen.map((k) => k.x), vier.kolommen.map((k) => k.x))
-  assert.equal(drie.kolommen[2].kader.breedte, vier.kolommen[2].kader.breedte)
-  assert.ok(drie.kolommen[2].kader.gedeeldMet.includes('diner-4gangen'))
+  for (const i of [0, 2]) {
+    assert.equal(drie.kolommen[i].x, vier.kolommen[i].x)
+    assert.equal(drie.kolommen[i].kader.breedte, vier.kolommen[i].kader.breedte)
+    assert.ok(drie.kolommen[i].kader.gedeeldMet.includes('diner-4gangen'))
+  }
 })
 
 /**

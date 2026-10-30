@@ -1,7 +1,7 @@
 {
   "pakket": "grab-and-go",
   "bron": {
-    "bestand": "Flexibele-template-designs-V6.ai",
+    "bestand": "Flexibele-template-designs-V9.ai",
     "pagina": 5
   },
   "canvas": {
@@ -135,8 +135,8 @@
     {
       "x": 198.0,
       "kader": {
-        "breedte": 751.1,
-        "minimaal": 742.19,
+        "breedte": 938.79,
+        "minimaal": 927.66,
         "maximaal": 948.76,
         "handmatigeAfbrekingen": 4
       },
@@ -433,7 +433,7 @@
               "baseline": 1787.55,
               "runs": [
                 {
-                  "tekst": "roodlof | mozzarella | gefermenteerde ",
+                  "tekst": "roodlof | mozzarella | gefermenteerde mosterd | ",
                   "x": 0.3,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -445,19 +445,7 @@
               "baseline": 1837.56,
               "runs": [
                 {
-                  "tekst": "mosterd | gekarameliseerde pecan ",
-                  "x": 0.3,
-                  "font": "AreaNormal-Hairline",
-                  "grootte": 38.0,
-                  "kleur": "#000000"
-                }
-              ]
-            },
-            {
-              "baseline": 1887.57,
-              "runs": [
-                {
-                  "tekst": "noten | citrus mayonaise",
+                  "tekst": "gekarameliseerde pecan noten | citrus mayonaise",
                   "x": 0.3,
                   "font": "AreaNormal-Hairline",
                   "grootte": 38.0,
@@ -472,7 +460,7 @@
           "tekst": "Dutch prime beef",
           "regels": [
             {
-              "baseline": 2004.77,
+              "baseline": 1950.35,
               "runs": [
                 {
                   "tekst": "Dutch prime beef",
@@ -490,7 +478,7 @@
           "tekst": "ravigote | kruidencrunch | limoen",
           "regels": [
             {
-              "baseline": 2066.77,
+              "baseline": 2012.35,
               "runs": [
                 {
                   "tekst": "ravigote | kruidencrunch | limoen ",
@@ -1089,6 +1077,14 @@
       "overgang": "naam->ingr",
       "gemeten": 78.0,
       "ritme": 62.0
+    },
+    {
+      "kolom": 1,
+      "na": "gekarameliseerde pecan noten | citrus ma",
+      "voor": "Dutch prime beef",
+      "overgang": "ingr->naam",
+      "gemeten": 112.79,
+      "ritme": 117.2
     },
     {
       "kolom": 2,

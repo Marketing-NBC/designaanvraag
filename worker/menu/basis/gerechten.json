@@ -593,16 +593,12 @@
       "ingrGrootte": 38.0,
       "ingrRegels": [
         {
-          "tekst": "roodlof | mozzarella | gefermenteerde",
+          "tekst": "roodlof | mozzarella | gefermenteerde mosterd |",
           "offset": 0.0
         },
         {
-          "tekst": "mosterd | gekarameliseerde pecan",
+          "tekst": "gekarameliseerde pecan noten | citrus mayonaise",
           "offset": 50.01
-        },
-        {
-          "tekst": "noten | citrus mayonaise",
-          "offset": 100.02
         }
       ]
     },
@@ -1114,7 +1110,7 @@
         },
         {
           "tekst": "pastinaak | sticky hoisin",
-          "offset": 55.0
+          "offset": 55.01
         }
       ]
     },
@@ -1312,7 +1308,7 @@
         },
         {
           "tekst": "Tony’s Chocolonely schaaf",
-          "offset": 55.0
+          "offset": 55.01
         }
       ]
     },
@@ -1497,12 +1493,12 @@
           "offset": 0.0
         },
         {
-          "tekst": "mosterd | gekarameliseerde pecan",
-          "offset": 55.0
+          "tekst": "mosterd | gekarameliseerde pecan noten |",
+          "offset": 55.01
         },
         {
-          "tekst": "noten | citrus mayonaise",
-          "offset": 110.0
+          "tekst": "citrus mayonaise",
+          "offset": 110.02
         }
       ]
     },
@@ -2140,16 +2136,12 @@
       "bron": "grab-and-go",
       "regels": [
         {
-          "tekst": "roodlof | mozzarella | gefermenteerde",
+          "tekst": "roodlof | mozzarella | gefermenteerde mosterd |",
           "offset": 0.0
         },
         {
-          "tekst": "mosterd | gekarameliseerde pecan",
+          "tekst": "gekarameliseerde pecan noten | citrus mayonaise",
           "offset": 50.01
-        },
-        {
-          "tekst": "noten | citrus mayonaise",
-          "offset": 100.02
         }
       ]
     },
@@ -2309,7 +2301,7 @@
         },
         {
           "tekst": "pastinaak | sticky hoisin",
-          "offset": 55.0
+          "offset": 55.01
         }
       ]
     },
@@ -2441,7 +2433,7 @@
         },
         {
           "tekst": "Tony’s Chocolonely schaaf",
-          "offset": 55.0
+          "offset": 55.01
         }
       ]
     },
@@ -2488,12 +2480,12 @@
           "offset": 0.0
         },
         {
-          "tekst": "mosterd | gekarameliseerde pecan",
-          "offset": 55.0
+          "tekst": "mosterd | gekarameliseerde pecan noten |",
+          "offset": 55.01
         },
         {
-          "tekst": "noten | citrus mayonaise",
-          "offset": 110.0
+          "tekst": "citrus mayonaise",
+          "offset": 110.02
         }
       ]
     },

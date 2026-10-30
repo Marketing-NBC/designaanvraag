@@ -24,7 +24,7 @@ import pymupdf
 
 HIER = Path(__file__).resolve().parent
 BASIS = HIER / 'basis'
-BRON = BASIS / 'bron' / 'Flexibele-template-designs-V6.ai'
+BRON = BASIS / 'bron' / 'Flexibele-template-designs-V9.ai'
 # De vorige versie blijft staan voor de voorbeeldpagina hieronder: die zit niet meer
 # in V4, en de manier waarop de ontwerper daar de kolommen heeft opgelost is precies
 # wat de doorstroom-regels moeten blijven halen.
@@ -60,25 +60,6 @@ WOORDCORRECTIES = [
     # schrijft het goed, dus zonder deze correctie is het gerecht niet terug te vinden.
     ('Grip ‘n dip fries', 'Grip ’n dip fries'),
 ]
-
-
-# Gerechten die uit het repertoire zijn gegaan, met wat ervoor in de plaats kwam. Ze
-# zijn met de hand uit de bevroren basisontwerpen gehaald (de engine zette het nieuwe
-# gerecht, de rest van de kolom schoof mee), maar het .ai-bestand heeft ze nog. Een
-# nieuwe extractie zou ze dus stilletjes terugzetten; daarom stopt hij hier tot het
-# .ai is bijgewerkt. Staat het gerecht er niet meer in, dan kan de regel weg.
-VERVALLEN_GERECHTEN = {
-    'Gebakken brioche': 'Pulled chicken | roodlof | mozzarella | gefermenteerde mosterd | '
-                        'gekarameliseerde pecan noten | citrus mayonaise',
-}
-
-
-def vervallen_gerechten_zoeken(alles: dict) -> list:
-    return [f'{pakket}: "{alinea["tekst"]}" is vervangen door "{VERVALLEN_GERECHTEN[alinea["tekst"]]}"'
-            for pakket, data in alles.items()
-            for kolom in data['kolommen']
-            for alinea in kolom['alineas']
-            if alinea['soort'] == 'naam' and alinea['tekst'] in VERVALLEN_GERECHTEN]
 
 
 def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
@@ -870,13 +851,19 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
 
 
 def kaders_delen(alles: dict) -> None:
-    """Pagina's met dezelfde kolomindeling delen hun tekstkaders.
+    """Kolommen op dezelfde plek delen hun tekstkader.
 
-    Pagina 7 en 8 zijn dezelfde layout: kolommen op 261, 1352 en 2278. Toch leidde
-    de extractie er twee verschillende kaderbreedtes uit af, omdat elke pagina
-    alleen zijn eigen inhoud te zien kreeg - en in de ene kolom staat nu eenmaal
-    een langere regel dan in de andere. Het kader dat de ontwerper trok is
-    hetzelfde; door de grenzen samen te nemen komen we er dichter bij.
+    Pagina 7 en 8 zijn dezelfde layout. Toch leidde de extractie er twee
+    verschillende kaderbreedtes uit af, omdat elke pagina alleen zijn eigen inhoud
+    te zien kreeg - en in de ene kolom staat nu eenmaal een langere regel dan in de
+    andere. Het kader dat de ontwerper trok is hetzelfde; door de grenzen samen te
+    nemen komen we er dichter bij.
+
+    Dat gaat per kolom en niet per hele pagina. Sinds V9 staat de middelste kolom op
+    pagina 7, 8 en 9 net op een andere x (1322, 1325, 1335); de linker- en
+    rechterkolom staan nog gelijk en horen dus nog steeds hetzelfde kader te hebben.
+    De middelste kolom verschuift op het scherm toch: de engine verdeelt de
+    kolommen gelijk over de breedte.
 
     De ondergrens wordt de langste regel van alle pagina's samen, de bovengrens de
     scherpste afbreking. Vallen die over elkaar heen, dan zijn het toch niet
@@ -884,28 +871,28 @@ def kaders_delen(alles: dict) -> None:
     """
     groepen = {}
     for naam, data in alles.items():
-        sleutel = (tuple(rond(k['x'], 0) for k in data['kolommen']),
-                   data['stijl'].get('ingr', {}).get('grootte'))
-        groepen.setdefault(sleutel, []).append(naam)
+        for i, kolom in enumerate(data['kolommen']):
+            sleutel = (len(data['kolommen']), i, rond(kolom['x'], 0),
+                       data['stijl'].get('ingr', {}).get('grootte'))
+            groepen.setdefault(sleutel, []).append(naam)
 
-    for sleutel, namen in groepen.items():
+    for (_, i, _, _), namen in groepen.items():
         if len(namen) < 2:
             continue
-        for i in range(len(sleutel[0])):
-            kaders = [alles[n]['kolommen'][i]['kader'] for n in namen]
-            onder = max(k['minimaal'] for k in kaders)
-            boven = min(k['maximaal'] for k in kaders)
-            if boven <= onder:
-                print(f'  kolom {i + 1} van {", ".join(namen)}: de kadergrenzen sluiten '
-                      f'elkaar uit ({onder} vs {boven}); elke pagina houdt zijn eigen kader.')
-                continue
-            marge = max(6.0, onder * 0.012)
-            gekozen = onder + marge if onder + marge < boven else (onder + boven) / 2
-            for k in kaders:
-                k['minimaal'] = rond(onder)
-                k['maximaal'] = rond(boven)
-                k['breedte'] = rond(gekozen)
-                k['gedeeldMet'] = [n for n in namen]
+        kaders = [alles[n]['kolommen'][i]['kader'] for n in namen]
+        onder = max(k['minimaal'] for k in kaders)
+        boven = min(k['maximaal'] for k in kaders)
+        if boven <= onder:
+            print(f'  kolom {i + 1} van {", ".join(namen)}: de kadergrenzen sluiten '
+                  f'elkaar uit ({onder} vs {boven}); elke pagina houdt zijn eigen kader.')
+            continue
+        marge = max(6.0, onder * 0.012)
+        gekozen = onder + marge if onder + marge < boven else (onder + boven) / 2
+        for k in kaders:
+            k['minimaal'] = rond(onder)
+            k['maximaal'] = rond(boven)
+            k['breedte'] = rond(gekozen)
+            k['gedeeldMet'] = [n for n in namen]
 
 
 def regelval_van(alinea) -> list:
@@ -1067,10 +1054,6 @@ def main():
     # gerechtenbibliotheek hebben de pagina's naast elkaar nodig.
     alles = {naam: pakket_extraheren(doc, pagina_nr, naam, ratios)
              for pagina_nr, naam in PAKKETTEN}
-    vervallen = vervallen_gerechten_zoeken(alles)
-    if vervallen:
-        raise SystemExit('Het .ai-bestand bevat nog gerechten die uit het repertoire zijn '
-                         'gegaan. Pas eerst het ontwerp aan:\n  ' + '\n  '.join(vervallen))
     kaders_delen(alles)
     # De voorbeeldpagina's delen hun tekstkaders niet: dat zijn geen pakketten, en
     # hun kolommen staan net ergens anders. Hun gerechten tellen wel mee.
