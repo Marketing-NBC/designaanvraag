@@ -40,7 +40,7 @@ describe('wat er per locatie te kiezen valt', () => {
     expect(requestTypesVoor('nbc', 'standaard').map((t) => t.key)).toEqual(['led_kolom', 'torenscherm', 'menu_scherm'])
     // Green Village heeft geen LED-kolom, ook niet als standaard design.
     expect(requestTypesVoor('green_village', 'standaard').map((t) => t.key)).toEqual(['torenscherm', 'menu_scherm'])
-    expect(requestTypesVoor('nbc', 'standaard')[0].description).toBe('Standaarden van NBC met logo')
+    expect(requestTypesVoor('nbc', 'standaard')[0].description).toBe('Standaarden van NBC met logo van opdrachtgever/evenement')
   })
 
   it('laat bij custom alles staan, zonder uitleg eronder', () => {

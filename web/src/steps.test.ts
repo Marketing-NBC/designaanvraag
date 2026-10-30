@@ -24,9 +24,10 @@ describe('bevestiging op de eventdatum', () => {
   })
 
   it('complimenteert niet bij een spoedje, maar waarschuwt voor drukwerk', () => {
-    // Vrijdag 16 oktober: negen werkdagen, minder dan twee weken.
+    // Vrijdag 16 oktober: negen werkdagen, minder dan tien.
     expect(eventStap.goed?.(draft('2026-10-16'))).toBeNull()
     expect(eventStap.warn?.(draft('2026-10-16'))).toContain('Drukwerk')
+    expect(eventStap.warn?.(draft('2026-10-16'))).toContain(`minder dan ${SPOED_WERKDAGEN} werkdagen`)
   })
 
   it('vraagt ook vlak voor het event niet om contact: alleen de drukwerkwaarschuwing', () => {
@@ -197,7 +198,7 @@ describe('de deadline', () => {
     expect(deadlineStap.alarm?.(metDeadline('2026-10-20'))).toBeNull()
   })
 
-  it('menukaart print binnen twee weken: geen garantie', () => {
+  it('menukaart print binnen tien werkdagen: geen garantie', () => {
     expect(typesStap.warn?.(metDeadline('2026-10-16', ['menukaart_print']))).toContain('niet garanderen')
     expect(typesStap.warn?.(metDeadline('2026-10-19', ['menukaart_print']))).toBeNull()
     expect(typesStap.warn?.(metDeadline('2026-10-16', ['menu_scherm']))).toBeNull()
