@@ -14,6 +14,51 @@ export function formatDateShortNl(iso: string, metJaar = true): string {
   return `${Number(m[3])} ${maand}${metJaar ? ` ${m[1]}` : ''}`
 }
 
+/** Hoe een maand in een eventnaam kan staan: voluit, afgekort of in het Engels. */
+const MAAND_SCHRIJFWIJZEN: readonly string[][] = [
+  ['januari', 'jan', 'january'],
+  ['februari', 'feb', 'febr', 'february'],
+  ['maart', 'mrt', 'mar', 'march'],
+  ['april', 'apr'],
+  ['mei', 'may'],
+  ['juni', 'jun', 'june'],
+  ['juli', 'jul', 'july'],
+  ['augustus', 'aug', 'august'],
+  ['september', 'sep', 'sept'],
+  ['oktober', 'okt', 'oct', 'october'],
+  ['november', 'nov'],
+  ['december', 'dec'],
+]
+
+/**
+ * Staat de eventdatum al in de eventnaam? "Zorgcongres 20 november 2026", "Gala 20 nov",
+ * "Beurs 19-20 november", "Kick-off 20-11-2026", "Event 2026-11-20". Dan hoeft hij in de
+ * taaknaam niet nog eens apart, want twee keer dezelfde datum is lelijk en zegt niets extra.
+ *
+ * Alleen de dag én de maand van de eventdatum tellen: een jaartal alleen ("Zorgcongres 2026")
+ * of een andere datum in de naam is geen reden om de eventdatum weg te laten.
+ */
+export function eventNaamBevatDatum(event: string, iso: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  if (!m) return false
+  const [jaar, maand, dag] = [m[1], Number(m[2]), Number(m[3])]
+  const naam = event.toLowerCase()
+  const d = `0?${dag}`
+  const mm = `0?${maand}`
+  const maandWoord = `(?:${MAAND_SCHRIJFWIJZEN[maand - 1].join('|')})\\.?(?![a-z])`
+  // "20 november", "20nov", "20e november", en bij een reeks "20-21 november" of "19 t/m 20 november".
+  const reeks = `(?:\\s*(?:-|–|/|&|en|t/m|tot)\\s*\\d{1,2})?`
+  const patronen = [
+    `(?<!\\d)${d}(?:ste|de|e)?${reeks}\\s*[-.]?\\s*${maandWoord}`,
+    `(?<!\\d)\\d{1,2}\\s*(?:-|–|/|&|en|t/m|tot)\\s*${d}(?:ste|de|e)?\\s*${maandWoord}`,
+    // "20-11", "20/11/2026", "20.11.26"
+    `(?<!\\d)${d}[-/.]${mm}(?![\\d])`,
+    // "2026-11-20"
+    `${jaar}[-/.]${mm}[-/.]${d}(?!\\d)`,
+  ]
+  return patronen.some((p) => new RegExp(p).test(naam))
+}
+
 type TitleInput = Pick<Aanvraag,
   'aanvraag_types' | 'anders_tekst' | 'deadline' | 'event' | 'event_datum' | 'naam'>
   & Partial<Pick<Aanvraag, 'soort' | 'omschrijving'>>
@@ -51,6 +96,8 @@ export function kortVan(tekst: string, max = INTERN_TITEL_TEKENS): string {
  * Torenscherm"); meer types → "Meerdere designs".
  *
  * Zonder jaartal: de titel is al lang en de echte datum staat in het veld Eventdatum.
+ * Staat de eventdatum al in de eventnaam ("Zorgcongres 20 november 2026"), dan komt hij er
+ * niet nog een keer achter.
  *
  * Een interne aanvraag: "Intern - <aanvrager> - Deadline: <deadline> - <begin van wat er
  * gevraagd wordt>", of "Geen deadline" waar de deadline staat als die er niet is.
@@ -71,7 +118,8 @@ export function taskTitle(a: TitleInput): string {
   const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
   return [
     a.event.trim(),
-    a.event_datum ? datum(a.event_datum) : '',
+    // Staat de datum al in de eventnaam, dan niet nog een keer.
+    a.event_datum && !eventNaamBevatDatum(a.event, a.event_datum) ? datum(a.event_datum) : '',
     a.naam.trim(),
     a.deadline ? `Deadline: ${datum(a.deadline)}` : GEEN_DEADLINE,
     wat,
