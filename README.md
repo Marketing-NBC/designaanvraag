@@ -44,7 +44,7 @@ Elke maandag: GitHub Actions → Asana → weekoverzicht per mail
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink` en `asana-webhook` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook` en `ledkolom-preview` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
 | `docs/` | Handleidingen: de [gids voor projecten](docs/gids-projecten/) en de [gids voor Marketing](docs/gids-marketing/) |
 | `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `weekmail.mjs` (weekoverzicht op maandag), `sync-shared.mjs` (schema's kopiëren naar de function) |
@@ -86,6 +86,7 @@ Supabase; niets hoeft in de Supabase-UI.
 | `ASANA_PLANNING_PROJECT_GID` | Optioneel; standaard uit `shared/asana-fields.json` (planningsproject) | uit de projectlink |
 | `ROUTINE_FIRE_URL`, `ROUTINE_TOKEN` | Huisstijl-extractie starten | zie "Routine instellen" |
 | `RATE_SALT` | Optioneel; zout voor de IP-hash | willekeurige tekst |
+| `LEDKOLOM_GITHUB_TOKEN`, `LEDKOLOM_SECRET` | 3D-preview van de ledkolom bij het opleveren | zie "3D-preview van de ledkolom" |
 | `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | Meldingsmails en het weekoverzicht via Microsoft 365 | van de M365-beheerder, zie "Meldingen per mail". Het secret verloopt: zie daar |
 
 Repository *variable* `ALLOWED_ORIGINS` (optioneel): komma-gescheiden origins die het formulier
@@ -272,6 +273,73 @@ bijlagen, status (`bezig`, `verstuurd`, `mislukt`) en de reden als het misging.
 **Eenmalig instellen:** draai Actions → **Asana-velden vernieuwen** met "Ontbrekende velden aanmaken"
 aan. Dat maakt de velden **Oplevermail** en **Ook mailen naar** en zet hun gids in
 `shared/asana-fields.json`. Zet daarna de e-mailadressen bij de collega's in Supabase.
+
+### 3D-preview van de ledkolom
+
+Bij een aanvraag met een **LED-kolom** krijgt de aanvrager geen losse mp4, maar een knop naar de
+kolom in 3D en op de foto van de foyer. Die preview maakt de repository
+[NBC-3D-ledkolom-Preview](https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview).
+
+Een ledkolomvideo is 300 à 400 MB, en Asana neemt maar 100 MB per bestand aan. De video loopt daarom
+zoals altijd via een **release** in die repository.
+
+**Wat je doet:**
+
+1. Maak in de 3D-repo een release met de mp4, zoals je gewend bent.
+2. Plak de link van die release (`https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/…`)
+   in de beschrijving van de subtaak **Oplevering**, **op een eigen regel**. Een link naar één
+   bestand van de release (`…/releases/download/…`) mag ook.
+3. Schrijf de rest van de tekst zoals altijd, en zet Oplevermail op *Stuur proef naar mij*.
+
+De GitHub-link komt **niet** in de mail: de regel met de link valt weg, en de aanvrager krijgt een
+knop **Bekijk in 3D**. Staan er meer video's in de release, dan komt er een knop per kolom.
+
+- **Bij de proef** vraagt de tool de 3D-repo om de preview. Die staat er meestal al (de release
+  maakte hem); de 3D-repo meldt dan binnen een paar minuten de link. In de proefmail staat dat de
+  preview nog gemaakt wordt. Zodra hij er is, staat er een reactie bij de taak:
+  *De 3D-ledkolom staat online*, met de link.
+- **Bij Verstuur nu** gaat de mail meteen de deur uit als de link er al is. Is hij er nog niet, dan
+  staat er een reactie: *De opleveringsmail wordt verstuurd zodra de 3D-ledkolom klaar is.* Je
+  hoeft niets meer te doen. Het veld blijft op *Bezig* tot de mail weg is, en springt dan op
+  *Verstuurd* met het gewone verslag erbij.
+- **Lukt het niet**, bijvoorbeeld omdat de release niet bestaat, nog een concept is, of de video
+  breder is dan hoog, dan gaat er niets uit. Het veld springt op *Mislukt*, met de reden en een
+  @-vermelding. Los het op en druk opnieuw.
+
+**Een volgende versie** is een nieuwe release (een tag moet toch uniek zijn). Plak de nieuwe link in
+de nieuwe subtaak Oplevering. Heet de mp4 hetzelfde als de vorige, dan komt de preview op dezelfde
+link, zoals altijd bij de 3D-repo.
+
+Bij een aanvraag **zonder** LED-kolom gebeurt er niets met zo'n link; hij blijft gewoon in de tekst.
+
+**Hangt het?** Staat de mail er na een kwartier nog niet, zet Oplevermail dan opnieuw op Verstuur
+nu: een run die na een kwartier niets liet horen, start dan opnieuw. Kijk ook in de 3D-repo onder
+**Actions → Preview bouwen en publiceren**.
+
+**Hoe het loopt.** De function `asana-webhook` zet per release-link een rij in de tabel
+`ledkolom_previews` (status `wacht`/`klaar`/`mislukt`) en start in de 3D-repo de workflow
+*Preview bouwen en publiceren*. Die haalt bij de function `ledkolom-preview` op welke links er
+klaarstaan, zoekt of maakt de preview, en meldt na het publiceren per link de naam en de map. Een
+mail die wachtte (status `wacht_op_preview` in `opleveringen`) gaat dan via dezelfde opleverflow de
+deur uit, namens wie op de knop drukte. Herkennen en weghalen van de links staat in
+`shared/ledkolom-preview.ts`.
+
+**Eenmalig instellen:**
+
+1. Bedenk een lange willekeurige tekst als gedeeld geheim. Zet die hier als secret
+   **`LEDKOLOM_SECRET`**, en in de 3D-repo als secret **`DESIGNAANVRAAG_SECRET`**.
+2. Maak op github.com een **fine-grained personal access token**: Settings → Developer settings →
+   Fine-grained tokens. Kies als *Resource owner* Marketing-NBC, bij *Repository access* alleen
+   **NBC-3D-ledkolom-Preview**, en bij *Permissions* alleen **Actions: Read and write**. Zet het hier
+   als secret **`LEDKOLOM_GITHUB_TOKEN`**. Het token verloopt: zet een herinnering, en vervang het
+   op tijd.
+3. Zet in de 3D-repo de variable **`DESIGNAANVRAAG_URL`** op
+   `https://<project-id>.supabase.co/functions/v1/ledkolom-preview`.
+4. Draai **Supabase deploy** (Actions → Run workflow). Die maakt de tabel, zet de function
+   `ledkolom-preview` online en geeft de twee secrets door.
+
+Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een release-link op *Mislukt*, met de melding
+dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er niets van.
 
 ## Feedback op werk dat al af is
 

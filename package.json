@@ -16,7 +16,7 @@
     "lint": "npm run lint -w web",
     "sync-shared": "node scripts/sync-shared.mjs",
     "test:worker": "node --test --experimental-strip-types --no-warnings worker/test/*.test.mjs",
-    "test:functions": "cd supabase/functions && deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts && deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/"
+    "test:functions": "cd supabase/functions && deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts ledkolom-preview/index.ts && deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/ ledkolom-preview/"
   },
   "engines": {
     "node": ">=22"

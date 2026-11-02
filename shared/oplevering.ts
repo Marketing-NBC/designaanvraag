@@ -14,6 +14,8 @@ import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL } from './contact.ts'
 import { THEMAS, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, vlak, waarschuwingBlok } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
+import { asanaLink } from './ledkolom-preview.ts'
+import type { PreviewLink } from './ledkolom-preview.ts'
 import { describeRequestTypes } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 
@@ -256,6 +258,10 @@ export interface OpleveringMail {
   afzenderNaam: string | null
   bijlagen: { naam: string; bytes: number }[]
   links: { naam: string; url: string }[]
+  /** De 3D-previews van de ledkolom die online staan; alleen bij een LED-kolom met een release-link. */
+  previews?: PreviewLink[]
+  /** Er wordt nog een 3D-preview gemaakt. Kan alleen in een proef: de echte mail wacht daarop. */
+  previewsOnderweg?: boolean
   /** Een proefmail: alleen naar wie hem vroeg, met bovenaan wie de echte mail zou krijgen. */
   proef?: { echteOntvangers: string[] } | null
 }
@@ -287,6 +293,21 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   if (m.berichtHtml) {
     delen.push(vlak(m.berichtHtml, { achtergrond: thema.tint, onder: 4 }))
     if (m.afzenderNaam) delen.push(`<p style="margin:0 0 16px;color:#596165;font-size:13px;">${escapeHtml(m.afzenderNaam)}, Marketing</p>`)
+  }
+
+  const previews = m.previews ?? []
+  const onderweg = Boolean(m.proef && m.previewsOnderweg)
+  if (previews.length || onderweg) {
+    const meer = previews.length > 1
+    delen.push(`<p style="margin:8px 0 0;font-weight:bold;">Bekijk ${meer ? 'de ledkolommen' : 'de ledkolom'} in 3D</p>`)
+    delen.push(`<p style="margin:4px 0 0;">Draai de kolom rond, en zie hem op locatie: op de ledkolommen in de foyer van NBC. `
+      + 'Werkt op je telefoon en op je computer, zonder inloggen.</p>')
+    if (onderweg) {
+      delen.push(`<p style="margin:4px 0 0;color:#596165;font-size:13px;">(Proef: de 3D-preview wordt nog gemaakt. In de echte mail staat hier een knop ernaartoe; `
+        + 'die gaat pas de deur uit als de preview online staat.)</p>')
+    }
+    for (const p of previews) delen.push(knop(p.url, meer ? `Bekijk ${p.naam} in 3D` : 'Bekijk in 3D', thema))
+    delen.push(ruimte('', 8))
   }
 
   const rijen: [string, string][] = []
@@ -329,20 +350,25 @@ function opsomming(woorden: string[]): string {
 }
 
 /** De reactie in Asana na een proefmail: waar hij heen ging en wie de echte krijgt. */
-export function verslagProef(v: { naar: string; aan: string[]; bijlagen: string[]; links: string[] }): string {
+export function verslagProef(v: { naar: string; aan: string[]; bijlagen: string[]; links: string[]; previews?: PreviewLink[]; previewsOnderweg?: boolean }): string {
+  const previews = v.previews ?? []
   const delen = [`Proefmail gestuurd naar ${escapeAsana(v.naar)}. De echte mail gaat naar ${escapeAsana(opsomming(v.aan))}`]
-  delen[0] += v.bijlagen.length ? `, met ${escapeAsana(opsomming(v.bijlagen))}.` : v.links.length ? '.' : ', zonder bijlagen.'
+  delen[0] += v.bijlagen.length ? `, met ${escapeAsana(opsomming(v.bijlagen))}.` : v.links.length || previews.length || v.previewsOnderweg ? '.' : ', zonder bijlagen.'
   if (v.links.length) delen.push(`Als link: ${escapeAsana(v.links.join(', '))}.`)
+  if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
+  if (v.previewsOnderweg) delen.push('De 3D-preview wordt nog gemaakt; als hij online staat, komt de link hier als reactie. De echte mail wacht daar vanzelf op.')
   delen.push('Klopt alles, zet Oplevermail dan op Verstuur nu.')
   return `<body>${delen.join(' ')}</body>`
 }
 
 /** De reactie in Asana na een geslaagde mail: wie, wat en welke versie. */
-export function verslagVerstuurd(v: { versie: number; aan: string[]; bijlagen: string[]; links: string[]; datum: string }): string {
+export function verslagVerstuurd(v: { versie: number; aan: string[]; bijlagen: string[]; links: string[]; datum: string; previews?: PreviewLink[] }): string {
+  const previews = v.previews ?? []
   const delen = [`Opleveringsmail${v.versie > 1 ? ` (versie ${v.versie})` : ''} verstuurd op ${escapeAsana(formatDateShortNl(v.datum))} aan ${escapeAsana(opsomming(v.aan))}.`]
   if (v.bijlagen.length) delen.push(`Bijlagen: ${escapeAsana(v.bijlagen.join(', '))}.`)
   if (v.links.length) delen.push(`Als link: ${escapeAsana(v.links.join(', '))}.`)
-  if (!v.bijlagen.length && !v.links.length) delen.push('Zonder bijlagen.')
+  if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
+  if (!v.bijlagen.length && !v.links.length && !previews.length) delen.push('Zonder bijlagen.')
   return `<body>${delen.join(' ')}</body>`
 }
 
