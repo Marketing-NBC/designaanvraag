@@ -5,16 +5,18 @@ import { createHandler } from './handler.ts'
 
 const GEHEIM = 'een-lang-gedeeld-geheim'
 const NU = new Date('2026-10-30T10:00:00Z')
+const RELEASE = 'https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/zorgcongres-11-dec'
+const KLAAR = { naam: 'Zorgcongres - 11 dec', slug: 'zorgcongres-11-dec-0a1b2c3d' }
 
 function rij(over: Partial<LedkolomPreviewRow> = {}): LedkolomPreviewRow {
   return {
-    id: 'lk-1', aanvraag_id: 'a1', volgnummer: 1, slug: 'zorgcongres-11-december-0a1b2c3d', naam: 'Zorgcongres - 11 december',
-    bijlage_gid: 'vid-1', bestandsnaam: 'kolom.mp4', status: 'wacht', fout: null, gevraagd_op: '2026-10-30T09:55:00Z', klaar_op: null,
+    id: 'lk-1', aanvraag_id: 'a1', bron: RELEASE, status: 'wacht', fout: null, previews: [],
+    gevraagd_op: '2026-10-30T09:55:00Z', klaar_op: null,
     ...over,
   }
 }
 
-function setup(opts: { previews?: LedkolomPreviewRow[]; wachtend?: Partial<OpleveringRow>[]; linkFout?: boolean } = {}) {
+function setup(opts: { previews?: LedkolomPreviewRow[]; wachtend?: Partial<OpleveringRow>[] } = {}) {
   const previews = (opts.previews ?? [rij()]).map((r) => ({ ...r }))
   const comments: string[] = []
   const opgeleverd: { taak: string; door: string | null; naPreview: boolean }[] = []
@@ -34,7 +36,6 @@ function setup(opts: { previews?: LedkolomPreviewRow[]; wachtend?: Partial<Oplev
       findById: () => Promise.resolve({ id: 'a1', asana_task_gid: 't1' } as AanvraagDetail),
     },
     asana: {
-      downloadLink: () => opts.linkFout ? Promise.reject(new Error('404')) : Promise.resolve('https://asana-files.example/kolom.mp4?sig=x'),
       getTask: () => Promise.resolve(taak),
       addComment: (_gid, html) => (comments.push(html), Promise.resolve()),
     },
@@ -43,90 +44,89 @@ function setup(opts: { previews?: LedkolomPreviewRow[]; wachtend?: Partial<Oplev
     log: () => {},
   })
 
-  const vraag = (pad: string, init: RequestInit & { geheim?: string | null } = {}) => {
+  const vraag = (init: RequestInit & { geheim?: string | null } = {}) => {
     const headers = new Headers(init.headers)
     if (init.geheim !== null) headers.set('Authorization', `Bearer ${init.geheim ?? GEHEIM}`)
-    return handler(new Request(`https://x.supabase.co/functions/v1/ledkolom-preview${pad}`, { ...init, headers }))
+    return handler(new Request('https://x.supabase.co/functions/v1/ledkolom-preview', { ...init, headers }))
   }
-  const meld = (uitslagen: unknown[]) => vraag('', { method: 'POST', body: JSON.stringify({ uitslagen }), headers: { 'Content-Type': 'application/json' } })
+  const meld = (uitslagen: unknown[]) => vraag({ method: 'POST', body: JSON.stringify({ uitslagen }), headers: { 'Content-Type': 'application/json' } })
   return { vraag, meld, previews, comments, opgeleverd }
 }
 
 Deno.test('zonder of met een verkeerd geheim: geen toegang', async () => {
   const s = setup()
-  assertEquals((await s.vraag('', { geheim: null })).status, 401)
-  assertEquals((await s.vraag('', { geheim: 'fout' })).status, 401)
+  assertEquals((await s.vraag({ geheim: null })).status, 401)
+  assertEquals((await s.vraag({ geheim: 'fout' })).status, 401)
 })
 
-Deno.test('GET geeft wat er te bouwen valt', async () => {
-  const s = setup({ previews: [rij(), rij({ id: 'lk-2', volgnummer: 2, slug: 'b-11111111', status: 'klaar' })] })
-  const res = await s.vraag('')
+Deno.test('GET geeft de release-links die klaarstaan', async () => {
+  const s = setup({ previews: [rij(), rij({ id: 'lk-2', bron: 'https://github.com/x', status: 'klaar' })] })
+  const res = await s.vraag()
   assertEquals(res.status, 200)
-  assertEquals(await res.json(), {
-    previews: [{ id: 'lk-1', slug: 'zorgcongres-11-december-0a1b2c3d', naam: 'Zorgcongres - 11 december', bijlage: 'vid-1', bestandsnaam: 'kolom.mp4' }],
-  })
-})
-
-Deno.test('de video: doorsturen naar een verse downloadlink van Asana', async () => {
-  const s = setup()
-  const res = await s.vraag('?video=lk-1')
-  assertEquals(res.status, 302)
-  assertEquals(res.headers.get('location'), 'https://asana-files.example/kolom.mp4?sig=x')
-  assertEquals((await s.vraag('?video=bestaat-niet')).status, 404)
-  assertEquals((await setup({ linkFout: true }).vraag('?video=lk-1')).status, 502)
+  assertEquals(await res.json(), { releases: [{ id: 'lk-1', bron: RELEASE }] })
 })
 
 Deno.test('klaar zonder wachtende mail: een reactie met de link', async () => {
   const s = setup()
-  const res = await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'klaar' }])
+  const res = await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'klaar', previews: [KLAAR] }])
   assertEquals(await res.json(), { verwerkt: 1, verouderd: 0 })
   assertEquals(s.previews[0].status, 'klaar')
+  assertEquals(s.previews[0].previews, [KLAAR])
   assertEquals(s.previews[0].klaar_op, NU.toISOString())
-  assertStringIncludes(s.comments[0], 'https://marketing-nbc.github.io/NBC-3D-ledkolom-Preview/p/zorgcongres-11-december-0a1b2c3d/')
+  assertStringIncludes(s.comments[0], 'https://marketing-nbc.github.io/NBC-3D-ledkolom-Preview/p/zorgcongres-11-dec-0a1b2c3d/')
   assertEquals(s.opgeleverd, [])
 })
 
 Deno.test('klaar met een wachtende mail: die gaat nu de deur uit, namens wie drukte', async () => {
   const s = setup({ wachtend: [{ id: 'op-1', door: 'devi', status: 'wacht_op_preview' }] })
-  await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'klaar' }])
+  await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'klaar', previews: [KLAAR] }])
   assertEquals(s.opgeleverd, [{ taak: 't1', door: 'devi', naPreview: true }])
   assertEquals(s.comments, [], 'het verslag komt uit de opleverflow')
 })
 
 Deno.test('mislukt zonder wachtende mail: een reactie met de reden en een vermelding', async () => {
   const s = setup()
-  await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'mislukt', fout: 'Geen kolomvideo: breder dan hoog.' }])
+  await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'mislukt', fout: 'Release "zorgcongres-11-dec" niet gevonden.' }])
   assertEquals(s.previews[0].status, 'mislukt')
-  assertEquals(s.previews[0].fout, 'Geen kolomvideo: breder dan hoog.')
   assertMatch(s.comments[0], /data-asana-gid="abel"/)
-  assertMatch(s.comments[0], /Geen kolomvideo/)
+  assertMatch(s.comments[0], /niet gevonden/)
 })
 
 Deno.test('mislukt met een wachtende mail: de opleverflow zet hem op Mislukt', async () => {
   const s = setup({ wachtend: [{ id: 'op-1', door: 'devi', status: 'wacht_op_preview' }] })
-  await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'mislukt', fout: 'kapot' }])
+  await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'mislukt', fout: 'kapot' }])
   assertEquals(s.opgeleverd.length, 1)
   assertEquals(s.comments, [])
 })
 
-Deno.test('een uitslag voor een oudere video telt niet', async () => {
-  const s = setup({ previews: [rij({ bijlage_gid: 'vid-2' })] })
-  assertEquals(await (await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'klaar' }])).json(), { verwerkt: 0, verouderd: 1 })
-  assertEquals(s.previews[0].status, 'wacht')
+Deno.test('klaar zonder previews telt als mislukt', async () => {
+  const s = setup()
+  await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'klaar', previews: [] }])
+  assertEquals(s.previews[0].status, 'mislukt')
+})
+
+Deno.test('een uitslag die al gemeld is of niet bij de link hoort, telt niet', async () => {
+  const s = setup({ previews: [rij(), rij({ id: 'lk-2', status: 'klaar' })] })
+  const res = await s.meld([
+    { id: 'lk-1', bron: 'https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/anders', status: 'klaar', previews: [KLAAR] },
+    { id: 'lk-2', bron: RELEASE, status: 'klaar', previews: [KLAAR] },
+  ])
+  assertEquals(await res.json(), { verwerkt: 0, verouderd: 2 })
   assertEquals(s.comments, [])
 })
 
-Deno.test('twee kolommen van één aanvraag: één keer nazorg', async () => {
+Deno.test('twee links van één aanvraag: één keer nazorg', async () => {
   const s = setup({
-    previews: [rij(), rij({ id: 'lk-2', volgnummer: 2, slug: 'b-11111111', bijlage_gid: 'vid-2' })],
+    previews: [rij(), rij({ id: 'lk-2', bron: `${RELEASE}-b` })],
     wachtend: [{ id: 'op-1', door: 'devi', status: 'wacht_op_preview' }],
   })
-  await s.meld([{ id: 'lk-1', bijlage: 'vid-1', status: 'klaar' }, { id: 'lk-2', bijlage: 'vid-2', status: 'klaar' }])
+  await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'klaar', previews: [KLAAR] }, { id: 'lk-2', bron: `${RELEASE}-b`, status: 'klaar', previews: [KLAAR] }])
   assertEquals(s.opgeleverd.length, 1)
 })
 
-Deno.test('een onleesbare melding wordt geweigerd', async () => {
+Deno.test('een onleesbare melding of een vreemde map wordt geweigerd', async () => {
   const s = setup()
   assertEquals((await s.meld([{ id: 'lk-1', status: 'misschien' }])).status, 400)
-  assertEquals((await s.vraag('', { method: 'DELETE' })).status, 405)
+  assertEquals((await s.meld([{ id: 'lk-1', bron: RELEASE, status: 'klaar', previews: [{ naam: 'x', slug: '../../kwaad' }] }])).status, 400)
+  assertEquals((await s.vraag({ method: 'DELETE' })).status, 405)
 })

@@ -115,17 +115,16 @@ export interface OpleveringRow {
 
 export type LedkolomStatus = 'wacht' | 'klaar' | 'mislukt'
 
-/** Een 3D-preview van een ledkolomvideo; zie shared/ledkolom-preview.ts. */
+/** Een release-link uit de subtaak Oplevering en de 3D-preview(s) die daarvan gemaakt zijn; zie shared/ledkolom-preview.ts. */
 export interface LedkolomPreviewRow {
   id: string
   aanvraag_id: string
-  volgnummer: number
-  slug: string
-  naam: string
-  bijlage_gid: string
-  bestandsnaam: string
+  /** De link naar de release, of naar één bestand daarin. */
+  bron: string
   status: LedkolomStatus
   fout: string | null
+  /** Wat de 3D-repo meldde: per video in de release de naam en de map. */
+  previews: { naam: string; slug: string }[]
   gevraagd_op: string
   klaar_op: string | null
 }
@@ -200,13 +199,13 @@ export interface Db {
   pakWachtendeOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<boolean>
   /** Opleveringen van deze aanvraag die op een 3D-preview wachten. */
   wachtendeOpleveringen(aanvraagId: string): Promise<OpleveringRow[]>
-  /** De 3D-previews van een aanvraag, op volgnummer. */
+  /** De 3D-previews van een aanvraag. */
   ledkolomPreviews(aanvraagId: string): Promise<LedkolomPreviewRow[]>
   ledkolomPreview(id: string): Promise<LedkolomPreviewRow | null>
   /** Wat de 3D-repo nog moet bouwen. */
   openLedkolomPreviews(): Promise<LedkolomPreviewRow[]>
-  insertLedkolomPreview(row: Pick<LedkolomPreviewRow, 'aanvraag_id' | 'volgnummer' | 'slug' | 'naam' | 'bijlage_gid' | 'bestandsnaam'>): Promise<LedkolomPreviewRow>
-  updateLedkolomPreview(id: string, patch: Partial<Omit<LedkolomPreviewRow, 'id' | 'aanvraag_id' | 'slug'>>): Promise<void>
+  insertLedkolomPreview(row: Pick<LedkolomPreviewRow, 'aanvraag_id' | 'bron'>): Promise<LedkolomPreviewRow>
+  updateLedkolomPreview(id: string, patch: Partial<Omit<LedkolomPreviewRow, 'id' | 'aanvraag_id' | 'bron'>>): Promise<void>
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
@@ -215,7 +214,7 @@ const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_ty
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
 const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op, door'
-const LEDKOLOM_COLUMNS = 'id, aanvraag_id, volgnummer, slug, naam, bijlage_gid, bestandsnaam, status, fout, gevraagd_op, klaar_op'
+const LEDKOLOM_COLUMNS = 'id, aanvraag_id, bron, status, fout, previews, gevraagd_op, klaar_op'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
 function veiligeZoekterm(q: string): string {
@@ -427,7 +426,7 @@ export function createDb(url: string, secretKey: string): Db {
       return (data as OpleveringRow[] | null) ?? []
     },
     async ledkolomPreviews(aanvraagId) {
-      const { data, error } = await sb.from('ledkolom_previews').select(LEDKOLOM_COLUMNS).eq('aanvraag_id', aanvraagId).order('volgnummer')
+      const { data, error } = await sb.from('ledkolom_previews').select(LEDKOLOM_COLUMNS).eq('aanvraag_id', aanvraagId).order('created_at')
       if (error) throw new Error(`db select ledkolom_previews: ${error.message}`)
       return (data as LedkolomPreviewRow[] | null) ?? []
     },

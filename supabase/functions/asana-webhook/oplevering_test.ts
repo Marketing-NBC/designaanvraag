@@ -138,7 +138,7 @@ function setup(opts: {
     },
     ledkolomPreviews: () => Promise.resolve(previews.map((p) => ({ ...p }))),
     insertLedkolomPreview: (r) => {
-      const rij: LedkolomPreviewRow = { ...r, id: `lk-${previews.length + 1}`, status: 'wacht', fout: null, gevraagd_op: (opts.now ?? NU).toISOString(), klaar_op: null }
+      const rij: LedkolomPreviewRow = { ...r, id: `lk-${previews.length + 1}`, status: 'wacht', fout: null, previews: [], gevraagd_op: (opts.now ?? NU).toISOString(), klaar_op: null }
       previews.push(rij)
       return Promise.resolve({ ...rij })
     },
@@ -162,8 +162,7 @@ function setup(opts: {
   }
 
   const oplever = createOplever({
-    asana, db, mail, cfg, previewBouwer, slugVoor: (naam) => `${naam.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-0a1b2c3d`,
-    now: () => opts.now ?? NU, log: () => {},
+    asana, db, mail, cfg, previewBouwer, now: () => opts.now ?? NU, log: () => {},
   })
   return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestart: () => gestart }
 }
@@ -397,45 +396,51 @@ Deno.test('een mislukte proef zegt dat het om de proef ging', async () => {
 // ── 3D-preview van de ledkolom ───────────────────────────────────────
 
 const ledkolom = { ...aanvraag, aanvraag_types: ['led_kolom'] } as unknown as AanvraagDetail
-const video = (over: Partial<AsanaBestand> = {}) => bestand({ gid: 'vid-1', naam: 'Zorgcongres ledkolom.mp4', bytes: 300_000_000, ...over })
-const URL_1 = 'https://marketing-nbc.github.io/NBC-3D-ledkolom-Preview/p/zorgcongres-11-december-0a1b2c3d/'
+const RELEASE = 'https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/zorgcongres-11-dec'
+const RELEASE_2 = 'https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/zorgcongres-v2'
+const URL_1 = 'https://marketing-nbc.github.io/NBC-3D-ledkolom-Preview/p/zorgcongres-11-dec-0a1b2c3d/'
+
+/** Zoals Asana een geplakte link bewaart: als link, met de link als tekst. */
+function metRelease(tekst = 'Hierbij de ledkolom.', link = RELEASE): Subtaak {
+  return subtaak({ html: `<body>${tekst}\n<a href="${link}">${link}</a></body>` })
+}
 
 function previewRij(over: Partial<LedkolomPreviewRow> = {}): LedkolomPreviewRow {
   return {
-    id: 'lk-1', aanvraag_id: aanvraag.id, volgnummer: 1, slug: 'zorgcongres-11-december-0a1b2c3d', naam: 'Zorgcongres - 11 december',
-    bijlage_gid: 'vid-1', bestandsnaam: 'Zorgcongres ledkolom.mp4', status: 'klaar', fout: null, gevraagd_op: '2026-10-28T09:50:00Z', klaar_op: '2026-10-28T09:55:00Z',
+    id: 'lk-1', aanvraag_id: aanvraag.id, bron: RELEASE, status: 'klaar', fout: null,
+    previews: [{ naam: 'Zorgcongres - 11 dec', slug: 'zorgcongres-11-dec-0a1b2c3d' }],
+    gevraagd_op: '2026-10-28T09:50:00Z', klaar_op: '2026-10-28T09:55:00Z',
     ...over,
   }
 }
 
-Deno.test('ledkolom: de proef start de 3D-preview en heeft de link al, de video gaat niet als bijlage mee', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [bestand(), video()] } })
+const geenBestanden = { 'sub-1': [] }
+
+Deno.test('ledkolom: de proef start de 3D-preview, en de GitHub-link gaat niet mee in de mail', async () => {
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden })
   assertEquals(await s.oplever(taak(), PROEF), 'proefmail verstuurd')
   assertEquals(s.gestart(), 1)
-  assertEquals(s.previews.length, 1)
-  assertEquals(s.previews[0].naam, 'Zorgcongres - 11 december')
-  assertEquals(s.previews[0].status, 'wacht')
-  assertEquals(s.downloads, ['att-1'], 'de video wordt niet gedownload')
+  assertEquals(s.previews.map((p) => [p.bron, p.status]), [[RELEASE, 'wacht']])
   const html = s.gemaild[0].html
-  assertStringIncludes(html, URL_1)
-  assertStringIncludes(html, 'Bekijk in 3D')
+  assertStringIncludes(html, 'Hierbij de ledkolom.')
+  assert(!html.includes('github.com'), 'geen link naar GitHub in de mail')
   assertStringIncludes(html, 'wordt nog gemaakt')
-  assert(!html.includes('Zorgcongres ledkolom.mp4'), 'niet in de lijst met bijlagen')
-  assertStringIncludes(s.comments[0], URL_1)
+  assertMatch(s.comments[0], /als hij online staat, komt de link hier als reactie/)
 })
 
-Deno.test('ledkolom: een grote video telt niet mee voor de 20 MB', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, previews: [previewRij()] })
+Deno.test('ledkolom: staat de preview al online, dan gaat de mail meteen, met de knop', async () => {
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [previewRij()] })
   assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
-  assertEquals(s.gestart(), 0, 'staat al online voor deze video')
-  assertEquals(s.gemaild[0].html.includes(URL_1), true)
-  assert(!s.gemaild[0].html.includes('wordt nog gemaakt'))
-  assertStringIncludes(s.comments[0], '3D-preview')
+  assertEquals(s.gestart(), 0)
+  assertStringIncludes(s.gemaild[0].html, URL_1)
+  assertStringIncludes(s.gemaild[0].html, 'Bekijk in 3D')
+  assert(!s.gemaild[0].html.includes('github.com'))
+  assertStringIncludes(s.comments[0], URL_1)
   assertEquals(s.rijen[0].status, 'verstuurd')
 })
 
-Deno.test('ledkolom: Verstuur nu terwijl de preview nog gebouwd wordt: de mail wacht, met een reactie', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] } })
+Deno.test('ledkolom: Verstuur nu terwijl de preview nog gemaakt wordt: de mail wacht, met een reactie', async () => {
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden })
   assertEquals(await s.oplever(taak(), ECHT), 'oplevermail wacht op 3D-preview')
   assertEquals(s.gemaild, [])
   assertEquals(s.gestart(), 1)
@@ -447,9 +452,9 @@ Deno.test('ledkolom: Verstuur nu terwijl de preview nog gebouwd wordt: de mail w
 })
 
 Deno.test('ledkolom: is de preview klaar, dan gaat de wachtende mail alsnog de deur uit', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] } })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden })
   await s.oplever(taak(), ECHT)
-  s.previews[0].status = 'klaar'
+  Object.assign(s.previews[0], { status: 'klaar', previews: previewRij().previews })
   assertEquals(await s.oplever(taak(), { proef: false, door: 'devi', naPreview: true }), 'oplevermail verstuurd (versie 1)')
   assertEquals(s.gemaild.length, 1)
   assertEquals(s.gemaild[0].aan, ['britt@nbcevents.nl'])
@@ -460,88 +465,90 @@ Deno.test('ledkolom: is de preview klaar, dan gaat de wachtende mail alsnog de d
 })
 
 Deno.test('ledkolom: een melding zonder wachtende mail doet niets', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, previews: [previewRij()] })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [previewRij()] })
   assertEquals(await s.oplever(taak(), { proef: false, door: null, naPreview: true }), 'geen mail die op de 3D-preview wacht')
   assertEquals(s.gemaild, [])
   assertEquals(s.comments, [])
 })
 
 Deno.test('ledkolom: dezelfde wachtende mail gaat maar één keer de deur uit', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] } })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden })
   await s.oplever(taak(), ECHT)
-  s.previews[0].status = 'klaar'
-  const [a, b] = await Promise.all([
+  Object.assign(s.previews[0], { status: 'klaar', previews: previewRij().previews })
+  const uitkomsten = await Promise.all([
     s.oplever(taak(), { proef: false, door: 'devi', naPreview: true }),
     s.oplever(taak(), { proef: false, door: 'devi', naPreview: true }),
   ])
-  assertEquals([a, b].filter((u) => u === 'oplevermail verstuurd (versie 1)').length, 1)
+  assertEquals(uitkomsten.filter((u) => u === 'oplevermail verstuurd (versie 1)').length, 1)
   assertEquals(s.gemaild.length, 1)
 })
 
 Deno.test('ledkolom: mislukt de preview, dan gaat de wachtende mail op Mislukt met de reden', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] } })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden })
   await s.oplever(taak(), ECHT)
-  s.previews[0].status = 'mislukt'
-  s.previews[0].fout = 'Dit is geen kolomvideo: hij is breder dan hoog.'
+  Object.assign(s.previews[0], { status: 'mislukt', fout: '"kolom.mp4" ziet er niet uit als een 4-zijden ledkolom.' })
   await s.oplever(taak(), { proef: false, door: 'devi', naPreview: true })
   assertEquals(s.gemaild, [])
   assertEquals(s.gestart(), 1, 'niet eindeloos opnieuw')
   assertEquals(s.rijen[0].status, 'mislukt')
-  assertMatch(s.comments[1], /kon niet gemaakt worden: Dit is geen kolomvideo/)
+  assertMatch(s.comments[1], /release &quot;zorgcongres-11-dec&quot;|release "zorgcongres-11-dec"/)
+  assertMatch(s.comments[1], /ziet er niet uit als een 4-zijden ledkolom/)
   assertEquals(s.velden.at(-1), { 'veld-oplever': 'opt-mislukt' })
 })
 
 Deno.test('ledkolom: na een mislukte preview probeert de knop het opnieuw', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, previews: [previewRij({ status: 'mislukt', fout: 'x' })] })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [previewRij({ status: 'mislukt', fout: 'x', previews: [] })] })
   assertEquals(await s.oplever(taak(), ECHT), 'oplevermail wacht op 3D-preview')
   assertEquals(s.gestart(), 1)
   assertEquals(s.previews[0].status, 'wacht')
 })
 
-Deno.test('ledkolom: een nieuwe versie van de video komt op dezelfde link', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video({ gid: 'vid-2' })] }, previews: [previewRij()] })
+Deno.test('ledkolom: een nieuwe release-link bij een volgende versie wordt een nieuwe preview', async () => {
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease('Versie 2.', RELEASE_2)], bestanden: geenBestanden, previews: [previewRij()] })
   await s.oplever(taak(), PROEF)
   assertEquals(s.gestart(), 1)
-  assertEquals(s.previews.length, 1)
-  assertEquals(s.previews[0].bijlage_gid, 'vid-2')
-  assertEquals(s.previews[0].slug, 'zorgcongres-11-december-0a1b2c3d')
-  assertEquals(s.previews[0].status, 'wacht')
+  assertEquals(s.previews.map((p) => p.bron), [RELEASE, RELEASE_2])
 })
 
-Deno.test('ledkolom: na een kwartier zonder bericht start de knop de build opnieuw, daarvoor niet', async () => {
-  const wacht = previewRij({ status: 'wacht', gevraagd_op: '2026-10-28T09:55:00Z', klaar_op: null })
-  const kort = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, previews: [wacht] })
+Deno.test('ledkolom: na een kwartier zonder bericht start de knop de 3D-repo opnieuw, daarvoor niet', async () => {
+  const wacht = previewRij({ status: 'wacht', previews: [], gevraagd_op: '2026-10-28T09:55:00Z', klaar_op: null })
+  const kort = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [wacht] })
   await kort.oplever(taak(), ECHT)
   assertEquals(kort.gestart(), 0)
-  const lang = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, previews: [wacht], now: new Date('2026-10-28T10:20:00Z') })
+  const lang = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [wacht], now: new Date('2026-10-28T10:20:00Z') })
   await lang.oplever(taak(), ECHT)
   assertEquals(lang.gestart(), 1)
 })
 
-Deno.test('ledkolom: twee video\'s worden twee previews met een eigen naam', async () => {
-  const s = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video(), video({ gid: 'vid-2', naam: 'b.mp4', createdAt: '2026-10-28T09:58:00Z' })] } })
-  await s.oplever(taak(), PROEF)
-  assertEquals(s.previews.map((p) => p.naam), ['Zorgcongres - 11 december - kolom 1', 'Zorgcongres - 11 december - kolom 2'])
-  assertEquals(s.gestart(), 1, 'één build voor allebei')
-  assertStringIncludes(s.gemaild[0].html, 'Bekijk Zorgcongres - 11 december - kolom 2 in 3D')
+Deno.test('ledkolom: een release met twee kolommen geeft twee knoppen', async () => {
+  const twee = previewRij({ previews: [{ naam: 'Zorgcongres A', slug: 'zorgcongres-a-0a1b2c3d' }, { naam: 'Zorgcongres B', slug: 'zorgcongres-b-1a2b3c4d' }] })
+  const s = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, previews: [twee] })
+  await s.oplever(taak(), ECHT)
+  assertStringIncludes(s.gemaild[0].html, 'Bekijk Zorgcongres A in 3D')
+  assertStringIncludes(s.gemaild[0].html, 'Bekijk Zorgcongres B in 3D')
+})
+
+Deno.test('ledkolom: alleen de link, zonder tekst of bestanden, mag ook', async () => {
+  const s = setup({ aanvraag: ledkolom, subtaken: [subtaak({ html: `<body><a href="${RELEASE}">${RELEASE}</a></body>` })], bestanden: geenBestanden, previews: [previewRij()] })
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
 })
 
 Deno.test('ledkolom: zonder koppeling of als GitHub weigert gaat er niets uit, met de reden', async () => {
-  const zonder = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, bouwer: false })
+  const zonder = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, bouwer: false })
   await zonder.oplever(taak(), ECHT)
   assertEquals(zonder.gemaild, [])
   assertMatch(zonder.comments[0], /koppeling met de 3D-preview is nog niet ingesteld/)
 
-  const weigert = setup({ aanvraag: ledkolom, bestanden: { 'sub-1': [video()] }, bouwer: 'fout' })
+  const weigert = setup({ aanvraag: ledkolom, subtaken: [metRelease()], bestanden: geenBestanden, bouwer: 'fout' })
   await weigert.oplever(taak(), ECHT)
   assertEquals(weigert.gemaild, [])
   assertMatch(weigert.comments[0], /kon niet gestart worden: GitHub zegt 401/)
   assertEquals(weigert.previews[0].status, 'mislukt', 'zodat de volgende druk het opnieuw probeert')
 })
 
-Deno.test('een mp4 bij een aanvraag zonder LED-kolom blijft een gewone bijlage', async () => {
-  const s = setup({ bestanden: { 'sub-1': [video({ bytes: 1000 })] } })
+Deno.test('een release-link bij een aanvraag zonder LED-kolom blijft gewoon in de tekst', async () => {
+  const s = setup({ subtaken: [metRelease()] })
   await s.oplever(taak(), ECHT)
   assertEquals(s.gestart(), 0)
-  assertEquals(s.downloads, ['vid-1'])
+  assertStringIncludes(s.gemaild[0].html, RELEASE)
 })

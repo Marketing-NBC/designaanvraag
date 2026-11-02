@@ -1,26 +1,24 @@
 import type { AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import { json } from '../_shared/cors.ts'
 import type { Db, LedkolomPreviewRow } from '../_shared/db.ts'
-import { previewUrl, verslagPreviewKlaar, verslagPreviewMislukt } from '../_shared/shared/ledkolom-preview.ts'
+import { SLUG, previewUrl, verslagPreviewKlaar, verslagPreviewMislukt } from '../_shared/shared/ledkolom-preview.ts'
 
 /**
- * Het loket voor de repository NBC-3D-ledkolom-Preview. Die bouwt de 3D-previews van de ledkolom
+ * Het loket voor de repository NBC-3D-ledkolom-Preview. Die maakt de 3D-previews van de ledkolom
  * (zie shared/ledkolom-preview.ts) en praat alleen met deze function, met een gedeeld geheim:
  *
- *  - GET                → wat er te bouwen valt: de previews die op "wacht" staan;
- *  - GET ?video=<id>    → doorsturen naar de video in Asana. De downloadlink van Asana is maar een
- *                         paar minuten geldig, dus die halen we pas op het moment dat de build hem
- *                         nodig heeft. Zo hoeft het Asana-token niet in de 3D-repo;
- *  - POST {uitslagen}   → wat er gelukt is, nadat het online staat. Wacht er een opleveringsmail op
- *                         een preview, dan gaat die nu de deur uit (of op Mislukt, met de reden).
- *                         Wacht er niets, dan komt er een reactie bij de taak met de link of de reden.
+ *  - GET                → welke release-links er klaarstaan: de rijen die op "wacht" staan;
+ *  - POST {uitslagen}   → per link welke preview(s) er online staan, of waarom het niet lukte. Wacht
+ *                         er een opleveringsmail op, dan gaat die nu de deur uit (of op Mislukt, met
+ *                         de reden). Wacht er niets, dan komt er een reactie bij de taak met de link
+ *                         of de reden.
  */
 
 export interface Deps {
   /** Het geheim dat de 3D-repo meestuurt (LEDKOLOM_SECRET). */
   geheim: string
   db: Pick<Db, 'openLedkolomPreviews' | 'ledkolomPreview' | 'updateLedkolomPreview' | 'wachtendeOpleveringen' | 'findById'>
-  asana: Pick<AsanaTaskClient, 'downloadLink' | 'getTask' | 'addComment'>
+  asana: Pick<AsanaTaskClient, 'getTask' | 'addComment'>
   /** De opleverflow uit asana-webhook/oplevering.ts. */
   oplever(taak: AsanaTask, opties: { proef: boolean; door: string | null; naPreview: boolean }): Promise<string>
   /** Laat het versturen doorlopen nadat de 3D-repo zijn antwoord heeft. Zonder dit wordt er gewacht. */
@@ -31,8 +29,9 @@ export interface Deps {
 
 interface Uitslag {
   id: string
-  bijlage: string
+  bron: string
   status: 'klaar' | 'mislukt'
+  previews: { naam: string; slug: string }[]
   fout: string | null
 }
 
@@ -53,8 +52,15 @@ function leesUitslagen(body: unknown): Uitslag[] | null {
   const uit: Uitslag[] = []
   for (const u of lijst) {
     const r = u as Record<string, unknown>
-    if (typeof r?.id !== 'string' || typeof r.bijlage !== 'string' || (r.status !== 'klaar' && r.status !== 'mislukt')) return null
-    uit.push({ id: r.id, bijlage: r.bijlage, status: r.status, fout: typeof r.fout === 'string' && r.fout.trim() ? r.fout.trim().slice(0, 500) : null })
+    if (typeof r?.id !== 'string' || typeof r.bron !== 'string' || (r.status !== 'klaar' && r.status !== 'mislukt')) return null
+    // Alleen wat als link op GitHub Pages kan: een naam en een map zoals build.mjs die maakt.
+    const ruw = Array.isArray(r.previews) ? r.previews.slice(0, 20) : []
+    const previews = ruw
+      .map((p) => p as Record<string, unknown>)
+      .filter((p) => typeof p?.slug === 'string' && SLUG.test(p.slug) && typeof p.naam === 'string')
+      .map((p) => ({ naam: String(p.naam).slice(0, 200), slug: String(p.slug) }))
+    if (previews.length !== ruw.length) return null
+    uit.push({ id: r.id, bron: r.bron, status: r.status, previews, fout: typeof r.fout === 'string' && r.fout.trim() ? r.fout.trim().slice(0, 500) : null })
   }
   return uit
 }
@@ -82,8 +88,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     for (const r of rijen) {
       const html = r.status === 'klaar'
-        ? verslagPreviewKlaar({ naam: r.naam, url: previewUrl(r.slug) })
-        : verslagPreviewMislukt(r, r.fout ?? 'Geen reden opgegeven; kijk bij Actions in de 3D-repo.', taak.assignee)
+        ? verslagPreviewKlaar(r.previews.map((p) => ({ naam: p.naam, url: previewUrl(p.slug) })))
+        : verslagPreviewMislukt(r.bron, r.fout ?? 'Geen reden opgegeven; kijk bij Actions in de 3D-repo.', taak.assignee)
       await asana.addComment(taak.gid, html)
     }
   }
@@ -93,43 +99,27 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     const token = auth.replace(/^Bearer\s+/i, '')
     if (!token || !(await zelfdeGeheim(token, deps.geheim))) return json({ error: 'Geen toegang' }, 401)
 
-    const url = new URL(req.url)
-
-    if (req.method === 'GET' && url.searchParams.has('video')) {
-      const rij = await db.ledkolomPreview(url.searchParams.get('video') ?? '')
-      if (!rij || rij.status !== 'wacht') return json({ error: 'Deze preview staat niet (meer) klaar om te bouwen' }, 404)
-      try {
-        const link = await asana.downloadLink(rij.bijlage_gid)
-        return new Response(null, { status: 302, headers: { Location: link, 'Cache-Control': 'no-store' } })
-      } catch (e) {
-        log('error', 'downloadlink video ophalen mislukt', { id: rij.id, error: fout(e) })
-        return json({ error: `De video kon niet uit Asana gehaald worden: ${fout(e)}` }, 502)
-      }
-    }
-
     if (req.method === 'GET') {
       const open = await db.openLedkolomPreviews()
-      return json({
-        previews: open.map((r) => ({ id: r.id, slug: r.slug, naam: r.naam, bijlage: r.bijlage_gid, bestandsnaam: r.bestandsnaam })),
-      }, 200)
+      return json({ releases: open.map((r) => ({ id: r.id, bron: r.bron })) }, 200)
     }
 
     if (req.method === 'POST') {
       const uitslagen = leesUitslagen(await req.json().catch(() => null))
-      if (!uitslagen) return json({ error: 'Verwacht {"uitslagen": [{"id", "bijlage", "status": "klaar"|"mislukt", "fout"?}]}' }, 400)
+      if (!uitslagen) return json({ error: 'Verwacht {"uitslagen": [{"id", "bron", "status": "klaar"|"mislukt", "previews"?: [{"naam", "slug"}], "fout"?}]}' }, 400)
 
       const perAanvraag = new Map<string, LedkolomPreviewRow[]>()
       let verouderd = 0
       for (const u of uitslagen) {
         const rij = await db.ledkolomPreview(u.id)
-        // Intussen een nieuwe video in de subtaak (of al gemeld): die uitslag geldt niet meer.
-        if (!rij || rij.status !== 'wacht' || rij.bijlage_gid !== u.bijlage) {
+        // Al gemeld, of niet van deze link: die uitslag geldt niet (meer).
+        if (!rij || rij.status !== 'wacht' || rij.bron !== u.bron) {
           verouderd++
           continue
         }
-        const patch = u.status === 'klaar'
-          ? { status: 'klaar' as const, fout: null, klaar_op: now().toISOString() }
-          : { status: 'mislukt' as const, fout: u.fout ?? 'Geen reden opgegeven; kijk bij Actions in de 3D-repo.' }
+        const patch = u.status === 'klaar' && u.previews.length
+          ? { status: 'klaar' as const, fout: null, previews: u.previews, klaar_op: now().toISOString() }
+          : { status: 'mislukt' as const, fout: u.fout ?? 'Er kwam geen preview uit; kijk bij Actions in de 3D-repo.' }
         await db.updateLedkolomPreview(rij.id, patch)
         perAanvraag.set(rij.aanvraag_id, [...(perAanvraag.get(rij.aanvraag_id) ?? []), { ...rij, ...patch }])
       }

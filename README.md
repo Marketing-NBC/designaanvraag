@@ -276,46 +276,53 @@ aan. Dat maakt de velden **Oplevermail** en **Ook mailen naar** en zet hun gids 
 
 ### 3D-preview van de ledkolom
 
-Bij een aanvraag met een **LED-kolom** krijgt de aanvrager geen losse mp4, maar een link naar de
+Bij een aanvraag met een **LED-kolom** krijgt de aanvrager geen losse mp4, maar een knop naar de
 kolom in 3D en op de foto van de foyer. Die preview maakt de repository
 [NBC-3D-ledkolom-Preview](https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview).
 
-**Wat je doet:** niets anders dan bij een gewone oplevering. Sleep de mp4 (of mov) in de subtaak
-**Oplevering**, schrijf de tekst in de beschrijving en zet Oplevermail op *Stuur proef naar mij*.
+Een ledkolomvideo is 300 à 400 MB, en Asana neemt maar 100 MB per bestand aan. De video loopt daarom
+zoals altijd via een **release** in die repository.
 
-- **Bij de proef** start het bouwen van de preview al. De link staat meteen in de proefmail en in de
-  reactie, met de opmerking dat hij nog gemaakt wordt. Na een paar minuten staat er een reactie
-  bij de taak: *De 3D-ledkolom staat online*, met de link.
-- **Bij Verstuur nu** gaat de mail meteen de deur uit als de preview al online staat. Is hij nog
-  niet klaar, dan staat er een reactie: *De opleveringsmail wordt verstuurd zodra de 3D-ledkolom
-  klaar is.* Je hoeft niets meer te doen. Het veld blijft op *Bezig* tot de mail weg is, en springt
-  dan op *Verstuurd* met het gewone verslag erbij.
-- **Lukt de preview niet**, bijvoorbeeld omdat de video breder is dan hoog, dan gaat er niets uit.
-  Het veld springt op *Mislukt*, met de reden en een @-vermelding. Zet een goede video in de
-  subtaak en druk opnieuw.
+**Wat je doet:**
 
-**De video gaat niet als bijlage mee** en telt dus niet mee voor de grens van 20 MB. Alleen
-geüploade bestanden worden een preview; een video op OneDrive blijft een gewone link. Asana neemt
-bestanden tot **100 MB** aan; een grotere export moet je eerst kleiner maken. Bij een aanvraag
-zonder LED-kolom blijft een mp4 een gewone bijlage.
+1. Maak in de 3D-repo een release met de mp4, zoals je gewend bent.
+2. Plak de link van die release (`https://github.com/Marketing-NBC/NBC-3D-ledkolom-Preview/releases/tag/…`)
+   in de beschrijving van de subtaak **Oplevering**, **op een eigen regel**. Een link naar één
+   bestand van de release (`…/releases/download/…`) mag ook.
+3. Schrijf de rest van de tekst zoals altijd, en zet Oplevermail op *Stuur proef naar mij*.
 
-**Meer kolommen.** Twee video's in de subtaak geven twee previews ("Malmberg - 4 november - kolom
-1" en "kolom 2"), elk met een eigen knop in de mail.
+De GitHub-link komt **niet** in de mail: de regel met de link valt weg, en de aanvrager krijgt een
+knop **Bekijk in 3D**. Staan er meer video's in de release, dan komt er een knop per kolom.
 
-**Een volgende versie** komt op **dezelfde link**: zet de nieuwe video in de nieuwe subtaak
-Oplevering. Een link die al verstuurd is, toont daarna ook de nieuwe versie.
+- **Bij de proef** vraagt de tool de 3D-repo om de preview. Die staat er meestal al (de release
+  maakte hem); de 3D-repo meldt dan binnen een paar minuten de link. In de proefmail staat dat de
+  preview nog gemaakt wordt. Zodra hij er is, staat er een reactie bij de taak:
+  *De 3D-ledkolom staat online*, met de link.
+- **Bij Verstuur nu** gaat de mail meteen de deur uit als de link er al is. Is hij er nog niet, dan
+  staat er een reactie: *De opleveringsmail wordt verstuurd zodra de 3D-ledkolom klaar is.* Je
+  hoeft niets meer te doen. Het veld blijft op *Bezig* tot de mail weg is, en springt dan op
+  *Verstuurd* met het gewone verslag erbij.
+- **Lukt het niet**, bijvoorbeeld omdat de release niet bestaat, nog een concept is, of de video
+  breder is dan hoog, dan gaat er niets uit. Het veld springt op *Mislukt*, met de reden en een
+  @-vermelding. Los het op en druk opnieuw.
+
+**Een volgende versie** is een nieuwe release (een tag moet toch uniek zijn). Plak de nieuwe link in
+de nieuwe subtaak Oplevering. Heet de mp4 hetzelfde als de vorige, dan komt de preview op dezelfde
+link, zoals altijd bij de 3D-repo.
+
+Bij een aanvraag **zonder** LED-kolom gebeurt er niets met zo'n link; hij blijft gewoon in de tekst.
 
 **Hangt het?** Staat de mail er na een kwartier nog niet, zet Oplevermail dan opnieuw op Verstuur
-nu. Een build die na een kwartier niets liet horen, start dan opnieuw. Kijk ook in de 3D-repo
-onder **Actions → Preview bouwen en publiceren**.
+nu: een run die na een kwartier niets liet horen, start dan opnieuw. Kijk ook in de 3D-repo onder
+**Actions → Preview bouwen en publiceren**.
 
-**Hoe het loopt.** De function `asana-webhook` zet per video een rij in de tabel
-`ledkolom_previews` (link, status `wacht`/`klaar`/`mislukt`) en start in de 3D-repo de workflow
-*Preview bouwen en publiceren*. Die haalt bij de function `ledkolom-preview` op wat er klaarstaat,
-en haalt de video via een doorverwijzing uit Asana. Het Asana-token blijft dus hier. Na het
-publiceren meldt de workflow terug. Een mail die wachtte (status `wacht_op_preview` in
-`opleveringen`) gaat dan via dezelfde opleverflow de deur uit, namens wie op de knop drukte. De link
-kiezen wij zelf (`shared/ledkolom-preview.ts`), zodat hij al in de proefmail kan staan.
+**Hoe het loopt.** De function `asana-webhook` zet per release-link een rij in de tabel
+`ledkolom_previews` (status `wacht`/`klaar`/`mislukt`) en start in de 3D-repo de workflow
+*Preview bouwen en publiceren*. Die haalt bij de function `ledkolom-preview` op welke links er
+klaarstaan, zoekt of maakt de preview, en meldt na het publiceren per link de naam en de map. Een
+mail die wachtte (status `wacht_op_preview` in `opleveringen`) gaat dan via dezelfde opleverflow de
+deur uit, namens wie op de knop drukte. Herkennen en weghalen van de links staat in
+`shared/ledkolom-preview.ts`.
 
 **Eenmalig instellen:**
 
@@ -331,8 +338,8 @@ kiezen wij zelf (`shared/ledkolom-preview.ts`), zodat hij al in de proefmail kan
 4. Draai **Supabase deploy** (Actions → Run workflow). Die maakt de tabel, zet de function
    `ledkolom-preview` online en geeft de twee secrets door.
 
-Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een ledkolomvideo op *Mislukt*, met de
-melding dat de koppeling nog niet is ingesteld. Een oplevering zonder video merkt er niets van.
+Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een release-link op *Mislukt*, met de melding
+dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er niets van.
 
 ## Feedback op werk dat al af is
 

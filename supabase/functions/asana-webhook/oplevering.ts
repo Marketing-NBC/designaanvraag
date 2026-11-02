@@ -3,11 +3,10 @@ import type { AanvraagDetail, Db, LedkolomPreviewRow, OpleveringRow } from '../_
 import type { PreviewBouwer } from '../_shared/github.ts'
 import { MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
 import {
-  LEDKOLOM_VASTGELOPEN_MIN, isLedkolomAanvraag, ledkolomVideos, nieuweSlug, previewMisluktReden, previewNaam, previewUrl, verslagWachtOpPreview,
+  LEDKOLOM_VASTGELOPEN_MIN, isLedkolomAanvraag, previewMisluktReden, previewUrl, verslagWachtOpPreview, vindReleaseLinks, zonderReleaseLinks,
 } from '../_shared/shared/ledkolom-preview.ts'
 import { themaVoor } from '../_shared/shared/mail.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
-import type { AsanaBestand } from '../_shared/shared/oplevering.ts'
 import {
   OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
   verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
@@ -30,8 +29,9 @@ import { vandaagInNl } from '../_shared/shared/spoed.ts'
  * volgende versie, en de taak naar Klaar. Lukt het niet, dan wordt er niets half verstuurd: het
  * veld gaat op Mislukt en de reden staat in een reactie.
  *
- * Bij een LED-kolom gaat een video uit de subtaak niet als bijlage mee, maar wordt hij een 3D-preview
- * (zie shared/ledkolom-preview.ts). Al bij de proef start het bouwen daarvan. Staat de preview bij
+ * Bij een LED-kolom staat in de beschrijving van de subtaak een link naar een release in de 3D-repo
+ * (de video is te groot voor Asana). Die link gaat niet mee in de mail; de aanvrager krijgt een knop
+ * naar de 3D-preview (zie shared/ledkolom-preview.ts). Al bij de proef start het maken daarvan. Staat de preview bij
  * "Verstuur nu" nog niet online, dan wacht de mail: de function ledkolom-preview roept deze functie
  * opnieuw aan (met `naPreview`) zodra de 3D-repo laat weten dat hij klaar is.
  */
@@ -46,8 +46,6 @@ export interface OpleverDeps {
   cfg: AsanaFieldsConfig
   /** Start de build van de 3D-previews; null als die koppeling (nog) niet is ingesteld. */
   previewBouwer?: PreviewBouwer | null
-  /** Voor de tests: een vaste slug in plaats van een willekeurige. */
-  slugVoor?: (naam: string) => string
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
@@ -64,11 +62,6 @@ export interface OpleverOpties {
   naPreview?: boolean
 }
 
-interface PreviewStand {
-  rij: LedkolomPreviewRow
-  video: AsanaBestand
-  url: string
-}
 
 /** Zolang een poging "bezig" is, start een tweede druk op de knop er geen tweede naast. */
 const BEZIG_GELDIG_MS = 10 * 60_000
@@ -81,50 +74,45 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
   const now = deps.now ?? (() => new Date())
   const log = deps.log ?? ((level, msg, extra) => console[level === 'info' ? 'log' : level](msg, extra ?? ''))
   const veld = cfg.fields?.oplevermail
-  const slugVoor = deps.slugVoor ?? ((naam: string) => nieuweSlug(naam))
 
   const fout = (e: unknown) => (e instanceof Error ? e.message : String(e))
 
   /**
-   * Per video een preview: een nieuwe rij met een nieuwe link, of de rij van de vorige versie (dan
-   * blijft de link gelijk). Een nieuwe video, een mislukte preview of een build die na een kwartier
-   * nog niets liet horen, gaat (opnieuw) op "wacht", en dan starten we de build in de 3D-repo.
+   * Per release-link een rij. Een nieuwe link, een mislukte poging of een run die na een kwartier nog
+   * niets liet horen, gaat (opnieuw) op "wacht", en dan starten we de workflow in de 3D-repo. Die haalt
+   * zelf op wat er klaarstaat en meldt terug bij de function ledkolom-preview.
    */
-  async function previewsKlaarzetten(aanvraag: AanvraagDetail, videos: AsanaBestand[], naPreview: boolean): Promise<PreviewStand[]> {
+  async function previewsKlaarzetten(aanvraag: AanvraagDetail, bronnen: string[], naPreview: boolean): Promise<LedkolomPreviewRow[]> {
     if (!deps.previewBouwer) {
-      throw new Weigering('Er staat een ledkolomvideo in de subtaak Oplevering, maar de koppeling met de 3D-preview is nog niet ingesteld '
+      throw new Weigering('Er staat een link naar een ledkolom-release in de subtaak Oplevering, maar de koppeling met de 3D-preview is nog niet ingesteld '
         + '(zie "3D-preview van de ledkolom" in de README).')
     }
     const bestaand = await db.ledkolomPreviews(aanvraag.id)
-    const stand: PreviewStand[] = []
+    const rijen: LedkolomPreviewRow[] = []
     const gestart: LedkolomPreviewRow[] = []
     const vastgelopen = (r: LedkolomPreviewRow) => now().getTime() - Date.parse(r.gevraagd_op) > LEDKOLOM_VASTGELOPEN_MIN * 60_000
 
-    for (const [i, video] of videos.entries()) {
-      const volgnummer = i + 1
-      const naam = previewNaam({ soort: aanvraag.soort, event: aanvraag.event, eventDatum: aanvraag.event_datum }, video, volgnummer, videos.length)
-      let rij = bestaand.find((r) => r.volgnummer === volgnummer) ?? null
+    for (const bron of bronnen) {
+      let rij = bestaand.find((r) => r.bron === bron) ?? null
       if (!rij) {
-        rij = await db.insertLedkolomPreview({ aanvraag_id: aanvraag.id, volgnummer, slug: slugVoor(naam), naam, bijlage_gid: video.gid, bestandsnaam: video.naam })
+        rij = await db.insertLedkolomPreview({ aanvraag_id: aanvraag.id, bron })
         gestart.push(rij)
-      } else if (rij.bijlage_gid !== video.gid || (!naPreview && (rij.status === 'mislukt' || (rij.status === 'wacht' && vastgelopen(rij))))) {
-        const opnieuw = {
-          naam, bijlage_gid: video.gid, bestandsnaam: video.naam, status: 'wacht' as const, fout: null, gevraagd_op: now().toISOString(), klaar_op: null,
-        }
+      } else if (!naPreview && (rij.status === 'mislukt' || (rij.status === 'wacht' && vastgelopen(rij)))) {
+        const opnieuw = { status: 'wacht' as const, fout: null, gevraagd_op: now().toISOString(), klaar_op: null }
         await db.updateLedkolomPreview(rij.id, opnieuw)
         rij = { ...rij, ...opnieuw }
         gestart.push(rij)
       }
       // Alleen na een melding van de 3D-repo kan hier nog een mislukte staan: die starten we niet
       // eindeloos opnieuw, de mail gaat op Mislukt met de reden.
-      if (rij.status === 'mislukt') throw new Weigering(previewMisluktReden(rij.naam, rij.fout ?? 'geen reden opgegeven'))
-      stand.push({ rij, video, url: previewUrl(rij.slug) })
+      if (rij.status === 'mislukt') throw new Weigering(previewMisluktReden(rij.bron, rij.fout ?? 'geen reden opgegeven'))
+      rijen.push(rij)
     }
 
     if (gestart.length) {
       try {
         await deps.previewBouwer.start()
-        log('info', '3D-preview gestart', { aanvraag: aanvraag.id, previews: gestart.map((r) => r.slug) })
+        log('info', '3D-preview gestart', { aanvraag: aanvraag.id, bronnen: gestart.map((r) => r.bron) })
       } catch (e) {
         // Op mislukt, zodat de volgende druk op de knop het meteen opnieuw probeert.
         for (const r of gestart) {
@@ -133,7 +121,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         throw new Weigering(`De 3D-preview kon niet gestart worden: ${fout(e)}`)
       }
     }
-    return stand
+    return rijen
   }
 
   async function zetVeld(taakGid: string, optie: 'verstuurd' | 'proef_verstuurd' | 'mislukt'): Promise<void> {
@@ -205,20 +193,20 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         throw new Weigering(`Er is geen ontvanger: bij ${aanvraag.naam} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
       }
 
-      // Bij een LED-kolom worden de video's een 3D-preview; ze gaan niet als bijlage mee en tellen
-      // dus ook niet mee voor de grens van 20 MB.
-      const alleBestanden = await asana.listBestanden(subtaak.gid)
-      const videos = isLedkolomAanvraag(aanvraag.aanvraag_types) ? ledkolomVideos(alleBestanden) : []
-      const keuze = verdeelBijlagen(alleBestanden.filter((b) => !videos.includes(b)))
-      const berichtHtml = beschrijvingAlsMailHtml(subtaak.html, themaVoor(aanvraag.locatie))
-      if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length && !videos.length) {
+      // Bij een LED-kolom wordt een release-link uit de beschrijving een 3D-preview. De link zelf
+      // gaat niet mee: de aanvrager krijgt een knop naar de preview, geen pagina op GitHub.
+      const bronnen = isLedkolomAanvraag(aanvraag.aanvraag_types) ? vindReleaseLinks(subtaak.html) : []
+      const keuze = verdeelBijlagen(await asana.listBestanden(subtaak.gid))
+      const berichtHtml = beschrijvingAlsMailHtml(bronnen.length ? zonderReleaseLinks(subtaak.html) : subtaak.html, themaVoor(aanvraag.locatie))
+      if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length && !bronnen.length) {
         throw new Weigering('De subtaak Oplevering is nog leeg. Zet de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
       }
       const teGroot = teGrootMelding(keuze)
       if (teGroot) throw new Weigering(teGroot)
 
-      const previews = videos.length ? await previewsKlaarzetten(aanvraag, videos, naPreview) : []
-      const wachtOpPreview = previews.some((p) => p.rij.status !== 'klaar')
+      const builds = bronnen.length ? await previewsKlaarzetten(aanvraag, bronnen, naPreview) : []
+      const wachtOpPreview = builds.some((b) => b.status !== 'klaar')
+      const previews = builds.filter((b) => b.status === 'klaar').flatMap((b) => b.previews.map((p) => ({ naam: p.naam, url: previewUrl(p.slug) })))
 
       // Wie drukte: diens naam staat onder het bericht, en een proef gaat naar diens adres.
       let wie: { naam: string | null; email: string | null } = { naam: null, email: null }
@@ -256,12 +244,12 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         // (naPreview) kan er nog een tweede kolom bezig zijn; dan geen nieuwe reactie.
         if (!naPreview) {
           try {
-            await asana.addComment(taak.gid, verslagWachtOpPreview(previews.map((p) => ({ naam: p.rij.naam, url: p.url }))))
+            await asana.addComment(taak.gid, verslagWachtOpPreview(builds.length))
           } catch (e) {
             log('warn', 'reactie over wachten op 3D-preview plaatsen mislukt', { gid: taak.gid, error: fout(e) })
           }
         }
-        log('info', 'oplevermail wacht op 3D-preview', { gid: taak.gid, aanvraag: aanvraag.id, previews: previews.map((p) => p.rij.slug) })
+        log('info', 'oplevermail wacht op 3D-preview', { gid: taak.gid, aanvraag: aanvraag.id, bronnen })
         return 'oplevermail wacht op 3D-preview'
       }
 
@@ -293,7 +281,8 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         afzenderNaam: wie.naam,
         bijlagen: bijlagen.map((b) => ({ naam: b.naam, bytes: b.bytes.length })),
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
-        previews: previews.map((p) => ({ naam: p.rij.naam, url: p.url, klaar: p.rij.status === 'klaar' })),
+        previews,
+        previewsOnderweg: wachtOpPreview,
         proef: proef ? { echteOntvangers: aan } : null,
       })
       try {
@@ -303,11 +292,10 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       }
 
       const linkNamen = keuze.links.map((l) => l.naam)
-      const previewLinks = previews.map((p) => ({ naam: p.rij.naam, url: p.url, klaar: p.rij.status === 'klaar' }))
       if (proef) {
         log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
         try {
-          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews: previewLinks }))
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview }))
         } catch (e) {
           log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
         }
@@ -328,7 +316,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
         }
       }
-      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews: previewLinks })))
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews })))
       await zetVeld(taak.gid, 'verstuurd')
       await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
       await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))
