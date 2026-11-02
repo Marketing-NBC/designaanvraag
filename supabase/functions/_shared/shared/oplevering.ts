@@ -9,7 +9,7 @@
  *
  * Puur: gegevens erin, keuzes en HTML eruit. Ophalen uit Asana en versturen doet de webhook.
  */
-import { formatDateShortNl, kortVan } from './asana-title.ts'
+import { eventEnDatum, formatDateShortNl, kortVan } from './asana-title.ts'
 import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL } from './contact.ts'
 import { THEMAS, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, vlak, waarschuwingBlok } from './mail.ts'
@@ -269,7 +269,7 @@ export interface OpleveringMail {
 /** "EY - 11 december - Torenscherm", of bij intern "Intern - Nieuwe visitekaartjes…". */
 function waarover(m: Pick<OpleveringMail, 'soort' | 'event' | 'eventDatum' | 'omschrijving' | 'types' | 'andersTekst'>): string {
   if (m.soort === 'intern') return ['Intern', kortVan(m.omschrijving)].filter(Boolean).join(' - ')
-  return [m.event.trim(), m.eventDatum ? formatDateShortNl(m.eventDatum, false) : '', describeRequestTypes(m.types, m.andersTekst)]
+  return [...eventEnDatum(m.event, m.eventDatum), describeRequestTypes(m.types, m.andersTekst)]
     .filter(Boolean).join(' - ')
 }
 

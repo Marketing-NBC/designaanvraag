@@ -59,6 +59,15 @@ export function eventNaamBevatDatum(event: string, iso: string): boolean {
   return patronen.some((p) => new RegExp(p).test(naam))
 }
 
+/**
+ * Het event en de eventdatum als twee stukken voor een titel of onderwerp: ["EY", "11 december"].
+ * Zonder jaartal, en zonder datum als die er niet is of al in de eventnaam staat.
+ */
+export function eventEnDatum(event: string, eventDatum: string | null | undefined): string[] {
+  const datum = eventDatum && !eventNaamBevatDatum(event, eventDatum) ? formatDateShortNl(eventDatum, false) : ''
+  return [event.trim(), datum].filter(Boolean)
+}
+
 type TitleInput = Pick<Aanvraag,
   'aanvraag_types' | 'anders_tekst' | 'deadline' | 'event' | 'event_datum' | 'naam'>
   & Partial<Pick<Aanvraag, 'soort' | 'omschrijving'>>
@@ -117,9 +126,8 @@ export function taskTitle(a: TitleInput): string {
   }
   const wat = a.aanvraag_types.length === 1 ? typeLabel(a.aanvraag_types[0], a.anders_tekst) : MEERDERE_DESIGNS
   return [
-    a.event.trim(),
     // Staat de datum al in de eventnaam, dan niet nog een keer.
-    a.event_datum && !eventNaamBevatDatum(a.event, a.event_datum) ? datum(a.event_datum) : '',
+    ...eventEnDatum(a.event, a.event_datum),
     a.naam.trim(),
     a.deadline ? `Deadline: ${datum(a.deadline)}` : GEEN_DEADLINE,
     wat,
