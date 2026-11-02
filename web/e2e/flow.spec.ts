@@ -125,7 +125,7 @@ test.describe('designaanvraag-flow', () => {
     // Wijzig event via overzicht en kom terug
     await rij('event').getByRole('button', { name: 'wijzig' }).click()
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
-    await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026 editie 2')
+    await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026 editie 2')
     // Doorklikken tot het overzicht er weer staat. Enter werkt hier niet overal: in het
     // tekstvak maakt die een nieuwe regel, want daar typ je alinea's.
     for (let i = 0; i < 12; i++) {
@@ -160,13 +160,13 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
     // Het veld rechtstreeks vullen; waar de focus na de namenlijst belandt doet er voor
     // deze test niet toe, het gaat erom dat het concept bewaard blijft.
-    await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Kerstborrel')
+    await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Kerstborrel')
     await page.waitForFunction(() => (localStorage.getItem('nbc-designaanvraag:draft:v3') ?? '').includes('Kerstborrel'))
     await page.reload()
     await expect(page.locator('.resume')).toBeVisible()
     await page.getByRole('button', { name: 'Verder' }).click()
     await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
-    await expect(page.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026')).toHaveValue('Kerstborrel')
+    await expect(page.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026')).toHaveValue('Kerstborrel')
     await page.getByRole('button', { name: 'Vorige vraag' }).click()
     await expect(page.getByRole('radio', { name: 'Voor een evenement' })).toHaveAttribute('aria-checked', 'true')
     await page.getByRole('button', { name: 'Vorige vraag' }).click()

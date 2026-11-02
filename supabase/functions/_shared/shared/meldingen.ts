@@ -5,7 +5,7 @@
  * Wat Marketing zelf in Asana doet levert geen mail op; dat weten ze al.
  */
 import type { Aanvraag } from './aanvraag-schema.ts'
-import { formatDateShortNl, kortVan, taskTitle } from './asana-title.ts'
+import { eventEnDatum, formatDateShortNl, kortVan, taskTitle } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
 import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, waarschuwingBlok } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
@@ -43,7 +43,7 @@ function onderwerp(wat: string, v: {
   const voor = [v.spoed ? '[SPOED]' : '', v.nietInAsana ? '[Niet in Asana]' : ''].filter(Boolean).join(' ')
   const delen = v.soort === 'intern'
     ? ['Intern', kortVan(v.omschrijving)]
-    : [v.event.trim(), v.eventDatum ? formatDateShortNl(v.eventDatum, false) : '', v.types]
+    : [...eventEnDatum(v.event, v.eventDatum), v.types]
   const kern = `${wat}: ${delen.filter(Boolean).join(' - ')}`
   return `${voor ? `${voor} ` : ''}${kern}`.slice(0, 250)
 }

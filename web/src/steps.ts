@@ -136,7 +136,7 @@ export const STEPS: StepDef[] = [
     kind: 'text',
     toon: isEvenement,
     title: 'Voor welk event is het?',
-    help: 'De naam zoals de opdrachtgever hem gebruikt.',
+    help: 'De naam zoals de opdrachtgever hem gebruikt, met de datum erbij.',
     validate: (d) => {
       const v = d.event.trim()
       if (v.length < 2) return 'Vul de naam van het event in.'

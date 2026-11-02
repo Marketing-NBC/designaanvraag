@@ -70,7 +70,7 @@ async function stappen(b) {
   await shot(p, 'g02-vraag', [[L(p, '.q__head'), 1, 8], [p.getByRole('radio', { name: 'NBC' }), 2, 5], [L(p, '.q__footer'), 2, 8], [L(p, '.navdock'), 3, 6]]);
   await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
-  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026'); await next(p);
   await kiesDatum(p, 2, 1);
   await shot(p, 'g03-eventdatum', [[L(p, '.date__nav, .date__head'), 1, 6], [L(p, 'button.date__day[aria-pressed="true"]'), 1, 5]]);
   await next(p);
@@ -130,7 +130,7 @@ async function stappen(b) {
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
-  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026'); await next(p);
   await kiesDatum(p, 2, 1); await next(p);
   await kiesDatum(p, 1, 20); await next(p);
   await p.getByRole('radio', { name: /Standaard designs/ }).click(); await next(p);
@@ -176,7 +176,7 @@ async function stappen(b) {
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
-  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026'); await next(p);
   const krap = await p.evaluate(() => { const d = new Date(); let n = 0; while (n < 2) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; } return { dag: d.getDate(), maanden: (d.getFullYear() - new Date().getFullYear()) * 12 + d.getMonth() - new Date().getMonth() }; });
   await kiesDatum(p, krap.maanden, krap.dag);
   await p.setViewportSize({ width: W, height: 880 });
@@ -188,7 +188,7 @@ async function stappen(b) {
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
   await p.getByRole('radio', { name: 'Voor een evenement' }).click(); await next(p);
-  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 2026').fill('Zorgcongres 2026'); await next(p);
+  await p.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026'); await next(p);
   const oranje = await p.evaluate(() => { const d = new Date(); let n = 0; while (n < 7) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; } return { dag: d.getDate(), maanden: (d.getFullYear() - new Date().getFullYear()) * 12 + d.getMonth() - new Date().getMonth() }; });
   await kiesDatum(p, oranje.maanden, oranje.dag);
   await p.setViewportSize({ width: W, height: 860 });

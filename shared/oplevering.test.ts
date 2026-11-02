@@ -129,6 +129,11 @@ describe('de mail', () => {
     links: [],
   }
 
+  it('de eventdatum niet dubbel in het onderwerp als hij al in de eventnaam staat', () => {
+    expect(renderOpleveringMail({ ...basis, event: 'Zorgcongres 11 december 2026' }).onderwerp)
+      .toBe('Klaar: Zorgcongres 11 december 2026 - Torenscherm, Vlaggen')
+  })
+
   it('onderwerp, bericht, bijlagen en de feedbackknop', () => {
     const m = renderOpleveringMail(basis)
     expect(m.onderwerp).toBe('Klaar: Zorgcongres - 11 december - Torenscherm, Vlaggen')

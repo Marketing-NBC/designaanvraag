@@ -23,6 +23,13 @@ describe('melding bij een nieuwe aanvraag', () => {
     expect(html).not.toContain('abc-123')
   })
 
+  it('de eventdatum in het onderwerp, maar niet dubbel als hij al in de eventnaam staat', () => {
+    expect(nieuw().onderwerp).toContain('Testevent - 20 november - ')
+    const metDatum = nieuw({ aanvraag: { ...aanvraag, event: 'Testevent 20 november 2026' } })
+    expect(metDatum.onderwerp).toContain('Testevent 20 november 2026 - ')
+    expect(metDatum.onderwerp).not.toContain('2026 - 20 november')
+  })
+
   it('zonder taak in Asana staat het aanvraagnummer er wel: dan is dat de enige weg terug', () => {
     expect(nieuw({ asanaUrl: null, asanaFout: 'Asana gaf 500' }).html).toContain('Aanvraag abc-123')
   })

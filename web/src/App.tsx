@@ -479,7 +479,7 @@ export default function App() {
                 <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} onEnter={next} />
               ) : null}
               {step.kind === 'text' && step.id === 'event' ? (
-                <TextField id="f-event" value={draft.event} onChange={(v) => patch({ event: v })} placeholder="Bijvoorbeeld Zorgcongres 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
+                <TextField id="f-event" value={draft.event} onChange={(v) => patch({ event: v })} placeholder="Bijvoorbeeld Zorgcongres 20 november 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
               ) : null}
               {step.kind === 'text' && step.id === 'schijf_locatie' ? (
                 <TextField id="f-schijf" value={draft.schijf_locatie} onChange={(v) => patch({ schijf_locatie: v })} placeholder="G:\Events\2026\Zorgcongres" maxLength={500} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
