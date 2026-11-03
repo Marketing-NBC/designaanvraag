@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MIN_LEAD_BUSINESS_DAYS } from '../../shared/aanvraag-schema'
 import { SPOED_WERKDAGEN } from '../../shared/spoed'
 import { STEPS, zichtbareStappen } from './steps'
 import type { RequestTypeKey } from '../../shared/request-types'
@@ -23,22 +24,34 @@ describe('bevestiging op de eventdatum', () => {
     expect(eventStap.goed?.(draft(''))).toBeNull()
   })
 
-  it('complimenteert niet bij een spoedje, maar geeft een rode melding over drukwerk', () => {
+  it('oranje bij een spoedje: complimenteert niet, maar waarschuwt voor drukwerk', () => {
     // Vrijdag 16 oktober: negen werkdagen, minder dan tien.
     expect(eventStap.goed?.(draft('2026-10-16'))).toBeNull()
-    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain('spoedaanvraag')
-    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain('Drukwerk')
-    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain(`minder dan ${SPOED_WERKDAGEN} werkdagen`)
-    expect(eventStap.warn).toBeUndefined()
+    expect(eventStap.warn?.(draft('2026-10-16'))).toContain('Drukwerk')
+    expect(eventStap.warn?.(draft('2026-10-16'))).toContain(`minder dan ${SPOED_WERKDAGEN} werkdagen`)
+    expect(eventStap.alarm?.(draft('2026-10-16'))).toBeNull()
   })
 
-  it('vraagt ook vlak voor het event niet om contact', () => {
-    // Donderdag 8 oktober: drie werkdagen (ma, di, wo). Bij spoed neemt Marketing zelf contact op.
-    expect(eventStap.alarm?.(draft('2026-10-08'))).toContain('Drukwerk')
-    expect(eventStap.alarm?.(draft('2026-10-08'))).not.toContain('contact')
+  it('nog oranje bij precies vijf werkdagen', () => {
+    // Maandag 12 oktober: vijf werkdagen (ma t/m vr), de dag zelf telt niet mee.
+    expect(eventStap.warn?.(draft('2026-10-12'))).toContain('Drukwerk')
+    expect(eventStap.alarm?.(draft('2026-10-12'))).toBeNull()
   })
 
-  it('geen rode melding als het op tijd is', () => {
+  it(`rood binnen ${MIN_LEAD_BUSINESS_DAYS} werkdagen, zonder te vragen om contact`, () => {
+    // Vrijdag 9 oktober: vier werkdagen (ma t/m do).
+    expect(eventStap.alarm?.(draft('2026-10-09'))).toContain(`minder dan ${MIN_LEAD_BUSINESS_DAYS} werkdagen`)
+    // Donderdag 8 oktober: drie werkdagen (ma, di, wo).
+    const rood = eventStap.alarm?.(draft('2026-10-08'))
+    expect(rood).toContain(`minder dan ${MIN_LEAD_BUSINESS_DAYS} werkdagen`)
+    expect(rood).toContain('Drukwerk')
+    expect(rood).not.toContain('contact')
+    // Rood vervangt oranje, niet allebei.
+    expect(eventStap.warn?.(draft('2026-10-08'))).toBeNull()
+  })
+
+  it('geen melding als het op tijd is', () => {
+    expect(eventStap.warn?.(draft('2026-10-19'))).toBeNull()
     expect(eventStap.alarm?.(draft('2026-10-19'))).toBeNull()
   })
 

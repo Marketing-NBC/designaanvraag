@@ -214,7 +214,8 @@ B.append(stap('g11-gelukt',
     bol('De huisstijl wordt op de achtergrond opgehaald; je hoeft hier niet op te wachten en kunt het venster sluiten.'),
     bol('Iets vergeten of wil je iets aanpassen? Dien geen tweede aanvraag in, maar kies ‘Iets aanvullen of wijzigen’.')))
 B.append(los(
-    bol('Valt het event binnen 10 werkdagen? Dan is het een spoedaanvraag en verschijnt er een rode melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
+    bol('Valt het event binnen 10 werkdagen? Dan verschijnt er een oranje melding. Drukwerk, zoals geprinte menukaarten, vlaggen, banners en roll-ups, is waarschijnlijk niet meer op tijd klaar.'),
+    bol('Valt het event binnen 5 werkdagen? Dan wordt die melding rood. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er nog haalbaar is.'),
     bol('Valt de deadline binnen 5 werkdagen? Dan verschijnt er een rode melding. Vul het formulier verder in. Het marketingteam beoordeelt vervolgens wat er binnen de korte deadline haalbaar is.')))
 
 # 2
@@ -278,6 +279,7 @@ B.append(kop2('Krappe deadlines'))
 B.append(tabel(None, [
     ('10 werkdagen of meer tot het event', 'Je bent op tijd.'),
     ('Minder dan 10 werkdagen tot het event', 'De aanvraag geldt als spoed. Besteld drukwerk (zoals een geprinte menukaart, vlaggen, banners en roll-ups) is waarschijnlijk niet meer op tijd klaar.'),
+    ('Event binnen 5 werkdagen', 'Een rode melding: besteld drukwerk is niet meer op tijd klaar. Dien je aanvraag in. Het marketingteam beoordeelt wat er nog mogelijk is.'),
     ('Deadline binnen 5 werkdagen', 'Dien je aanvraag in. Het marketingteam beoordeelt wat er nog mogelijk is en neemt contact met je op.'),
 ]))
 B.append(kader('Spoedaanvragen worden automatisch per aanvrager bijgehouden.', 'Ze blijven als spoed geregistreerd, ook als de datum later verschuift!'))

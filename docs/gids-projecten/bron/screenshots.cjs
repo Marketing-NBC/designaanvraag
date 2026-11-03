@@ -183,7 +183,7 @@ async function stappen(b) {
   await shot(p, 'g04-krap', [[L(p, '.msg--verlopen'), 1, 6]]);
   await p.close();
 
-  // ── Event over ongeveer anderhalve week: de rode spoedmelding ──
+  // ── Event over ongeveer anderhalve week: de oranje melding ──
   p = await start(b);
   await p.getByRole('button', { name: 'Start' }).click();
   await p.getByRole('radio', { name: 'NBC' }).click(); await next(p); await naam(p); await next(p);
@@ -192,7 +192,7 @@ async function stappen(b) {
   const oranje = await p.evaluate(() => { const d = new Date(); let n = 0; while (n < 7) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n++; } return { dag: d.getDate(), maanden: (d.getFullYear() - new Date().getFullYear()) * 12 + d.getMonth() - new Date().getMonth() }; });
   await kiesDatum(p, oranje.maanden, oranje.dag);
   await p.setViewportSize({ width: W, height: 860 });
-  await shot(p, 'g04-oranje', [[L(p, '.msg--verlopen'), 1, 6]]);
+  await shot(p, 'g04-oranje', [[L(p, '.msg--warn'), 1, 6]]);
   await p.close();
 
   // ── De knop Feedback geven uit de opleveringsmail ──
