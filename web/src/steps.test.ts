@@ -23,21 +23,23 @@ describe('bevestiging op de eventdatum', () => {
     expect(eventStap.goed?.(draft(''))).toBeNull()
   })
 
-  it('complimenteert niet bij een spoedje, maar waarschuwt voor drukwerk', () => {
+  it('complimenteert niet bij een spoedje, maar geeft een rode melding over drukwerk', () => {
     // Vrijdag 16 oktober: negen werkdagen, minder dan tien.
     expect(eventStap.goed?.(draft('2026-10-16'))).toBeNull()
-    expect(eventStap.warn?.(draft('2026-10-16'))).toContain('Drukwerk')
-    expect(eventStap.warn?.(draft('2026-10-16'))).toContain(`minder dan ${SPOED_WERKDAGEN} werkdagen`)
+    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain('spoedaanvraag')
+    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain('Drukwerk')
+    expect(eventStap.alarm?.(draft('2026-10-16'))).toContain(`minder dan ${SPOED_WERKDAGEN} werkdagen`)
+    expect(eventStap.warn).toBeUndefined()
   })
 
-  it('vraagt ook vlak voor het event niet om contact: alleen de drukwerkwaarschuwing', () => {
+  it('vraagt ook vlak voor het event niet om contact', () => {
     // Donderdag 8 oktober: drie werkdagen (ma, di, wo). Bij spoed neemt Marketing zelf contact op.
-    expect(eventStap.warn?.(draft('2026-10-08'))).toContain('Drukwerk')
-    expect(eventStap.alarm).toBeUndefined()
+    expect(eventStap.alarm?.(draft('2026-10-08'))).toContain('Drukwerk')
+    expect(eventStap.alarm?.(draft('2026-10-08'))).not.toContain('contact')
   })
 
-  it('waarschuwt niet als het ruim op tijd is', () => {
-    expect(eventStap.warn?.(draft('2026-10-19'))).toBeNull()
+  it('geen rode melding als het op tijd is', () => {
+    expect(eventStap.alarm?.(draft('2026-10-19'))).toBeNull()
   })
 
   it('complimenteert vanaf precies tien werkdagen', () => {

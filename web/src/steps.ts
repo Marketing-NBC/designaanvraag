@@ -155,18 +155,20 @@ export const STEPS: StepDef[] = [
       if (isBeforeToday(d.event_datum)) return 'Die datum is al geweest.'
       return null
     },
-    // Ruim op tijd: een compliment. Minder dan 10 werkdagen (een spoedje): drukwerk dat we moeten
-    // bestellen haalt het dan waarschijnlijk niet. Hoe krap de deadline is, zegt de deadlinevraag.
+    // Ruim op tijd: een compliment. Minder dan 10 werkdagen (een spoedje): een rode melding, want
+    // drukwerk dat we moeten bestellen haalt het dan waarschijnlijk niet. Hoe krap de deadline is, zegt de deadlinevraag.
     goed: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
       if (werkdagen === null || werkdagen < SPOED_WERKDAGEN) return null
       return `Fijn dat je er op tijd bij bent: nog ${werkdagen} werkdagen tot het event. Daar kan Marketing goed mee vooruit.`
     },
-    warn: (d) => {
+    // Een spoedje in het rood: het is echt laat. Geen blokkade en geen "neem contact op", want bij
+    // spoed neemt Marketing zelf contact op.
+    alarm: (d) => {
       const werkdagen = werkdagenTotEventdatum(d.event_datum)
       if (werkdagen === null || werkdagen >= SPOED_WERKDAGEN) return null
-      return `Het event is over minder dan ${SPOED_WERKDAGEN} werkdagen. Drukwerk dat we moeten bestellen, zoals een geprinte menukaart, `
-        + 'is dan waarschijnlijk niet meer op tijd te krijgen.'
+      return `Dit is een spoedaanvraag: het event is over minder dan ${SPOED_WERKDAGEN} werkdagen. Drukwerk dat we moeten bestellen, `
+        + 'zoals een geprinte menukaart, is dan waarschijnlijk niet meer op tijd te krijgen.'
     },
   },
   {
