@@ -250,13 +250,14 @@ input, textarea, button { font-family: inherit; }
   display: grid; place-items: center; position: relative;
   transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
 }
-.date__day:hover:not(:disabled) { background: var(--nbc-blue-tint); }
+.date__day:hover:not(:disabled):not([aria-pressed="true"]) { background: var(--nbc-blue-tint); }
 .date__day:disabled { color: var(--nbc-stone-300); cursor: default; }
 .date__day--today { border-color: var(--nbc-stone-400); }
 .date__day[aria-pressed="true"] { background: var(--nbc-ink); color: var(--nbc-paper); border-color: var(--nbc-ink); }
 .date__day--empty { visibility: hidden; }
 .date__selected { font: 400 16px/1.4 var(--font-body); color: var(--fg-secondary); min-height: 1.4em; }
 .date__selected strong { font-weight: 600; color: var(--fg-primary); }
+.date__toelichting { display: block; margin-top: 4px; font-size: 14px; }
 
 /* Overzicht */
 .review__list { border-top: 1px solid var(--border-default); max-width: 640px; }

@@ -59,6 +59,58 @@ export function eventNaamBevatDatum(event: string, iso: string): boolean {
   return patronen.some((p) => new RegExp(p).test(naam))
 }
 
+const ISO = (j: number, m: number, d: number) => `${j}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+/** Bestaat deze dag echt? 31 februari niet. */
+function geldigeDag(j: number, m: number, d: number): boolean {
+  if (m < 1 || m > 12 || d < 1) return false
+  return d <= new Date(Date.UTC(j, m, 0)).getUTCDate()
+}
+
+/**
+ * Haalt de eventdatum uit de eventnaam, zodat het formulier hem alvast kan aanklikken:
+ * "Zorgcongres 20 november 2026" → "2026-11-20". Bij een meerdaags event ("19-20 november")
+ * de eerste dag, net als de vraag naar de eventdatum.
+ *
+ * Zonder jaartal de eerstvolgende keer dat het die dag is, vanaf `vandaag`. Een datum die al
+ * geweest is, of een naam zonder datum, geeft null: dan valt er niets voor te kiezen.
+ */
+export function datumUitEventNaam(event: string, vandaag: string): string | null {
+  const naam = event.toLowerCase()
+  const nu = /^(\d{4})-(\d{2})-(\d{2})/.exec(vandaag)
+  if (!nu) return null
+  const ditJaar = Number(nu[1])
+
+  const kies = (j: number | null, m: number, d: number): string | null => {
+    if (j !== null) return geldigeDag(j, m, d) && ISO(j, m, d) >= vandaag ? ISO(j, m, d) : null
+    for (const jaar of [ditJaar, ditJaar + 1]) {
+      if (geldigeDag(jaar, m, d) && ISO(jaar, m, d) >= vandaag) return ISO(jaar, m, d)
+    }
+    return null
+  }
+  const jaarVan = (s: string | undefined) => (!s ? null : s.length === 2 ? 2000 + Number(s) : Number(s))
+
+  // "2026-11-20"
+  const iso = /(?<!\d)(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?!\d)/.exec(naam)
+  if (iso) return kies(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+
+  // "20 november", "20 nov. 2026", "19-20 november", "19 t/m 20 november"
+  const maanden = MAAND_SCHRIJFWIJZEN.flat().sort((a, b) => b.length - a.length).join('|')
+  const woord = new RegExp(
+    `(?<!\\d)(\\d{1,2})(?:ste|de|e)?(?:\\s*(?:-|–|/|&|en|t/m|tot)\\s*\\d{1,2}(?:ste|de|e)?)?\\s*[-.]?\\s*(${maanden})\\.?(?![a-z])(?:\\s*[-,]?\\s*(\\d{4})(?!\\d))?`,
+  ).exec(naam)
+  if (woord) {
+    const maand = MAAND_SCHRIJFWIJZEN.findIndex((s) => s.includes(woord[2])) + 1
+    return kies(jaarVan(woord[3]), maand, Number(woord[1]))
+  }
+
+  // "20-11", "20/11/2026", "20.11.26"
+  const cijfers = /(?<!\d)(\d{1,2})[-/.](\d{1,2})(?:[-/.](\d{4}|\d{2}))?(?!\d)/.exec(naam)
+  if (cijfers) return kies(jaarVan(cijfers[3]), Number(cijfers[2]), Number(cijfers[1]))
+
+  return null
+}
+
 /**
  * Het event en de eventdatum als twee stukken voor een titel of onderwerp: ["EY", "11 december"].
  * Zonder jaartal, en zonder datum als die er niet is of al in de eventnaam staat.
