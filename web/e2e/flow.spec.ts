@@ -7,6 +7,36 @@ async function shot(page: Page, name: string, project: string) {
 }
 
 test.describe('designaanvraag-flow', () => {
+  test('datum in de eventnaam staat op het datumscherm al aangeklikt', async ({ page }) => {
+    const MAANDEN = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december']
+    const dag = new Date()
+    dag.setDate(dag.getDate() + 40)
+    const naam = `Gala ${dag.getDate()} ${MAANDEN[dag.getMonth()]} ${dag.getFullYear()}`
+
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Start' }).click()
+    await page.keyboard.press('a')
+    await page.keyboard.press('Enter')
+    await page.getByPlaceholder('Typ of kies je naam').fill('noa')
+    await page.getByRole('option', { name: 'Noa Demo' }).click()
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('a')
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('heading', { name: 'Voor welk event is het?' })).toBeVisible()
+    await page.keyboard.type(naam)
+    await page.keyboard.press('Enter')
+
+    // Het datumscherm komt nog wel, maar de dag uit de naam staat al aangeklikt.
+    await expect(page.getByRole('heading', { name: 'Wanneer is het event?' })).toBeVisible()
+    await expect(page.locator('button.date__day[aria-pressed="true"]')).toHaveText(String(dag.getDate()))
+    await expect(page.locator('.date__selected')).toContainText(`${dag.getDate()} ${MAANDEN[dag.getMonth()]} ${dag.getFullYear()}`)
+    await expect(page.locator('.date__toelichting')).toContainText('Uit de naam van het event')
+
+    // Zelf een andere dag kiezen kan gewoon; dan verdwijnt de toelichting.
+    await page.locator(`button.date__day:not([disabled]):not([aria-pressed="true"])`).last().click()
+    await expect(page.locator('.date__toelichting')).toHaveCount(0)
+  })
+
   test('volledige aanvraag via toetsenbord', async ({ page }, testInfo) => {
     const p = testInfo.project.name
     await page.goto('/')

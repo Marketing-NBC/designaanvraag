@@ -19,10 +19,11 @@ import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
 import { PAKKETTEN_OP_SCHERM, naarInhoud, naarTekst, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
-import { alleenTeKiezenTypes, emptyDraft, type Draft } from './state'
+import { alleenTeKiezenTypes, emptyDraft, eventDatumUitNaam, metEventNaam, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { FileField } from './components/FileField'
 import { Icon } from './components/Icon'
+import { todayIso } from './lib/dates'
 import { useBijlagen } from './lib/uploads'
 import { zichtbareStappen } from './steps'
 
@@ -479,7 +480,7 @@ export default function App() {
                 <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} onEnter={next} />
               ) : null}
               {step.kind === 'text' && step.id === 'event' ? (
-                <TextField id="f-event" value={draft.event} onChange={(v) => patch({ event: v })} placeholder="Bijvoorbeeld Zorgcongres 20 november 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
+                <TextField id="f-event" value={draft.event} onChange={(v) => patch(metEventNaam(draft, v, todayIso()))} placeholder="Bijvoorbeeld Zorgcongres 20 november 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
               ) : null}
               {step.kind === 'text' && step.id === 'schijf_locatie' ? (
                 <TextField id="f-schijf" value={draft.schijf_locatie} onChange={(v) => patch({ schijf_locatie: v })} placeholder="G:\Events\2026\Zorgcongres" maxLength={500} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
@@ -491,7 +492,13 @@ export default function App() {
                 <TextField id="f-website" type="text" inputMode="url" value={draft.website} onChange={(v) => patch({ website: v })} placeholder="www.event.nl" invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />
               ) : null}
               {step.kind === 'date' && step.id === 'event_datum' ? (
-                <DateField value={draft.event_datum} onChange={(v) => patch({ event_datum: v, deadline: draft.deadline && draft.deadline > v ? null : draft.deadline })} onPicked={focusPrimary} />
+                <DateField
+                  value={draft.event_datum}
+                  onChange={(v) => patch({ event_datum: v, deadline: draft.deadline && draft.deadline > v ? null : draft.deadline })}
+                  onPicked={focusPrimary}
+                  // Al aangeklikt omdat de datum in de eventnaam stond: dat zeggen we erbij.
+                  toelichting={eventDatumUitNaam(draft, todayIso()) ? 'Uit de naam van het event. Klopt hij niet? Kies dan een andere dag.' : undefined}
+                />
               ) : null}
               {step.kind === 'date' && step.id === 'deadline' ? (
                 <DateField value={draft.deadline} onChange={(v) => patch({ deadline: v })} max={draft.event_datum ?? undefined} onPicked={focusPrimary} />

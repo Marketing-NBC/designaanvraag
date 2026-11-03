@@ -15,11 +15,13 @@ interface Props {
   onPicked?: () => void
   /** Wat er onder de kalender staat zolang er geen dag gekozen is. */
   leeg?: string
+  /** Een regel onder de gekozen dag, bijvoorbeeld waar die vandaan komt. */
+  toelichting?: string
 }
 
 const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo']
 
-export function DateField({ value, onChange, min, max, onPicked, leeg = 'Kies een dag in de kalender.' }: Props) {
+export function DateField({ value, onChange, min, max, onPicked, leeg = 'Kies een dag in de kalender.', toelichting }: Props) {
   const today = todayIso()
   const minIso = min ?? today
   const [month, setMonth] = useState<Date>(() => startOfMonth(value ? fromIso(value) : new Date()))
@@ -116,6 +118,7 @@ export function DateField({ value, onChange, min, max, onPicked, leeg = 'Kies ee
         {value ? (
           <>
             Gekozen: <strong>{formatLong(value)}</strong>
+            {toelichting ? <span className="date__toelichting">{toelichting}</span> : null}
           </>
         ) : (
           leeg
