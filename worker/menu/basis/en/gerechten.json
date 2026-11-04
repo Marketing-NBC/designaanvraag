@@ -1333,9 +1333,10 @@
         }
       ]
     },
-    "61.6|tuna tartare horseradish affilla cress onion crumble saffron": {
-      "naam": "Tuna tartare",
+    "61.6|tasteful gift tuna tartare horseradish affilla cress onion crumble saffron": {
+      "naam": "Tasteful gift",
       "ingredienten": [
+        "tuna tartare",
         "horseradish",
         "affilla cress",
         "onion crumble",
@@ -1345,18 +1346,18 @@
       "naamGrootte": 61.6,
       "naamRegels": [
         {
-          "tekst": "Tuna tartare",
+          "tekst": "Tasteful gift",
           "offset": 0.0
         }
       ],
       "ingrGrootte": 41.8,
       "ingrRegels": [
         {
-          "tekst": "horseradish | affilla cress | onion crumble |",
+          "tekst": "tuna tartare | horseradish | affilla cress |",
           "offset": 0.0
         },
         {
-          "tekst": "saffron",
+          "tekst": "onion crumble | saffron",
           "offset": 55.0
         }
       ]
@@ -2185,22 +2186,6 @@
         }
       ]
     },
-    "ingr|41.8|horseradish | affilla cress | onion crumble | saffron": {
-      "soort": "ingr",
-      "grootte": 41.8,
-      "tekst": "horseradish | affilla cress | onion crumble | saffron",
-      "bron": "walking-dinner",
-      "regels": [
-        {
-          "tekst": "horseradish | affilla cress | onion crumble |",
-          "offset": 0.0
-        },
-        {
-          "tekst": "saffron",
-          "offset": 55.0
-        }
-      ]
-    },
     "ingr|41.8|oreo crunch | cherries | tony's chocolonely shavings": {
       "soort": "ingr",
       "grootte": 41.8,
@@ -2285,6 +2270,22 @@
         },
         {
           "tekst": "onion crumble",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|tuna tartare | horseradish | affilla cress | onion crumble | saffron": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "tuna tartare | horseradish | affilla cress | onion crumble | saffron",
+      "bron": "walking-dinner",
+      "regels": [
+        {
+          "tekst": "tuna tartare | horseradish | affilla cress |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "onion crumble | saffron",
           "offset": 55.0
         }
       ]
@@ -2869,18 +2870,6 @@
       "regels": [
         {
           "tekst": "Tasteful gift",
-          "offset": 0.0
-        }
-      ]
-    },
-    "naam|61.6|tuna tartare": {
-      "soort": "naam",
-      "grootte": 61.6,
-      "tekst": "Tuna tartare",
-      "bron": "walking-dinner",
-      "regels": [
-        {
-          "tekst": "Tuna tartare",
           "offset": 0.0
         }
       ]

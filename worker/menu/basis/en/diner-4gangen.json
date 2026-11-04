@@ -74,14 +74,7 @@
       }
     ]
   },
-  "correcties": {
-    "woorden": [
-      [
-        "Chocoladetrifle",
-        "Chocolate trifle"
-      ]
-    ]
-  },
+  "correcties": null,
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -139,8 +132,8 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 865.9,
-        "minimaal": 855.63,
+        "breedte": 801.47,
+        "minimaal": 791.97,
         "maximaal": 883.02,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [

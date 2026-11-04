@@ -69,11 +69,9 @@ WOORDCORRECTIES = [
     ('Grip ‘n dip fries', 'Grip ’n dip fries'),
 ]
 
-# Alleen voor het Engelse bestand: op de drie dinerpagina's heette het dessert nog
-# Nederlands. Main() voegt ze toe bij --taal en.
-WOORDCORRECTIES_EN = [
-    ('Chocoladetrifle', 'Chocolate trifle'),
-]
+# Alleen voor het Engelse bestand; main() voegt ze toe bij --taal en. Nu leeg: wat er
+# eerder stond (Chocoladetrifle) is in het .ai zelf rechtgezet.
+WOORDCORRECTIES_EN: list = []
 
 
 def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:

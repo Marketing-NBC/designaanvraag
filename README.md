@@ -816,8 +816,8 @@ Illustrator-bestand is de bron: wat daar staat, staat in het formulier en op het
 dezelfde spelling. Verandert er iets in het Engels, pas dan het .ai aan en draai de drie regels
 hierboven.
 
-Wat in het ontwerp bewust anders gezet wordt dan in het .ai staat in `WOORDCORRECTIES_EN`: nu alleen
-*Chocoladetrifle*, dat op de drie dinerpagina's nog Nederlands was, als *Chocolate trifle*.
+Moet een woord op het scherm bewust anders staan dan in het .ai, dan kan dat in
+`WOORDCORRECTIES_EN` in `basis-extract.py`; die lijst is nu leeg.
 
 Bij *Lunch (vegetarian)* staat *vegetarian* als ondertitel onder de titel. Dat element kent alleen
 het Engelse ontwerp; de engine tekent hem zoals hij in het .ai staat.

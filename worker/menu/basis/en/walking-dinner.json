@@ -74,14 +74,7 @@
       }
     ]
   },
-  "correcties": {
-    "woorden": [
-      [
-        "Chocoladetrifle",
-        "Chocolate trifle"
-      ]
-    ]
-  },
+  "correcties": null,
   "stijl": {
     "kop": {
       "font": "Pockota-Medium",
@@ -139,8 +132,8 @@
     {
       "x": 261.0,
       "kader": {
-        "breedte": 865.9,
-        "minimaal": 855.63,
+        "breedte": 801.47,
+        "minimaal": 791.97,
         "maximaal": 883.02,
         "handmatigeAfbrekingen": 0,
         "gedeeldMet": [
@@ -233,13 +226,13 @@
         },
         {
           "soort": "naam",
-          "tekst": "Tuna tartare",
+          "tekst": "Tasteful gift",
           "regels": [
             {
               "baseline": 1038.84,
               "runs": [
                 {
-                  "tekst": "Tuna tartare",
+                  "tekst": "Tasteful gift",
                   "x": 0.36,
                   "font": "AreaNormal-ExtraBold",
                   "grootte": 61.6,
@@ -251,13 +244,13 @@
         },
         {
           "soort": "ingr",
-          "tekst": "horseradish | affilla cress | onion crumble | saffron",
+          "tekst": "tuna tartare | horseradish | affilla cress | onion crumble | saffron",
           "regels": [
             {
               "baseline": 1107.04,
               "runs": [
                 {
-                  "tekst": "horseradish | affilla cress | onion crumble | ",
+                  "tekst": "tuna tartare | horseradish | affilla cress | ",
                   "x": 0.36,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,
@@ -269,7 +262,7 @@
               "baseline": 1162.04,
               "runs": [
                 {
-                  "tekst": "saffron",
+                  "tekst": "onion crumble | saffron",
                   "x": 0.36,
                   "font": "AreaNormal-Hairline",
                   "grootte": 41.8,

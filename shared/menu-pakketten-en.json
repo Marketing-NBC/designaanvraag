@@ -924,8 +924,9 @@
               ]
             },
             {
-              "naam": "Tuna tartare",
+              "naam": "Tasteful gift",
               "ingredienten": [
+                "tuna tartare",
                 "horseradish",
                 "affilla cress",
                 "onion crumble",
@@ -1503,6 +1504,19 @@
       ]
     },
     {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "tuna tartare",
+        "horseradish",
+        "affilla cress",
+        "onion crumble",
+        "saffron"
+      ],
+      "uit": [
+        "walking-dinner"
+      ]
+    },
+    {
       "naam": "Thai chicken",
       "ingredienten": [
         "romaine lettuce",
@@ -1524,18 +1538,6 @@
       ],
       "uit": [
         "lunch-standaard"
-      ]
-    },
-    {
-      "naam": "Tuna tartare",
-      "ingredienten": [
-        "horseradish",
-        "affilla cress",
-        "onion crumble",
-        "saffron"
-      ],
-      "uit": [
-        "walking-dinner"
       ]
     },
     {
