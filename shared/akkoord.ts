@@ -12,6 +12,7 @@
  *    wie in "Ook mailen naar" staat) elke werkdag om 9:00 een herinnering (scripts/herinneringen.mjs).
  *    Feedback telt pas als hij echt via het formulier is verstuurd, niet als iemand alleen op de
  *    knop klikte.
+ *  - Dit alles alleen bij aanvragen van na AKKOORD_VANAF; oudere krijgen de mail zoals vroeger.
  *  - Sleept Marketing de taak zelf naar Afgerond (akkoord gekregen per telefoon, bijvoorbeeld), dan
  *    stoppen de herinneringen ook.
  *
@@ -25,6 +26,19 @@ import { feedbackUrl } from './oplevering.ts'
 import { describeRequestTypes } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 import { vandaagInNl } from './spoed.ts'
+
+/**
+ * Akkoord en herinneringen gelden alleen voor aanvragen die zijn ingediend nadat deze functie live
+ * ging (4 november 2026, 15:36). Een oudere aanvraag krijgt de opleveringsmail zoals vroeger: met
+ * Feedback geven, zonder akkoordknop en zonder herinneringen.
+ */
+export const AKKOORD_VANAF = '2026-11-04T14:36:52Z'
+
+/** Krijgt een aanvraag die op dit moment is ingediend de akkoordknop en de herinneringen? */
+export function metAkkoord(aanvraagCreatedAt: string | null | undefined): boolean {
+  const t = Date.parse(aanvraagCreatedAt ?? '')
+  return Number.isFinite(t) && t >= Date.parse(AKKOORD_VANAF)
+}
 
 /** Maandag tot en met vrijdag. Feestdagen tellen gewoon mee als werkdag. */
 export function isWerkdag(iso: string): boolean {

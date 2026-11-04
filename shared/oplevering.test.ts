@@ -124,7 +124,7 @@ describe('de mail', () => {
     types: ['torenscherm', 'vlaggen'],
     andersTekst: '',
     berichtHtml: 'Hier is het.',
-    afzenderNaam: 'Devi', aanvrager: 'Britt',
+    afzenderNaam: 'Devi', aanvrager: 'Britt', akkoord: true,
     bijlagen: [{ naam: 'torenscherm.png', bytes: 2048 }],
     links: [],
   }
@@ -149,6 +149,10 @@ describe('de mail', () => {
     expect(m.html).toContain('Akkoord geven')
     expect(m.html).toContain(`?akkoord=${basis.aanvraagId}`)
     expect(m.html).toContain('Akkoord geven kan alleen Britt')
+    // Een aanvraag van voor het akkoord: geen knop, zoals vroeger.
+    const oud = renderOpleveringMail({ ...basis, akkoord: false })
+    expect(oud.html).not.toContain('Akkoord geven')
+    expect(oud.html).toContain('Is alles goed, dan hoef je niets te doen.')
   })
 
   it('een tweede versie zegt dat', () => {
@@ -209,7 +213,7 @@ describe('opmaak voor de klassieke Outlook', () => {
   // Outlook rendert met Word: padding op een link of div en margin op een tabel tellen daar niet.
   const m = renderOpleveringMail({
     aan: ['a@x.nl'], antwoordAan: ['m@x.nl'], aanvraagId: 'id', versie: 1, locatie: 'nbc', soort: 'evenement', event: 'E', eventDatum: null,
-    omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, aanvrager: 'Britt', bijlagen: [], links: [],
+    omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, aanvrager: 'Britt', akkoord: true, bijlagen: [], links: [],
   })
 
   it('de knop krijgt zijn lucht van de cel, niet van de link', () => {

@@ -12,6 +12,7 @@ import {
   verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
+import { metAkkoord } from '../_shared/shared/akkoord.ts'
 
 /**
  * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
@@ -159,6 +160,9 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         throw new Weigering('Deze taak hoort niet bij een aanvraag uit het formulier, dus er is geen aanvrager en geen feedbackknop om naar te verwijzen.')
       }
 
+      // Akkoordknop en herinneringen alleen bij een aanvraag van na de invoering daarvan.
+      const akkoord = metAkkoord(aanvraag.created_at)
+
       const subtaak = openOpleverSubtaak(await asana.listSubtaken(taak.gid))
       if (!subtaak) {
         // Een taak van voor deze functie, of de vorige versie is net verstuurd en de nieuwe lege
@@ -226,7 +230,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         if (rij) {
           // Een eerdere poging met deze subtaak mislukte (of bleef hangen, of wachtte op de
           // 3D-preview): dezelfde rij opnieuw.
-          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door, herinneren: true }
+          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door, herinneren: akkoord }
           if (rij.status === 'wacht_op_preview' && status === 'bezig') {
             // Twee meldingen tegelijk (twee kolommen klaar), of een melding en een druk op de knop:
             // wie hem het eerst oppakt, verstuurt hem.
@@ -236,8 +240,8 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           }
         } else {
           // herinneren: tot er akkoord of feedback is, krijgt iedereen die deze mail kreeg
-          // elke werkdag een herinnering (scripts/herinneringen.mjs).
-          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door, herinneren: true })
+          // elke werkdag een herinnering (scripts/herinneringen.mjs). Alleen bij een nieuwe aanvraag.
+          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door, herinneren: akkoord })
         }
       }
 
@@ -282,6 +286,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         berichtHtml,
         afzenderNaam: wie.naam,
         aanvrager: aanvraag.naam,
+        akkoord,
         bijlagen: bijlagen.map((b) => ({ naam: b.naam, bytes: b.bytes.length })),
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
         previews,

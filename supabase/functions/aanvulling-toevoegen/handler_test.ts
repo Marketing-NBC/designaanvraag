@@ -57,6 +57,7 @@ const AANVRAAG_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
 function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
   return {
     id: AANVRAAG_ID,
+    created_at: '2026-11-05T09:00:00Z',
     client_request_id: '11111111-1111-4111-8111-111111111111',
     asana_task_gid: '999',
     asana_task_url: 'https://app.asana.com/0/111/999',

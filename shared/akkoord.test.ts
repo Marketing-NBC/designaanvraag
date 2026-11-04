@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { herinneringVandaag, isWerkdag, renderAkkoordMelding, renderHerinneringMail, verslagAkkoord, type OpenOplevering } from './akkoord'
+import { herinneringVandaag, isWerkdag, metAkkoord, renderAkkoordMelding, renderHerinneringMail, verslagAkkoord, type OpenOplevering } from './akkoord'
 
 describe('werkdagen', () => {
   it('maandag tot en met vrijdag', () => {
@@ -82,5 +82,14 @@ describe('de mails', () => {
     expect(r).toContain('Britt &lt;b&gt;')
     expect(r).toContain('versie 2')
     expect(r).toContain('Afgerond')
+  })
+})
+
+describe('alleen voor nieuwe aanvragen', () => {
+  it('een aanvraag van na de invoering doet mee, een oudere niet', () => {
+    expect(metAkkoord('2026-11-05T09:00:00Z')).toBe(true)
+    expect(metAkkoord('2026-11-04T14:36:52Z')).toBe(true)
+    expect(metAkkoord('2026-11-04T09:00:00Z')).toBe(false)
+    expect(metAkkoord(null)).toBe(false)
   })
 })
