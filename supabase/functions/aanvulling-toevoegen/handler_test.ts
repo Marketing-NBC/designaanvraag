@@ -135,6 +135,8 @@ function fakeDb(row: AanvraagDetail | null = aanvraag(), gestoptAantal = 0) {
     zoekOpId: () => Promise.resolve(null),
     findDetailByAsanaTaskGid: () => Promise.resolve(null),
     collegaEmail: () => Promise.resolve(null),
+    // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
+    collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
     collegaEmails: (namen) => Promise.resolve(new Map(namen.filter((n) => ADRESSEN[n.toLowerCase()]).map((n) => [n.toLowerCase(), ADRESSEN[n.toLowerCase()]]))),
     laatsteVerstuurd: () => Promise.resolve(null),
     async stopHerinneringen(aanvraagId, _moment, reden) {

@@ -14,9 +14,9 @@
  *
  * Wie krijgt er een? Per aanvraag de laatst verstuurde oplevering, als daar nog geen akkoord of
  * feedback op is, de herinneringen niet gestopt zijn (Afgerond in Asana, of een nieuwere versie) en
- * hij niet vandaag pas verstuurd is. Naar de aanvrager en de gekoppelde collega's, voor zover er
- * een adres bij staat in de tabel collegas. Niet naar de adressen uit "Ook mailen naar": dat zijn
- * vaak mensen van buiten. De regels staan in shared/akkoord.ts.
+ * hij niet vandaag pas verstuurd is. Naar iedereen die de opleveringsmail kreeg (die adressen staan
+ * in opleveringen.ontvangers, ook die uit "Ook mailen naar"), plus wie er sindsdien gekoppeld is
+ * en een adres heeft in de tabel collegas. De regels staan in shared/akkoord.ts.
  */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { herinneringVandaag, isWerkdag, renderHerinneringMail, waaroverTekst } from '../shared/akkoord.ts'
@@ -75,7 +75,7 @@ async function rest(pad, init = {}) {
 
 let open
 try {
-  open = await rest('opleveringen?select=id,aanvraag_id,versie,verstuurd_op,herinneren,akkoord_op,feedback_op,gestopt_op,herinneringen,laatste_herinnering'
+  open = await rest('opleveringen?select=id,aanvraag_id,versie,ontvangers,verstuurd_op,herinneren,akkoord_op,feedback_op,gestopt_op,herinneringen,laatste_herinnering'
     + '&status=eq.verstuurd&herinneren=is.true&akkoord_op=is.null&feedback_op=is.null&gestopt_op=is.null&order=verstuurd_op.desc')
 } catch (e) {
   fail(e.message)
@@ -112,8 +112,18 @@ for (const o of vandaagAan) {
     soort: a.soort, event: a.event ?? '', eventDatum: a.event_datum, omschrijving: a.omschrijving ?? '',
     types: a.aanvraag_types ?? [], andersTekst: a.anders_tekst ?? '',
   }
+  // Wie de opleveringsmail kreeg, en wie er sindsdien gekoppeld is. Zonder dubbelen, hoofdletters
+  // daargelaten.
   const namen = [a.naam, ...(a.gekoppelden ?? [])]
-  const echt = [...new Set(namen.map((n) => adressen.get(String(n).trim().toLowerCase())).filter(Boolean))]
+  const gezien = new Set()
+  const echt = [...(o.ontvangers ?? []), ...namen.map((n) => adressen.get(String(n).trim().toLowerCase()))]
+    .filter(Boolean)
+    .filter((adres) => {
+      const k = adres.trim().toLowerCase()
+      if (gezien.has(k)) return false
+      gezien.add(k)
+      return true
+    })
   if (!echt.length) {
     zeg(`- ${waaroverTekst(waarover)}: niemand met een mailadres (${namen.join(', ')}); overgeslagen.`)
     continue

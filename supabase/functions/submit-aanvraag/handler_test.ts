@@ -79,6 +79,8 @@ function fakeDb() {
     zoekOpId: () => Promise.resolve(null),
     findDetailByAsanaTaskGid: () => Promise.resolve(null),
     collegaEmail: () => Promise.resolve(null),
+    // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
+    collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
     collegaEmails: (namen) => Promise.resolve(new Map(namen.filter((n) => ADRESSEN[n.toLowerCase()]).map((n) => [n.toLowerCase(), ADRESSEN[n.toLowerCase()]]))),
     laatsteVerstuurd: () => Promise.resolve(null),
     async stopHerinneringen(aanvraagId, _moment, reden) {
@@ -942,4 +944,25 @@ Deno.test('een Engels menu staat in de taak', async () => {
     ...validAanvraag, aanvraag_types: ['menu_scherm'], menu_tekst: 'Sandwiches\n• Brown bun', menu_pakket: 'lunch-basic', menu_taal: 'en',
   } })))
   assertStringIncludes(asana.calls[0].htmlNotes, '<strong>Taal van het menu:</strong> Engels')
+})
+
+// ── Alleen collega's uit de lijst ─────────────────────────────────────────────
+
+Deno.test('wie niet in de lijst staat, kan geen aanvraag doen', async () => {
+  const mail = fakeMail()
+  const { handler, db, asana } = setup({ mail })
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Jan Nieuwkomer' } })))
+  assertEquals(res.status, 400)
+  const body = await res.json()
+  assertEquals(body.field, 'aanvraag.naam')
+  assertStringIncludes(body.error, 'staat niet in de lijst')
+  assertEquals(db.rows.size, 0)
+  assertEquals(asana.calls.length, 0)
+  assertEquals(mail.verstuurd.length, 0)
+})
+
+Deno.test('de naam gaat verder zoals hij in de lijst staat', async () => {
+  const { handler, db } = setup()
+  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'noa' } })))
+  assertEquals([...db.rows.values()][0].naam, 'Noa')
 })

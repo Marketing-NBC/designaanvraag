@@ -87,7 +87,8 @@ export const STEPS: StepDef[] = [
     id: 'naam',
     kind: 'naam',
     title: 'Hoe heet je?',
-    help: 'Kies je naam uit de lijst. Sta je er niet tussen? Typ dan gewoon je naam.',
+    // Of de naam in de lijst staat controleert App.tsx: alleen daar is de lijst bekend.
+    help: 'Kies je naam uit de lijst. Sta je er niet tussen? Vraag Marketing dan om je toe te voegen.',
     validate: (d) => {
       const v = d.naam.trim()
       if (v.length < 2) return 'Vul je naam in.'

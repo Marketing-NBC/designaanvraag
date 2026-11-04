@@ -208,6 +208,11 @@ export interface Db {
   /** Het e-mailadres van een collega, op naam (hoofdletters daargelaten). Null als het er niet is. */
   collegaEmail(naam: string): Promise<string | null>
   /**
+   * De naam zoals hij in de lijst met (actieve) collega's staat, of null als hij er niet in staat.
+   * Alleen collega's uit de lijst mogen een aanvraag doen.
+   */
+  collega(naam: string): Promise<string | null>
+  /**
    * De adressen van meerdere collega's tegelijk, op naam in kleine letters. Een naam zonder adres
    * (of die niet in de lijst staat) ontbreekt in de uitkomst.
    */
@@ -432,6 +437,14 @@ export function createDb(url: string, secretKey: string): Db {
       if (error) throw new Error(`db collegas: ${error.message}`)
       const email = (data as { email: string | null }[] | null)?.[0]?.email?.trim()
       return email || null
+    },
+    async collega(naam) {
+      const term = veiligeZoekterm(naam)
+      if (!term) return null
+      // ilike zonder jokertekens: dezelfde naam, alleen de hoofdletters mogen verschillen.
+      const { data, error } = await sb.from('collegas').select('naam').ilike('naam', term).eq('actief', true).limit(1)
+      if (error) throw new Error(`db collegas: ${error.message}`)
+      return (data as { naam: string }[] | null)?.[0]?.naam?.trim() || null
     },
     async collegaEmails(namen) {
       const uit = new Map<string, string>()

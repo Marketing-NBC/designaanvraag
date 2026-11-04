@@ -20,7 +20,7 @@ import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
 import { naarInhoud, naarTekst, pakkettenOpScherm, taalVan, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
-import { alleenTeKiezenTypes, emptyDraft, eventDatumUitNaam, metEventNaam, type Draft } from './state'
+import { NIET_IN_LIJST, alleenTeKiezenTypes, emptyDraft, eventDatumUitNaam, metEventNaam, naamUitLijst, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
 import { Akkoord } from './Akkoord'
 import { FileField } from './components/FileField'
@@ -148,7 +148,15 @@ export default function App() {
   const next = useCallback(() => {
     if (screen.kind !== 'step') return
     const lijst = zichtbareStappen({ metMenu, soort })
-    const msg = lijst[screen.index]?.validate(volledig) ?? null
+    const huidige = lijst[screen.index]
+    let msg = huidige?.validate(volledig) ?? null
+    // Alleen collega's uit de lijst mogen een aanvraag doen. Is de lijst niet geladen (een
+    // storing), dan houdt de function het tegen; hier zou dan iedereen vastlopen.
+    if (!msg && huidige?.id === 'naam' && collegas.length) {
+      const lijstnaam = naamUitLijst(volledig.naam, collegas)
+      if (!lijstnaam) msg = NIET_IN_LIJST
+      else if (lijstnaam !== volledig.naam) setDraft((d) => ({ ...d, naam: lijstnaam }))
+    }
     if (msg) {
       setError(msg)
       setErrorNonce((n) => n + 1)
@@ -156,7 +164,7 @@ export default function App() {
     }
     if (screen.index + 1 < lijst.length) go({ kind: 'step', index: screen.index + 1 }, 1)
     else go({ kind: 'review' }, 1)
-  }, [screen, volledig, go, metMenu, soort])
+  }, [screen, volledig, go, metMenu, soort, collegas])
 
   const prev = useCallback(() => {
     if (screen.kind === 'step') {
@@ -514,8 +522,8 @@ export default function App() {
                   names={collegas}
                   invalid={Boolean(error)}
                   onEnter={next}
-                  // Zonder plek in de lijst is er geen mailadres: dan geen bevestiging en geen oplevering per mail.
-                  nieuwHint="Niet in de lijst? Je kunt gewoon doorgaan, maar dan krijg je geen mail van ons: geen bevestiging en ook niet als het klaar is. Vraag Marketing om je aan de lijst toe te voegen."
+                  // Alleen collega's uit de lijst mogen een aanvraag doen; dat zeggen we meteen.
+                  nieuwHint="Deze naam staat niet in de lijst. Vraag Marketing om je toe te voegen; daarna kun je een aanvraag doen."
                 />
               ) : null}
               {step.kind === 'text' && step.id === 'event' ? (

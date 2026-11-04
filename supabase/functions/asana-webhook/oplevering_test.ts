@@ -575,6 +575,10 @@ Deno.test('gekoppelde collega\'s krijgen de oplevering ook, en de oplevering kri
   await s.oplever(taak(), ECHT)
   assertEquals(s.gemaild[0].aan, ['britt@nbcevents.nl', 'karen@nbcevents.nl'])
   assertStringIncludes(s.gemaild[0].html, '?akkoord=')
+  // Akkoord staat onder feedback, in Goudgeel.
+  const html = s.gemaild[0].html
+  assert(html.indexOf('Feedback geven') < html.indexOf('Akkoord geven'))
+  assertStringIncludes(html, 'background:#f6a304')
   assertEquals(s.rijen[0].herinneren, true)
   // Een eerdere versie die nog op akkoord wachtte, stopt: het gaat nu om deze.
   assertEquals(s.gestopt, [{ aanvraagId: aanvraag.id, reden: { gestopt: 'versie 1 verstuurd' } }])

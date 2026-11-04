@@ -88,3 +88,15 @@ export function metEventNaam(d: Draft, event: string, vandaag: string): Partial<
 export function eventDatumUitNaam(d: Draft, vandaag: string): boolean {
   return Boolean(d.event_datum) && d.event_datum === datumUitEventNaam(d.event, vandaag)
 }
+
+/**
+ * De naam zoals hij in de lijst met collega's staat, of null als hij er niet in staat. Hoofdletters
+ * en spaties eromheen maken niet uit: wie "britt" typt, is Britt.
+ */
+export function naamUitLijst(naam: string, lijst: readonly string[]): string | null {
+  const k = naam.trim().toLowerCase()
+  return lijst.find((n) => n.trim().toLowerCase() === k) ?? null
+}
+
+/** Wat het formulier zegt als iemand niet in de lijst staat. */
+export const NIET_IN_LIJST = 'Je staat niet in de lijst met collega\'s. Vraag Marketing om je toe te voegen; daarna kun je een aanvraag doen.'

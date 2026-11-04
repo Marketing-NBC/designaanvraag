@@ -54,6 +54,18 @@ describe('de mails', () => {
     expect(m.html).toContain('?akkoord=11111111-2222-4333-8444-555555555555')
     expect(m.html).toContain('?feedback=11111111-2222-4333-8444-555555555555')
     expect(m.html).toContain('Versie 2')
+    // Feedback eerst, akkoord eronder in Goudgeel met zwarte tekst.
+    expect(m.html.indexOf('Feedback geven')).toBeLessThan(m.html.indexOf('Akkoord geven'))
+    expect(m.html).toContain('background:#f6a304')
+  })
+
+  it('bij Green Village is de akkoordknop Orange Roughy', () => {
+    const m = renderHerinneringMail({
+      ...waarover, aan: ['bo@green-village.nl'], antwoordAan: ['marketing@green-village.nl'], aanvraagId: '11111111-2222-4333-8444-555555555555',
+      locatie: 'green_village', versie: 1, verstuurdOp: '2026-11-03T13:00:00Z', nummer: 1,
+    })
+    expect(m.html).toContain('background:#833113')
+    expect(m.html).not.toContain('#f6a304')
   })
 
   it('Marketing hoort wie akkoord gaf, en of Asana het niet bijwerkte', () => {

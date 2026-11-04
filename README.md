@@ -26,10 +26,11 @@ datum, het veld Deadline blijft leeg, er komt geen mijlpaal in de deadline-agend
 als spoed. Komt er later toch een datum, dan kan die via "Iets aanvullen of wijzigen". Bij een
 evenement blijft de deadline verplicht.
 
-**Je naam** kies je uit de lijst, maar wie er niet tussen staat typt gewoon zijn naam: iedereen kan een
-aanvraag doen. Alleen krijgt wie niet in de lijst staat geen mail van ons (geen bevestiging, geen
-oplevering, geen herinnering): daar is een mailadres voor nodig, en dat staat bij de collega in de
-lijst. Het formulier zegt dat onder het naamveld; wie het wil, vraagt Marketing om toegevoegd te worden.
+**Je naam** moet in de lijst met collega's staan; alleen dan kun je een aanvraag doen. Daar staat ook
+je mailadres, voor de bevestiging, de oplevering en de herinneringen. Typt iemand een naam die er
+niet in staat, dan zegt het formulier dat meteen en kan hij niet verder: hij vraagt Marketing om
+toegevoegd te worden. De function `submit-aanvraag` controleert het ook, zodat het niet om het
+formulier heen kan. Hoofdletters maken niet uit; de naam gaat verder zoals hij in de lijst staat.
 
 De **laatste vraag** is *Wie moet er nog meer op de hoogte blijven?* Daar vink je collega's aan uit
 dezelfde lijst. Zie **Collega's koppelen en de bevestiging** hieronder.
@@ -167,8 +168,7 @@ alle gegevens in de beschrijving.
   af in een andere kolom, dan blijft dat zo.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
   function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
-  Dat geldt ook voor een naam die niet in de Supabase-tabel `collegas` staat: iedereen mag een
-  aanvraag doen en telt in het dashboard mee. Hoofdletters maken niet uit ("britt" en "Britt" zijn
+  Dat is nodig voor een collega die net aan de tabel `collegas` is toegevoegd. Hoofdletters maken niet uit ("britt" en "Britt" zijn
   één optie), een tikfout wel - die haal je in Asana weg of voeg je samen.
 - **Soort** (Evenement / Intern) is een keuzelijst met een eigen kleur per optie, zodat je op het
   bord meteen ziet wat intern is. Asana kan de kaart zelf niet inkleuren; het gekleurde label op de
@@ -231,8 +231,8 @@ subtaak vanzelf.
    hoofdtaak. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox) gaan als link mee.
 3. De mail gaat naar de aanvrager en naar de **gekoppelde collega's** (zie hieronder), voor zover er
    een adres bij ze staat. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
-   e-mailadressen gescheiden door een komma, ook van buiten NBC. Je mag ze ook uit Outlook plakken
-   (`Jan Jansen <jan@klant.nl>`). Het veld blijft staan voor een volgende versie.
+   e-mailadressen van collega's, gescheiden door een komma (de tool is niet voor klanten). Je mag ze ook uit Outlook plakken
+   (`Jan Jansen <jan@nbcevents.nl>`). Het veld blijft staan voor een volgende versie.
 4. Zet het veld **Oplevermail** op de hoofdtaak op **Stuur proef naar mij**. Jij krijgt dan precies de
    mail die de aanvrager krijgt, met `[PROEF]` in het onderwerp en bovenaan wie de echte zou krijgen.
    Het veld springt op *Proef verstuurd*. Er wordt niets afgevinkt of geteld.
@@ -273,8 +273,8 @@ daarnaast het recht `Mail.ReadWrite` nodig (zie **Mail instellen**, stap 4).
 nieuwe subtaak, dan heet de mail "Versie 2 klaar: …". Een verstuurde subtaak gaat nooit een tweede
 keer de deur uit. Na een mislukte poging mag dezelfde subtaak wel opnieuw.
 
-**Akkoord of feedback.** Onder het bericht staan twee knoppen: **Akkoord geven** en **Feedback
-geven**. Zolang geen van beide gebeurd is, krijgen de aanvrager en de gekoppelde collega's elke
+**Feedback of akkoord.** Onder het bericht staan twee knoppen: **Feedback geven** en daaronder
+**Akkoord geven**, in een eigen kleur (zie **Opmaak** onder **Meldingen per mail**). Zolang geen van beide gebeurd is, krijgen de aanvrager en de gekoppelde collega's elke
 werkdag een herinnering; zie **Akkoord en herinneringen** hieronder. **Feedback geven** opent het
 formulier met de aanvraag al gekozen: geen zoeken, alleen naam, feedback (met bestanden) en
 eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taak gaat terug naar
@@ -356,9 +356,9 @@ dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er
 
 ## Akkoord en herinneringen
 
-Na een oplevering wil Marketing weten of het goed is. Daarom staat er in de opleveringsmail een knop
-**Akkoord geven**, en krijgt wie bij de aanvraag hoort elke werkdag een herinnering tot er akkoord of
-feedback is.
+Na een oplevering wil Marketing weten of het goed is. Daarom staat er in de opleveringsmail onder
+**Feedback geven** een knop **Akkoord geven**, en krijgt iedereen die de oplevering kreeg elke
+werkdag een herinnering tot er akkoord of feedback is.
 
 **Akkoord geven.** De knop opent een scherm in het formulier (`?akkoord=<id>`) met de aanvraag, de
 versie en de vraag wie je bent; pas de knop op dat scherm geeft het akkoord. Dat is met opzet: de
@@ -376,8 +376,8 @@ Akkoord gaat altijd over de **laatst verstuurde versie**. Een tweede akkoord op 
 niets, en het scherm zegt wie het al gaf.
 
 **Wie mag akkoord geven?** Voor nu iedereen die de mail kreeg: de aanvrager, de gekoppelde collega's,
-en ook wie in "Ook mailen naar" staat. Op het akkoordscherm kies je je naam uit de lijst of typ je
-hem. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
+en ook wie in "Ook mailen naar" staat. Dat zijn altijd collega's: de tool wordt nooit gebruikt voor
+opdrachtgevers of klanten. Op het akkoordscherm kies je je naam uit de lijst of typ je hem. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
 alleen de aanvrager (of alleen collega's uit de lijst) akkoord mag geven.* Dat aanpassen zit in
 `supabase/functions/akkoord-geven/handler.ts`.
 
@@ -392,8 +392,9 @@ oplevering, en stuurt een herinnering als:
 - hij niet vandaag pas verstuurd is (de eerste herinnering komt de werkdag erna);
 - er vandaag nog geen herinnering voor uit is.
 
-De herinnering gaat naar de aanvrager en de gekoppelde collega's, voor zover er een adres bij staat.
-**Niet** naar de adressen uit "Ook mailen naar": dat zijn vaak mensen van buiten. Er is geen maximum:
+De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager, de gekoppelde
+collega's en de adressen uit "Ook mailen naar"; die staan in `opleveringen.ontvangers`), plus wie
+er daarna nog gekoppeld is. Er is geen maximum:
 de herinneringen lopen door tot er akkoord of feedback is, of tot Marketing de taak naar Afgerond
 sleept. Feestdagen tellen als werkdag.
 
@@ -586,7 +587,10 @@ De adressen staan in `shared/contact.ts`.
 **Opmaak.** Een NBC-mail heeft een kop en knop in NBC-teal (`#229d96`), een Green Village-mail in het
 GV-donkergroen (`#23251b`). Allebei met witte tekst. Dat geldt voor alle
 mails: aanvraag, aanvulling, weekoverzicht, oplevering, bevestiging, koppelmail, herinnering en
-akkoord. De kleuren staan in `THEMAS` in
+akkoord. Alleen de knop **Akkoord geven** heeft een eigen kleur, zodat hij niet met **Feedback geven**
+verward wordt: bij NBC Goudgeel (`#f6a304`) met zwarte tekst (wit haalt daarop maar 2,1:1), bij Green
+Village Orange Roughy 700 (`#833113`) met witte tekst. Dat is de accentkleur van Green Village in een
+donkerdere tint, omdat witte tekst op de hoofdtint (600) net geen 4,5:1 haalt. De kleuren staan in `THEMAS` in
 `shared/mail.ts`. De opmaak is gebouwd voor de klassieke Outlook, die mail met Word rendert: ruimte
 zit op tabelcellen en niet op links of divs, en elke cel noemt zelf het lettertype.
 
@@ -815,7 +819,13 @@ kolom blijft ook gelden als Marketing het menu in de taakbeschrijving corrigeert
 Basic Lunch (vegetarian) en Standard Lunch (vegetarian) passen zoals ze in het doc staan. Bij **Basic
 Lunch** raakt de laatste regel van de broodjes de blob linksonder, en bij **Standard Lunch** komt de
 Tuna melt op de dieetwens-regel. Het scherm komt dan als `NIET-BRUIKBAAR-…` in Asana met de reden in
-de comment, zoals bij elk te lang menu. Haal er een gerecht uit of maak een tekst korter.
+de comment, zoals bij elk te lang menu.
+
+**Wat er nog komt: eigen Engelse basisontwerpen.** Abel maakt voor het Engels een eigen
+Illustrator-template, net als bij het Nederlands. Komt dat er, dan wordt het per pakket bevroren met
+`basis-extract.py` (als `<pakket>-en`), en gebruikt het Engelse menuscherm dat ontwerp in plaats van
+het Nederlandse. Dan passen de Engelse teksten zoals de ontwerper ze zet, en vervalt het opschuiven
+van de dieetwens-regel.
 
 ## Huisstijl van het formulier
 

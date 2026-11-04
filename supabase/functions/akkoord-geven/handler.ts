@@ -21,9 +21,9 @@ import { z } from 'zod'
  *  - komt er een reactie bij de taak in Asana en gaat de taak naar de kolom Afgerond (afgevinkt);
  *  - krijgt Marketing een mail.
  *
- * Wie akkoord geeft hoeft niet in de lijst met collega's te staan: in de mail kan ook een klant
- * staan ("Ook mailen naar"). Of dat zo moet blijven, bespreekt Abel nog met Karen (zie README,
- * "Akkoord en herinneringen").
+ * Iedereen die de opleveringsmail kreeg mag akkoord geven, ook wie in "Ook mailen naar" staat; dat
+ * zijn altijd collega's, de tool is niet voor klanten. Of dat zo moet blijven, bespreekt Abel nog
+ * met Karen (zie README, "Akkoord en herinneringen").
  *
  * Een tweede akkoord op dezelfde versie doet niets en zegt wie het al gaf. Asana mag mislukken:
  * het akkoord staat dan toch, en Marketing krijgt het in de mail te horen.

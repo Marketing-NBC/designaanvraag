@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyDraft, eventDatumUitNaam, metEventNaam, type Draft } from './state'
+import { emptyDraft, eventDatumUitNaam, metEventNaam, naamUitLijst, type Draft } from './state'
 
 const vandaag = '2026-11-03'
 const d = (over: Partial<Draft> = {}): Draft => ({ ...emptyDraft(), ...over })
@@ -41,5 +41,12 @@ describe('eventdatum uit de eventnaam', () => {
     expect(draft.deadline).toBeNull()
     const ervoor = { ...d({ deadline: '2026-11-10' }), ...metEventNaam(d({ deadline: '2026-11-10' }), 'Gala 20 november', vandaag) }
     expect(ervoor.deadline).toBe('2026-11-10')
+  })
+})
+
+describe('naam uit de lijst', () => {
+  it('vindt de naam, hoofdletters en spaties daargelaten', () => {
+    expect(naamUitLijst(' britt ', ['Britt', 'Karen'])).toBe('Britt')
+    expect(naamUitLijst('Jan Nieuwkomer', ['Britt', 'Karen'])).toBeNull()
   })
 })

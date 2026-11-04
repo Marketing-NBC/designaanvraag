@@ -202,6 +202,10 @@ export interface Thema {
   opKleur: string
   tint: string
   link: string
+  /** De knop "Akkoord geven": een eigen kleur, zodat hij niet verward wordt met "Feedback geven". */
+  akkoord: string
+  /** Tekst op `akkoord`. */
+  opAkkoord: string
 }
 
 /**
@@ -210,8 +214,11 @@ export interface Thema {
  * te onderscheiden zijn.
  */
 export const THEMAS: Record<string, Thema> = {
-  nbc: { kleur: '#229d96', opKleur: '#ffffff', tint: '#e9f5f4', link: '#165e5a' },
-  green_village: { kleur: '#23251b', opKleur: '#ffffff', tint: '#f1f2ec', link: '#5c6049' },
+  // Akkoord in Goudgeel uit het NBC Design System, met zwarte tekst: wit haalt daarop maar 2,1:1.
+  nbc: { kleur: '#229d96', opKleur: '#ffffff', tint: '#e9f5f4', link: '#165e5a', akkoord: '#f6a304', opAkkoord: '#0e0e0e' },
+  // Akkoord in Orange Roughy, de accentkleur van Green Village, in tint 700: op de hoofdtint (600)
+  // haalt witte tekst net geen 4,5:1.
+  green_village: { kleur: '#23251b', opKleur: '#ffffff', tint: '#f1f2ec', link: '#5c6049', akkoord: '#833113', opAkkoord: '#ffffff' },
 }
 
 /** Het thema van een locatie; onbekend of leeg is NBC. */
@@ -253,11 +260,13 @@ export function mailOpmaak(
  * en dan staat er een strak gekleurd vlak zonder lucht om de tekst. De ruimte erboven zit om
  * dezelfde reden in een buitencel in plaats van in een `margin`.
  */
-export function knop(href: string, tekst: string, thema: Thema = THEMAS.nbc): string {
+export function knop(href: string, tekst: string, thema: Thema = THEMAS.nbc, soort: 'gewoon' | 'akkoord' = 'gewoon'): string {
+  const achter = soort === 'akkoord' ? thema.akkoord : thema.kleur
+  const voor = soort === 'akkoord' ? thema.opAkkoord : thema.opKleur
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 0 4px;">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
-    + `<td align="center" bgcolor="${thema.kleur}" style="background:${thema.kleur};border-radius:4px;padding:12px 24px;">`
-    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:${thema.opKleur};text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
+    + `<td align="center" bgcolor="${achter}" style="background:${achter};border-radius:4px;padding:12px 24px;">`
+    + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:${voor};text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
     + `</td></tr></table></td></tr></table>`
 }
 

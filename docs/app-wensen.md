@@ -4,14 +4,17 @@ Wensen die nog in het formulier moeten komen. Pak ze op bij de volgende ronde aa
 ze hier weg als ze gedaan zijn.
 
 - **Wie mag akkoord geven? (bespreken met Karen, manager projecten).** Nu mag iedereen die de
-  opleveringsmail kreeg akkoord geven, ook gekoppelde collega's en wie in "Ook mailen naar" staat.
-  Abel bespreekt met Karen of dat alleen de aanvrager moet worden, of alleen collega's uit de lijst.
+  opleveringsmail kreeg akkoord geven: de aanvrager, gekoppelde collega's en wie in "Ook mailen
+  naar" staat (altijd collega's; de tool is niet voor klanten). Abel bespreekt met Karen of dat
+  alleen de aanvrager moet worden.
   Zie "Akkoord en herinneringen" in de README.
 - **De andere pakketten in het Engels.** Winterbuffet, het drie- en viergangendiner en het walking
   dinner staan nog niet in het tabblad "Packages (EN)". Komen ze erbij, laat de Engelse menu's dan
   opnieuw overnemen (zie "Engelse menu's" in de README).
-- **Basic Lunch en Standard Lunch in het Engels passen nog niet helemaal op het scherm.** De teksten
-  uit het doc zijn langer dan de Nederlandse; zie "Engelse menu's" in de README.
+- **Engelse basisontwerpen (Illustrator).** Abel maakt een Engels Illustrator-template, net als bij
+  het Nederlands. Daarna: bevriezen met `basis-extract.py` en het Engelse menuscherm dat ontwerp
+  laten gebruiken. Tot die tijd passen Basic Lunch en Standard Lunch in het Engels niet helemaal; zie
+  "Engelse menu's" in de README.
 
 ## Gedaan
 

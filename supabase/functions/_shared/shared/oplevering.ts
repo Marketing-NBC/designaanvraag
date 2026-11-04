@@ -326,13 +326,13 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   }
   delen.push(ruimte(gegevensTabel(rijen), 16))
 
-  delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Is het goed?</p>`)
-  delen.push(`<p style="margin:4px 0 0;">Geef dan akkoord. Dan weet Marketing dat het af is.</p>`)
-  delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema))
   delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Iets aan te passen?</p>`)
   delen.push(`<p style="margin:4px 0 0;">Geef je feedback via de knop hieronder. Dan komt hij meteen bij de juiste aanvraag terecht, `
     + `en kun je er bestanden en een nieuwe deadline bij doen.</p>`)
   delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
+  delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Is het goed?</p>`)
+  delen.push(`<p style="margin:4px 0 0;">Geef dan akkoord. Dan weet Marketing dat het af is.</p>`)
+  delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
   delen.push(`<p style="margin:20px 0 0;color:#596165;font-size:13px;">Zolang er geen akkoord of feedback is, krijg je elke werkdag een herinnering. `
     + 'Iedereen die deze mail krijgt, mag akkoord geven.</p>')
 

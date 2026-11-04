@@ -99,7 +99,7 @@ export const aanvraagSchema = z
      * verstuurd te kunnen worden, en alles van voor vandaag was NBC.
      */
     locatie: z.enum(LOCATIE_KEYS).default('nbc'),
-    /** Hoeft niet in de lijst met collega's te staan: iedereen mag een aanvraag doen. */
+    /** Moet in de lijst met collega's staan; dat controleert de function (die kent de lijst). */
     naam: z.string().trim().min(2, 'Vul je naam in').max(80, 'Maximaal 80 tekens'),
     /**
      * Evenement of intern. Met een standaard om dezelfde reden als locatie: een concept van

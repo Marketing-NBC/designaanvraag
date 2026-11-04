@@ -7,8 +7,8 @@
  *    gaat af zodra de virusscanner van Outlook hem controleert.)
  *  - Akkoord gaat over de laatst verstuurde versie. Iedereen die de mail kreeg mag het geven.
  *  - Na een akkoord gaat de taak in Asana naar de kolom Afgerond, met een reactie wie en wanneer.
- *  - Tot er akkoord of feedback is, krijgen de aanvrager en de gekoppelde collega's elke werkdag
- *    een herinnering (scripts/herinneringen.mjs, elke werkdag om 9:00). Feedback telt pas als hij
+ *  - Tot er akkoord of feedback is, krijgt iedereen die de opleveringsmail kreeg (de aanvrager, de
+ *    gekoppelde collega's en wie in "Ook mailen naar" staat) elke werkdag een herinnering (scripts/herinneringen.mjs, elke werkdag om 9:00). Feedback telt pas als hij
  *    echt via het formulier is verstuurd, niet als iemand alleen op de knop klikte.
  *  - Sleept Marketing de taak zelf naar Afgerond (akkoord gekregen per telefoon, bijvoorbeeld), dan
  *    stoppen de herinneringen ook.
@@ -104,8 +104,9 @@ export function renderHerinneringMail(m: HerinneringMail): MailBericht {
     : [['Event', escapeHtml(m.event)], ...(m.types.length ? [['Aanvraag', escapeHtml(describeRequestTypes(m.types, m.andersTekst))] as [string, string]] : [])]
   if (m.versie > 1) rijen.push(['Versie', String(m.versie)])
   delen.push(gegevensTabel(rijen))
-  delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema))
+  // Feedback eerst, akkoord eronder in een eigen kleur: zo staan ze ook in de opleveringsmail.
   delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
+  delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
   delen.push(ruimte(`<p style="margin:0;color:#596165;font-size:13px;">Je krijgt deze herinnering elke werkdag tot iemand akkoord geeft of feedback stuurt. `
     + 'Iedereen die bij de aanvraag hoort, mag dat doen.</p>', 16))
   return {
