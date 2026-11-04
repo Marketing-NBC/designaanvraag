@@ -390,8 +390,30 @@ export async function renderMenu(opdracht) {
     // elke regel met zijn baseline. Daar kan een test op toetsen.
     const opmaak = await page.evaluate(() => window.__OPMAAK__ ?? null)
     const png = await page.screenshot({ type: 'png', clip: { x: 0, y: 0, width: 3840, height: 2160 } })
+    // Elke tekst zoals hij op het scherm staat: waar, in welk font, hoe groot en welke kleur. Voor
+    // het overzetten van een scherm naar een Illustrator-bestand (worker/menu/naar-illustrator.py).
+    const teksten = opdracht.metTeksten ? await page.evaluate(() => {
+      const uit = []
+      for (const groep of ['titel', 'voet', 'inhoud', 'logobalk']) {
+        for (const span of document.querySelectorAll(`#${groep} tspan, #${groep} > text`)) {
+          if (span.tagName === 'text' && span.querySelector('tspan')) continue
+          const tekst = span.textContent
+          if (!tekst || !tekst.trim()) continue
+          const begin = span.getStartPositionOfChar(0)
+          const stijl = (naam) => span.getAttribute(naam) ?? span.closest('text')?.getAttribute(naam)
+          uit.push({
+            groep, tekst, x: begin.x, baseline: begin.y,
+            font: stijl('font-family'), grootte: Number(stijl('font-size')),
+            kleur: span.getAttribute('fill') ?? span.closest('text')?.getAttribute('fill') ?? '#000000',
+            breedte: span.getComputedTextLength(),
+          })
+        }
+      }
+      const icoon = document.querySelector('#voet > g')
+      return { teksten: uit, icoon: icoon ? icoon.getAttribute('transform') : null }
+    }) : null
     return { png, meldingen, opmaak, fonts: families, logoVak: payload.logoVak,
-             balans: opmaak?.balans ?? null }
+             balans: opmaak?.balans ?? null, teksten }
   } finally {
     await browser.close()
   }
