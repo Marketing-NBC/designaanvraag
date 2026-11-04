@@ -11,6 +11,7 @@ web/playwright-report
 web/e2e/screenshots
 __pycache__/
 weekmail-proef/
+testmail-proef/
 
 # Tussenbestanden van de gids (worden opnieuw gemaakt door screenshots.cjs en kader.py)
 docs/gids-projecten/bron/shots/
