@@ -3,12 +3,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { LETTERS } from './ChoiceList'
 import { Icon } from './Icon'
 import {
-  ALLE_GERECHTEN, PAKKETGROEPEN, type Gerechtkeuze, type MenuKeuze, aantalGerechten,
-  gerechtVan, ingredientenRegel, isBekend, leegMenu, letterVoorPakket, metIngredienten,
-  metNaam, metOnderdeel, pakketVan, regelVan, sectiesVan, uitPakket,
+  MENU_TALEN, PAKKETGROEPEN, type Gerechtkeuze, type MenuKeuze, type MenuTaal, aantalGerechten, bibliotheek,
+  gerechtVan, inTaal, ingredientenRegel, isBekend, leegMenu, letterVoorPakket, metIngredienten,
+  metNaam, metOnderdeel, pakketInTaal, pakketVan, pakketgroepen, regelVan, sectiesVan, taalVan, uitPakket,
 } from '../lib/menu'
 
-const REGELS = ALLE_GERECHTEN.map(regelVan)
+/** Alle gerechten van een taal als regel; daar zoekt "Wissel" en "Gerecht toevoegen" in. */
+const regelsVan = (taal: MenuTaal) => bibliotheek(taal).gerechten.map(regelVan)
 
 const vergelijkbaar = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
@@ -23,7 +24,34 @@ const vergelijkbaar = (s: string) =>
  * De letters lopen door over de groepen heen, in de volgorde waarin ze op het scherm
  * staan; PAKKETTEN_OP_SCHERM is dezelfde lijst waar de lettertoets in App.tsx op zoekt.
  */
-function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
+/**
+ * Nederlands of Engels. Staat boven de pakketten, want de taal bepaalt welke pakketten er zijn: in
+ * het Engels nog niet allemaal. De pakketten die er (nog) niet in het Engels zijn, staan er wel,
+ * maar uitgegrijsd, zodat niemand denkt dat ze weg zijn.
+ */
+function Taalkeuze({ taal, onKies }: { taal: MenuTaal; onKies: (taal: MenuTaal) => void }) {
+  return (
+    <div className="menutaal" role="radiogroup" aria-label="Taal van het menu">
+      <span className="menutaal__label">Taal van het menu</span>
+      <span className="menutaal__knoppen">
+        {MENU_TALEN.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="radio"
+            aria-checked={taal === t.key}
+            className={`menutaal__knop${taal === t.key ? ' is-gekozen' : ''}`}
+            onClick={() => onKies(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </span>
+    </div>
+  )
+}
+
+function Pakketkeuze({ taal, onKies, onTaal }: { taal: MenuTaal; onKies: (pakket: string) => void; onTaal: (taal: MenuTaal) => void }) {
   const rootRef = useRef<HTMLDivElement>(null)
   // Focus op het blok, zodat de lettertoetsen werken zonder dat een knop gekozen oogt.
   useEffect(() => {
@@ -32,23 +60,32 @@ function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
   }, [])
 
   return (
-    <div className="pakketten" role="radiogroup" ref={rootRef} tabIndex={-1} data-choice-list>
+    <div className="pakketten" ref={rootRef} tabIndex={-1} data-choice-list>
+      <Taalkeuze taal={taal} onKies={onTaal} />
+      {taal === 'en' ? (
+        <p className="menutaal__uitleg">
+          In het Engels zijn er nu {pakketgroepen('en').flatMap((g) => g.pakketten).length} pakketten. De andere komen later.
+        </p>
+      ) : null}
       {PAKKETGROEPEN.map((groep) => (
         <div className="pakketgroep" key={groep.kop}>
           <div className="pakketgroep__kop">{groep.kop}</div>
-          <div className="pakketgroep__lijst">
+          <div className="pakketgroep__lijst" role="radiogroup" aria-label={groep.kop}>
             {groep.pakketten.map((sleutel) => {
-              const p = pakketVan(sleutel)
+              const beschikbaar = pakketInTaal(sleutel, taal)
+              // Niet in deze taal: de Nederlandse naam, uitgegrijsd en niet te kiezen.
+              const p = pakketVan(sleutel, beschikbaar ? taal : 'nl')
               if (!p) return null
-              const letter = letterVoorPakket(sleutel)
+              const letter = beschikbaar ? letterVoorPakket(sleutel, taal) : null
               const { tekst, meer } = sectiesVan(p)
               return (
                 <button
                   key={sleutel}
                   type="button"
-                  className="opt pakket"
+                  className={`opt pakket${beschikbaar ? '' : ' pakket--niet'}`}
                   role="radio"
                   aria-checked={false}
+                  disabled={!beschikbaar}
                   onClick={() => onKies(sleutel)}
                   data-letter={letter === null ? undefined : LETTERS[letter]}
                 >
@@ -56,8 +93,12 @@ function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
                   <span className="pakket__tekst">
                     <span className="pakket__naam">{p.naam}</span>
                     <span className="pakket__gangen">
-                      {tekst}
-                      {meer ? <span className="pakket__meer"> +{meer}</span> : null}
+                      {beschikbaar ? (
+                        <>
+                          {tekst}
+                          {meer ? <span className="pakket__meer"> +{meer}</span> : null}
+                        </>
+                      ) : 'Nog niet in het Engels'}
                     </span>
                   </span>
                 </button>
@@ -75,18 +116,20 @@ function Pakketkeuze({ onKies }: { onKies: (pakket: string) => void }) {
  * voorkeur: dan staat het op het scherm precies zoals de ontwerper het zette. Wie
  * zelf typt mag dat, maar krijgt te zien dat dit gerecht nieuw is.
  */
-function GerechtKiezer({ waarde, onKies, onAnnuleer }: {
+function GerechtKiezer({ waarde, taal, onKies, onAnnuleer }: {
   waarde: string
+  taal: MenuTaal
   onKies: (regel: string) => void
   onAnnuleer: () => void
 }) {
   const [query, setQuery] = useState(waarde)
+  const regels = useMemo(() => regelsVan(taal), [taal])
   const treffers = useMemo(() => {
     const q = vergelijkbaar(query.trim())
-    if (!q) return REGELS.slice(0, 12)
-    return REGELS.filter((r) => vergelijkbaar(r).includes(q)).slice(0, 12)
-  }, [query])
-  const eigen = query.trim() && !REGELS.some((r) => r === query.trim())
+    if (!q) return regels.slice(0, 12)
+    return regels.filter((r) => vergelijkbaar(r).includes(q)).slice(0, 12)
+  }, [query, regels])
+  const eigen = query.trim() && !regels.some((r) => r === query.trim())
 
   return (
     <div className="gerecht__kiezer">
@@ -108,7 +151,7 @@ function GerechtKiezer({ waarde, onKies, onAnnuleer }: {
               onKies(query.trim())
             }
           }}
-          placeholder="Zoek een gerecht, of typ er zelf een"
+          placeholder={taal === 'en' ? 'Zoek een Engels gerecht, of typ er zelf een' : 'Zoek een gerecht, of typ er zelf een'}
         />
         <ComboboxOptions className="combo__list" modal={false}>
           {treffers.map((r) => (
@@ -250,14 +293,16 @@ export function MenuPicker({ menu, onChange }: Props) {
   // Welke regel staat open om te wisselen: "sectie-index" of "sectie-nieuw".
   const [open, setOpen] = useState<string | null>(null)
 
+  const taal = taalVan(menu)
+
   if (!menu.pakket) {
     // Alleen de naam op de kaart: de onderdelen staan een scherm later toch al, en
     // een kaart met een rij kopjes eronder leest als een opsomming die je moet lezen
     // in plaats van een knop die je aanklikt.
-    return <Pakketkeuze onKies={(k) => onChange(uitPakket(k))} />
+    return <Pakketkeuze taal={taal} onKies={(k) => onChange(uitPakket(k, taal))} onTaal={(t) => onChange(leegMenu(t))} />
   }
 
-  const pakket = pakketVan(menu.pakket)
+  const pakket = pakketVan(menu.pakket, taal)
   const zet = (si: number, gerechten: Gerechtkeuze[]) => {
     const secties = menu.secties.map((s, i) => (i === si ? { ...s, gerechten } : s))
     onChange({ ...menu, secties })
@@ -267,11 +312,21 @@ export function MenuPicker({ menu, onChange }: Props) {
     <div className="menu">
       <div className="menu__kop">
         <span className="menu__pakket">{pakket?.naam}</span>
-        <span className="menu__telling">{aantalGerechten(menu)} gerechten</span>
-        <button type="button" className="menu__wissel" onClick={() => { setOpen(null); onChange(leegMenu()) }}>
+        <span className="menu__telling">{aantalGerechten(menu)} gerechten · {taal === 'en' ? 'Engels' : 'Nederlands'}</span>
+        <button type="button" className="menu__wissel" onClick={() => { setOpen(null); onChange(leegMenu(taal)) }}>
           Pakket wijzigen
         </button>
       </div>
+      {/* Van taal wisselen kan hier ook, als het pakket in de andere taal bestaat. */}
+      {pakketInTaal(menu.pakket, taal === 'en' ? 'nl' : 'en') ? (
+        <button
+          type="button"
+          className="link menu__taalwissel"
+          onClick={() => { setOpen(null); onChange(inTaal(menu, taal === 'en' ? 'nl' : 'en')) }}
+        >
+          {taal === 'en' ? 'Toch in het Nederlands' : 'Dit menu in het Engels'}
+        </button>
+      ) : null}
 
       {menu.secties.map((sectie, si) => (
         <section className="menu__sectie" key={`${sectie.kop ?? 'zonder'}-${si}`}>
@@ -285,8 +340,9 @@ export function MenuPicker({ menu, onChange }: Props) {
                 {open === `${si}-${gi}` ? (
                   <GerechtKiezer
                     waarde={regelVan(gerecht)}
+                    taal={taal}
                     onKies={(nieuw) => {
-                      zet(si, sectie.gerechten.map((g, i) => (i === gi ? gerechtVan(nieuw) : g)))
+                      zet(si, sectie.gerechten.map((g, i) => (i === gi ? gerechtVan(nieuw, taal) : g)))
                       setOpen(null)
                     }}
                     onAnnuleer={() => setOpen(null)}
@@ -298,7 +354,7 @@ export function MenuPicker({ menu, onChange }: Props) {
                         gerecht={gerecht}
                         onChange={(g) => zet(si, sectie.gerechten.map((h, i) => (i === gi ? g : h)))}
                       />
-                      {isBekend(gerecht) ? null : (
+                      {isBekend(gerecht, taal) ? null : (
                         <span className="gerecht__nieuw">
                           <Icon name="alert" /> niet uit de lijst
                         </span>
@@ -323,7 +379,8 @@ export function MenuPicker({ menu, onChange }: Props) {
               {open === `${si}-nieuw` ? (
                 <GerechtKiezer
                   waarde=""
-                  onKies={(nieuw) => { zet(si, [...sectie.gerechten, gerechtVan(nieuw)]); setOpen(null) }}
+                  taal={taal}
+                  onKies={(nieuw) => { zet(si, [...sectie.gerechten, gerechtVan(nieuw, taal)]); setOpen(null) }}
                   onAnnuleer={() => setOpen(null)}
                 />
               ) : (

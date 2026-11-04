@@ -63,6 +63,45 @@ export function laadBibliotheek() {
   return existsSync(pad) ? JSON.parse(readFileSync(pad, 'utf8')) : {}
 }
 
+/**
+ * De Engelse pakketten: shared/menu-pakketten-en.json, overgenomen uit het tabblad "Packages (EN)"
+ * van het Food Lookbook-doc. Daar staan ook de Engelse titel per pakket en de dieetwens-regel.
+ */
+export function engelseMenus() {
+  return JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten-en.json'), 'utf8'))
+}
+
+/** De pakketten die er in deze taal zijn. In het Nederlands alle basisontwerpen. */
+export function pakkettenInTaal(taal = 'nl') {
+  if (taal !== 'en') return pakketten()
+  const bestaand = new Set(pakketten())
+  return engelseMenus().pakketten.map((p) => p.pakket).filter((p) => bestaand.has(p))
+}
+
+/**
+ * Een Engels menu op een Nederlands basisontwerp.
+ *
+ * Het ontwerp zelf (blobs, kolommen, ritme) is hetzelfde; alleen de woorden verschillen. De titel
+ * en de dieetwens-regel komen uit de Engelse data, de gerechten uit de aanvraag (of, zonder
+ * gerechten, het Engelse pakket zoals het is). Elk gerecht gaat als `bewerkt` de engine in: de
+ * gerechtenbibliotheek kent alleen de Nederlandse teksten, en die mag hier nooit winnen. De engine
+ * breekt de Engelse regels dus zelf af binnen de kolom.
+ */
+export function inTaal(opdracht) {
+  if (opdracht.taal !== 'en') return { titel: opdracht.titel, secties: opdracht.secties, voetregel: null, letterlijk: false }
+  const en = engelseMenus()
+  const pakket = en.pakketten.find((p) => p.pakket === opdracht.pakket)
+  if (!pakket) {
+    throw new Error(`Pakket "${opdracht.pakket}" is er nog niet in het Engels. `
+      + `In het Engels zijn er: ${en.pakketten.map((p) => p.pakket).join(', ')}.`)
+  }
+  const secties = (opdracht.secties ?? pakket.secties).map((s) => ({
+    ...s,
+    gerechten: s.gerechten.map((g) => ({ ...g, bewerkt: true })),
+  }))
+  return { titel: opdracht.titel || pakket.titel, secties, voetregel: en.voetregel ?? null, letterlijk: true }
+}
+
 export function laadBasis(pakket) {
   const pad = join(BASIS_DIR, `${pakket}.json`)
   if (!existsSync(pad)) {
@@ -239,6 +278,7 @@ function gebruikteFonts(basis) {
  * @param {object} opdracht
  *   pakket   naam van het basisontwerp, bv. 'diner-4gangen'
  *   titel    optioneel: andere titel dan die van het basisontwerp
+ *   taal     optioneel: 'en' voor een Engels menu (titel, dieetwens-regel, eigen afbreking)
  *   merk     optioneel: { logo, logoAchtergrond, accent, blobKleur, tekstkleur }
  *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
  *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
@@ -299,6 +339,12 @@ async function logoMaat(merk) {
 
 export async function renderMenu(opdracht) {
   const basis = vervangFonts(laadBasis(opdracht.pakket))
+  const taal = inTaal(opdracht)
+  // De dieetwens-regel in de taal van het menu. Op het basisontwerp zelf, zodat ook de controle of
+  // er tekst overheen loopt de Engelse breedte meet.
+  if (taal.voetregel && basis.voetregel) {
+    basis.voetregel.regels.forEach((r, i) => { if (taal.voetregel[i]) r.tekst = taal.voetregel[i] })
+  }
   const families = gebruikteFonts(basis)
   const achtergrond = dataUri(join(BASIS_DIR, basis.achtergrond), 'image/png')
   const icoonSvg = readFileSync(join(BASIS_DIR, 'bestek-icoon.svg'), 'utf8')
@@ -310,7 +356,7 @@ export async function renderMenu(opdracht) {
     basis,
     bibliotheek: laadBibliotheek(),
     achtergrond,
-    inhoud: { titel: opdracht.titel, secties: opdracht.secties },
+    inhoud: { titel: taal.titel, secties: taal.secties, letterlijk: taal.letterlijk },
     merk: opdracht.merk || {},
     logoVak: null,
     // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
@@ -363,6 +409,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const opdracht = args.data ? JSON.parse(readFileSync(args.data, 'utf8')) : {}
   if (args.pakket) opdracht.pakket = args.pakket
+  if (args.taal) opdracht.taal = args.taal
   if (!opdracht.pakket) {
     console.error('Geef een pakket op: --pakket diner-4gangen (of --pakketten voor de lijst)')
     process.exit(1)

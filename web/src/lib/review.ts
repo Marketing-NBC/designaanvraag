@@ -1,4 +1,4 @@
-import { aantalGerechten, pakketVan, wijzigingen, type MenuKeuze } from './menu'
+import { aantalGerechten, pakketVan, taalVan, wijzigingen, type MenuKeuze } from './menu'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel, vraagtOmMenu } from '../../../shared/request-types'
 import { formatLong } from './dates'
 import type { Draft } from '../state'
@@ -13,12 +13,23 @@ export interface ReviewRow {
 
 /** Het menu in het overzicht: het pakket, en hoeveel ervan is afgeweken. */
 function menuSamenvatting(menu: MenuKeuze): string {
-  const pakket = pakketVan(menu.pakket)
+  const taal = taalVan(menu)
+  const pakket = pakketVan(menu.pakket, taal)
   if (!pakket) return 'Niet ingevuld'
   const n = aantalGerechten(menu)
   const anders = wijzigingen(menu).length
   const staart = anders ? `, ${anders} ${anders === 1 ? 'wijziging' : 'wijzigingen'}` : ' (ongewijzigd)'
-  return `${pakket.naam} — ${n} ${n === 1 ? 'gerecht' : 'gerechten'}${staart}`
+  return `${pakket.naam}${taal === 'en' ? ' (Engels)' : ''} — ${n} ${n === 1 ? 'gerecht' : 'gerechten'}${staart}`
+}
+
+/** Wie er gekoppeld is, of dat er niemand is. */
+function gekoppeldRij(d: Draft): ReviewRow {
+  return {
+    stepId: 'gekoppelden',
+    label: 'ook op de hoogte',
+    value: d.gekoppelden.length ? d.gekoppelden.join(', ') : 'Niemand gekoppeld',
+    muted: !d.gekoppelden.length,
+  }
 }
 
 export function reviewRows(d: Draft): ReviewRow[] {
@@ -33,6 +44,7 @@ export function reviewRows(d: Draft): ReviewRow[] {
       ...begin,
       { stepId: 'wens_intern', label: 'wat je aanvraagt', value: d.omschrijving },
       { stepId: 'deadline_intern', label: 'nodig op', value: d.geen_deadline ? 'Geen deadline' : d.deadline ? formatLong(d.deadline) : '' },
+      gekoppeldRij(d),
     ]
   }
 
@@ -54,5 +66,6 @@ export function reviewRows(d: Draft): ReviewRow[] {
     rijen.push({ stepId: 'menu', label: 'menu', value: menuSamenvatting(d.menu), muted: !d.menu.pakket })
   }
   rijen.push({ stepId: 'omschrijving', label: 'wensen en bijzonderheden', value: d.omschrijving || 'Niet ingevuld', muted: !d.omschrijving })
+  rijen.push(gekoppeldRij(d))
   return rijen
 }

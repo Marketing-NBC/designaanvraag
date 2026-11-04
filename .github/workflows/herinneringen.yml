@@ -1,0 +1,73 @@
+name: Herinneringen akkoord
+
+# Elke werkdag om 9:00 een herinnering aan wie een oplevering kreeg en nog geen akkoord of feedback
+# gaf: de aanvrager en de gekoppelde collega's. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
+# Vereist secrets SUPABASE_PROJECT_ID, SUPABASE_SECRET_KEY, MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
+
+on:
+  schedule:
+    # 9:00 Nederlandse tijd, maandag tot en met vrijdag. GitHub kent alleen UTC, dus twee tijden:
+    # 07:00 UTC is 9:00 in de zomer, 08:00 UTC is 9:00 in de winter. De eerste stap laat alleen de
+    # juiste doorgaan. GitHub start een geplande run soms een kwartier of meer later.
+    - cron: '0 7 * * 1-5'
+    - cron: '0 8 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      aan:
+        description: 'Naar dit adres in plaats van naar de collega''s (om te testen; telt niet als herinnering). Leeg = normaal.'
+        type: string
+        required: false
+        default: ''
+      proef:
+        description: 'Niets versturen, alleen laten zien wie er een zou krijgen'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: herinneringen
+  cancel-in-progress: false
+
+jobs:
+  herinneringen:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+      MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
+    steps:
+      - name: Is het 9:00 in Nederland?
+        id: tijd
+        if: github.event_name == 'schedule'
+        env:
+          SCHEMA: ${{ github.event.schedule }}
+        run: |
+          # +0200 is zomertijd, dan hoort de run van 07:00 UTC erbij; +0100 is wintertijd: 08:00 UTC.
+          if [ "$(TZ=Europe/Amsterdam date +%z)" = "+0200" ]; then juist='0 7 * * 1-5'; else juist='0 8 * * 1-5'; fi
+          if [ "$SCHEMA" = "$juist" ]; then echo "door=true" >> "$GITHUB_OUTPUT"; else echo "door=false" >> "$GITHUB_OUTPUT"; echo "Niet de 9:00-run van dit seizoen; overgeslagen."; fi
+      - uses: actions/checkout@v4
+        if: steps.tijd.outputs.door != 'false'
+      - uses: actions/setup-node@v4
+        if: steps.tijd.outputs.door != 'false'
+        with:
+          node-version: 22
+      - name: Herinneringen versturen
+        if: steps.tijd.outputs.door != 'false'
+        env:
+          AAN: ${{ inputs.aan }}
+          PROEF: ${{ inputs.proef }}
+        run: |
+          export SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
+          args=()
+          [ -n "$AAN" ] && args+=(--aan "$AAN")
+          [ "$PROEF" = "true" ] && args+=(--proef)
+          node --experimental-strip-types --no-warnings scripts/herinneringen.mjs "${args[@]}"
+      - name: Proefmails bewaren
+        if: inputs.proef
+        uses: actions/upload-artifact@v4
+        with:
+          name: herinneringen-proef
+          path: herinneringen-proef/

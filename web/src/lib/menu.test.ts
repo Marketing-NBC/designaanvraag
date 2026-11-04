@@ -4,6 +4,7 @@ import {
   eigenGerechten, gerechtVan, ingredientenRegel, isBekend, leesIngredienten,
   letterVoorPakket, metIngredienten, metNaam, metOnderdeel, naarInhoud, naarTekst,
   pakketVan, regelVan, sectiesVan, uitPakket, wijzigingen,
+  bibliotheek, inTaal, leegMenu, pakketInTaal, pakketgroepen, pakkettenOpScherm, taalVan,
 } from './menu'
 
 describe('de pakketten voor het formulier', () => {
@@ -187,5 +188,58 @@ describe('een gerecht bewerken', () => {
   it('leest een ingredientenregel heen en terug', () => {
     expect(leesIngredienten('a | b |  | c ')).toEqual(['a', 'b', 'c'])
     expect(ingredientenRegel(gerechtVan('Naam | a | b'))).toBe('a | b')
+  })
+})
+
+describe('het menu in het Engels', () => {
+  const en = bibliotheek('en')
+
+  it('kent de vijf pakketten uit het doc, met dezelfde sleutels als in het Nederlands', () => {
+    expect(en.pakketten.map((p) => p.pakket).sort()).toEqual(['grab-and-go', 'lunch-basic', 'lunch-standaard', 'lunch-vega-basic', 'lunch-vega-standaard'])
+    for (const p of en.pakketten) expect(PAKKETTEN.map((x) => x.pakket)).toContain(p.pakket)
+  })
+
+  it('heeft per pakket evenveel onderdelen als het basisontwerp, want daar hangt de opmaak aan', () => {
+    for (const p of en.pakketten) {
+      expect(p.secties.length, p.pakket).toBe(pakketVan(p.pakket)!.secties.length)
+    }
+  })
+
+  it('weet welke pakketten er in het Engels zijn', () => {
+    expect(pakketInTaal('grab-and-go', 'en')).toBe(true)
+    expect(pakketInTaal('diner-4gangen', 'en')).toBe(false)
+    expect(pakketInTaal('diner-4gangen', 'nl')).toBe(true)
+    expect(pakkettenOpScherm('en')).toHaveLength(5)
+    expect(pakketgroepen('en').map((g) => g.kop)).toEqual(['Lunch', 'Buffet en borrel'])
+  })
+
+  it('geeft het Engelse pakket met de taal erbij', () => {
+    const menu = uitPakket('lunch-basic', 'en')
+    expect(menu.taal).toBe('en')
+    expect(menu.secties[0].kop).toBe('Sandwiches')
+    expect(naarInhoud(menu)?.taal).toBe('en')
+    expect(eigenGerechten(menu)).toEqual([])
+    expect(wijzigingen(menu)).toEqual([])
+  })
+
+  it('zoekt Engelse gerechten in de Engelse lijst', () => {
+    const regel = 'Pumpkin | feta | raisins | red cabbage | carrot'
+    expect(isBekend(gerechtVan(regel, 'en'), 'en')).toBe(true)
+    expect(isBekend(gerechtVan(regel, 'en'), 'nl')).toBe(false)
+  })
+
+  it('wisselt van taal: het pakket blijft als het er in de andere taal ook is', () => {
+    const nl = uitPakket('grab-and-go')
+    expect(taalVan(nl)).toBe('nl')
+    const naarEn = inTaal(nl, 'en')
+    expect(naarEn.pakket).toBe('grab-and-go')
+    expect(naarEn.taal).toBe('en')
+    // Het viergangendiner is er nog niet in het Engels: dan opnieuw kiezen.
+    expect(inTaal(uitPakket('diner-4gangen'), 'en')).toEqual(leegMenu('en'))
+  })
+
+  it('leest een concept van voor de taalkeuze als Nederlands', () => {
+    expect(taalVan(leegMenu() as { taal?: 'nl' | 'en' } & { pakket: null })).toBe('nl')
+    expect(taalVan({})).toBe('nl')
   })
 })

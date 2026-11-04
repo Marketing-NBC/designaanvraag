@@ -239,7 +239,13 @@
       ? zelfdeOpsomming(nieuweOnderdelen, alinea.onderdelen)
       : (nieuweTekst == null || zelfdeInhoud(nieuweTekst, alinea.tekst))
 
-    if (gelijk && !gegevens.forceerHerberekening) {
+    // Bij een Engels menu telt alleen precies dezelfde tekst als gelijk: de vergelijking hierboven
+    // kijkt niet naar hoofdletters, en dan zou "Schiacciata Toscana" uit het doc als "Schiacciata
+    // toscana" uit het Nederlandse ontwerp op het scherm komen.
+    const letterlijkAnders = Boolean(inhoud.letterlijk) && nieuweTekst != null
+      && String(nieuweTekst).trim() !== String(alinea.tekst).trim()
+
+    if (gelijk && !letterlijkAnders && !gegevens.forceerHerberekening) {
       // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp;
       // in een opsomming wisselen die per regel, en dat hoort zo.
       const nul = alinea.regels[0].baseline
@@ -272,11 +278,15 @@
     // Bij forceerHerberekening slaan we de bibliotheek over: die stand toetst juist
     // of onze eigen afbreking op dezelfde regels uitkomt als de ontwerper. Zou de
     // bibliotheek daar meedoen, dan bewees die controle niets meer.
-    const bekend = gegevens.forceerHerberekening
+    let bekend = gegevens.forceerHerberekening
       ? null
       : (vasteRegels
         ?? uitBibliotheek(alinea.soort === 'opsomming' ? 'ingr' : alinea.soort,
                           tekst, stijl.grootte)?.regels)
+    // Bij een Engels menu alleen als het letterlijk dezelfde tekst is; de bibliotheek kijkt niet
+    // naar hoofdletters en zou anders de Nederlandse schrijfwijze op het scherm zetten.
+    const plat = (t) => String(t).replace(/\s+/g, ' ').trim()
+    if (bekend && inhoud.letterlijk && plat(bekend.map((r) => r.tekst).join(' ')) !== plat(tekst)) bekend = null
     // stijl.x is de inspring die de alinea in het ontwerp heeft - vaak een fractie
     // van een pixel, maar zonder die inspring staat een herzette regel net niet
     // waar de ontwerper hem zette.
@@ -662,8 +672,42 @@
 
   // ------------------------------------------------------------- opbouw
 
+  /**
+   * Schuift de dieetwens-regel (icoon en tekst samen) naar links als de tekst de blob raakt.
+   *
+   * In het Nederlands gebeurt dat nooit: daar staat hij waar de ontwerper hem zette. Een Engels
+   * menu heeft een langere regel ("Dietary requirements or allergies?"), en op sommige ontwerpen
+   * loopt die dan de blob in. Dan schuift het hele blok net zo ver op als nodig, plus wat lucht,
+   * en niet verder dan de linkermarge. Het ontwerp verschuift dus alleen als het anders kapot is.
+   */
+  function schuifVoetregel(grenzen) {
+    const voet = basis.voetregel
+    if (!grenzen || !voet || !voet.regels || !voet.regels.length) return 0
+    const LUCHT = 40
+    let schuif = 0
+    for (const regel of voet.regels) {
+      const x1 = regel.x + breedte(regel.tekst, regel.font, regel.grootte)
+      const boven = Math.max(0, Math.round(regel.baseline - regel.grootte))
+      const onder = Math.min(2159, Math.round(regel.baseline + regel.grootte * 0.3))
+      let rand = Infinity
+      for (let y = boven; y <= onder; y++) rand = Math.min(rand, grenzen.rechts[y])
+      if (x1 > rand) schuif = Math.max(schuif, x1 - rand + LUCHT)
+    }
+    if (!schuif) return 0
+    const links = Math.min(...voet.regels.map((r) => r.x), voet.icoon ? voet.icoon.x : Infinity)
+    schuif = Math.min(schuif, Math.max(0, links - 120))
+    for (const regel of voet.regels) regel.x -= schuif
+    if (voet.icoon) voet.icoon.x -= schuif
+    return schuif
+  }
+
   function bouw(grenzen) {
     const doek = document.getElementById('doek')
+    const voetGeschoven = schuifVoetregel(grenzen)
+    if (voetGeschoven) {
+      meldingen.structuur.push(`De dieetwens-regel is ${Math.round(voetGeschoven)} px naar links geschoven, `
+        + 'anders liep de tekst de blob in.')
+    }
 
     // --- titel
     const titelGroep = document.getElementById('titel')

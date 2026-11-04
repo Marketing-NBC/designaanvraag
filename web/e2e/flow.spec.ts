@@ -142,7 +142,15 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '09-omschrijving', p)
     await page.locator('[data-primary-action]').click()
 
-    // 12. Overzicht
+    // 12. Collega's koppelen: aanvinken, geen adressen typen. Jezelf zie je er niet tussen.
+    await expect(page.getByRole('heading', { name: 'Wie moet er nog meer op de hoogte blijven?' })).toBeVisible()
+    await expect(page.locator('.collegas__naam', { hasText: 'Noa Demo' })).toHaveCount(0)
+    await page.locator('.collegas__naam', { hasText: 'Bo Demo' }).click()
+    await expect(page.locator('.collegas__naam', { hasText: 'Bo Demo' })).toHaveAttribute('aria-pressed', 'true')
+    await shot(page, '09b-koppelen', p)
+    await page.locator('[data-primary-action]').click()
+
+    // 13. Overzicht
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     // Op label zoeken en niet op volgorde: komt er een regel bij, dan hoort deze test
     // niet om te vallen op een vraag die er niets mee te maken heeft.
@@ -150,6 +158,7 @@ test.describe('designaanvraag-flow', () => {
       page.locator('.review__row').filter({ has: page.locator('.review__label', { hasText: new RegExp(`^${label}$`) }) })
     await expect(rij('naam').locator('.review__value')).toHaveText('Noa Demo')
     await expect(rij('aanvraag').locator('.review__value')).toHaveText('LED-kolom, Vlaggen, Roll-up banner')
+    await expect(rij('ook op de hoogte').locator('.review__value')).toHaveText('Bo Demo')
     await shot(page, '10-overzicht', p)
 
     // Wijzig event via overzicht en kom terug
@@ -158,7 +167,7 @@ test.describe('designaanvraag-flow', () => {
     await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026 editie 2')
     // Doorklikken tot het overzicht er weer staat. Enter werkt hier niet overal: in het
     // tekstvak maakt die een nieuwe regel, want daar typ je alinea's.
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 14; i++) {
       if (await page.getByRole('heading', { name: 'Klopt dit?' }).isVisible()) break
       await page.locator('[data-primary-action]').click()
       await page.waitForTimeout(250)
@@ -213,6 +222,8 @@ test.describe('designaanvraag-flow', () => {
     // Een naam die niet in de lijst staat: gewoon typen en door met Enter.
     await page.getByPlaceholder('Typ of kies je naam').fill('Jan Nieuwkomer')
     await expect(page.locator('.combo__nieuw')).toContainText('Niet in de lijst')
+    // Zonder plek in de lijst geen mailadres, dus ook geen bevestiging; dat staat erbij.
+    await expect(page.locator('.combo__nieuw')).toContainText('geen mail')
     await page.keyboard.press('Enter')
 
     await expect(page.getByRole('heading', { name: 'Is het voor een evenement of intern?' })).toBeVisible()
@@ -236,9 +247,13 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.locator('[data-primary-action]')).toBeFocused()
     await page.keyboard.press('Enter')
 
+    // Als laatste: wie er nog meer bij hoort. Mag leeg blijven, Enter gaat door.
+    await expect(page.getByRole('heading', { name: 'Wie moet er nog meer op de hoogte blijven?' })).toBeVisible()
+    await page.keyboard.press('Enter')
+
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     const labels = await page.locator('.review__label').allTextContents()
-    expect(labels).toEqual(['locatie', 'naam', 'voor', 'wat je aanvraagt', 'nodig op'])
+    expect(labels).toEqual(['locatie', 'naam', 'voor', 'wat je aanvraagt', 'nodig op', 'ook op de hoogte'])
     await expect(page.locator('.review__row', { hasText: 'naam' }).first().locator('.review__value')).toHaveText('Jan Nieuwkomer')
     await shot(page, '22-overzicht-intern', p)
 
@@ -314,5 +329,21 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.locator('.datumregel')).toContainText('Deadline')
     await page.getByRole('button', { name: 'Versturen' }).click()
     await expect(page.getByRole('heading', { name: 'Genoteerd.' })).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('akkoord geven vanuit de link in de mail', async ({ page }, testInfo) => {
+    const p = testInfo.project.name
+    await page.goto('/?akkoord=11111111-2222-4333-8444-555555555555')
+    await expect(page.getByRole('heading', { name: 'Akkoord geven' })).toBeVisible()
+    // De link zelf geeft geen akkoord: dat zou een virusscanner ook doen.
+    await expect(page).toHaveURL(/\/$/)
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('alert')).toContainText('Vul je naam in')
+    await page.getByPlaceholder('Typ of kies je naam').fill('bo')
+    await page.getByRole('option', { name: 'Bo Demo' }).click()
+    await shot(page, '30-akkoord', p)
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('heading', { name: 'Dank je wel.' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('.success__status')).toContainText('Akkoord van Bo Demo')
   })
 })

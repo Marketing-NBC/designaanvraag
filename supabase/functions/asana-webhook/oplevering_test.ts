@@ -24,6 +24,12 @@ const cfg: AsanaFieldsConfig = {
 }
 
 const NU = new Date('2026-10-28T10:00:00Z')
+
+/** De akkoordvelden van een oplevering zoals ze na de migratie van november 2026 zijn: nog leeg. */
+const LEEG_AKKOORD = {
+  herinneren: false, akkoord_op: null, akkoord_door: null, feedback_op: null, gestopt_op: null, gestopt_reden: null,
+  herinneringen: 0, laatste_herinnering: null,
+}
 const ECHT = { proef: false, door: 'devi' }
 const PROEF = { proef: true, door: 'devi' }
 
@@ -39,6 +45,7 @@ const aanvraag = {
   anders_tekst: '',
   schijf_locatie: '',
   omschrijving: '',
+  gekoppelden: [],
 } as unknown as AanvraagDetail
 
 function subtaak(over: Partial<Subtaak> = {}): Subtaak {
@@ -74,6 +81,8 @@ function setup(opts: {
   /** Bijlagen per (sub)taak-gid; standaard één bestand op sub-1. */
   bestanden?: Record<string, AsanaBestand[]>
   email?: string | null
+  /** Adressen van andere collega's (gekoppeld), op naam in kleine letters. */
+  adressen?: Record<string, string>
   aanvraag?: AanvraagDetail | null
   eerder?: OpleveringRow | null
   verstuurd?: number
@@ -97,6 +106,7 @@ function setup(opts: {
   const bestanden = opts.bestanden ?? { 'sub-1': [bestand()] }
   const previews: LedkolomPreviewRow[] = (opts.previews ?? []).map((p) => ({ ...p }))
   let gestart = 0
+  const gestopt: { aanvraagId: string; reden: unknown }[] = []
 
   const asana = {
     listSubtaken: () => Promise.resolve(opts.subtaken ?? [subtaak()]),
@@ -118,11 +128,15 @@ function setup(opts: {
 
   const db: OpleverDeps['db'] = {
     findDetailByAsanaTaskGid: () => Promise.resolve(opts.aanvraag === undefined ? aanvraag : opts.aanvraag),
-    collegaEmail: () => Promise.resolve(opts.email === undefined ? 'britt@nbcevents.nl' : opts.email),
+    collegaEmails: (namen) => {
+      const alle: Record<string, string | null> = { ...(opts.adressen ?? {}), britt: opts.email === undefined ? 'britt@nbcevents.nl' : opts.email }
+      return Promise.resolve(new Map(namen.map((n) => [n.toLowerCase(), alle[n.toLowerCase()]] as const).filter((x): x is [string, string] => Boolean(x[1]))))
+    },
+    stopHerinneringen: (aanvraagId, _moment, reden) => (gestopt.push({ aanvraagId, reden }), Promise.resolve(0)),
     findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.subtaak_gid === gid) ?? null),
     aantalVerstuurd: () => Promise.resolve(opts.verstuurd ?? 0),
     insertOplevering: (r) => {
-      const rij: OpleveringRow = { status: 'bezig', door: null, ...r, id: `op-${rijen.length + 1}`, created_at: NU.toISOString(), fout: null, verstuurd_op: null }
+      const rij: OpleveringRow = { status: 'bezig', door: null, ...LEEG_AKKOORD, ...r, id: `op-${rijen.length + 1}`, created_at: NU.toISOString(), fout: null, verstuurd_op: null }
       rijen.push(rij)
       return Promise.resolve(rij)
     },
@@ -164,7 +178,7 @@ function setup(opts: {
   const oplever = createOplever({
     asana, db, mail, cfg, previewBouwer, now: () => opts.now ?? NU, log: () => {},
   })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestart: () => gestart }
+  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart }
 }
 
 // ── Echt versturen ────────────────────────────────────────────────────
@@ -276,7 +290,7 @@ Deno.test('na eerdere opleveringen heet het versie 2', async () => {
 Deno.test('dezelfde subtaak gaat geen tweede keer de deur uit', async () => {
   const eerder: OpleveringRow = {
     id: 'op-1', created_at: '2026-10-27T10:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
-    ontvangers: ['britt@nbcevents.nl'], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z', door: null,
+    ontvangers: ['britt@nbcevents.nl'], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z', door: null, ...LEEG_AKKOORD,
   }
   const s = setup({ eerder })
   await s.oplever(taak(), ECHT)
@@ -287,7 +301,7 @@ Deno.test('dezelfde subtaak gaat geen tweede keer de deur uit', async () => {
 Deno.test('een tweede druk terwijl de eerste nog loopt doet niets', async () => {
   const eerder: OpleveringRow = {
     id: 'op-1', created_at: '2026-10-28T09:59:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
-    ontvangers: [], bijlagen: [], status: 'bezig', fout: null, verstuurd_op: null, door: null,
+    ontvangers: [], bijlagen: [], status: 'bezig', fout: null, verstuurd_op: null, door: null, ...LEEG_AKKOORD,
   }
   const s = setup({ eerder })
   assertEquals(await s.oplever(taak(), ECHT), 'oplevermail al bezig')
@@ -299,7 +313,7 @@ Deno.test('een tweede druk terwijl de eerste nog loopt doet niets', async () => 
 Deno.test('na een mislukte poging kan dezelfde subtaak opnieuw', async () => {
   const eerder: OpleveringRow = {
     id: 'op-1', created_at: '2026-10-28T09:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
-    ontvangers: [], bijlagen: [], status: 'mislukt', fout: 'geen ontvanger', verstuurd_op: null, door: null,
+    ontvangers: [], bijlagen: [], status: 'mislukt', fout: 'geen ontvanger', verstuurd_op: null, door: null, ...LEEG_AKKOORD,
   }
   const s = setup({ eerder })
   await s.oplever(taak(), ECHT)
@@ -373,7 +387,7 @@ Deno.test('een proef van een al verstuurde versie mag gewoon', async () => {
   // een proef onschuldig.
   const eerder: OpleveringRow = {
     id: 'op-1', created_at: '2026-10-27T10:00:00Z', aanvraag_id: aanvraag.id, subtaak_gid: 'sub-1', versie: 1,
-    ontvangers: [], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z', door: null,
+    ontvangers: [], bijlagen: [], status: 'verstuurd', fout: null, verstuurd_op: '2026-10-27T10:00:00Z', door: null, ...LEEG_AKKOORD,
   }
   const s = setup({ eerder })
   assertEquals(await s.oplever(taak(), PROEF), 'proefmail verstuurd')
@@ -551,4 +565,29 @@ Deno.test('een release-link bij een aanvraag zonder LED-kolom blijft gewoon in d
   await s.oplever(taak(), ECHT)
   assertEquals(s.gestart(), 0)
   assertStringIncludes(s.gemaild[0].html, RELEASE)
+})
+
+Deno.test('gekoppelde collega\'s krijgen de oplevering ook, en de oplevering krijgt herinneringen', async () => {
+  const s = setup({
+    aanvraag: { ...aanvraag, gekoppelden: ['Karen', 'Bo'] } as AanvraagDetail,
+    adressen: { karen: 'karen@nbcevents.nl' },
+  })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.gemaild[0].aan, ['britt@nbcevents.nl', 'karen@nbcevents.nl'])
+  assertStringIncludes(s.gemaild[0].html, '?akkoord=')
+  assertEquals(s.rijen[0].herinneren, true)
+  // Een eerdere versie die nog op akkoord wachtte, stopt: het gaat nu om deze.
+  assertEquals(s.gestopt, [{ aanvraagId: aanvraag.id, reden: { gestopt: 'versie 1 verstuurd' } }])
+})
+
+Deno.test('alleen een gekoppelde collega met een adres is ook genoeg', async () => {
+  const s = setup({ email: null, aanvraag: { ...aanvraag, gekoppelden: ['Karen'] } as AanvraagDetail, adressen: { karen: 'karen@nbcevents.nl' } })
+  await s.oplever(taak(), ECHT)
+  assertEquals(s.gemaild[0].aan, ['karen@nbcevents.nl'])
+})
+
+Deno.test('een proef stopt geen herinneringen', async () => {
+  const s = setup()
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.gestopt, [])
 })

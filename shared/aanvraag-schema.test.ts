@@ -224,3 +224,32 @@ describe('evenement of intern', () => {
     expect(aanvraagSchema.safeParse({ ...valid, naam: ' ' }).success).toBe(false)
   })
 })
+
+describe('gekoppelde collega\'s en de taal van het menu', () => {
+  it('zonder iets erbij: niemand gekoppeld, menu in het Nederlands', () => {
+    const a = aanvraagSchema.parse(valid)
+    expect(a.gekoppelden).toEqual([])
+    expect(a.menu_taal).toBe('nl')
+  })
+
+  it('haalt dubbele namen en de aanvrager zelf eruit', () => {
+    const a = aanvraagSchema.parse({ ...valid, gekoppelden: ['Britt', 'britt', 'Naomi', 'Karen'] })
+    expect(a.gekoppelden).toEqual(['Britt', 'Karen'])
+  })
+
+  it('ook bij een interne aanvraag', () => {
+    const a = aanvraagSchema.parse({ naam: 'Naomi', soort: 'intern', omschrijving: 'Nieuwe visitekaartjes', gekoppelden: ['NAOMI', 'Bo'] })
+    expect(a.gekoppelden).toEqual(['Bo'])
+    expect(a.menu_taal).toBe('nl')
+  })
+
+  it('heeft een maximum', () => {
+    const r = aanvraagSchema.safeParse({ ...valid, gekoppelden: Array.from({ length: 16 }, (_, i) => `Collega ${i}`) })
+    expect(r.success).toBe(false)
+  })
+
+  it('kent alleen Nederlands en Engels', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, menu_taal: 'en' }).success).toBe(true)
+    expect(aanvraagSchema.safeParse({ ...valid, menu_taal: 'de' }).success).toBe(false)
+  })
+})

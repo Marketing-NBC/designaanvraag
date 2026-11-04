@@ -142,9 +142,9 @@ describe('evenement of intern', () => {
     expect(zichtbareStappen({ metMenu: false, soort: null })).toEqual(zichtbareStappen({ metMenu: false, soort: 'evenement' }))
   })
 
-  it('intern: alleen wat je wilt en wanneer', () => {
+  it('intern: alleen wat je wilt en wanneer, en wie er nog meer bij hoort', () => {
     const ids = zichtbareStappen({ metMenu: false, soort: 'intern' }).map((s) => s.id)
-    expect(ids).toEqual(['locatie', 'naam', 'soort', 'wens_intern', 'deadline_intern'])
+    expect(ids).toEqual(['locatie', 'naam', 'soort', 'wens_intern', 'deadline_intern', 'gekoppelden'])
   })
 
   it('intern: ook een eerder gekozen menu brengt de menuvraag niet terug', () => {
@@ -162,6 +162,26 @@ describe('evenement of intern', () => {
     const stap = STEPS.find((s) => s.id === 'wens_intern')!
     expect(stap.validate({ ...emptyDraft(), soort: 'intern' })).toContain('Beschrijf')
     expect(stap.validate({ ...emptyDraft(), soort: 'intern', omschrijving: 'Nieuwe visitekaartjes' })).toBeNull()
+  })
+})
+
+describe('collega\'s koppelen', () => {
+  const stap = STEPS.find((s) => s.id === 'gekoppelden')!
+
+  it('is bij allebei de laatste vraag', () => {
+    for (const soort of ['evenement', 'intern'] as const) {
+      const ids = zichtbareStappen({ metMenu: true, soort }).map((s) => s.id)
+      expect(ids.at(-1)).toBe('gekoppelden')
+    }
+  })
+
+  it('mag leeg blijven', () => {
+    expect(stap.validate(emptyDraft())).toBeNull()
+  })
+
+  it('heeft een maximum', () => {
+    const veel = Array.from({ length: 16 }, (_, i) => `Collega ${i}`)
+    expect(stap.validate({ ...emptyDraft(), gekoppelden: veel })).toMatch(/hooguit/)
   })
 })
 

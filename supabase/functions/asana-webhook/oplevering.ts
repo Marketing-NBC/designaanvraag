@@ -12,6 +12,7 @@ import {
   verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
+import { opsomming } from '../_shared/shared/bevestiging.ts'
 
 /**
  * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
@@ -39,8 +40,8 @@ import { vandaagInNl } from '../_shared/shared/spoed.ts'
 export interface OpleverDeps {
   asana: AsanaTaskClient
   db: Pick<Db,
-    | 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
-    | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview'>
+    | 'findDetailByAsanaTaskGid' | 'collegaEmails' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
+    | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview' | 'stopHerinneringen'>
   /** Null als Microsoft 365 niet is ingesteld; dan zegt de reactie dat. */
   mail: MailClient | null
   cfg: AsanaFieldsConfig
@@ -181,16 +182,17 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         rij = bestaand
       }
 
-      // Ontvangers: de aanvrager en wie er in "Ook mailen naar" staat.
+      // Ontvangers: de aanvrager, de gekoppelde collega's en wie er in "Ook mailen naar" staat.
       const ookVeld = cfg.fields?.ook_mailen_naar?.gid
       const { geldig, ongeldig } = leesOntvangers(ookVeld ? taak.customFields[ookVeld]?.tekst : null)
       if (ongeldig.length) {
         throw new Weigering(`In "Ook mailen naar" staat iets wat geen e-mailadres is: ${ongeldig.join(', ')}. Scheid adressen met een komma.`)
       }
-      const aanvrager = await db.collegaEmail(aanvraag.naam)
-      const aan = uniekeAdressen([...(aanvrager ? [aanvrager] : []), ...geldig])
+      const collegas = [aanvraag.naam, ...(aanvraag.gekoppelden ?? [])]
+      const adressen = await db.collegaEmails(collegas)
+      const aan = uniekeAdressen([...collegas.map((n) => adressen.get(n.trim().toLowerCase())).filter((a): a is string => Boolean(a)), ...geldig])
       if (!aan.length) {
-        throw new Weigering(`Er is geen ontvanger: bij ${aanvraag.naam} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
+        throw new Weigering(`Er is geen ontvanger: bij ${opsomming(collegas)} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
       }
 
       // Bij een LED-kolom wordt een release-link uit de beschrijving een 3D-preview. De link zelf
@@ -226,7 +228,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         if (rij) {
           // Een eerdere poging met deze subtaak mislukte (of bleef hangen, of wachtte op de
           // 3D-preview): dezelfde rij opnieuw.
-          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door }
+          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door, herinneren: true }
           if (rij.status === 'wacht_op_preview' && status === 'bezig') {
             // Twee meldingen tegelijk (twee kolommen klaar), of een melding en een druk op de knop:
             // wie hem het eerst oppakt, verstuurt hem.
@@ -235,7 +237,9 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
             await db.updateOplevering(rij.id, patch)
           }
         } else {
-          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door })
+          // herinneren: tot er akkoord of feedback is, krijgen de aanvrager en de gekoppelde collega's
+          // elke werkdag een herinnering (scripts/herinneringen.mjs).
+          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door, herinneren: true })
         }
       }
 
@@ -305,6 +309,11 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
 
       const moment = now()
       const datum = vandaagInNl(moment)
+      // Een vorige versie die nog op akkoord wachtte, hoeft geen herinneringen meer: het gaat nu om
+      // deze. Vóór het op verstuurd zetten van deze rij, anders stopt hij zichzelf.
+      await db.stopHerinneringen(aanvraag.id, moment, { gestopt: `versie ${versie} verstuurd` }).catch((e) => {
+        log('warn', 'herinneringen van vorige versie stoppen mislukt', { aanvraag: aanvraag.id, error: fout(e) })
+      })
       await db.updateOplevering(rij!.id, { status: 'verstuurd', fout: null, verstuurd_op: moment.toISOString() })
       log('info', 'opleveringsmail verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, versie, ontvangers: aan.length, bijlagen: bijlagen.length })
 
