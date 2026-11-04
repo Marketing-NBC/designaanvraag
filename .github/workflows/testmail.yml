@@ -1,0 +1,45 @@
+name: Testmail versturen
+
+# Een mail van het formulier met verzonnen gegevens, alleen naar het adres dat je invult. Om te zien
+# hoe een mail eruitziet. Zie scripts/testmail.mjs.
+# Vereist secrets MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
+
+on:
+  workflow_dispatch:
+    inputs:
+      aan:
+        description: 'Naar welk adres'
+        type: string
+        required: true
+      mail:
+        description: 'Welke mail'
+        type: choice
+        options: [oplevering, oplevering-oud, herinnering, bevestiging]
+        default: oplevering
+      locatie:
+        description: 'Welke locatie (bepaalt de kleuren)'
+        type: choice
+        options: [nbc, green_village]
+        default: nbc
+
+jobs:
+  testmail:
+    runs-on: ubuntu-latest
+    env:
+      MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+      MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Testmail versturen
+        # Het adres komt uit de gegevens van de run en wordt gemaskeerd: de logs van deze (publieke)
+        # repo zijn voor iedereen te zien, en een env-waarde staat daar gewoon in.
+        run: |
+          AAN=$(jq -r '.inputs.aan // ""' "$GITHUB_EVENT_PATH")
+          echo "::add-mask::$AAN"
+          node --experimental-strip-types --no-warnings scripts/testmail.mjs --aan "$AAN" \
+            --mail "${{ inputs.mail }}" --locatie "${{ inputs.locatie }}"

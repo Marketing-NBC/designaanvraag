@@ -278,6 +278,11 @@ formulier met de aanvraag al gekozen: geen zoeken, alleen naam, feedback (met be
 eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taak gaat terug naar
 **Feedback**, zoals hieronder beschreven.
 
+**Een testmail.** Actions → **Testmail versturen**: vul je adres in en kies de mail (oplevering,
+oplevering van een oudere aanvraag, herinnering of bevestiging) en de locatie. Je krijgt hem met
+verzonnen gegevens; de knoppen wijzen naar een aanvraag die niet bestaat, dus een test kan nooit
+akkoord geven op een echte aanvraag. Het adres wordt in de log van de workflow gemaskeerd.
+
 **Zelf terugzien.** Supabase → Table editor → `opleveringen`: per oplevering de versie, ontvangers,
 bijlagen, status (`bezig`, `verstuurd`, `mislukt`) en de reden als het misging.
 
