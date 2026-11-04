@@ -78,10 +78,9 @@ function fakeDb() {
     markeerBijlage: () => Promise.resolve(),
     zoekOpId: () => Promise.resolve(null),
     findDetailByAsanaTaskGid: () => Promise.resolve(null),
-    collegaEmail: () => Promise.resolve(null),
+    collegaEmail: (naam) => Promise.resolve(ADRESSEN[naam.trim().toLowerCase()] ?? null),
     // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
     collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
-    collegaEmails: (namen) => Promise.resolve(new Map(namen.filter((n) => ADRESSEN[n.toLowerCase()]).map((n) => [n.toLowerCase(), ADRESSEN[n.toLowerCase()]]))),
     laatsteVerstuurd: () => Promise.resolve(null),
     async stopHerinneringen(aanvraagId, _moment, reden) {
       gestopt.push({ aanvraagId, reden })
@@ -902,29 +901,22 @@ Deno.test('een interne aanvraag mailt zonder event, met de vraag in het onderwer
   assertEquals(m.html.includes('Website'), false)
 })
 
-// ── Bevestiging en gekoppelde collega's ───────────────────────────────────────
+// ── Bevestiging ───────────────────────────────────────────────────────────────
 
-Deno.test('de aanvrager krijgt een bevestiging en gekoppelde collega\'s een koppelmail', async () => {
+Deno.test('de aanvrager krijgt een bevestiging, met een knop om aan te vullen', async () => {
   const mail = fakeMail()
   const { handler, db } = setup({ mail })
-  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Britt', gekoppelden: ['Karen', 'Bo', 'Niet In De Lijst'] } })))
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Britt' } })))
   assertEquals(res.status, 200)
   const [rij] = [...db.rows.values()]
-  assertEquals(rij.gekoppelden, ['Karen', 'Bo', 'Niet In De Lijst'])
-  assertEquals(mail.verstuurd.map((m) => m.onderwerp.split(':')[0]), ['Nieuwe aanvraag', 'Ontvangen', 'Gekoppeld'])
-  const [, bevestiging, koppel] = mail.verstuurd
+  assertEquals(mail.verstuurd.map((m) => m.onderwerp.split(':')[0]), ['Nieuwe aanvraag', 'Ontvangen'])
+  const bevestiging = mail.verstuurd[1]
   assertEquals(bevestiging.aan, ['britt@nbcevents.nl'])
   assertEquals(bevestiging.antwoordAan, ['marketing@nbcevents.nl'])
   assertStringIncludes(bevestiging.html, `?aanvullen=${rij.id}`)
-  // Wie geen adres heeft, krijgt niets; dat staat in de bevestiging.
-  assertStringIncludes(bevestiging.html, 'Behalve Niet In De Lijst')
-  assertEquals(koppel.aan, ['karen@nbcevents.nl', 'bo@nbcevents.nl'])
-  assertStringIncludes(koppel.html, 'Britt heeft je gekoppeld')
-  // De gekoppelden staan ook in de melding aan Marketing en in de taak.
-  assertStringIncludes(mail.verstuurd[0].html, 'Ook op de hoogte')
 })
 
-Deno.test('wie niet in de lijst staat, krijgt geen bevestiging', async () => {
+Deno.test('zonder mailadres bij de aanvrager geen bevestiging', async () => {
   const mail = fakeMail()
   const { handler } = setup({ mail })
   await handler(post(payload()))

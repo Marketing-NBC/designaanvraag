@@ -11,7 +11,7 @@ import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
 import { MARKETING_MAIL, MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
-import { renderBevestigingMail, renderKoppelMail } from '../_shared/shared/bevestiging.ts'
+import { renderBevestigingMail } from '../_shared/shared/bevestiging.ts'
 import pakketData from '../_shared/shared/menu-pakketten.json' with { type: 'json' }
 import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderNieuweAanvraagMail } from '../_shared/shared/meldingen.ts'
@@ -181,32 +181,25 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       }
     }
 
-    // De bevestiging aan de aanvrager, en de koppelmail aan de collega's die erbij horen. Alleen wie
-    // in de tabel collegas een adres heeft; de rest krijgt niets (het formulier zegt dat ook). Ook
-    // als Asana het liet afweten: de aanvraag is binnen, Marketing heeft hem in de mail. Een
-    // mislukte mail houdt niets tegen.
+    // De bevestiging aan de aanvrager, als er bij de collega een adres staat. Ook als Asana het
+    // liet afweten: de aanvraag is binnen, Marketing heeft hem in de mail. Een mislukte mail houdt
+    // niets tegen.
     let bevestigd = false
     const bevestig = async () => {
       if (!deps.mail || bevestigd) return
       bevestigd = true
       try {
-        const namen = [aanvraag.naam, ...aanvraag.gekoppelden]
-        const adressen = await db.collegaEmails(namen)
-        const adres = (n: string) => adressen.get(n.trim().toLowerCase()) ?? null
+        const eigen = await db.collegaEmail(aanvraag.naam)
+        if (!eigen) {
+          log('info', 'geen bevestiging: geen mailadres bij de aanvrager', { id: row.id })
+          return
+        }
         const antwoordAan = MELDING_ONTVANGERS[aanvraag.locatie] ?? MELDING_ONTVANGERS.nbc
         const menuPakket = aanvraag.menu_pakket
           ? (pakketData as { pakketten: { pakket: string; naam: string }[] }).pakketten.find((p) => p.pakket === aanvraag.menu_pakket)?.naam ?? aanvraag.menu_pakket
           : null
-        const zonderAdres = aanvraag.gekoppelden.filter((n) => !adres(n))
-        const eigen = adres(aanvraag.naam)
-        if (eigen) {
-          await deps.mail.verstuur(renderBevestigingMail({ aanvraag, aanvraagId: row.id, aan: eigen, antwoordAan, menuPakket, zonderAdres }))
-        }
-        const anderen = aanvraag.gekoppelden.map(adres).filter((a): a is string => Boolean(a) && a !== eigen)
-        if (anderen.length) {
-          await deps.mail.verstuur(renderKoppelMail({ aanvraag, aanvraagId: row.id, aan: [...new Set(anderen)], antwoordAan, door: aanvraag.naam, menuPakket }))
-        }
-        log('info', 'bevestiging gemaild', { id: row.id, aanvrager: Boolean(eigen), gekoppeld: anderen.length, zonderAdres: zonderAdres.length })
+        await deps.mail.verstuur(renderBevestigingMail({ aanvraag, aanvraagId: row.id, aan: eigen, antwoordAan, menuPakket }))
+        log('info', 'bevestiging gemaild', { id: row.id })
       } catch (e) {
         log('error', 'bevestiging mailen mislukt', { id: row.id, error: e instanceof Error ? e.message : String(e) })
       }

@@ -12,7 +12,6 @@ import {
   verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
-import { opsomming } from '../_shared/shared/bevestiging.ts'
 
 /**
  * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
@@ -40,7 +39,7 @@ import { opsomming } from '../_shared/shared/bevestiging.ts'
 export interface OpleverDeps {
   asana: AsanaTaskClient
   db: Pick<Db,
-    | 'findDetailByAsanaTaskGid' | 'collegaEmails' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
+    | 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
     | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview' | 'stopHerinneringen'>
   /** Null als Microsoft 365 niet is ingesteld; dan zegt de reactie dat. */
   mail: MailClient | null
@@ -182,17 +181,16 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         rij = bestaand
       }
 
-      // Ontvangers: de aanvrager, de gekoppelde collega's en wie er in "Ook mailen naar" staat.
+      // Ontvangers: de aanvrager en wie er in "Ook mailen naar" staat.
       const ookVeld = cfg.fields?.ook_mailen_naar?.gid
       const { geldig, ongeldig } = leesOntvangers(ookVeld ? taak.customFields[ookVeld]?.tekst : null)
       if (ongeldig.length) {
         throw new Weigering(`In "Ook mailen naar" staat iets wat geen e-mailadres is: ${ongeldig.join(', ')}. Scheid adressen met een komma.`)
       }
-      const collegas = [aanvraag.naam, ...(aanvraag.gekoppelden ?? [])]
-      const adressen = await db.collegaEmails(collegas)
-      const aan = uniekeAdressen([...collegas.map((n) => adressen.get(n.trim().toLowerCase())).filter((a): a is string => Boolean(a)), ...geldig])
+      const aanvrager = await db.collegaEmail(aanvraag.naam)
+      const aan = uniekeAdressen([...(aanvrager ? [aanvrager] : []), ...geldig])
       if (!aan.length) {
-        throw new Weigering(`Er is geen ontvanger: bij ${opsomming(collegas)} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
+        throw new Weigering(`Er is geen ontvanger: bij ${aanvraag.naam} staat geen e-mailadres in Supabase (tabel collegas), en "Ook mailen naar" is leeg. Vul daar een adres in.`)
       }
 
       // Bij een LED-kolom wordt een release-link uit de beschrijving een 3D-preview. De link zelf
@@ -237,7 +235,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
             await db.updateOplevering(rij.id, patch)
           }
         } else {
-          // herinneren: tot er akkoord of feedback is, krijgen de aanvrager en de gekoppelde collega's
+          // herinneren: tot er akkoord of feedback is, krijgt iedereen die deze mail kreeg
           // elke werkdag een herinnering (scripts/herinneringen.mjs).
           rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door, herinneren: true })
         }

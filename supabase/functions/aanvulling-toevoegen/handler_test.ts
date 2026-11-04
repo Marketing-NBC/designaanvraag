@@ -82,7 +82,6 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
     anders_tekst: '',
     schijf_locatie: '',
     menu_pakket: '',
-    gekoppelden: [],
     ...over,
   }
 }
@@ -137,7 +136,6 @@ function fakeDb(row: AanvraagDetail | null = aanvraag(), gestoptAantal = 0) {
     collegaEmail: () => Promise.resolve(null),
     // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
     collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
-    collegaEmails: (namen) => Promise.resolve(new Map(namen.filter((n) => ADRESSEN[n.toLowerCase()]).map((n) => [n.toLowerCase(), ADRESSEN[n.toLowerCase()]]))),
     laatsteVerstuurd: () => Promise.resolve(null),
     async stopHerinneringen(aanvraagId, _moment, reden) {
       gestopt.push({ aanvraagId, reden })
@@ -256,7 +254,7 @@ function deps(over: Partial<Deps> = {}): Deps {
 
 Deno.test('types worden aangevuld, nooit vervangen', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '', gekoppelden: [] },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['vlaggen'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     // In Asana staat inmiddels ook een menukaart die Marketing er zelf bij zette.
     { 'f-type': { optieGids: ['o-led', 'o-menu'], datum: null, tekst: null } },
@@ -268,7 +266,7 @@ Deno.test('types worden aangevuld, nooit vervangen', () => {
 
 Deno.test('een type dat er al staat levert geen wijziging op', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '', gekoppelden: [] },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: ['led_kolom'], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-type': { optieGids: ['o-led'], datum: null, tekst: null } },
     cfg,
@@ -279,7 +277,7 @@ Deno.test('een type dat er al staat levert geen wijziging op', () => {
 
 Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
   const w = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '', gekoppelden: [] },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: '2026-12-01', nieuwe_deadline: '2026-11-25', schijf_locatie: '', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -291,7 +289,7 @@ Deno.test('een datum die niet verschuift wordt niet meegestuurd', () => {
 
 Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie', () => {
   const leeg = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '', menu_inhoud: null, menu_tekst: '', gekoppelden: [] },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Events\\Zorg', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     {},
     cfg,
@@ -300,7 +298,7 @@ Deno.test('schijf vult alleen een leeg veld; anders gaat het pad naar de reactie
   assertEquals(leeg.schijfNietOvergenomen, '')
 
   const bezet = bepaalWijziging(
-    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '', menu_inhoud: null, menu_tekst: '', gekoppelden: [] },
+    { aanvraag_id: AANVRAAG_ID, naam: 'W', toelichting: 'x', extra_types: [], anders_tekst: '', nieuwe_event_datum: null, nieuwe_deadline: null, schijf_locatie: 'G:\\Nieuw', link: '', menu_inhoud: null, menu_tekst: '' },
     aanvraag(),
     { 'f-schijf': { optieGids: [], datum: null, tekst: 'G:\\Door Marketing gezet' } },
     cfg,
@@ -695,29 +693,7 @@ Deno.test('hetzelfde pakket: geen "was" in de reactie, en de mail toont het nieu
   assertStringIncludes(mail.verstuurd[0].html, 'Nieuw menu: Basic Lunch')
 })
 
-// ── Collega's koppelen en de herinneringen ───────────────────────────────────
-
-Deno.test('een aanvulling kan collega\'s koppelen; wie nieuw is krijgt een mail', async () => {
-  const mail = fakeMail()
-  const db = fakeDb(aanvraag({ gekoppelden: ['Bo'] }))
-  const res = await createHandler(deps({ db, mail }))(post(payload({ gekoppelden: ['Bo', 'Karen', 'britt'] })))
-  assertEquals(res.status, 200)
-  // Bo stond er al, Britt is de aanvrager: alleen Karen is nieuw.
-  assertEquals(db.patches.find((p) => 'gekoppelden' in p), { gekoppelden: ['Bo', 'Karen'] })
-  const koppel = mail.verstuurd.find((m) => m.onderwerp.startsWith('Gekoppeld:'))!
-  assertEquals(koppel.aan, ['karen@nbcevents.nl'])
-  assertStringIncludes(koppel.html, 'Wendy Tester heeft je gekoppeld')
-  const melding = mail.verstuurd.find((m) => m.onderwerp.startsWith('Aanvulling:'))!
-  assertStringIncludes(melding.html, 'Nu ook gekoppeld')
-})
-
-Deno.test('zonder nieuwe namen geen koppelmail en geen wijziging', async () => {
-  const mail = fakeMail()
-  const db = fakeDb()
-  await createHandler(deps({ db, mail }))(post(payload()))
-  assertEquals(db.patches.some((p) => 'gekoppelden' in p), false)
-  assertEquals(mail.verstuurd.some((m) => m.onderwerp.startsWith('Gekoppeld:')), false)
-})
+// ── De herinneringen ───────────────────────────────────
 
 Deno.test('een aanvulling is feedback: de herinneringen om akkoord te geven stoppen', async () => {
   const mail = fakeMail()

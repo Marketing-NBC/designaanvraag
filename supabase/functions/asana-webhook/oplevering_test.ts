@@ -45,7 +45,6 @@ const aanvraag = {
   anders_tekst: '',
   schijf_locatie: '',
   omschrijving: '',
-  gekoppelden: [],
 } as unknown as AanvraagDetail
 
 function subtaak(over: Partial<Subtaak> = {}): Subtaak {
@@ -81,8 +80,6 @@ function setup(opts: {
   /** Bijlagen per (sub)taak-gid; standaard één bestand op sub-1. */
   bestanden?: Record<string, AsanaBestand[]>
   email?: string | null
-  /** Adressen van andere collega's (gekoppeld), op naam in kleine letters. */
-  adressen?: Record<string, string>
   aanvraag?: AanvraagDetail | null
   eerder?: OpleveringRow | null
   verstuurd?: number
@@ -128,10 +125,7 @@ function setup(opts: {
 
   const db: OpleverDeps['db'] = {
     findDetailByAsanaTaskGid: () => Promise.resolve(opts.aanvraag === undefined ? aanvraag : opts.aanvraag),
-    collegaEmails: (namen) => {
-      const alle: Record<string, string | null> = { ...(opts.adressen ?? {}), britt: opts.email === undefined ? 'britt@nbcevents.nl' : opts.email }
-      return Promise.resolve(new Map(namen.map((n) => [n.toLowerCase(), alle[n.toLowerCase()]] as const).filter((x): x is [string, string] => Boolean(x[1]))))
-    },
+    collegaEmail: () => Promise.resolve(opts.email === undefined ? 'britt@nbcevents.nl' : opts.email),
     stopHerinneringen: (aanvraagId, _moment, reden) => (gestopt.push({ aanvraagId, reden }), Promise.resolve(0)),
     findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.subtaak_gid === gid) ?? null),
     aantalVerstuurd: () => Promise.resolve(opts.verstuurd ?? 0),
@@ -567,27 +561,16 @@ Deno.test('een release-link bij een aanvraag zonder LED-kolom blijft gewoon in d
   assertStringIncludes(s.gemaild[0].html, RELEASE)
 })
 
-Deno.test('gekoppelde collega\'s krijgen de oplevering ook, en de oplevering krijgt herinneringen', async () => {
-  const s = setup({
-    aanvraag: { ...aanvraag, gekoppelden: ['Karen', 'Bo'] } as AanvraagDetail,
-    adressen: { karen: 'karen@nbcevents.nl' },
-  })
+Deno.test('de oplevering krijgt herinneringen, en akkoord staat onder feedback', async () => {
+  const s = setup()
   await s.oplever(taak(), ECHT)
-  assertEquals(s.gemaild[0].aan, ['britt@nbcevents.nl', 'karen@nbcevents.nl'])
-  assertStringIncludes(s.gemaild[0].html, '?akkoord=')
-  // Akkoord staat onder feedback, in Goudgeel.
   const html = s.gemaild[0].html
+  assertStringIncludes(html, '?akkoord=')
   assert(html.indexOf('Feedback geven') < html.indexOf('Akkoord geven'))
   assertStringIncludes(html, 'background:#f6a304')
   assertEquals(s.rijen[0].herinneren, true)
   // Een eerdere versie die nog op akkoord wachtte, stopt: het gaat nu om deze.
   assertEquals(s.gestopt, [{ aanvraagId: aanvraag.id, reden: { gestopt: 'versie 1 verstuurd' } }])
-})
-
-Deno.test('alleen een gekoppelde collega met een adres is ook genoeg', async () => {
-  const s = setup({ email: null, aanvraag: { ...aanvraag, gekoppelden: ['Karen'] } as AanvraagDetail, adressen: { karen: 'karen@nbcevents.nl' } })
-  await s.oplever(taak(), ECHT)
-  assertEquals(s.gemaild[0].aan, ['karen@nbcevents.nl'])
 })
 
 Deno.test('een proef stopt geen herinneringen', async () => {

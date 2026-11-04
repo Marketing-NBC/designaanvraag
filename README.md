@@ -34,16 +34,13 @@ formulier heen kan. Hoofdletters maken niet uit; de naam gaat verder zoals hij i
 Hetzelfde geldt bij **Iets aanvullen of wijzigen**, bij **Feedback geven** en bij **Akkoord geven**:
 alleen met een naam uit de lijst.
 
-De **laatste vraag** is *Wie moet er nog meer op de hoogte blijven?* Daar vink je collega's aan uit
-dezelfde lijst. Zie **Collega's koppelen en de bevestiging** hieronder.
-
 Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 
 ```
 Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Marketing
                                                   ├→ Claude Code Routine → huisstijl bij de taak
                                                   ├→ meldingsmail (Microsoft 365) → marketingpostvak
-                                                  └→ bevestiging → aanvrager en gekoppelde collega's
+                                                  └→ bevestiging → aanvrager
 Elke maandag: GitHub Actions → Asana → weekoverzicht per mail
 Elke werkdag: GitHub Actions → Supabase → herinnering om akkoord te geven
 ```
@@ -231,8 +228,7 @@ subtaak vanzelf.
    lijstjes en links blijven staan.
 2. Zet de **bestanden** als bijlage bij die subtaak. Precies die bestanden gaan mee, niet die van de
    hoofdtaak. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox) gaan als link mee.
-3. De mail gaat naar de aanvrager en naar de **gekoppelde collega's** (zie hieronder), voor zover er
-   een adres bij ze staat. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
+3. De mail gaat naar de aanvrager, als er een adres bij staat. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
    e-mailadressen van collega's, gescheiden door een komma (de tool is niet voor klanten). Je mag ze ook uit Outlook plakken
    (`Jan Jansen <jan@nbcevents.nl>`). Het veld blijft staan voor een volgende versie.
 4. Zet het veld **Oplevermail** op de hoofdtaak op **Stuur proef naar mij**. Jij krijgt dan precies de
@@ -255,8 +251,7 @@ opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: de subtaak is leeg, er is gee
 geen open subtaak Oplevering, bijvoorbeeld een taak van voor deze functie, dan maakt de knop hem aan
 en vraagt hij je die te vullen.
 
-**De ontvangers.** De aanvrager en de gekoppelde collega's staan er automatisch op, als hun adres bij
-de collega staat: Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
+**De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat: Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
 lezen het. Staat er geen adres, dan gaan alleen de adressen uit "Ook mailen naar" mee. Is dat ook
 leeg, dan gaat er niets uit. Antwoordt iemand toch op de mail, dan komt dat bij het marketingpostvak
 van de locatie terecht in plaats van bij het afzenderpostvak waar niemand kijkt; de mail zelf vraagt
@@ -276,7 +271,7 @@ nieuwe subtaak, dan heet de mail "Versie 2 klaar: …". Een verstuurde subtaak g
 keer de deur uit. Na een mislukte poging mag dezelfde subtaak wel opnieuw.
 
 **Feedback of akkoord.** Onder het bericht staan twee knoppen: **Feedback geven** en daaronder
-**Akkoord geven**, in een eigen kleur (zie **Opmaak** onder **Meldingen per mail**). Zolang geen van beide gebeurd is, krijgen de aanvrager en de gekoppelde collega's elke
+**Akkoord geven**, in een eigen kleur (zie **Opmaak** onder **Meldingen per mail**). Zolang geen van beide gebeurd is, krijgt iedereen die de mail kreeg elke
 werkdag een herinnering; zie **Akkoord en herinneringen** hieronder. **Feedback geven** opent het
 formulier met de aanvraag al gekozen: geen zoeken, alleen naam, feedback (met bestanden) en
 eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taak gaat terug naar
@@ -377,8 +372,8 @@ geven, ging dan vanzelf af. Na het akkoord:
 Akkoord gaat altijd over de **laatst verstuurde versie**. Een tweede akkoord op dezelfde versie doet
 niets, en het scherm zegt wie het al gaf.
 
-**Wie mag akkoord geven?** Voor nu iedereen die de mail kreeg: de aanvrager, de gekoppelde collega's,
-en ook wie in "Ook mailen naar" staat. Dat zijn altijd collega's: de tool wordt nooit gebruikt voor
+**Wie mag akkoord geven?** Voor nu iedereen die de mail kreeg: de aanvrager en wie in "Ook mailen
+naar" staat. Dat zijn altijd collega's: de tool wordt nooit gebruikt voor
 opdrachtgevers of klanten. Op het akkoordscherm kies je je naam uit de lijst; een naam die er niet in staat kan niet. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
 alleen de aanvrager (of alleen collega's uit de lijst) akkoord mag geven.* Dat aanpassen zit in
 `supabase/functions/akkoord-geven/handler.ts`.
@@ -394,9 +389,8 @@ oplevering, en stuurt een herinnering als:
 - hij niet vandaag pas verstuurd is (de eerste herinnering komt de werkdag erna);
 - er vandaag nog geen herinnering voor uit is.
 
-De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager, de gekoppelde
-collega's en de adressen uit "Ook mailen naar"; die staan in `opleveringen.ontvangers`), plus wie
-er daarna nog gekoppeld is. Er is geen maximum:
+De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager en de adressen uit
+"Ook mailen naar"; die staan in `opleveringen.ontvangers`). Er is geen maximum:
 de herinneringen lopen door tot er akkoord of feedback is, of tot Marketing de taak naar Afgerond
 sleept. Feestdagen tellen als werkdag.
 
@@ -414,32 +408,16 @@ bijlage bij de run.
 feedback), `gestopt_op` en `gestopt_reden` (Afgerond in Asana, of een nieuwere versie verstuurd),
 `herinneringen` (hoeveel er al uit zijn) en `laatste_herinnering`.
 
-## Collega's koppelen en de bevestiging
+## De bevestiging
 
-**De bevestiging.** Wie een aanvraag doet, krijgt meteen een mail *Ontvangen: …* met wat er is
-aangevraagd, hoe het verder gaat, en een knop **Iets aanvullen of wijzigen** (die opent het
-aanvulscherm met deze aanvraag al gekozen, `?aanvullen=<id>`). Alleen als de aanvrager in de tabel
-`collegas` staat met een adres; anders gaat er geen bevestiging uit.
+Wie een aanvraag doet, krijgt meteen een mail *Ontvangen: …* met wat er is aangevraagd, hoe het
+verder gaat, en een knop **Iets aanvullen of wijzigen** (die opent het aanvulscherm met deze
+aanvraag al gekozen, `?aanvullen=<id>`). Alleen als bij de aanvrager in de tabel `collegas` een
+adres staat; anders gaat er geen bevestiging uit.
 
-**Collega's koppelen.** De laatste vraag van het formulier is *Wie moet er nog meer op de hoogte
-blijven?* Daar vink je collega's aan uit dezelfde lijst als bij je naam. Een adres typen kan niet,
-met opzet: het formulier staat op het open internet, en met een vrij adresveld kan iedereen via ons
-postvak mail laten versturen. Gekoppelde collega's:
-
-- krijgen een mail *Gekoppeld: …* (*Britt heeft je gekoppeld aan de aanvraag voor EY*);
-- krijgen de opleveringsmail;
-- krijgen de herinneringen, en mogen akkoord geven of feedback sturen.
-
-Wie gekoppeld is, staat in de taakbeschrijving in Asana (*Ook op de hoogte*), in de meldingsmail aan
-Marketing en in Supabase → `aanvragen.gekoppelden`. Een collega zonder adres wordt wel gekoppeld,
-maar krijgt niets; de bevestiging aan de aanvrager zegt dat.
-
-**Later nog iemand koppelen** kan via **Iets aanvullen of wijzigen**: onderaan het laatste scherm. Wie
-er al op stond blijft staan, wie nieuw is krijgt de koppelmail, en de reactie in Asana noemt wie er
-bij kwam. Iemand ontkoppelen kan niet vanuit het formulier; dat doet Marketing in Supabase
-(`aanvragen.gekoppelden`).
-
-Hooguit 15 collega's per aanvraag.
+Collega's aan een aanvraag koppelen, zodat ze ook de mails krijgen, kan niet: dat is na overleg met
+Karen (manager projecten) bewust weggelaten. Moet iemand anders de oplevering ook krijgen, dan zet
+Marketing die in "Ook mailen naar".
 
 ## Feedback op werk dat al af is
 
@@ -573,9 +551,8 @@ Marketing krijgt een mail in het eigen postvak als er via het formulier iets bin
 aanvraag, een aanvulling, een akkoord), en elke maandagochtend een weekoverzicht. Wat Marketing zelf
 in Asana doet levert geen mail op.
 
-Collega's krijgen zelf ook mail: de bevestiging van hun aanvraag, de koppelmail als iemand ze aan een
-aanvraag koppelt, de opleveringsmail en de herinnering om akkoord te geven. Zie **Collega's koppelen
-en de bevestiging** en **Akkoord en herinneringen**. Een antwoord op zo'n mail komt bij het
+Collega's krijgen zelf ook mail: de bevestiging van hun aanvraag, de opleveringsmail en de
+herinnering om akkoord te geven. Zie **De bevestiging** en **Akkoord en herinneringen**. Een antwoord op zo'n mail komt bij het
 marketingpostvak van de locatie terecht.
 
 | Locatie | Postvak |
@@ -588,7 +565,7 @@ De adressen staan in `shared/contact.ts`.
 
 **Opmaak.** Een NBC-mail heeft een kop en knop in NBC-teal (`#229d96`), een Green Village-mail in het
 GV-donkergroen (`#23251b`). Allebei met witte tekst. Dat geldt voor alle
-mails: aanvraag, aanvulling, weekoverzicht, oplevering, bevestiging, koppelmail, herinnering en
+mails: aanvraag, aanvulling, weekoverzicht, oplevering, bevestiging, herinnering en
 akkoord. Alleen de knop **Akkoord geven** heeft een eigen kleur, zodat hij niet met **Feedback geven**
 verward wordt: bij NBC Goudgeel (`#f6a304`) met zwarte tekst (wit haalt daarop maar 2,1:1), bij Green
 Village Orange Roughy 700 (`#833113`) met witte tekst. Dat is de accentkleur van Green Village in een
@@ -840,10 +817,9 @@ voor titels, Area Normal voor de rest.
 ## Collega's
 
 De namenlijst komt uit de Supabase-tabel `collegas` (Table editor → collegas: naam toevoegen,
-`actief` uitzetten om iemand te verbergen). Dezelfde lijst staat bij *Wie moet er nog meer op de
-hoogte blijven?*. In de kolom `email` staat het adres voor de bevestiging, de koppelmail, de
-opleveringsmail en de herinneringen; die kolom is niet publiek. Die lijst is een hulp om snel te kiezen, geen
-toegangscontrole: wie er niet in staat typt zijn naam gewoon zelf. Fallback: `web/src/data/collegas.fallback.ts`.
+`actief` uitzetten om iemand te verbergen). In de kolom `email` staat het adres voor de bevestiging,
+de opleveringsmail en de herinneringen; die kolom is niet publiek. Alleen wie in de lijst staat kan
+een aanvraag doen, aanvullen of akkoord geven (zie bovenaan). Fallback: `web/src/data/collegas.fallback.ts`.
 
 ## Aanvragen bekijken
 

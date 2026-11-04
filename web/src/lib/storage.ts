@@ -28,8 +28,6 @@ export function loadDraft(): Stored | null {
     // De designkeuze kwam vroeger na "Wat wil je aanvragen?". Een concept van toen kan standaard
     // designs hebben met iets erbij dat daar nu niet meer te kiezen is.
     parsed.draft = alleenTeKiezenTypes(parsed.draft)
-    // Een concept van voor de vraag wie er nog meer op de hoogte moet blijven.
-    if (!Array.isArray(parsed.draft.gekoppelden)) parsed.draft.gekoppelden = []
     return parsed
   } catch {
     return null

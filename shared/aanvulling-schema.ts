@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { gekoppeldenSchema, isoDate, menuInhoudSchema, normalizeUrl } from './aanvraag-schema.ts'
+import { isoDate, menuInhoudSchema, normalizeUrl } from './aanvraag-schema.ts'
 import type { MenuInhoud } from './aanvraag-schema.ts'
 import { bijlageIdsSchema } from './bijlagen.ts'
 import { REQUEST_TYPE_KEYS, type RequestTypeKey, type Soort } from './request-types.ts'
@@ -48,8 +48,6 @@ export interface GevondenAanvraag {
    * in de zoeklijst staat het niet.
    */
   menu?: { pakket: string; inhoud: MenuInhoud | null } | null
-  /** Wie er al aan de aanvraag gekoppeld is; het aanvulscherm laat zien wie er al op staat. */
-  gekoppelden?: string[]
   /**
    * Het begin van de omschrijving, ingekort tot ZOEK_OMSCHRIJVING_TEKENS. Alleen gevuld bij een
    * interne aanvraag: daar is het de enige manier om de ene van de andere te onderscheiden.
@@ -96,11 +94,6 @@ export const aanvullingSchema = z
     menu_inhoud: menuInhoudSchema.nullable().default(null),
     /** Hetzelfde menu als leesbare tekst, voor de reactie in Asana en de taakbeschrijving. */
     menu_tekst: z.string().trim().max(8000, 'Maximaal 8000 tekens').default(''),
-    /**
-     * Collega's die er vanaf nu bij horen. Komt bij wie er al gekoppeld was; weghalen kan hier niet
-     * (dat doet Marketing in Supabase). Wie nieuw gekoppeld is, krijgt daar een mail over.
-     */
-    gekoppelden: gekoppeldenSchema,
   })
   .superRefine((a, ctx) => {
     if (a.toelichting.length < 5 && !a.menu_inhoud) {

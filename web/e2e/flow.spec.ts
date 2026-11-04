@@ -142,15 +142,7 @@ test.describe('designaanvraag-flow', () => {
     await shot(page, '09-omschrijving', p)
     await page.locator('[data-primary-action]').click()
 
-    // 12. Collega's koppelen: aanvinken, geen adressen typen. Jezelf zie je er niet tussen.
-    await expect(page.getByRole('heading', { name: 'Wie moet er nog meer op de hoogte blijven?' })).toBeVisible()
-    await expect(page.locator('.collegas__naam', { hasText: 'Noa Demo' })).toHaveCount(0)
-    await page.locator('.collegas__naam', { hasText: 'Bo Demo' }).click()
-    await expect(page.locator('.collegas__naam', { hasText: 'Bo Demo' })).toHaveAttribute('aria-pressed', 'true')
-    await shot(page, '09b-koppelen', p)
-    await page.locator('[data-primary-action]').click()
-
-    // 13. Overzicht
+    // 12. Overzicht
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     // Op label zoeken en niet op volgorde: komt er een regel bij, dan hoort deze test
     // niet om te vallen op een vraag die er niets mee te maken heeft.
@@ -158,7 +150,6 @@ test.describe('designaanvraag-flow', () => {
       page.locator('.review__row').filter({ has: page.locator('.review__label', { hasText: new RegExp(`^${label}$`) }) })
     await expect(rij('naam').locator('.review__value')).toHaveText('Noa Demo')
     await expect(rij('aanvraag').locator('.review__value')).toHaveText('LED-kolom, Vlaggen, Roll-up banner')
-    await expect(rij('ook op de hoogte').locator('.review__value')).toHaveText('Bo Demo')
     await shot(page, '10-overzicht', p)
 
     // Wijzig event via overzicht en kom terug
@@ -167,7 +158,7 @@ test.describe('designaanvraag-flow', () => {
     await page.getByPlaceholder('Bijvoorbeeld Zorgcongres 20 november 2026').fill('Zorgcongres 2026 editie 2')
     // Doorklikken tot het overzicht er weer staat. Enter werkt hier niet overal: in het
     // tekstvak maakt die een nieuwe regel, want daar typ je alinea's.
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 12; i++) {
       if (await page.getByRole('heading', { name: 'Klopt dit?' }).isVisible()) break
       await page.locator('[data-primary-action]').click()
       await page.waitForTimeout(250)
@@ -252,13 +243,9 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.locator('[data-primary-action]')).toBeFocused()
     await page.keyboard.press('Enter')
 
-    // Als laatste: wie er nog meer bij hoort. Mag leeg blijven, Enter gaat door.
-    await expect(page.getByRole('heading', { name: 'Wie moet er nog meer op de hoogte blijven?' })).toBeVisible()
-    await page.keyboard.press('Enter')
-
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     const labels = await page.locator('.review__label').allTextContents()
-    expect(labels).toEqual(['locatie', 'naam', 'voor', 'wat je aanvraagt', 'nodig op', 'ook op de hoogte'])
+    expect(labels).toEqual(['locatie', 'naam', 'voor', 'wat je aanvraagt', 'nodig op'])
     await expect(page.locator('.review__row', { hasText: 'naam' }).first().locator('.review__value')).toHaveText('Fenna Demo')
     await shot(page, '22-overzicht-intern', p)
 

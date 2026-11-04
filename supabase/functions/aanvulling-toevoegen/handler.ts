@@ -6,8 +6,7 @@ import type { AanvraagDetail, Db } from '../_shared/db.ts'
 import type { Env } from '../_shared/env.ts'
 import { renderAanvullingComment } from '../_shared/notes.ts'
 import type { Storage } from '../_shared/storage.ts'
-import { MARKETING_MAIL, MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
-import { renderKoppelMail } from '../_shared/shared/bevestiging.ts'
+import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
 import { taskTitle } from '../_shared/shared/asana-title.ts'
 import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderAanvullingMail } from '../_shared/shared/meldingen.ts'
@@ -269,13 +268,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     }
     const menuBijgewerkt = menu ? ['Menu'] : []
 
-    // Collega's erbij koppelen. Wat er al stond blijft staan; de aanvrager zelf en wie al gekoppeld
-    // was tellen niet als nieuw.
-    const al = new Set([row.naam, ...(row.gekoppelden ?? [])].map((n) => n.trim().toLowerCase()))
-    const nieuwGekoppeld = aanvulling.gekoppelden.filter((n) => !al.has(n.trim().toLowerCase()))
-    const gekoppelden = [...(row.gekoppelden ?? []), ...nieuwGekoppeld]
-    if (nieuwGekoppeld.length) await db.update(row.id, { gekoppelden })
-
     // Een aanvulling na een oplevering is feedback: dan hoeft niemand meer herinnerd te worden om
     // akkoord te geven. Pas hier, nu de aanvulling echt binnen is; op de knop klikken telt niet.
     let herinneringenGestopt = false
@@ -283,27 +275,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       herinneringenGestopt = (await db.stopHerinneringen(row.id, now(), { feedback: true })) > 0
     } catch (e) {
       log('warn', 'herinneringen stoppen mislukt', { id: aanvullingRij.id, error: e instanceof Error ? e.message : String(e) })
-    }
-
-    // Wie nu gekoppeld is krijgt daar een mail over, met de aanvraag erbij.
-    if (nieuwGekoppeld.length && deps.mail) {
-      try {
-        const adressen = await db.collegaEmails(nieuwGekoppeld)
-        const aan = [...new Set(nieuwGekoppeld.map((n) => adressen.get(n.trim().toLowerCase())).filter((a): a is string => Boolean(a)))]
-        if (aan.length) {
-          await deps.mail.verstuur(renderKoppelMail({
-            aanvraag: { ...row, gekoppelden, aanvraag_types: row.aanvraag_types ?? [] },
-            aanvraagId: row.id,
-            aan,
-            antwoordAan: MELDING_ONTVANGERS[row.locatie] ?? MELDING_ONTVANGERS.nbc,
-            door: aanvulling.naam,
-            menuPakket: row.menu_pakket ? pakketNaam(row.menu_pakket) : null,
-          }))
-        }
-        log('info', 'koppelmail verstuurd', { id: aanvullingRij.id, gekoppeld: nieuwGekoppeld.length, gemaild: aan.length })
-      } catch (e) {
-        log('error', 'koppelmail mislukt', { id: aanvullingRij.id, error: e instanceof Error ? e.message : String(e) })
-      }
     }
 
     // Meegestuurde bestanden aan deze aanvulling hangen. Voorwaardelijk, dus ids die al ergens bij
@@ -352,7 +323,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijlagen: v.bijlagen,
           heropend: v.heropend,
           menu,
-          nieuwGekoppeld,
           herinneringenGestopt,
           asanaFout: v.asanaFout,
         }))
@@ -474,7 +444,6 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
           menu,
-          nieuwGekoppeld,
           herinneringenGestopt,
         }),
       )

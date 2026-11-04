@@ -1,11 +1,11 @@
-import { MAX_GEKOPPELDEN, MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
+import { MIN_LEAD_BUSINESS_DAYS, normalizeUrl } from '../../shared/aanvraag-schema'
 import { vraagtOmMenu, type Soort } from '../../shared/request-types'
 import { SPOED_WERKDAGEN, werkdagenTotEvent } from '../../shared/spoed'
 import { businessDaysUntil, isBeforeToday } from './lib/dates'
 import { aantalGerechten, eigenGerechten } from './lib/menu'
 import type { Draft } from './state'
 
-export type StepKind = 'locatie' | 'naam' | 'soort' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu' | 'collegas'
+export type StepKind = 'locatie' | 'naam' | 'soort' | 'text' | 'date' | 'url' | 'multi' | 'single' | 'textarea' | 'files' | 'menu'
 
 /**
  * Wat bepaalt welke stappen er zijn. Losse waarden en geen heel concept, zodat de
@@ -293,15 +293,6 @@ export const STEPS: StepDef[] = [
     // dat het leeg mag. Een \n in een help-tekst komt als regelovergang op het scherm.
     help: 'Teksten, sfeer, voorbeelden, formaten, dingen die Marketing moet weten.\nMag leeg blijven.',
     validate: (d) => (d.omschrijving.length > 3000 ? 'Houd het bij maximaal 3000 tekens.' : null),
-  },
-  // ── Allebei: als laatste vraag ──────────────────────────────────────────
-  {
-    id: 'gekoppelden',
-    kind: 'collegas',
-    title: 'Wie moet er nog meer op de hoogte blijven?',
-    // Wat koppelen inhoudt staat bij de lijst zelf (CollegaKiezer); hier de korte versie.
-    help: 'Vink collega\'s aan die bij deze aanvraag horen. Mag leeg blijven.',
-    validate: (d) => (d.gekoppelden.length > MAX_GEKOPPELDEN ? `Koppel hooguit ${MAX_GEKOPPELDEN} collega's.` : null),
   },
 ]
 

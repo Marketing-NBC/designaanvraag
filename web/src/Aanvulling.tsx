@@ -9,7 +9,6 @@ import { DateField } from './components/DateField'
 import { Icon } from './components/Icon'
 import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
-import { CollegaKiezer } from './components/CollegaKiezer'
 import { NIET_IN_LIJST_AANVULLEN, naamUitLijst } from './state'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
@@ -67,8 +66,6 @@ interface Draft {
   link: string
   /** Het aangepaste menu. Null = het menu blijft zoals het bij de aanvraag staat. */
   menu: MenuKeuze | null
-  /** Collega's die er vanaf nu bij horen. */
-  gekoppelden: string[]
 }
 
 const leeg: Draft = {
@@ -79,7 +76,6 @@ const leeg: Draft = {
   schijf_locatie: '',
   link: '',
   menu: null,
-  gekoppelden: [],
 }
 
 /** Het menu van de aanvraag als keuze voor het menuscherm: wat er stond, of het pakket van toen. */
@@ -266,7 +262,6 @@ export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit
           link: draft.link,
           menu_inhoud: draft.menu ? naarInhoud(draft.menu) : null,
           menu_tekst: draft.menu ? naarTekst(draft.menu) : '',
-          gekoppelden: draft.gekoppelden,
         },
         client_request_id: clientRequestId.current,
         started_at: startedAt.current,
@@ -447,7 +442,7 @@ export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit
               </>
             ) : null}
 
-            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} verlopen={verlopen} collegas={collegas} /> : null}
+            {stap === 'extra' ? <ExtraVelden draft={draft} patch={patch} gekozen={gekozen} verlopen={verlopen} /> : null}
           </Question>
         </motion.div>
       </AnimatePresence>
@@ -606,13 +601,11 @@ function ExtraVelden({
   patch,
   gekozen,
   verlopen,
-  collegas,
 }: {
   draft: Draft
   patch: (p: Partial<Draft>) => void
   gekozen: GevondenAanvraag | null
   verlopen: boolean
-  collegas: string[]
 }) {
   const intern = gekozen?.soort === 'intern'
   return (
@@ -685,18 +678,6 @@ function ExtraVelden({
             />
           </div>
         </div>
-      </section>
-
-      <section className="extra__blok">
-        <h2 className="extra__kop">Moet er nog iemand op de hoogte blijven?</h2>
-        <p className="extra__uitleg">Vink collega's aan die er vanaf nu bij horen. Ze krijgen een mail dat ze gekoppeld zijn.</p>
-        <CollegaKiezer
-          namen={collegas}
-          value={draft.gekoppelden}
-          onChange={(gekoppelden) => patch({ gekoppelden })}
-          zelf={gekozen?.naam ?? ''}
-          alGekoppeld={gekozen?.gekoppelden ?? []}
-        />
       </section>
     </div>
   )

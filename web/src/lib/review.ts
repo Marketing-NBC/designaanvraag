@@ -22,16 +22,6 @@ function menuSamenvatting(menu: MenuKeuze): string {
   return `${pakket.naam}${taal === 'en' ? ' (Engels)' : ''} — ${n} ${n === 1 ? 'gerecht' : 'gerechten'}${staart}`
 }
 
-/** Wie er gekoppeld is, of dat er niemand is. */
-function gekoppeldRij(d: Draft): ReviewRow {
-  return {
-    stepId: 'gekoppelden',
-    label: 'ook op de hoogte',
-    value: d.gekoppelden.length ? d.gekoppelden.join(', ') : 'Niemand gekoppeld',
-    muted: !d.gekoppelden.length,
-  }
-}
-
 export function reviewRows(d: Draft): ReviewRow[] {
   const begin: ReviewRow[] = [
     { stepId: 'locatie', label: 'locatie', value: d.locatie ? locatieLabel(d.locatie) : '' },
@@ -44,7 +34,6 @@ export function reviewRows(d: Draft): ReviewRow[] {
       ...begin,
       { stepId: 'wens_intern', label: 'wat je aanvraagt', value: d.omschrijving },
       { stepId: 'deadline_intern', label: 'nodig op', value: d.geen_deadline ? 'Geen deadline' : d.deadline ? formatLong(d.deadline) : '' },
-      gekoppeldRij(d),
     ]
   }
 
@@ -66,6 +55,5 @@ export function reviewRows(d: Draft): ReviewRow[] {
     rijen.push({ stepId: 'menu', label: 'menu', value: menuSamenvatting(d.menu), muted: !d.menu.pakket })
   }
   rijen.push({ stepId: 'omschrijving', label: 'wensen en bijzonderheden', value: d.omschrijving || 'Niet ingevuld', muted: !d.omschrijving })
-  rijen.push(gekoppeldRij(d))
   return rijen
 }

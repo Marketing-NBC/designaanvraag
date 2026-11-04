@@ -15,7 +15,7 @@ const ID = '11111111-2222-4333-8444-555555555555'
 
 const aanvraag = {
   id: ID, naam: 'Britt', locatie: 'nbc', soort: 'evenement', event: 'EY', event_datum: '2026-12-11', deadline: '2026-12-09',
-  aanvraag_types: ['torenscherm'], anders_tekst: '', omschrijving: '', gekoppelden: [], asana_task_gid: 't1',
+  aanvraag_types: ['torenscherm'], anders_tekst: '', omschrijving: '', asana_task_gid: 't1',
   asana_task_url: 'https://app.asana.com/0/1/t1', vervallen_op: null,
 } as unknown as AanvraagDetail
 

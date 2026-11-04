@@ -26,11 +26,6 @@ export interface Draft {
   menu: MenuKeuze
   /** Bij een evenement de wensen en bijzonderheden; bij een interne aanvraag de hele vraag. */
   omschrijving: string
-  /**
-   * Collega's die op de hoogte blijven: bevestiging, oplevering en herinneringen. Alleen namen uit
-   * de lijst. Ontbreekt in een concept van voor deze vraag; loadDraft vult dan een lege lijst in.
-   */
-  gekoppelden: string[]
 }
 
 export const emptyDraft = (): Draft => ({
@@ -49,7 +44,6 @@ export const emptyDraft = (): Draft => ({
   design_modus: null,
   menu: leegMenu(),
   omschrijving: '',
-  gekoppelden: [],
 })
 
 /**

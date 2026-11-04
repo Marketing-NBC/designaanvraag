@@ -55,29 +55,6 @@ const gerechtSchema = z.object({
 export const MENU_TAAL_KEYS = ['nl', 'en'] as const
 export type MenuTaal = (typeof MENU_TAAL_KEYS)[number]
 
-/** Hoeveel collega's je hooguit aan een aanvraag koppelt. */
-export const MAX_GEKOPPELDEN = 15
-
-/**
- * Collega's die op de hoogte blijven van een aanvraag: ze krijgen de bevestiging, de
- * opleveringsmail en de herinneringen om akkoord te geven. Alleen namen uit de lijst met collega's;
- * een mailadres typen kan niet (het formulier staat op het open internet). De function zoekt de
- * adressen erbij en slaat een naam zonder adres over. Dubbele namen vallen weg.
- */
-export const gekoppeldenSchema = z
-  .array(z.string().trim().min(2).max(80))
-  .max(MAX_GEKOPPELDEN, `Koppel hooguit ${MAX_GEKOPPELDEN} collega's`)
-  .default([])
-  .transform((namen) => {
-    const gezien = new Set<string>()
-    return namen.filter((n) => {
-      const k = n.toLowerCase()
-      if (gezien.has(k)) return false
-      gezien.add(k)
-      return true
-    })
-  })
-
 /** De culinaire invulling als structuur: het pakket met zijn onderdelen en gerechten. */
 export const menuInhoudSchema = z.object({
   pakket: z.string().trim().min(1).max(60),
@@ -149,7 +126,6 @@ export const aanvraagSchema = z
     menu_inhoud: menuInhoudSchema.nullable().default(null),
     /** Nederlands of Engels op het menuscherm. Met een standaard voor een concept van voor deze keuze. */
     menu_taal: z.enum(MENU_TAAL_KEYS).default('nl'),
-    gekoppelden: gekoppeldenSchema,
   })
   .superRefine((a, ctx) => {
     if (a.soort === 'intern') {
@@ -218,15 +194,8 @@ export const aanvraagSchema = z
       menu_pakket: '',
       menu_inhoud: null,
       menu_taal: 'nl' as const,
-      gekoppelden: zonderAanvrager(a.gekoppelden, a.naam),
     }
-    : { ...a, gekoppelden: zonderAanvrager(a.gekoppelden, a.naam) }))
-
-/** Wie de aanvraag zelf doet, hoeft niet nog eens gekoppeld te worden. */
-function zonderAanvrager(gekoppelden: string[], naam: string): string[] {
-  const zelf = naam.trim().toLowerCase()
-  return gekoppelden.filter((n) => n.toLowerCase() !== zelf)
-}
+    : a))
 
 export type AanvraagInput = z.input<typeof aanvraagSchema>
 export type Aanvraag = z.output<typeof aanvraagSchema>

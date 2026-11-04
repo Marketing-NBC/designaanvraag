@@ -44,7 +44,6 @@ function renderInterneNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Uiterlijk nodig op', a.deadline ? formatDateNl(a.deadline) : 'geen deadline, het mag klaar zijn wanneer het past'],
   ]
   if (opts.bijlagen?.length) rows.push(['Meegestuurd', opts.bijlagen.join(', ')])
-  if (a.gekoppelden?.length) rows.push(['Ook op de hoogte', a.gekoppelden.join(', ')])
 
   const htmlLines = rows.map(([k, v]) => `<strong>${escapeXml(k)}:</strong> ${escapeXml(v)}`)
   htmlLines.push('', '<h2>Wat er gevraagd wordt</h2>', `<blockquote>${escapeXml(a.omschrijving)}</blockquote>`, '')
@@ -71,7 +70,6 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
   ]
   // Het menuscherm komt in het Engels: dat moet Marketing zien voordat het op Genereer nu drukt.
   if (a.menu_tekst && a.menu_taal === 'en') rows.push(['Taal van het menu', 'Engels'])
-  if (a.gekoppelden?.length) rows.push(['Ook op de hoogte', a.gekoppelden.join(', ')])
 
   const htmlLines: string[] = []
   for (const [k, v] of rows) htmlLines.push(`<strong>${escapeXml(k)}:</strong> ${escapeXml(v)}`)
@@ -149,8 +147,6 @@ export function renderAanvullingComment(v: {
   heropendVoor?: string | null
   /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
   menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
-  /** Collega's die met deze aanvulling gekoppeld zijn. */
-  nieuwGekoppeld?: string[]
   /** Er wachtte een oplevering op akkoord; die herinneringen zijn nu gestopt. */
   herinneringenGestopt?: boolean
 }): string {
@@ -189,13 +185,10 @@ export function renderAanvullingComment(v: {
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
   }
-  if (v.nieuwGekoppeld?.length) {
-    lines.push(`<strong>Nu ook gekoppeld:</strong> ${escapeXml(v.nieuwGekoppeld.join(', '))} (krijgen de oplevering en de herinneringen)`)
-  }
   if (v.herinneringenGestopt) {
     lines.push('<strong>Akkoord:</strong> was nog niet gegeven; de dagelijkse herinneringen zijn gestopt omdat dit feedback is.')
   }
-  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && !v.menu && !v.nieuwGekoppeld?.length) {
+  if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && !v.menu) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')
   }
 

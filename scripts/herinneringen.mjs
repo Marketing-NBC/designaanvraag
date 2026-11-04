@@ -15,8 +15,8 @@
  * Wie krijgt er een? Per aanvraag de laatst verstuurde oplevering, als daar nog geen akkoord of
  * feedback op is, de herinneringen niet gestopt zijn (Afgerond in Asana, of een nieuwere versie) en
  * hij niet vandaag pas verstuurd is. Naar iedereen die de opleveringsmail kreeg (die adressen staan
- * in opleveringen.ontvangers, ook die uit "Ook mailen naar"), plus wie er sindsdien gekoppeld is
- * en een adres heeft in de tabel collegas. De regels staan in shared/akkoord.ts.
+ * in opleveringen.ontvangers, ook die uit "Ook mailen naar"), plus de aanvrager als die inmiddels
+ * een adres heeft in de tabel collegas. De regels staan in shared/akkoord.ts.
  */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { herinneringVandaag, isWerkdag, renderHerinneringMail, waaroverTekst } from '../shared/akkoord.ts'
@@ -92,7 +92,7 @@ if (!vandaagAan.length) {
 }
 
 const ids = vandaagAan.map((o) => o.aanvraag_id)
-const aanvragen = new Map((await rest(`aanvragen?select=id,naam,locatie,soort,event,event_datum,omschrijving,aanvraag_types,anders_tekst,gekoppelden,vervallen_op`
+const aanvragen = new Map((await rest(`aanvragen?select=id,naam,locatie,soort,event,event_datum,omschrijving,aanvraag_types,anders_tekst,vervallen_op`
   + `&id=in.(${ids.join(',')})`)).map((a) => [a.id, a]))
 const adressen = new Map()
 for (const c of await rest('collegas?select=naam,email&email=not.is.null')) {
@@ -112,9 +112,8 @@ for (const o of vandaagAan) {
     soort: a.soort, event: a.event ?? '', eventDatum: a.event_datum, omschrijving: a.omschrijving ?? '',
     types: a.aanvraag_types ?? [], andersTekst: a.anders_tekst ?? '',
   }
-  // Wie de opleveringsmail kreeg, en wie er sindsdien gekoppeld is. Zonder dubbelen, hoofdletters
-  // daargelaten.
-  const namen = [a.naam, ...(a.gekoppelden ?? [])]
+  // Wie de opleveringsmail kreeg, en de aanvrager. Zonder dubbelen, hoofdletters daargelaten.
+  const namen = [a.naam]
   const gezien = new Set()
   const echt = [...(o.ontvangers ?? []), ...namen.map((n) => adressen.get(String(n).trim().toLowerCase()))]
     .filter(Boolean)

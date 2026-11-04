@@ -7,9 +7,10 @@
  *    gaat af zodra de virusscanner van Outlook hem controleert.)
  *  - Akkoord gaat over de laatst verstuurde versie. Iedereen die de mail kreeg mag het geven.
  *  - Na een akkoord gaat de taak in Asana naar de kolom Afgerond, met een reactie wie en wanneer.
- *  - Tot er akkoord of feedback is, krijgt iedereen die de opleveringsmail kreeg (de aanvrager, de
- *    gekoppelde collega's en wie in "Ook mailen naar" staat) elke werkdag een herinnering (scripts/herinneringen.mjs, elke werkdag om 9:00). Feedback telt pas als hij
- *    echt via het formulier is verstuurd, niet als iemand alleen op de knop klikte.
+ *  - Tot er akkoord of feedback is, krijgt iedereen die de opleveringsmail kreeg (de aanvrager en
+ *    wie in "Ook mailen naar" staat) elke werkdag om 9:00 een herinnering (scripts/herinneringen.mjs).
+ *    Feedback telt pas als hij echt via het formulier is verstuurd, niet als iemand alleen op de
+ *    knop klikte.
  *  - Sleept Marketing de taak zelf naar Afgerond (akkoord gekregen per telefoon, bijvoorbeeld), dan
  *    stoppen de herinneringen ook.
  *
@@ -108,7 +109,7 @@ export function renderHerinneringMail(m: HerinneringMail): MailBericht {
   delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
   delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
   delen.push(ruimte(`<p style="margin:0;color:#596165;font-size:13px;">Je krijgt deze herinnering elke werkdag tot iemand akkoord geeft of feedback stuurt. `
-    + 'Iedereen die bij de aanvraag hoort, mag dat doen.</p>', 16))
+    + 'Iedereen die deze mail krijgt, mag dat doen.</p>', 16))
   return {
     aan: m.aan,
     antwoordAan: m.antwoordAan,

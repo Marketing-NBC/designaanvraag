@@ -56,8 +56,6 @@ export interface AanvraagDetail extends AanvraagRow {
   menu_pakket: string
   /** Nederlands of Engels; ontbreekt in een rij van voor de migratie van november 2026. */
   menu_taal?: 'nl' | 'en'
-  /** Collega's die op de hoogte blijven; zie shared/aanvraag-schema.ts. */
-  gekoppelden: string[]
 }
 
 export interface AanvullingRow {
@@ -160,7 +158,6 @@ export interface Db {
     menu_tekst?: string
     menu_pakket?: string
     menu_taal?: 'nl' | 'en'
-    gekoppelden?: string[]
   }): Promise<void>
   /** De aanvraag achter een Asana-taak; nodig voor de knop "Genereer nu". */
   findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
@@ -212,11 +209,6 @@ export interface Db {
    * Alleen collega's uit de lijst mogen een aanvraag doen.
    */
   collega(naam: string): Promise<string | null>
-  /**
-   * De adressen van meerdere collega's tegelijk, op naam in kleine letters. Een naam zonder adres
-   * (of die niet in de lijst staat) ontbreekt in de uitkomst.
-   */
-  collegaEmails(namen: string[]): Promise<Map<string, string>>
   /** De oplevering die van deze subtaak gemaakt is, als die er al is. */
   findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
@@ -252,8 +244,8 @@ export interface Db {
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket, menu_taal, gekoppelden`
-const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, gekoppelden'
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket, menu_taal`
+const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
 const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op, door, herinneren, akkoord_op, akkoord_door, feedback_op, gestopt_op, gestopt_reden, herinneringen, laatste_herinnering'
@@ -275,7 +267,6 @@ function alsTreffer(r: GevondenAanvraag): GevondenAanvraag {
     ...r,
     soort: r.soort ?? 'evenement',
     aanvraag_types: r.aanvraag_types ?? [],
-    gekoppelden: r.gekoppelden ?? [],
     omschrijving: omschrijving.length > ZOEK_OMSCHRIJVING_TEKENS ? `${omschrijving.slice(0, ZOEK_OMSCHRIJVING_TEKENS).trimEnd()}…` : omschrijving,
   }
 }
@@ -445,21 +436,6 @@ export function createDb(url: string, secretKey: string): Db {
       const { data, error } = await sb.from('collegas').select('naam').ilike('naam', term).eq('actief', true).limit(1)
       if (error) throw new Error(`db collegas: ${error.message}`)
       return (data as { naam: string }[] | null)?.[0]?.naam?.trim() || null
-    },
-    async collegaEmails(namen) {
-      const uit = new Map<string, string>()
-      const termen = [...new Set(namen.map(veiligeZoekterm).filter(Boolean))]
-      if (!termen.length) return uit
-      // Eén verzoek voor de hele lijst; daarna op naam koppelen, hoofdletters daargelaten.
-      const { data, error } = await sb.from('collegas').select('naam, email').not('email', 'is', null)
-      if (error) throw new Error(`db collegas: ${error.message}`)
-      const gezocht = new Set(termen.map((t) => t.toLowerCase()))
-      for (const r of (data as { naam: string; email: string | null }[] | null) ?? []) {
-        const k = r.naam.trim().toLowerCase()
-        const email = r.email?.trim()
-        if (email && gezocht.has(k) && !uit.has(k)) uit.set(k, email)
-      }
-      return uit
     },
     async laatsteVerstuurd(aanvraagId) {
       const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS)

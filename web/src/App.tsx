@@ -6,7 +6,6 @@ import {
   vraagtOmMenu, type DesignMode, type Locatie, type RequestTypeKey, type Soort,
 } from '../../shared/request-types'
 import { ChoiceList, LETTERS } from './components/ChoiceList'
-import { CollegaKiezer } from './components/CollegaKiezer'
 import { DateField } from './components/DateField'
 import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
@@ -251,7 +250,6 @@ export default function App() {
         menu_inhoud: naarInhoud(volledig.menu),
         menu_taal: taalVan(volledig.menu),
         omschrijving: volledig.omschrijving,
-        gekoppelden: volledig.gekoppelden,
       },
       client_request_id: clientRequestId.current,
       started_at: startedAt.current,
@@ -597,9 +595,6 @@ export default function App() {
               ) : null}
               {step.kind === 'single' ? (
                 <ChoiceList cards options={designModesVoor(draft.locatie)} value={draft.design_modus} onToggle={kiesModus} />
-              ) : null}
-              {step.kind === 'collegas' ? (
-                <CollegaKiezer namen={collegas} value={draft.gekoppelden} onChange={(gekoppelden) => patch({ gekoppelden })} zelf={draft.naam} />
               ) : null}
               {step.kind === 'menu' ? (
                 <MenuPicker menu={draft.menu} onChange={(menu) => patch({ menu })} />
