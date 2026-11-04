@@ -137,6 +137,7 @@ for (const o of vandaagAan) {
     versie: o.versie,
     verstuurdOp: o.verstuurd_op,
     nummer,
+    aanvrager: a.naam,
   })
   if (proef) {
     writeFileSync(`herinneringen-proef/${a.id}.html`, bericht.html)

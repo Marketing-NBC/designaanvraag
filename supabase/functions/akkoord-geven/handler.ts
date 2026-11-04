@@ -21,9 +21,9 @@ import { z } from 'zod'
  *  - komt er een reactie bij de taak in Asana en gaat de taak naar de kolom Afgerond (afgevinkt);
  *  - krijgt Marketing een mail.
  *
- * Iedereen die de opleveringsmail kreeg mag akkoord geven, ook wie in "Ook mailen naar" staat; dat
- * zijn altijd collega's, de tool is niet voor klanten. De naam moet in de lijst met collega's staan. Of dat zo moet blijven, bespreekt Abel nog
- * met Karen (zie README, "Akkoord en herinneringen").
+ * Alleen de aanvrager mag akkoord geven (besloten met Karen, manager projecten). Wie anders de mail
+ * kreeg, bijvoorbeeld via "Ook mailen naar", kan wel feedback geven maar geen akkoord. De naam moet
+ * in de lijst met collega's staan en gelijk zijn aan de aanvrager, hoofdletters daargelaten.
  *
  * Een tweede akkoord op dezelfde versie doet niets en zegt wie het al gaf. Asana mag mislukken:
  * het akkoord staat dan toch, en Marketing krijgt het in de mail te horen.
@@ -81,6 +81,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       omschrijving,
       aanvraag_types: a.aanvraag_types ?? [],
       anders_tekst: a.anders_tekst,
+      aanvrager: a.naam,
       versie: o?.versie ?? null,
       verstuurd_op: o?.verstuurd_op ?? null,
       akkoord_op: o?.akkoord_op ?? null,
@@ -129,6 +130,10 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
 
     const a = await db.findById(aanvraag_id.toLowerCase())
     if (!a || !a.asana_task_gid || a.vervallen_op) return json({ error: NIET_OPEN }, 404, cors)
+    // Alleen de aanvrager. Iemand anders kan feedback geven, of het de aanvrager laten weten.
+    if (naam.trim().toLowerCase() !== a.naam.trim().toLowerCase()) {
+      return json({ error: `Alleen ${a.naam}, die de aanvraag deed, kan akkoord geven. Moet er iets anders? Geef dan feedback.`, field: 'naam' }, 403, cors)
+    }
     const o = await db.laatsteVerstuurd(a.id)
     if (!o) return json({ error: 'Er is nog niets opgeleverd bij deze aanvraag, dus er valt nog niets goed te keuren.' }, 409, cors)
     if (o.akkoord_op) {

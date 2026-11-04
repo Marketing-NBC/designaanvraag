@@ -372,11 +372,10 @@ geven, ging dan vanzelf af. Na het akkoord:
 Akkoord gaat altijd over de **laatst verstuurde versie**. Een tweede akkoord op dezelfde versie doet
 niets, en het scherm zegt wie het al gaf.
 
-**Wie mag akkoord geven?** Voor nu iedereen die de mail kreeg: de aanvrager en wie in "Ook mailen
-naar" staat. Dat zijn altijd collega's: de tool wordt nooit gebruikt voor
-opdrachtgevers of klanten. Op het akkoordscherm kies je je naam uit de lijst; een naam die er niet in staat kan niet. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
-alleen de aanvrager (of alleen collega's uit de lijst) akkoord mag geven.* Dat aanpassen zit in
-`supabase/functions/akkoord-geven/handler.ts`.
+**Wie mag akkoord geven?** Alleen de aanvrager (besloten met Karen, manager projecten). Wie de mail
+via "Ook mailen naar" kreeg, kan wel feedback geven maar geen akkoord; de mail en het akkoordscherm
+zeggen dat. Op het akkoordscherm kies je je naam uit de lijst; is dat niet de aanvrager, dan zegt het
+scherm wie wel akkoord kan geven. De function `akkoord-geven` controleert het ook.
 
 **De herinnering.** De workflow **Herinneringen akkoord** (`scripts/herinneringen.mjs`) draait elke
 werkdag (maandag tot en met vrijdag) om 9:00. Per aanvraag kijkt hij naar de laatst verstuurde

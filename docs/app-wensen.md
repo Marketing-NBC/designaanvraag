@@ -3,11 +3,7 @@
 Wensen die nog in het formulier moeten komen. Pak ze op bij de volgende ronde aan de app, en haal
 ze hier weg als ze gedaan zijn.
 
-- **Wie mag akkoord geven? (bespreken met Karen, manager projecten).** Nu mag iedereen die de
-  opleveringsmail kreeg akkoord geven: de aanvrager en wie in "Ook mailen naar" staat (altijd
-  collega's; de tool is niet voor klanten). Abel bespreekt met Karen of dat
-  alleen de aanvrager moet worden.
-  Zie "Akkoord en herinneringen" in de README.
+Er staan nu geen open wensen.
 
 ## Gedaan
 
@@ -18,7 +14,7 @@ ze hier weg als ze gedaan zijn.
   teams: een knop Akkoord geven in de opleveringsmail met een herinnering op elke werkdag tot er
   akkoord of feedback is, een kolom Afgerond in Asana, een bevestigingsmail bij een nieuwe
   aanvraag, en een menuscherm in het Engels. Collega's aan een aanvraag koppelen is gebouwd en na
-  overleg met Karen weer weggehaald.
+  overleg met Karen weer weggehaald. Akkoord geven kan alleen de aanvrager (ook besloten met Karen).
 
 - **Geen "neem contact op" meer bij spoed (oktober 2026).** Bij spoed neemt Marketing contact op met
   de aanvrager, niet andersom. De rode melding staat er nu bij een deadline binnen 5 werkdagen, met

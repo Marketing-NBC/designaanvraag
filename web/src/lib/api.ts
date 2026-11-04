@@ -233,7 +233,7 @@ export async function haalAkkoordInfo(id: string): Promise<AkkoordInfo | null> {
     const a = zoekMock('').find((x) => x.id === id) ?? zoekMock('')[0]
     return a ? {
       status: 'open', soort: a.soort, event: a.event, event_datum: a.event_datum, omschrijving: a.omschrijving,
-      aanvraag_types: a.aanvraag_types, anders_tekst: a.anders_tekst, versie: 1,
+      aanvraag_types: a.aanvraag_types, anders_tekst: a.anders_tekst, aanvrager: a.naam, versie: 1,
       verstuurd_op: new Date().toISOString(), akkoord_op: null, akkoord_door: null,
     } : null
   }

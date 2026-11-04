@@ -145,3 +145,17 @@ Deno.test('POST: de naam komt zoals hij in de lijst staat', async () => {
   await s.handler(post({ aanvraag_id: ID, naam: 'britt' }))
   assertEquals(s.rij()?.akkoord_door, 'Britt')
 })
+
+Deno.test('POST: alleen de aanvrager kan akkoord geven', async () => {
+  const s = setup()
+  const res = await s.handler(post({ aanvraag_id: ID, naam: 'Karen' }))
+  assertEquals(res.status, 403)
+  assertStringIncludes((await res.json()).error, 'Alleen Britt')
+  assertEquals(s.rij()?.akkoord_op, null)
+  assertEquals(s.comments, [])
+})
+
+Deno.test('GET: zegt wie de aanvrager is', async () => {
+  const body = await (await setup().handler(get())).json()
+  assertEquals(body.aanvrager, 'Britt')
+})

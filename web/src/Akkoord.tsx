@@ -19,7 +19,8 @@ interface Props {
 }
 
 /**
- * Akkoord geven op een oplevering. Eén vraag: wie ben je, en dan de knop.
+ * Akkoord geven op een oplevering. Eén vraag: wie ben je, en dan de knop. Alleen de aanvrager kan
+ * akkoord geven; wie anders de mail kreeg, kan hier door naar feedback geven.
  *
  * Dat het een scherm met een knop is en geen link die meteen akkoord geeft, is met opzet: de
  * virusscanner van Outlook opent elke link in een mail om hem te controleren. Een link die bij het
@@ -73,6 +74,12 @@ export function Akkoord({ aanvraagId, collegas, onSluit, onFeedback }: Props) {
     const lijstnaam = collegas.length ? naamUitLijst(naam, collegas) : naam.trim()
     if (!lijstnaam) {
       setError(NIET_IN_LIJST_AKKOORD)
+      setErrorNonce((n) => n + 1)
+      return
+    }
+    // Alleen de aanvrager; de function controleert het ook.
+    if (info && info !== 'laden' && info.aanvrager && lijstnaam.trim().toLowerCase() !== info.aanvrager.trim().toLowerCase()) {
+      setError(`Alleen ${info.aanvrager}, die de aanvraag deed, kan akkoord geven. Moet er iets anders? Geef dan feedback.`)
       setErrorNonce((n) => n + 1)
       return
     }
@@ -132,7 +139,7 @@ export function Akkoord({ aanvraagId, collegas, onSluit, onFeedback }: Props) {
       <Question
         number={1}
         title="Akkoord geven"
-        help="Is het ontwerp goed? Zeg wie je bent en geef akkoord. Marketing ziet het meteen, en de herinneringen stoppen."
+        help={`Is het ontwerp goed? Akkoord geven kan alleen ${info.aanvrager}, die de aanvraag deed. Marketing ziet het meteen, en de herinneringen stoppen.`}
         error={error}
         errorNonce={errorNonce}
         titleId="akkoord-vraag"

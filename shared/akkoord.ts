@@ -5,7 +5,8 @@
  *  - De opleveringsmail heeft een knop "Akkoord geven". Die opent een scherm in het formulier met
  *    één knop; pas daar wordt het akkoord gegeven. (Een link die bij het openen al akkoord geeft,
  *    gaat af zodra de virusscanner van Outlook hem controleert.)
- *  - Akkoord gaat over de laatst verstuurde versie. Iedereen die de mail kreeg mag het geven.
+ *  - Akkoord gaat over de laatst verstuurde versie. Alleen de aanvrager mag het geven; wie de mail
+ *    via "Ook mailen naar" kreeg, kan wel feedback geven.
  *  - Na een akkoord gaat de taak in Asana naar de kolom Afgerond, met een reactie wie en wanneer.
  *  - Tot er akkoord of feedback is, krijgt iedereen die de opleveringsmail kreeg (de aanvrager en
  *    wie in "Ook mailen naar" staat) elke werkdag om 9:00 een herinnering (scripts/herinneringen.mjs).
@@ -87,6 +88,8 @@ export interface HerinneringMail extends Waarover {
   verstuurdOp: string
   /** Hoeveelste herinnering dit is; 1 is de eerste. */
   nummer: number
+  /** Wie de aanvraag deed: alleen die kan akkoord geven. */
+  aanvrager: string
 }
 
 /** De herinnering: het staat klaar, geef akkoord of feedback. */
@@ -108,8 +111,8 @@ export function renderHerinneringMail(m: HerinneringMail): MailBericht {
   // Feedback eerst, akkoord eronder in een eigen kleur: zo staan ze ook in de opleveringsmail.
   delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
   delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
-  delen.push(ruimte(`<p style="margin:0;color:#596165;font-size:13px;">Je krijgt deze herinnering elke werkdag tot iemand akkoord geeft of feedback stuurt. `
-    + 'Iedereen die deze mail krijgt, mag dat doen.</p>', 16))
+  delen.push(ruimte(`<p style="margin:0;color:#596165;font-size:13px;">Je krijgt deze herinnering elke werkdag tot er akkoord of feedback is. `
+    + `Akkoord geven kan alleen ${escapeHtml(m.aanvrager)}, die de aanvraag deed; feedback geven kan iedereen die deze mail krijgt.</p>`, 16))
   return {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
@@ -167,6 +170,8 @@ export interface AkkoordInfo {
   omschrijving: string
   aanvraag_types: RequestTypeKey[]
   anders_tekst: string
+  /** Wie de aanvraag deed: alleen die kan akkoord geven. */
+  aanvrager: string
   versie: number | null
   verstuurd_op: string | null
   akkoord_op: string | null

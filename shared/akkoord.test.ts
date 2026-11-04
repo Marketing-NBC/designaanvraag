@@ -48,7 +48,7 @@ describe('de mails', () => {
   it('de herinnering heeft een akkoordknop en een feedbackknop', () => {
     const m = renderHerinneringMail({
       ...waarover, aan: ['britt@nbcevents.nl'], antwoordAan: ['marketing@nbcevents.nl'], aanvraagId: '11111111-2222-4333-8444-555555555555',
-      locatie: 'nbc', versie: 2, verstuurdOp: '2026-11-03T13:00:00Z', nummer: 1,
+      locatie: 'nbc', versie: 2, verstuurdOp: '2026-11-03T13:00:00Z', nummer: 1, aanvrager: 'Britt',
     })
     expect(m.onderwerp).toMatch(/^Herinnering: wacht op je akkoord - EY/)
     expect(m.html).toContain('?akkoord=11111111-2222-4333-8444-555555555555')
@@ -57,12 +57,13 @@ describe('de mails', () => {
     // Feedback eerst, akkoord eronder in Goudgeel met zwarte tekst.
     expect(m.html.indexOf('Feedback geven')).toBeLessThan(m.html.indexOf('Akkoord geven'))
     expect(m.html).toContain('background:#f6a304')
+    expect(m.html).toContain('Akkoord geven kan alleen Britt')
   })
 
   it('bij Green Village is de akkoordknop Orange Roughy', () => {
     const m = renderHerinneringMail({
       ...waarover, aan: ['bo@green-village.nl'], antwoordAan: ['marketing@green-village.nl'], aanvraagId: '11111111-2222-4333-8444-555555555555',
-      locatie: 'green_village', versie: 1, verstuurdOp: '2026-11-03T13:00:00Z', nummer: 1,
+      locatie: 'green_village', versie: 1, verstuurdOp: '2026-11-03T13:00:00Z', nummer: 1, aanvrager: 'Britt',
     })
     expect(m.html).toContain('background:#833113')
     expect(m.html).not.toContain('#f6a304')

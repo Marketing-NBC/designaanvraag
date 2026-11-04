@@ -281,6 +281,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         andersTekst: aanvraag.anders_tekst,
         berichtHtml,
         afzenderNaam: wie.naam,
+        aanvrager: aanvraag.naam,
         bijlagen: bijlagen.map((b) => ({ naam: b.naam, bytes: b.bytes.length })),
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
         previews,

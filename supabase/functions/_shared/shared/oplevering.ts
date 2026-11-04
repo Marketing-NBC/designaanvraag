@@ -256,6 +256,8 @@ export interface OpleveringMail {
   berichtHtml: string
   /** Wie op de knop drukte; staat onder het bericht. */
   afzenderNaam: string | null
+  /** Wie de aanvraag deed: alleen die kan akkoord geven. */
+  aanvrager: string
   bijlagen: { naam: string; bytes: number }[]
   links: { naam: string; url: string }[]
   /** De 3D-previews van de ledkolom die online staan; alleen bij een LED-kolom met een release-link. */
@@ -334,7 +336,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   delen.push(`<p style="margin:4px 0 0;">Geef dan akkoord. Dan weet Marketing dat het af is.</p>`)
   delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
   delen.push(`<p style="margin:20px 0 0;color:#596165;font-size:13px;">Zolang er geen akkoord of feedback is, krijg je elke werkdag een herinnering. `
-    + 'Iedereen die deze mail krijgt, mag akkoord geven.</p>')
+    + `Akkoord geven kan alleen ${escapeHtml(m.aanvrager)}, die de aanvraag deed; feedback geven kan iedereen die deze mail krijgt.</p>`)
 
   const kop = nieuweVersie ? `Versie ${m.versie} staat klaar` : 'Je design staat klaar'
   return {
