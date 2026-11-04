@@ -174,7 +174,7 @@ if (taal === 'en') {
     await afbreken(`Het pakket "${inhoud.pakket}" is er nog niet in het Engels. `
       + `In het Engels zijn er: ${pakkettenInTaal('en').join(', ')}.`, inhoud.pakket)
   }
-  invoerNotities.push('Engels menu: de titel en de dieetwens-regel zijn Engels, en de gerechten staan zoals ze zijn aangeleverd.')
+  invoerNotities.push('Engels menu, op het Engelse basisontwerp.')
 }
 
 /**

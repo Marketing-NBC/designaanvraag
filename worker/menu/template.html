@@ -239,13 +239,7 @@
       ? zelfdeOpsomming(nieuweOnderdelen, alinea.onderdelen)
       : (nieuweTekst == null || zelfdeInhoud(nieuweTekst, alinea.tekst))
 
-    // Bij een Engels menu telt alleen precies dezelfde tekst als gelijk: de vergelijking hierboven
-    // kijkt niet naar hoofdletters, en dan zou "Schiacciata Toscana" uit het doc als "Schiacciata
-    // toscana" uit het Nederlandse ontwerp op het scherm komen.
-    const letterlijkAnders = Boolean(inhoud.letterlijk) && nieuweTekst != null
-      && String(nieuweTekst).trim() !== String(alinea.tekst).trim()
-
-    if (gelijk && !letterlijkAnders && !gegevens.forceerHerberekening) {
+    if (gelijk && !gegevens.forceerHerberekening) {
       // Ook de onderlinge regelafstanden komen letterlijk uit het basisontwerp;
       // in een opsomming wisselen die per regel, en dat hoort zo.
       const nul = alinea.regels[0].baseline
@@ -278,15 +272,11 @@
     // Bij forceerHerberekening slaan we de bibliotheek over: die stand toetst juist
     // of onze eigen afbreking op dezelfde regels uitkomt als de ontwerper. Zou de
     // bibliotheek daar meedoen, dan bewees die controle niets meer.
-    let bekend = gegevens.forceerHerberekening
+    const bekend = gegevens.forceerHerberekening
       ? null
       : (vasteRegels
         ?? uitBibliotheek(alinea.soort === 'opsomming' ? 'ingr' : alinea.soort,
                           tekst, stijl.grootte)?.regels)
-    // Bij een Engels menu alleen als het letterlijk dezelfde tekst is; de bibliotheek kijkt niet
-    // naar hoofdletters en zou anders de Nederlandse schrijfwijze op het scherm zetten.
-    const plat = (t) => String(t).replace(/\s+/g, ' ').trim()
-    if (bekend && inhoud.letterlijk && plat(bekend.map((r) => r.tekst).join(' ')) !== plat(tekst)) bekend = null
     // stijl.x is de inspring die de alinea in het ontwerp heeft - vaak een fractie
     // van een pixel, maar zonder die inspring staat een herzette regel net niet
     // waar de ontwerper hem zette.
@@ -717,6 +707,14 @@
       const t = el('text', { x: tb.x, y: tb.baseline, 'font-family': tb.font,
                              'font-size': tb.grootte, fill: merk.tekstkleur || tb.kleur })
       t.textContent = tekst
+      titelGroep.appendChild(t)
+    }
+    // Een ondertitel onder de titel ("vegetarian" onder "Lunch"), als het ontwerp er een heeft.
+    const ot = basis.ondertitel
+    if (ot && ot.tekst) {
+      const t = el('text', { x: ot.x, y: ot.baseline, 'font-family': ot.font,
+                             'font-size': ot.grootte, fill: merk.tekstkleur || ot.kleur })
+      t.textContent = ot.tekst
       titelGroep.appendChild(t)
     }
 

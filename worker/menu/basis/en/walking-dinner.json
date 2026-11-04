@@ -1,0 +1,623 @@
+{
+  "pakket": "walking-dinner",
+  "bron": {
+    "bestand": "Flexibele-template-designs-V1_ENG.ai",
+    "pagina": 8
+  },
+  "canvas": {
+    "breedte": 3840,
+    "hoogte": 2160
+  },
+  "achtergrond": "walking-dinner.png",
+  "titel": {
+    "tekst": "Dinner",
+    "x": 259.11,
+    "baseline": 344.45,
+    "font": "Pockota-Medium",
+    "grootte": 199.53,
+    "kleur": "#000000"
+  },
+  "logobalk": {
+    "x": 2075.84,
+    "y": 74.28,
+    "breedte": 791.37,
+    "hoogte": 296.96,
+    "vulkleur": "#ff0000",
+    "plaatshouder": {
+      "tekst": "Logo opdrachtgever",
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 57.0,
+      "baseline": 242.95,
+      "x": 2189.22
+    }
+  },
+  "voetregel": {
+    "icoon": {
+      "x": 2191.93,
+      "y": 1849.42,
+      "breedte": 236.67,
+      "hoogte": 153.73,
+      "kleur": "#f6a107"
+    },
+    "regels": [
+      {
+        "tekst": "Dietary requirements",
+        "x": 2520.67,
+        "baseline": 1848.16,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 57.7,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "or allergies?",
+        "x": 2520.67,
+        "baseline": 1917.4,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 57.7,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "Please let our team know,",
+        "x": 2520.67,
+        "baseline": 1985.27,
+        "font": "AreaNormal-Hairline",
+        "grootte": 46.37,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "we are happy to help.",
+        "x": 2520.67,
+        "baseline": 2046.98,
+        "font": "AreaNormal-Hairline",
+        "grootte": 46.37,
+        "kleur": "#1d1d1b"
+      }
+    ]
+  },
+  "correcties": {
+    "woorden": [
+      [
+        "Chocoladetrifle",
+        "Chocolate trifle"
+      ]
+    ]
+  },
+  "stijl": {
+    "kop": {
+      "font": "Pockota-Medium",
+      "grootte": 79.2,
+      "kleur": "#f6a107"
+    },
+    "naam": {
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 61.6,
+      "kleur": "#000000"
+    },
+    "ingr": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 41.8,
+      "kleur": "#000000"
+    }
+  },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 39.59,
+    "naam": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 41.8,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 35.2,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 42.24,
+    "naarBullet": 72.6
+  },
+  "ritme": {
+    "overgang": {
+      "kop->naam": 161.04,
+      "naam->ingr": 68.2,
+      "ingr->naam": 128.92,
+      "ingr->kop": 150.02
+    },
+    "regelafstand": {
+      "ingr": 55.01
+    },
+    "kopBaseline": null
+  },
+  "spatie": {
+    "41.8": 11.29,
+    "46.37": 12.52,
+    "57.0": 14.02,
+    "57.7": 14.19,
+    "61.6": 15.15,
+    "79.2": 18.22
+  },
+  "kolommen": [
+    {
+      "x": 261.0,
+      "kader": {
+        "breedte": 865.9,
+        "minimaal": 855.63,
+        "maximaal": 883.02,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen",
+          "walking-dinner"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "On the Table",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "On the Table",
+                  "x": 0.36,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Sourdough bread",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Sourdough bread",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "butter | fleur de sel | lime | olives | sun-dried tomato | curry dip",
+          "regels": [
+            {
+              "baseline": 854.92,
+              "runs": [
+                {
+                  "tekst": "butter | fleur de sel | lime | olives | ",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "sun-dried tomato | curry dip",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Tuna tartare",
+          "regels": [
+            {
+              "baseline": 1038.84,
+              "runs": [
+                {
+                  "tekst": "Tuna tartare",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "horseradish | affilla cress | onion crumble | saffron",
+          "regels": [
+            {
+              "baseline": 1107.04,
+              "runs": [
+                {
+                  "tekst": "horseradish | affilla cress | onion crumble | ",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1162.04,
+              "runs": [
+                {
+                  "tekst": "saffron",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 1322.0,
+      "kader": {
+        "breedte": 852.95,
+        "minimaal": 842.84,
+        "maximaal": 918.59,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen",
+          "walking-dinner"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            }
+          ]
+        },
+        {
+          "kopAlinea": 3,
+          "gerechten": [
+            {
+              "naamAlinea": 4,
+              "ingrAlinea": 5
+            }
+          ]
+        },
+        {
+          "kopAlinea": 6,
+          "gerechten": [
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Starter",
+          "regels": [
+            {
+              "baseline": 625.67,
+              "runs": [
+                {
+                  "tekst": "Starter",
+                  "x": 0.07,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pulled chicken",
+          "regels": [
+            {
+              "baseline": 786.71,
+              "runs": [
+                {
+                  "tekst": "Pulled chicken",
+                  "x": 0.07,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "red chicory | mozzarella | fermented mustard | caramelised pecan nuts | citrus mayonnaise",
+          "regels": [
+            {
+              "baseline": 854.91,
+              "runs": [
+                {
+                  "tekst": "red chicory | mozzarella | fermented ",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "mustard | caramelised pecan nuts | citrus ",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 964.93,
+              "runs": [
+                {
+                  "tekst": "mayonnaise",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Intermediate course",
+          "regels": [
+            {
+              "baseline": 1114.95,
+              "runs": [
+                {
+                  "tekst": "Intermediate course",
+                  "x": 0.07,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pumpkin ravioli",
+          "regels": [
+            {
+              "baseline": 1275.99,
+              "runs": [
+                {
+                  "tekst": "Pumpkin ravioli",
+                  "x": 0.07,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "cured Italian ham | sage butter sauce",
+          "regels": [
+            {
+              "baseline": 1344.19,
+              "runs": [
+                {
+                  "tekst": "cured Italian ham | sage butter sauce",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Main course",
+          "regels": [
+            {
+              "baseline": 1494.23,
+              "runs": [
+                {
+                  "tekst": "Main course",
+                  "x": 0.07,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Boneless short ribs",
+          "regels": [
+            {
+              "baseline": 1655.27,
+              "runs": [
+                {
+                  "tekst": "Boneless short ribs",
+                  "x": 0.07,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "winter carrot crème | parsnip spaghetti | sticky hoisin",
+          "regels": [
+            {
+              "baseline": 1723.47,
+              "runs": [
+                {
+                  "tekst": "winter carrot crème | parsnip spaghetti | ",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1778.48,
+              "runs": [
+                {
+                  "tekst": "sticky hoisin",
+                  "x": 0.07,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 2378.0,
+      "kader": {
+        "breedte": 594.38,
+        "minimaal": 587.33,
+        "maximaal": 623.24,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "diner-3gangen",
+          "diner-4gangen",
+          "walking-dinner"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Dessert",
+          "regels": [
+            {
+              "baseline": 625.67,
+              "runs": [
+                {
+                  "tekst": "Dessert",
+                  "x": -0.16,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Chocolate trifle",
+          "regels": [
+            {
+              "baseline": 786.71,
+              "runs": [
+                {
+                  "tekst": "Chocolate trifle",
+                  "x": -0.16,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Oreo crunch | cherries | Tony’s Chocolonely shavings",
+          "regels": [
+            {
+              "baseline": 854.91,
+              "runs": [
+                {
+                  "tekst": "Oreo crunch | cherries | ",
+                  "x": -0.16,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "Tony’s Chocolonely shavings",
+                  "x": -0.16,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "afwijkingen": [],
+  "zetfouten": []
+}

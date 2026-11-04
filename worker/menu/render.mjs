@@ -43,10 +43,20 @@ const fontVoor = (naam) => VERVANGINGEN[naam] || naam
 /** Bestanden in basis/ die geen pakket zijn maar wel .json heten. */
 const GEEN_PAKKET = new Set(['gerechten'])
 
-/** De pakketten waarvoor een bevroren basisontwerp klaarstaat. */
-export function pakketten() {
-  if (!existsSync(BASIS_DIR)) return []
-  return readdirSync(BASIS_DIR)
+/**
+ * Waar de basisontwerpen van een taal staan. Nederlands in basis/, Engels in basis/en/: een eigen
+ * Illustrator-bestand met dezelfde blobs en kolommen, maar met de Engelse teksten zoals de
+ * ontwerper ze zette (zie basis-extract.py --taal en).
+ */
+export function basisDir(taal = 'nl') {
+  return taal === 'en' ? join(BASIS_DIR, 'en') : BASIS_DIR
+}
+
+/** De pakketten waarvoor een bevroren basisontwerp klaarstaat, in deze taal. */
+export function pakketten(taal = 'nl') {
+  const dir = basisDir(taal)
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
     .filter((n) => n.endsWith('.json'))
     .map((n) => n.slice(0, -5))
     .filter((n) => !GEEN_PAKKET.has(n))
@@ -56,56 +66,33 @@ export function pakketten() {
 /**
  * De gerechtenbibliotheek: hoe elke tekst uit de basisontwerpen op het scherm
  * hoort te staan, inclusief de plek waar de regel afbreekt. Zie
- * gerechtenbibliotheek() in basis-extract.py.
+ * gerechtenbibliotheek() in basis-extract.py. Elke taal heeft zijn eigen.
  */
-export function laadBibliotheek() {
-  const pad = join(BASIS_DIR, 'gerechten.json')
+export function laadBibliotheek(taal = 'nl') {
+  const pad = join(basisDir(taal), 'gerechten.json')
   return existsSync(pad) ? JSON.parse(readFileSync(pad, 'utf8')) : {}
 }
 
 /**
- * De Engelse pakketten: shared/menu-pakketten-en.json, overgenomen uit het tabblad "Packages (EN)"
- * van het Food Lookbook-doc. Daar staan ook de Engelse titel per pakket en de dieetwens-regel.
+ * De Engelse pakketten zoals het formulier ze kent: shared/menu-pakketten-en.json, afgeleid uit
+ * de Engelse basisontwerpen (pakketten-export.mjs --taal en).
  */
 export function engelseMenus() {
   return JSON.parse(readFileSync(join(REPO_DIR, 'shared', 'menu-pakketten-en.json'), 'utf8'))
 }
 
-/** De pakketten die er in deze taal zijn. In het Nederlands alle basisontwerpen. */
-export function pakkettenInTaal(taal = 'nl') {
-  if (taal !== 'en') return pakketten()
-  const bestaand = new Set(pakketten())
-  return engelseMenus().pakketten.map((p) => p.pakket).filter((p) => bestaand.has(p))
-}
+/** De pakketten die er in deze taal zijn. */
+export const pakkettenInTaal = (taal = 'nl') => pakketten(taal)
 
-/**
- * Een Engels menu op een Nederlands basisontwerp.
- *
- * Het ontwerp zelf (blobs, kolommen, ritme) is hetzelfde; alleen de woorden verschillen. De titel
- * en de dieetwens-regel komen uit de Engelse data, de gerechten uit de aanvraag (of, zonder
- * gerechten, het Engelse pakket zoals het is). Elk gerecht gaat als `bewerkt` de engine in: de
- * gerechtenbibliotheek kent alleen de Nederlandse teksten, en die mag hier nooit winnen. De engine
- * breekt de Engelse regels dus zelf af binnen de kolom.
- */
-export function inTaal(opdracht) {
-  if (opdracht.taal !== 'en') return { titel: opdracht.titel, secties: opdracht.secties, voetregel: null, letterlijk: false }
-  const en = engelseMenus()
-  const pakket = en.pakketten.find((p) => p.pakket === opdracht.pakket)
-  if (!pakket) {
-    throw new Error(`Pakket "${opdracht.pakket}" is er nog niet in het Engels. `
-      + `In het Engels zijn er: ${en.pakketten.map((p) => p.pakket).join(', ')}.`)
-  }
-  const secties = (opdracht.secties ?? pakket.secties).map((s) => ({
-    ...s,
-    gerechten: s.gerechten.map((g) => ({ ...g, bewerkt: true })),
-  }))
-  return { titel: opdracht.titel || pakket.titel, secties, voetregel: en.voetregel ?? null, letterlijk: true }
-}
+/** De taal van een opdracht: alleen 'en' is Engels, al het andere Nederlands. */
+export const taalVan = (opdracht) => (opdracht?.taal === 'en' ? 'en' : 'nl')
 
-export function laadBasis(pakket) {
-  const pad = join(BASIS_DIR, `${pakket}.json`)
+export function laadBasis(pakket, taal = 'nl') {
+  const pad = join(basisDir(taal), `${pakket}.json`)
   if (!existsSync(pad)) {
-    throw new Error(`Onbekend pakket "${pakket}". Draai eerst worker/menu/basis-extract.py.`)
+    throw new Error(taal === 'en'
+      ? `Pakket "${pakket}" is er nog niet in het Engels. In het Engels zijn er: ${pakketten('en').join(', ')}.`
+      : `Onbekend pakket "${pakket}". Draai eerst worker/menu/basis-extract.py.`)
   }
   return JSON.parse(readFileSync(pad, 'utf8'))
 }
@@ -236,6 +223,7 @@ function vervangFonts(basis) {
   const kopie = structuredClone(basis)
   const zet = (o) => { if (o && o.font) o.font = fontVoor(o.font) }
   zet(kopie.titel)
+  zet(kopie.ondertitel)
   if (kopie.logobalk) zet(kopie.logobalk.plaatshouder)
   for (const regel of kopie.voetregel?.regels || []) zet(regel)
   for (const soort of Object.values(kopie.stijl || {})) zet(soort)
@@ -257,6 +245,7 @@ function gebruikteFonts(basis) {
   const gebruikt = new Set()
   const verzamel = (o) => { if (o && o.font) gebruikt.add(o.font) }
   verzamel(basis.titel)
+  verzamel(basis.ondertitel)
   if (basis.logobalk) verzamel(basis.logobalk.plaatshouder)
   for (const r of basis.voetregel?.regels || []) verzamel(r)
   for (const kolom of basis.kolommen) {
@@ -278,7 +267,7 @@ function gebruikteFonts(basis) {
  * @param {object} opdracht
  *   pakket   naam van het basisontwerp, bv. 'diner-4gangen'
  *   titel    optioneel: andere titel dan die van het basisontwerp
- *   taal     optioneel: 'en' voor een Engels menu (titel, dieetwens-regel, eigen afbreking)
+ *   taal     optioneel: 'en' voor een Engels menu, op het Engelse basisontwerp
  *   merk     optioneel: { logo, logoAchtergrond, accent, blobKleur, tekstkleur }
  *   secties  optioneel: [{ kop, gerechten: [{ naam, ingredienten: [] }] }]
  *            Laat je dit weg, dan wordt het basisontwerp zelf gerenderd.
@@ -293,7 +282,7 @@ function gebruikteFonts(basis) {
  * lezen we uit de achtergrondplaat - per beeldrij van rechts naar links tot de kleur
  * ophoudt - want die rand verschilt per ontwerp en per hoogte.
  */
-async function logoRuimte(basis) {
+async function logoRuimte(basis, dir = BASIS_DIR) {
   let eersteTekst = Infinity
   const kolommen = []
   for (const kol of basis.kolommen ?? []) {
@@ -310,7 +299,7 @@ async function logoRuimte(basis) {
   }
   if (!Number.isFinite(eersteTekst)) eersteTekst = 560
 
-  const { data, info } = await sharp(join(BASIS_DIR, basis.achtergrond))
+  const { data, info } = await sharp(join(dir, basis.achtergrond))
     .ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   const gekleurd = (p) => data[p] < 243 || data[p + 1] < 243 || data[p + 2] < 243
   let blobRand = info.width
@@ -338,15 +327,13 @@ async function logoMaat(merk) {
 }
 
 export async function renderMenu(opdracht) {
-  const basis = vervangFonts(laadBasis(opdracht.pakket))
-  const taal = inTaal(opdracht)
-  // De dieetwens-regel in de taal van het menu. Op het basisontwerp zelf, zodat ook de controle of
-  // er tekst overheen loopt de Engelse breedte meet.
-  if (taal.voetregel && basis.voetregel) {
-    basis.voetregel.regels.forEach((r, i) => { if (taal.voetregel[i]) r.tekst = taal.voetregel[i] })
-  }
+  // Een Engels menu gebruikt het Engelse basisontwerp en de Engelse gerechtenbibliotheek; verder
+  // gaat alles precies zoals in het Nederlands.
+  const taal = taalVan(opdracht)
+  const dir = basisDir(taal)
+  const basis = vervangFonts(laadBasis(opdracht.pakket, taal))
   const families = gebruikteFonts(basis)
-  const achtergrond = dataUri(join(BASIS_DIR, basis.achtergrond), 'image/png')
+  const achtergrond = dataUri(join(dir, basis.achtergrond), 'image/png')
   const icoonSvg = readFileSync(join(BASIS_DIR, 'bestek-icoon.svg'), 'utf8')
   const icoon = icoonSvg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
 
@@ -354,9 +341,9 @@ export async function renderMenu(opdracht) {
 
   const payload = {
     basis,
-    bibliotheek: laadBibliotheek(),
+    bibliotheek: laadBibliotheek(taal),
     achtergrond,
-    inhoud: { titel: taal.titel, secties: taal.secties, letterlijk: taal.letterlijk },
+    inhoud: { titel: opdracht.titel, secties: opdracht.secties },
     merk: opdracht.merk || {},
     logoVak: null,
     // Voor controle.mjs: dwingt de engine om elke alinea zelf opnieuw af te
@@ -369,7 +356,7 @@ export async function renderMenu(opdracht) {
   }
   // Waar het logo komt te staan, uitgerekend op de werkelijke ruimte van dit ontwerp.
   const maat = await logoMaat(payload.merk)
-  if (maat) payload.logoVak = plaatsLogo(maat, await logoRuimte(basis))
+  if (maat) payload.logoVak = plaatsLogo(maat, await logoRuimte(basis, dir))
 
   // Voor controle.mjs: zet terug wat we bewust anders zetten dan het .ai, zodat de
   // pixelvergelijking niet over onze eigen correcties struikelt (zie CORRECTIES en

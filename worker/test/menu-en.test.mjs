@@ -1,41 +1,50 @@
 /**
- * Het menuscherm in het Engels. Het ontwerp is het Nederlandse basisontwerp; alleen de woorden
- * verschillen: de titel en de dieetwens-regel komen uit shared/menu-pakketten-en.json, de gerechten
- * staan er letterlijk zoals in het doc, en de Nederlandse gerechtenbibliotheek doet niet mee.
+ * Het menuscherm in het Engels. Een eigen Illustrator-bestand (Flexibele-template-designs-V1_ENG.ai),
+ * bevroren in worker/menu/basis/en/, met een eigen gerechtenbibliotheek. Verder werkt het precies
+ * als het Nederlands: een onaangeroerd pakket komt er 1:1 uit zoals de ontwerper het zette.
  */
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { engelseMenus, inTaal, pakketten, pakkettenInTaal, renderMenu } from '../menu/render.mjs'
+import { engelseMenus, inhoudVanBasis, laadBasis, laadBibliotheek, pakketten, renderMenu } from '../menu/render.mjs'
 
-test('de Engelse pakketten bestaan allemaal als basisontwerp', () => {
-  const basis = new Set(pakketten())
-  for (const p of engelseMenus().pakketten) assert.ok(basis.has(p.pakket), p.pakket)
-  assert.deepEqual(pakkettenInTaal('en').sort(), ['grab-and-go', 'lunch-basic', 'lunch-standaard', 'lunch-vega-basic', 'lunch-vega-standaard'])
-  assert.equal(pakkettenInTaal('nl').length, pakketten().length)
+test('alle Nederlandse pakketten bestaan ook in het Engels', () => {
+  assert.deepEqual(pakketten('en'), pakketten('nl'))
 })
 
-test('Nederlands laat alles zoals het was', () => {
-  const uit = inTaal({ pakket: 'buffet', titel: 'Buffet', secties: [] })
-  assert.deepEqual(uit, { titel: 'Buffet', secties: [], voetregel: null, letterlijk: false })
+test('elk Engels pakket heeft evenveel onderdelen als het Nederlandse', () => {
+  for (const p of pakketten('en')) {
+    assert.equal(inhoudVanBasis(laadBasis(p, 'en')).secties.length, inhoudVanBasis(laadBasis(p)).secties.length, p)
+  }
 })
 
-test('Engels: titel, dieetwens-regel, en elk gerecht zoals het is aangeleverd', () => {
-  const uit = inTaal({ pakket: 'grab-and-go', taal: 'en' })
-  assert.equal(uit.titel, 'Grab & Go')
-  assert.equal(uit.voetregel[0], 'Dietary requirements or allergies?')
-  assert.equal(uit.letterlijk, true)
-  assert.equal(uit.secties[0].kop, 'Appetisers')
-  assert.ok(uit.secties.every((s) => s.gerechten.every((g) => g.bewerkt === true)))
+test('de Engelse ontwerpen zijn Engels', () => {
+  const tekst = JSON.stringify(pakketten('en').map((p) => inhoudVanBasis(laadBasis(p, 'en'))))
+  for (const nl of ['Nagerecht', 'Voorgerecht', 'Hoofdgerecht', 'Chocoladetrifle', 'Broodjes', 'Op tafel']) {
+    assert.ok(!tekst.includes(nl), `"${nl}" staat nog in een Engels ontwerp`)
+  }
+  assert.equal(laadBasis('diner-3gangen', 'en').voetregel.regels[0].tekst, 'Dietary requirements')
+  assert.equal(laadBasis('lunch-vega-basic', 'en').ondertitel?.tekst, 'vegetarian')
 })
 
-test('een pakket dat er nog niet in het Engels is, geeft een duidelijke fout', () => {
-  assert.throws(() => inTaal({ pakket: 'diner-4gangen', taal: 'en' }), /nog niet in het Engels/)
+test('de Engelse lijst in het formulier komt uit de Engelse ontwerpen', () => {
+  const data = engelseMenus()
+  assert.equal(data.pakketten.length, pakketten('en').length)
+  for (const p of data.pakketten) {
+    assert.deepEqual(p.secties, inhoudVanBasis(laadBasis(p.pakket, 'en')).secties, p.pakket)
+  }
 })
 
-test('Grab & Go in het Engels past op het scherm, met de tekst uit het doc', async () => {
-  const { meldingen, opmaak } = await renderMenu({ pakket: 'grab-and-go', taal: 'en' })
-  assert.deepEqual(meldingen.botsingen, [])
-  assert.deepEqual(meldingen.overloop, [])
-  const tekst = JSON.stringify(opmaak)
-  assert.ok(tekst.includes('Schiacciata Toscana'), 'de hoofdletter uit het doc blijft staan')
+test('elke taal heeft zijn eigen gerechtenbibliotheek', () => {
+  const en = JSON.stringify(laadBibliotheek('en'))
+  assert.ok(en.includes('Sourdough bread'))
+  assert.ok(!en.includes('Zuurdesembrood'))
+})
+
+test('een onaangeroerd Engels pakket komt er zonder meldingen uit', async () => {
+  for (const pakket of ['grab-and-go', 'lunch-standaard']) {
+    const { meldingen } = await renderMenu({ ...inhoudVanBasis(laadBasis(pakket, 'en')), taal: 'en' })
+    assert.deepEqual(meldingen.botsingen, [], pakket)
+    assert.deepEqual(meldingen.overloop, [], pakket)
+    assert.deepEqual(meldingen.structuur, [], pakket)
+  }
 })

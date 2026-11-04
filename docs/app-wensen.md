@@ -8,15 +8,11 @@ ze hier weg als ze gedaan zijn.
   naar" staat (altijd collega's; de tool is niet voor klanten). Abel bespreekt met Karen of dat
   alleen de aanvrager moet worden.
   Zie "Akkoord en herinneringen" in de README.
-- **De andere pakketten in het Engels.** Winterbuffet, het drie- en viergangendiner en het walking
-  dinner staan nog niet in het tabblad "Packages (EN)". Komen ze erbij, laat de Engelse menu's dan
-  opnieuw overnemen (zie "Engelse menu's" in de README).
-- **Engelse basisontwerpen (Illustrator).** Abel maakt een Engels Illustrator-template, net als bij
-  het Nederlands. Daarna: bevriezen met `basis-extract.py` en het Engelse menuscherm dat ontwerp
-  laten gebruiken. Tot die tijd passen Basic Lunch en Standard Lunch in het Engels niet helemaal; zie
-  "Engelse menu's" in de README.
 
 ## Gedaan
+
+- **Engelse basisontwerpen (november 2026).** Een eigen Engels Illustrator-bestand met alle negen
+  pakketten, bevroren in `worker/menu/basis/en/`. De Engelse lijst in het formulier komt daar nu uit.
 
 - **Akkoord, bevestiging, collega's koppelen en Engelse menu's (november 2026).** Na de presentatie
   aan de andere teams: een knop Akkoord geven in de opleveringsmail met een herinnering op elke

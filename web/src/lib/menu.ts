@@ -40,9 +40,9 @@ export interface Pakket {
 }
 
 /**
- * In welke taal het menu op het scherm komt. Nederlands is de standaard; Engels kan voor de
- * pakketten die er in het Engels zijn (shared/menu-pakketten-en.json, overgenomen uit het
- * tabblad "Packages (EN)" van het Food Lookbook-doc).
+ * In welke taal het menu op het scherm komt. Nederlands is de standaard. De Engelse pakketten
+ * (shared/menu-pakketten-en.json) zijn afgeleid uit de Engelse basisontwerpen, net zoals de
+ * Nederlandse uit de Nederlandse: dezelfde spelling als op het scherm.
  */
 export type MenuTaal = 'nl' | 'en'
 

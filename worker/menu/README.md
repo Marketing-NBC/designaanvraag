@@ -112,6 +112,11 @@ Leest `basis/bron/Flexibele-template-designs.ai` en schrijft per pakket:
 - `basis/referentie/<pakket>.png` — de volledige pagina uit het `.ai`. Hiertegen
   vergelijkt `controle.mjs`.
 
+**Engels.** `python3 worker/menu/basis-extract.py --taal en` bevriest het Engelse bestand
+(`basis/bron/Flexibele-template-designs-V1_ENG.ai`) op dezelfde manier, naar `basis/en/`: per
+pakket een achtergrond en geometrie, plus een eigen `gerechten.json` en `referentie/`. Een menu met
+`taal: 'en'` gebruikt die ontwerpen; zie "Engelse menu's" in de README in de hoofdmap.
+
 De rode logobalk en het gouden bestek-icoon zitten bewust **niet** in de
 achtergrond: die tekent de engine zelf, zodat ze het logo en de kleuren van de
 opdrachtgever kunnen aannemen.

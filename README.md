@@ -787,47 +787,48 @@ niet alsof.
 ## Engelse menu's
 
 Een menuscherm kan ook in het **Engels**. In het formulier staat boven de pakketten de keuze
-**Taal van het menu**: Nederlands of Engels. In het Engels zijn er nu vijf pakketten: Basic Lunch,
-Basic Lunch (vegetarian), Standard Lunch, Standard Lunch (vegetarian) en Grab & Go. De andere
-staan er uitgegrijsd bij (*Nog niet in het Engels*) en komen later. Gerechten wisselen, weghalen,
-toevoegen en zelf typen werkt hetzelfde; de zoeklijst bij *Wissel* is dan de Engelse.
-Een gekozen pakket kan ook nog van taal wisselen (*Dit menu in het Engels*), en via
+**Taal van het menu**: Nederlands of Engels. Alle negen pakketten bestaan in het Engels. Gerechten
+wisselen, weghalen, toevoegen en zelf typen werkt hetzelfde; de zoeklijst bij *Wissel* is dan de
+Engelse. Een gekozen pakket kan ook nog van taal wisselen (*Dit menu in het Engels*), en via
 **Menu aanpassen** in een aanvulling kan het later ook.
 
-**Waar de teksten vandaan komen.** Uit het tabblad **Packages (EN)** van het doc
-[Menu's Food Lookbook Winter NBC 26-27](https://claude.ai/artifact/RHokNUrQukBni3hR79Mdji). Dat doc
-is de bron; de tool gebruikt een kopie in `shared/menu-pakketten-en.json` (met de datum waarop hij
-is overgenomen). Pas je het doc aan, of komt er een pakket bij, vraag Claude dan om *de Engelse
-menu's te syncen*: dan wordt die kopie opnieuw gemaakt. Twee dingen gaan daarbij bewust anders
-dan in het doc, omdat het scherm een ander formaat is dan een tentcard:
+**Het Engelse basisontwerp.** Het Engels heeft een eigen Illustrator-bestand,
+`worker/menu/basis/bron/Flexibele-template-designs-V1_ENG.ai`: dezelfde blobs en kolommen als het
+Nederlandse, met de Engelse teksten zoals de ontwerper ze zette. Het wordt net zo bevroren als het
+Nederlandse, in een eigen map:
 
-- *(vegetarian)* en *(halal)* staan achter de ingrediënten in plaats van achter de naam, net als
-  *(vega)* op de Nederlandse schermen. Anders breekt de vette naam over twee regels en past het
-  menu niet.
-- De volgorde van de onderdelen is die van het basisontwerp: bij Grab & Go staat Dessert vóór de
-  Salad Bar.
+```bash
+python3 worker/menu/basis-extract.py --taal en       # naar worker/menu/basis/en/
+node worker/menu/pakketten-export.mjs --taal en      # de Engelse lijst voor het formulier
+node worker/menu/controle.mjs --taal en              # elk Engels ontwerp naast het .ai
+```
 
-**Op het scherm.** Het ontwerp is het Nederlandse basisontwerp; de titel (*Lunch*, *Grab & Go*) en de
-dieetwens-regel (*Dietary requirements or allergies? Please let our team know — we are happy to
-help.*) zijn Engels, en de gerechten staan er letterlijk zoals in het doc. De Nederlandse
-gerechtenbibliotheek doet bij Engels niet mee: de engine breekt elke regel zelf af binnen de kolom.
-Raakt de langere Engelse dieetwens-regel een blob, dan schuift het blok een stukje naar links (dat
-staat dan in de comment).
+De Engelse pagina's staan in een andere volgorde dan de Nederlandse; welke pagina welk pakket is,
+staat in `PAKKETTEN_EN` in `basis-extract.py`. Het Engelse bestand heeft een eigen
+gerechtenbibliotheek (`basis/en/gerechten.json`), dus een onaangeroerd Engels gerecht staat er net
+zo bij als de ontwerper het zette. De controle legt alle negen Engelse schermen pixel voor pixel
+naast het .ai: niets staat verschoven.
+
+**De Engelse lijst in het formulier** (`shared/menu-pakketten-en.json`) komt uit die
+basisontwerpen, niet meer met de hand uit het doc
+[Menu's Food Lookbook Winter NBC 26-27](https://claude.ai/artifact/RHokNUrQukBni3hR79Mdji). Het
+Illustrator-bestand is de bron: wat daar staat, staat in het formulier en op het scherm, met
+dezelfde spelling. Verandert er iets in het Engels, pas dan het .ai aan en draai de drie regels
+hierboven.
+
+Wat in het ontwerp bewust anders gezet wordt dan in het .ai staat in `WOORDCORRECTIES_EN`: nu alleen
+*Chocoladetrifle*, dat op de drie dinerpagina's nog Nederlands was, als *Chocolate trifle*.
+
+Bij *Lunch (vegetarian)* staat *vegetarian* als ondertitel onder de titel. Dat element kent alleen
+het Engelse ontwerp; de engine tekent hem zoals hij in het .ai staat.
 
 In de taak in Asana staat *Taal van het menu: Engels*, en in Supabase `aanvragen.menu_taal`. Die
 kolom blijft ook gelden als Marketing het menu in de taakbeschrijving corrigeert.
 
-**Let op: niet elk Engels pakket past al.** Engelse namen en ingrediënten zijn langer. Grab & Go,
-Basic Lunch (vegetarian) en Standard Lunch (vegetarian) passen zoals ze in het doc staan. Bij **Basic
-Lunch** raakt de laatste regel van de broodjes de blob linksonder, en bij **Standard Lunch** komt de
-Tuna melt op de dieetwens-regel. Het scherm komt dan als `NIET-BRUIKBAAR-…` in Asana met de reden in
-de comment, zoals bij elk te lang menu.
-
-**Wat er nog komt: eigen Engelse basisontwerpen.** Abel maakt voor het Engels een eigen
-Illustrator-template, net als bij het Nederlands. Komt dat er, dan wordt het per pakket bevroren met
-`basis-extract.py` (als `<pakket>-en`), en gebruikt het Engelse menuscherm dat ontwerp in plaats van
-het Nederlandse. Dan passen de Engelse teksten zoals de ontwerper ze zet, en vervalt het opschuiven
-van de dieetwens-regel.
+**Een concept voor een nieuw ontwerp.** `worker/menu/naar-illustrator.py` zet Engelse teksten op
+de Nederlandse pagina's van het .ai (blobs en lagen blijven), met rode kaders waar de tekst iets
+raakt. Zo is het eerste concept van het Engelse bestand gemaakt; de ontwerper heeft het daarna in
+Illustrator afgemaakt.
 
 ## Huisstijl van het formulier
 

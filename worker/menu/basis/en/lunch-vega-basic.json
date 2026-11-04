@@ -1,0 +1,481 @@
+{
+  "pakket": "lunch-vega-basic",
+  "bron": {
+    "bestand": "Flexibele-template-designs-V1_ENG.ai",
+    "pagina": 3
+  },
+  "canvas": {
+    "breedte": 3840,
+    "hoogte": 2160
+  },
+  "achtergrond": "lunch-vega-basic.png",
+  "titel": {
+    "tekst": "Lunch",
+    "x": 260.36,
+    "baseline": 279.58,
+    "font": "Pockota-Medium",
+    "grootte": 199.53,
+    "kleur": "#000000"
+  },
+  "ondertitel": {
+    "tekst": "vegetarian",
+    "x": 260.36,
+    "baseline": 375.58,
+    "font": "AreaNormal-Regular",
+    "grootte": 74.0,
+    "kleur": "#000000"
+  },
+  "logobalk": {
+    "x": 2075.84,
+    "y": 74.28,
+    "breedte": 791.37,
+    "hoogte": 296.96,
+    "vulkleur": "#ff0000",
+    "plaatshouder": {
+      "tekst": "Logo opdrachtgever",
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 57.0,
+      "baseline": 242.95,
+      "x": 2189.22
+    }
+  },
+  "voetregel": {
+    "icoon": {
+      "x": 2025.17,
+      "y": 1818.51,
+      "breedte": 266.94,
+      "hoogte": 173.4,
+      "kleur": "#f6a107"
+    },
+    "regels": [
+      {
+        "tekst": "Dietary requirements",
+        "x": 2395.96,
+        "baseline": 1817.09,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 65.08,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "or allergies?",
+        "x": 2395.96,
+        "baseline": 1895.18,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 65.08,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "Please let our team know,",
+        "x": 2395.96,
+        "baseline": 1971.73,
+        "font": "AreaNormal-Hairline",
+        "grootte": 52.3,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "we are happy to help.",
+        "x": 2395.96,
+        "baseline": 2041.34,
+        "font": "AreaNormal-Hairline",
+        "grootte": 52.3,
+        "kleur": "#1d1d1b"
+      }
+    ]
+  },
+  "correcties": null,
+  "stijl": {
+    "kop": {
+      "font": "Pockota-Medium",
+      "grootte": 79.2,
+      "kleur": "#f6a107"
+    },
+    "naam": {
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 61.6,
+      "kleur": "#000000"
+    },
+    "ingr": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 41.8,
+      "kleur": "#000000"
+    }
+  },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 39.59,
+    "naam": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 41.8,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 35.2,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 42.24,
+    "naarBullet": 72.6
+  },
+  "ritme": {
+    "overgang": {
+      "kop->naam": 161.04,
+      "naam->ingr": 68.2,
+      "ingr->naam": 128.92
+    },
+    "regelafstand": {
+      "ingr": 55.0,
+      "naam": 73.92
+    },
+    "kopBaseline": null
+  },
+  "spatie": {
+    "41.8": 11.29,
+    "52.3": 14.12,
+    "57.0": 14.02,
+    "61.6": 15.15,
+    "65.08": 16.01,
+    "79.2": 18.22
+  },
+  "kolommen": [
+    {
+      "x": 261.0,
+      "kader": {
+        "breedte": 881.9,
+        "minimaal": 871.44,
+        "maximaal": 905.64,
+        "handmatigeAfbrekingen": 1,
+        "gedeeldMet": [
+          "lunch-basic",
+          "lunch-vega-basic"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            },
+            {
+              "naamAlinea": 5,
+              "ingrAlinea": 6
+            },
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Sandwiches",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "Sandwiches",
+                  "x": 0.37,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Wholemeal bun",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Wholemeal bun",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "aged cheese | truffle mayonnaise | Lollo Bianca lettuce | cucumber",
+          "regels": [
+            {
+              "baseline": 854.92,
+              "runs": [
+                {
+                  "tekst": "aged cheese | truffle mayonnaise | Lollo ",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 909.92,
+              "runs": [
+                {
+                  "tekst": "Bianca lettuce | cucumber",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "White sesame bun",
+          "regels": [
+            {
+              "baseline": 1038.84,
+              "runs": [
+                {
+                  "tekst": "White sesame bun",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "spicy hummus | butter lettuce | tomato",
+          "regels": [
+            {
+              "baseline": 1107.04,
+              "runs": [
+                {
+                  "tekst": "spicy hummus | butter lettuce | tomato",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Brown bun",
+          "regels": [
+            {
+              "baseline": 1235.96,
+              "runs": [
+                {
+                  "tekst": "Brown bun",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "herb spread | avocado | rocket | mixed raw vegetables",
+          "regels": [
+            {
+              "baseline": 1304.16,
+              "runs": [
+                {
+                  "tekst": "herb spread | avocado | rocket | ",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1359.17,
+              "runs": [
+                {
+                  "tekst": "mixed raw vegetables",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Multigrain baguette",
+          "regels": [
+            {
+              "baseline": 1488.08,
+              "runs": [
+                {
+                  "tekst": "Multigrain baguette",
+                  "x": 0.37,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "goat’s cheese | harissa | romaine lettuce",
+          "regels": [
+            {
+              "baseline": 1556.28,
+              "runs": [
+                {
+                  "tekst": "goat’s cheese | harissa | romaine lettuce",
+                  "x": 0.37,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 1425.0,
+      "kader": {
+        "breedte": 789.61,
+        "minimaal": 780.25,
+        "maximaal": 885.16,
+        "handmatigeAfbrekingen": 0,
+        "gedeeldMet": [
+          "lunch-basic",
+          "lunch-vega-basic"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": null
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Hot dishes",
+          "regels": [
+            {
+              "baseline": 625.68,
+              "runs": [
+                {
+                  "tekst": "Hot dishes",
+                  "x": 0.21,
+                  "font": "Pockota-Medium",
+                  "grootte": 79.2,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Oyster mushroom croquette sandwich",
+          "regels": [
+            {
+              "baseline": 786.72,
+              "runs": [
+                {
+                  "tekst": "Oyster mushroom ",
+                  "x": 0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 860.64,
+              "runs": [
+                {
+                  "tekst": "croquette sandwich",
+                  "x": 0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Oyster mushroom",
+          "regels": [
+            {
+              "baseline": 928.84,
+              "runs": [
+                {
+                  "tekst": "Oyster mushroom",
+                  "x": 0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 41.8,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Wild mushroom soup",
+          "regels": [
+            {
+              "baseline": 1057.76,
+              "runs": [
+                {
+                  "tekst": "Wild mushroom soup",
+                  "x": 0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 61.6,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "afwijkingen": [],
+  "zetfouten": []
+}

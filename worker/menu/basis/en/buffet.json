@@ -1,0 +1,764 @@
+{
+  "pakket": "buffet",
+  "bron": {
+    "bestand": "Flexibele-template-designs-V1_ENG.ai",
+    "pagina": 5
+  },
+  "canvas": {
+    "breedte": 3840,
+    "hoogte": 2160
+  },
+  "achtergrond": "buffet.png",
+  "titel": {
+    "tekst": "Buffet",
+    "x": 239.11,
+    "baseline": 344.45,
+    "font": "Pockota-Medium",
+    "grootte": 199.53,
+    "kleur": "#000000"
+  },
+  "logobalk": {
+    "x": 2145.16,
+    "y": 74.28,
+    "breedte": 791.37,
+    "hoogte": 296.96,
+    "vulkleur": "#ff0000",
+    "plaatshouder": {
+      "tekst": "Logo opdrachtgever",
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 57.0,
+      "baseline": 242.95,
+      "x": 2258.54
+    }
+  },
+  "voetregel": {
+    "icoon": {
+      "x": 2142.79,
+      "y": 1836.91,
+      "breedte": 236.67,
+      "hoogte": 153.73,
+      "kleur": "#f6a107"
+    },
+    "regels": [
+      {
+        "tekst": "Dietary requirements",
+        "x": 2471.54,
+        "baseline": 1835.65,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 57.7,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "or allergies?",
+        "x": 2471.54,
+        "baseline": 1904.89,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 57.7,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "Please let our team know,",
+        "x": 2471.54,
+        "baseline": 1972.76,
+        "font": "AreaNormal-Hairline",
+        "grootte": 46.37,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "we are happy to help.",
+        "x": 2471.54,
+        "baseline": 2034.47,
+        "font": "AreaNormal-Hairline",
+        "grootte": 46.37,
+        "kleur": "#1d1d1b"
+      }
+    ]
+  },
+  "correcties": null,
+  "stijl": {
+    "kop": {
+      "font": "Pockota-Medium",
+      "grootte": 72.0,
+      "kleur": "#f6a107"
+    },
+    "naam": {
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 56.0,
+      "kleur": "#000000"
+    },
+    "ingr": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 38.0,
+      "kleur": "#000000"
+    }
+  },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 35.99,
+    "naam": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 38.0,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 32.0,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 38.4,
+    "naarBullet": 66.0
+  },
+  "ritme": {
+    "overgang": {
+      "kop->naam": 155.2,
+      "naam->ingr": 62.0,
+      "ingr->naam": 131.0,
+      "naam->naam": 150.98
+    },
+    "regelafstand": {
+      "ingr": 50.01
+    },
+    "kopBaseline": null
+  },
+  "spatie": {
+    "38.0": 10.26,
+    "46.37": 12.52,
+    "56.0": 13.78,
+    "57.0": 14.02,
+    "57.7": 14.19,
+    "72.0": 16.56
+  },
+  "kolommen": [
+    {
+      "x": 241.0,
+      "kader": {
+        "breedte": 858.21,
+        "minimaal": 848.03,
+        "maximaal": 988.29,
+        "handmatigeAfbrekingen": 1
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            },
+            {
+              "naamAlinea": 5,
+              "ingrAlinea": 6
+            },
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Salad Bar",
+          "regels": [
+            {
+              "baseline": 620.26,
+              "runs": [
+                {
+                  "tekst": "Salad Bar",
+                  "x": 0.36,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Burrata",
+          "regels": [
+            {
+              "baseline": 775.46,
+              "runs": [
+                {
+                  "tekst": "Burrata",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "dried mini figs | Brussels sprouts | pistachio | mesclun",
+          "regels": [
+            {
+              "baseline": 837.46,
+              "runs": [
+                {
+                  "tekst": "dried mini figs | Brussels sprouts | pistachio | ",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 887.47,
+              "runs": [
+                {
+                  "tekst": "mesclun",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Beetroot",
+          "regels": [
+            {
+              "baseline": 1013.46,
+              "runs": [
+                {
+                  "tekst": "Beetroot",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "apple | smoked mackerel | horseradish cream",
+          "regels": [
+            {
+              "baseline": 1075.46,
+              "runs": [
+                {
+                  "tekst": "apple | smoked mackerel | horseradish cream",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Thai chicken",
+          "regels": [
+            {
+              "baseline": 1201.46,
+              "runs": [
+                {
+                  "tekst": "Thai chicken",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "romaine lettuce | carrot | cucumber | roasted sweet pepper",
+          "regels": [
+            {
+              "baseline": 1263.46,
+              "runs": [
+                {
+                  "tekst": "romaine lettuce | carrot | cucumber | ",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1313.47,
+              "runs": [
+                {
+                  "tekst": "roasted sweet pepper",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pumpkin",
+          "regels": [
+            {
+              "baseline": 1439.46,
+              "runs": [
+                {
+                  "tekst": "Pumpkin",
+                  "x": 0.36,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "feta | raisins | red cabbage | carrot",
+          "regels": [
+            {
+              "baseline": 1501.46,
+              "runs": [
+                {
+                  "tekst": "feta | raisins | red cabbage | carrot",
+                  "x": 0.36,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 1334.0,
+      "kader": {
+        "breedte": 773.99,
+        "minimaal": 764.81,
+        "maximaal": 824.81,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": null
+            },
+            {
+              "naamAlinea": 2,
+              "ingrAlinea": null
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            },
+            {
+              "naamAlinea": 5,
+              "ingrAlinea": 6
+            },
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            },
+            {
+              "naamAlinea": 9,
+              "ingrAlinea": 10
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Hot dishes",
+          "regels": [
+            {
+              "baseline": 624.0,
+              "runs": [
+                {
+                  "tekst": "Hot dishes",
+                  "x": 0.24,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Crispy Parmesan potatoes",
+          "regels": [
+            {
+              "baseline": 770.4,
+              "runs": [
+                {
+                  "tekst": "Crispy Parmesan potatoes",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Winter ratatouille",
+          "regels": [
+            {
+              "baseline": 921.38,
+              "runs": [
+                {
+                  "tekst": "Winter ratatouille",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Seared salmon",
+          "regels": [
+            {
+              "baseline": 1052.36,
+              "runs": [
+                {
+                  "tekst": "Seared salmon",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "sauerkraut | fermented mustard",
+          "regels": [
+            {
+              "baseline": 1115.6,
+              "runs": [
+                {
+                  "tekst": "sauerkraut | fermented mustard",
+                  "x": 0.24,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Coq au vin",
+          "regels": [
+            {
+              "baseline": 1246.6,
+              "runs": [
+                {
+                  "tekst": "Coq au vin",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "silverskin onions | red wine | winter carrot",
+          "regels": [
+            {
+              "baseline": 1309.8,
+              "runs": [
+                {
+                  "tekst": "silverskin onions | red wine | winter carrot",
+                  "x": 0.24,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Boneless short ribs",
+          "regels": [
+            {
+              "baseline": 1440.8,
+              "runs": [
+                {
+                  "tekst": "Boneless short ribs",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "miso butter jus",
+          "regels": [
+            {
+              "baseline": 1504.0,
+              "runs": [
+                {
+                  "tekst": "miso butter jus",
+                  "x": 0.24,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pumpkin risotto",
+          "regels": [
+            {
+              "baseline": 1635.0,
+              "runs": [
+                {
+                  "tekst": "Pumpkin risotto",
+                  "x": 0.24,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "gorgonzola | fresh figs",
+          "regels": [
+            {
+              "baseline": 1698.2,
+              "runs": [
+                {
+                  "tekst": "gorgonzola | fresh figs",
+                  "x": 0.24,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 2464.0,
+      "kader": {
+        "breedte": 540.44,
+        "minimaal": 534.03,
+        "maximaal": 566.66,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Dessert",
+          "regels": [
+            {
+              "baseline": 620.26,
+              "runs": [
+                {
+                  "tekst": "Dessert",
+                  "x": -0.06,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Chocolate trifle",
+          "regels": [
+            {
+              "baseline": 766.67,
+              "runs": [
+                {
+                  "tekst": "Chocolate trifle",
+                  "x": -0.06,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Oreo crunch | cherries | Tony’s Chocolonely shavings",
+          "regels": [
+            {
+              "baseline": 828.67,
+              "runs": [
+                {
+                  "tekst": "Oreo crunch | cherries | ",
+                  "x": -0.06,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 878.67,
+              "runs": [
+                {
+                  "tekst": "Tony’s Chocolonely shavings",
+                  "x": -0.06,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "afwijkingen": [
+    {
+      "kolom": 1,
+      "na": "mesclun",
+      "voor": "Beetroot",
+      "overgang": "ingr->naam",
+      "gemeten": 125.99,
+      "ritme": 131.0
+    },
+    {
+      "kolom": 1,
+      "na": "apple | smoked mackerel | horseradish cr",
+      "voor": "Thai chicken",
+      "overgang": "ingr->naam",
+      "gemeten": 126.0,
+      "ritme": 131.0
+    },
+    {
+      "kolom": 1,
+      "na": "roasted sweet pepper",
+      "voor": "Pumpkin",
+      "overgang": "ingr->naam",
+      "gemeten": 125.99,
+      "ritme": 131.0
+    },
+    {
+      "kolom": 2,
+      "na": "Hot dishes",
+      "voor": "Crispy Parmesan potatoes",
+      "overgang": "kop->naam",
+      "gemeten": 146.4,
+      "ritme": 155.2
+    },
+    {
+      "kolom": 2,
+      "na": "Winter ratatouille",
+      "voor": "Seared salmon",
+      "overgang": "naam->naam",
+      "gemeten": 130.98,
+      "ritme": 150.98
+    },
+    {
+      "kolom": 2,
+      "na": "Seared salmon",
+      "voor": "sauerkraut | fermented mustard",
+      "overgang": "naam->ingr",
+      "gemeten": 63.24,
+      "ritme": 62.0
+    },
+    {
+      "kolom": 2,
+      "na": "Coq au vin",
+      "voor": "silverskin onions | red wine | winter ca",
+      "overgang": "naam->ingr",
+      "gemeten": 63.2,
+      "ritme": 62.0
+    },
+    {
+      "kolom": 2,
+      "na": "Boneless short ribs",
+      "voor": "miso butter jus",
+      "overgang": "naam->ingr",
+      "gemeten": 63.2,
+      "ritme": 62.0
+    },
+    {
+      "kolom": 2,
+      "na": "Pumpkin risotto",
+      "voor": "gorgonzola | fresh figs",
+      "overgang": "naam->ingr",
+      "gemeten": 63.2,
+      "ritme": 62.0
+    },
+    {
+      "kolom": 3,
+      "na": "Dessert",
+      "voor": "Chocolate trifle",
+      "overgang": "kop->naam",
+      "gemeten": 146.41,
+      "ritme": 155.2
+    }
+  ],
+  "zetfouten": []
+}

@@ -62,7 +62,8 @@ function Pakketkeuze({ taal, onKies, onTaal }: { taal: MenuTaal; onKies: (pakket
   return (
     <div className="pakketten" ref={rootRef} tabIndex={-1} data-choice-list>
       <Taalkeuze taal={taal} onKies={onTaal} />
-      {taal === 'en' ? (
+      {/* Alleen nodig zolang niet elk pakket er in het Engels is. */}
+      {taal === 'en' && pakketgroepen('en').flatMap((g) => g.pakketten).length < pakketgroepen('nl').flatMap((g) => g.pakketten).length ? (
         <p className="menutaal__uitleg">
           In het Engels zijn er nu {pakketgroepen('en').flatMap((g) => g.pakketten).length} pakketten. De andere komen later.
         </p>

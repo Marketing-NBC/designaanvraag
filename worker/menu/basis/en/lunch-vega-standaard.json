@@ -1,0 +1,1069 @@
+{
+  "pakket": "lunch-vega-standaard",
+  "bron": {
+    "bestand": "Flexibele-template-designs-V1_ENG.ai",
+    "pagina": 9
+  },
+  "canvas": {
+    "breedte": 3840,
+    "hoogte": 2160
+  },
+  "achtergrond": "lunch-vega-standaard.png",
+  "titel": {
+    "tekst": "Lunch",
+    "x": 204.76,
+    "baseline": 279.58,
+    "font": "Pockota-Medium",
+    "grootte": 199.53,
+    "kleur": "#000000"
+  },
+  "ondertitel": {
+    "tekst": "vegetarian",
+    "x": 204.76,
+    "baseline": 375.58,
+    "font": "AreaNormal-Regular",
+    "grootte": 74.0,
+    "kleur": "#000000"
+  },
+  "logobalk": {
+    "x": 2701.82,
+    "y": 74.28,
+    "breedte": 791.37,
+    "hoogte": 296.96,
+    "vulkleur": "#ff0000",
+    "plaatshouder": {
+      "tekst": "Logo opdrachtgever",
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 57.0,
+      "baseline": 242.95,
+      "x": 2815.2
+    }
+  },
+  "voetregel": {
+    "icoon": {
+      "x": 209.04,
+      "y": 1885.05,
+      "breedte": 191.8,
+      "hoogte": 124.58,
+      "kleur": "#f6a107"
+    },
+    "regels": [
+      {
+        "tekst": "Dietary requirements",
+        "x": 475.45,
+        "baseline": 1884.03,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 46.76,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "or allergies?",
+        "x": 475.45,
+        "baseline": 1940.14,
+        "font": "AreaNormal-ExtraBold",
+        "grootte": 46.76,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "Please let our team know,",
+        "x": 475.45,
+        "baseline": 1995.14,
+        "font": "AreaNormal-Hairline",
+        "grootte": 37.58,
+        "kleur": "#1d1d1b"
+      },
+      {
+        "tekst": "we are happy to help.",
+        "x": 475.45,
+        "baseline": 2045.16,
+        "font": "AreaNormal-Hairline",
+        "grootte": 37.58,
+        "kleur": "#1d1d1b"
+      }
+    ]
+  },
+  "correcties": null,
+  "stijl": {
+    "kop": {
+      "font": "Pockota-Medium",
+      "grootte": 72.0,
+      "kleur": "#f6a107"
+    },
+    "naam": {
+      "font": "AreaNormal-ExtraBold",
+      "grootte": 56.0,
+      "kleur": "#000000"
+    },
+    "ingr": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 38.0,
+      "kleur": "#000000"
+    }
+  },
+  "opsommingStijl": {
+    "bullet": "•",
+    "inspring": 35.99,
+    "naam": {
+      "font": "AreaNormal-Hairline",
+      "grootte": 38.0,
+      "kleur": "#1d1d1b"
+    },
+    "toelichting": {
+      "font": "AreaNormal-HairlineItalic",
+      "grootte": 32.0,
+      "kleur": "#1d1d1b"
+    },
+    "naarToelichting": 38.4,
+    "naarBullet": 66.0
+  },
+  "ritme": {
+    "overgang": {
+      "kop->naam": 146.4,
+      "naam->ingr": 62.0,
+      "ingr->naam": 117.2,
+      "ingr->kop": 136.39,
+      "naam->naam": 112.0
+    },
+    "regelafstand": {
+      "ingr": 50.01,
+      "naam": 67.2
+    },
+    "kopBaseline": null
+  },
+  "spatie": {
+    "37.58": 10.15,
+    "38.0": 10.26,
+    "46.76": 11.5,
+    "56.0": 13.78,
+    "57.0": 14.02,
+    "72.0": 16.56
+  },
+  "kolommen": [
+    {
+      "x": 211.0,
+      "kader": {
+        "breedte": 697.16,
+        "minimaal": 688.89,
+        "maximaal": 705.19,
+        "handmatigeAfbrekingen": 0
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            },
+            {
+              "naamAlinea": 5,
+              "ingrAlinea": 6
+            }
+          ]
+        },
+        {
+          "kopAlinea": 7,
+          "gerechten": [
+            {
+              "naamAlinea": 8,
+              "ingrAlinea": 9
+            },
+            {
+              "naamAlinea": 10,
+              "ingrAlinea": 11
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Spanish tortillas",
+          "regels": [
+            {
+              "baseline": 532.53,
+              "runs": [
+                {
+                  "tekst": "Spanish tortillas",
+                  "x": -0.21,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Beetroot tortilla",
+          "regels": [
+            {
+              "baseline": 678.93,
+              "runs": [
+                {
+                  "tekst": "Beetroot tortilla",
+                  "x": -0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "hummus | grilled vegetables",
+          "regels": [
+            {
+              "baseline": 740.93,
+              "runs": [
+                {
+                  "tekst": "hummus | grilled vegetables",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Spinach tortilla",
+          "regels": [
+            {
+              "baseline": 858.13,
+              "runs": [
+                {
+                  "tekst": "Spinach tortilla",
+                  "x": -0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "cottage cheese | sun-dried tomatoes",
+          "regels": [
+            {
+              "baseline": 920.13,
+              "runs": [
+                {
+                  "tekst": "cottage cheese | sun-dried tomatoes",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Wholemeal tortilla",
+          "regels": [
+            {
+              "baseline": 1037.33,
+              "runs": [
+                {
+                  "tekst": "Wholemeal tortilla",
+                  "x": -0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "mature Dutch cumin cheese | Madras yoghurt dressing",
+          "regels": [
+            {
+              "baseline": 1099.33,
+              "runs": [
+                {
+                  "tekst": "mature Dutch cumin cheese | ",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1149.34,
+              "runs": [
+                {
+                  "tekst": "Madras yoghurt dressing",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Pinsas",
+          "regels": [
+            {
+              "baseline": 1285.73,
+              "runs": [
+                {
+                  "tekst": "Pinsas",
+                  "x": -0.21,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Burrata",
+          "regels": [
+            {
+              "baseline": 1432.13,
+              "runs": [
+                {
+                  "tekst": "Burrata",
+                  "x": -0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "tomato mix | basil oil",
+          "regels": [
+            {
+              "baseline": 1494.13,
+              "runs": [
+                {
+                  "tekst": "tomato mix | basil oil",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Provolone",
+          "regels": [
+            {
+              "baseline": 1611.33,
+              "runs": [
+                {
+                  "tekst": "Provolone",
+                  "x": -0.21,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "tomato chutney",
+          "regels": [
+            {
+              "baseline": 1673.33,
+              "runs": [
+                {
+                  "tekst": "tomato chutney",
+                  "x": -0.21,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 1324.0,
+      "kader": {
+        "breedte": 855.39,
+        "minimaal": 845.25,
+        "maximaal": 913.84,
+        "handmatigeAfbrekingen": 1,
+        "gedeeldMet": [
+          "lunch-standaard",
+          "lunch-vega-standaard"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": 4
+            },
+            {
+              "naamAlinea": 5,
+              "ingrAlinea": 6
+            }
+          ]
+        },
+        {
+          "kopAlinea": 7,
+          "gerechten": [
+            {
+              "naamAlinea": 8,
+              "ingrAlinea": 9
+            },
+            {
+              "naamAlinea": 10,
+              "ingrAlinea": 11
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Baguettes",
+          "regels": [
+            {
+              "baseline": 532.53,
+              "runs": [
+                {
+                  "tekst": "Baguettes",
+                  "x": -0.44,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "White baguette",
+          "regels": [
+            {
+              "baseline": 678.93,
+              "runs": [
+                {
+                  "tekst": "White baguette",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "grilled halloumi | Korean kimchi mayonnaise | pickled red onion | cucumber",
+          "regels": [
+            {
+              "baseline": 740.93,
+              "runs": [
+                {
+                  "tekst": "grilled halloumi | Korean kimchi mayonnaise | ",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 790.94,
+              "runs": [
+                {
+                  "tekst": "pickled red onion | cucumber",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Multigrain baguette",
+          "regels": [
+            {
+              "baseline": 908.13,
+              "runs": [
+                {
+                  "tekst": "Multigrain baguette",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "avocado | cucumber spread | spring onion | tomato",
+          "regels": [
+            {
+              "baseline": 970.13,
+              "runs": [
+                {
+                  "tekst": "avocado | cucumber spread | spring onion | ",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1020.14,
+              "runs": [
+                {
+                  "tekst": "tomato",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Cheese baguette",
+          "regels": [
+            {
+              "baseline": 1137.33,
+              "runs": [
+                {
+                  "tekst": "Cheese baguette",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "mustard mayonnaise | cucumber | rocket",
+          "regels": [
+            {
+              "baseline": 1199.33,
+              "runs": [
+                {
+                  "tekst": "mustard mayonnaise | cucumber | rocket",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Hot dishes",
+          "regels": [
+            {
+              "baseline": 1335.73,
+              "runs": [
+                {
+                  "tekst": "Hot dishes",
+                  "x": -0.44,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Minestrone Bar",
+          "regels": [
+            {
+              "baseline": 1482.13,
+              "runs": [
+                {
+                  "tekst": "Minestrone Bar",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "spicy tomato broth | tortellini | mozzarella | Parmesan | sweet pepper | basil | bruschetta | tomato mix | mixed green herbs",
+          "regels": [
+            {
+              "baseline": 1544.13,
+              "runs": [
+                {
+                  "tekst": "spicy tomato broth | tortellini | mozzarella | ",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1594.14,
+              "runs": [
+                {
+                  "tekst": "Parmesan | sweet pepper | basil | bruschetta | ",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1644.15,
+              "runs": [
+                {
+                  "tekst": "tomato mix | mixed green herbs",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Oyster mushroom croquette sandwich",
+          "regels": [
+            {
+              "baseline": 1761.33,
+              "runs": [
+                {
+                  "tekst": "Oyster mushroom ",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1828.53,
+              "runs": [
+                {
+                  "tekst": "croquette sandwich",
+                  "x": -0.44,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "mustard mayonnaise | Oyster mushroom",
+          "regels": [
+            {
+              "baseline": 1890.53,
+              "runs": [
+                {
+                  "tekst": "mustard mayonnaise | Oyster mushroom ",
+                  "x": -0.44,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "x": 2596.0,
+      "kader": {
+        "breedte": 857.44,
+        "minimaal": 847.27,
+        "maximaal": 918.02,
+        "handmatigeAfbrekingen": 1,
+        "gedeeldMet": [
+          "lunch-standaard",
+          "lunch-vega-standaard"
+        ]
+      },
+      "secties": [
+        {
+          "kopAlinea": 0,
+          "gerechten": [
+            {
+              "naamAlinea": 1,
+              "ingrAlinea": 2
+            },
+            {
+              "naamAlinea": 3,
+              "ingrAlinea": null
+            },
+            {
+              "naamAlinea": 4,
+              "ingrAlinea": 5
+            }
+          ]
+        },
+        {
+          "kopAlinea": 6,
+          "gerechten": [
+            {
+              "naamAlinea": 7,
+              "ingrAlinea": 8
+            },
+            {
+              "naamAlinea": 9,
+              "ingrAlinea": 10
+            },
+            {
+              "naamAlinea": 11,
+              "ingrAlinea": 12
+            }
+          ]
+        }
+      ],
+      "alineas": [
+        {
+          "soort": "kop",
+          "tekst": "Fresh & Sweet",
+          "regels": [
+            {
+              "baseline": 532.53,
+              "runs": [
+                {
+                  "tekst": "Fresh & Sweet",
+                  "x": -0.4,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Greek Yoghurt Bar",
+          "regels": [
+            {
+              "baseline": 678.93,
+              "runs": [
+                {
+                  "tekst": "Greek Yoghurt Bar",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "Greek yoghurt | quark | fresh fruit | fruit compotes | muesli | granola | oats",
+          "regels": [
+            {
+              "baseline": 740.93,
+              "runs": [
+                {
+                  "tekst": "Greek yoghurt | quark | fresh fruit | fruit ",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 790.94,
+              "runs": [
+                {
+                  "tekst": "compotes | muesli | granola | oats",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Fresh fruit",
+          "regels": [
+            {
+              "baseline": 890.93,
+              "runs": [
+                {
+                  "tekst": "Fresh fruit",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Sweet Buns",
+          "regels": [
+            {
+              "baseline": 1002.93,
+              "runs": [
+                {
+                  "tekst": "Sweet Buns",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "mini brioche | whipped cream | pistachio crunch | icing sugar",
+          "regels": [
+            {
+              "baseline": 1064.93,
+              "runs": [
+                {
+                  "tekst": "mini brioche | whipped cream | ",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1114.94,
+              "runs": [
+                {
+                  "tekst": "pistachio crunch | icing sugar",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "kop",
+          "tekst": "Salad Bar",
+          "regels": [
+            {
+              "baseline": 1251.33,
+              "runs": [
+                {
+                  "tekst": "Salad Bar",
+                  "x": -0.4,
+                  "font": "Pockota-Medium",
+                  "grootte": 72.0,
+                  "kleur": "#f6a107"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Burrata",
+          "regels": [
+            {
+              "baseline": 1397.73,
+              "runs": [
+                {
+                  "tekst": "Burrata",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "dried mini figs | Brussels sprouts | pistachio | mesclun",
+          "regels": [
+            {
+              "baseline": 1459.73,
+              "runs": [
+                {
+                  "tekst": "dried mini figs | Brussels sprouts | pistachio | ",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            },
+            {
+              "baseline": 1509.74,
+              "runs": [
+                {
+                  "tekst": "mesclun",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Beetroot",
+          "regels": [
+            {
+              "baseline": 1626.93,
+              "runs": [
+                {
+                  "tekst": "Beetroot",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "apple | horseradish cream",
+          "regels": [
+            {
+              "baseline": 1688.93,
+              "runs": [
+                {
+                  "tekst": "apple | horseradish cream",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "naam",
+          "tekst": "Pumpkin",
+          "regels": [
+            {
+              "baseline": 1806.13,
+              "runs": [
+                {
+                  "tekst": "Pumpkin",
+                  "x": -0.4,
+                  "font": "AreaNormal-ExtraBold",
+                  "grootte": 56.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "soort": "ingr",
+          "tekst": "feta | raisins | red cabbage | carrot",
+          "regels": [
+            {
+              "baseline": 1868.13,
+              "runs": [
+                {
+                  "tekst": "feta | raisins | red cabbage | carrot",
+                  "x": -0.4,
+                  "font": "AreaNormal-Hairline",
+                  "grootte": 38.0,
+                  "kleur": "#000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "afwijkingen": [
+    {
+      "kolom": 3,
+      "na": "compotes | muesli | granola | oats",
+      "voor": "Fresh fruit",
+      "overgang": "ingr->naam",
+      "gemeten": 99.99,
+      "ritme": 117.2
+    }
+  ],
+  "zetfouten": []
+}
