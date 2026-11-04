@@ -86,14 +86,19 @@ function aanvraag(over: Partial<AanvraagDetail> = {}): AanvraagDetail {
   }
 }
 
-function fakeDb(row: AanvraagDetail | null = aanvraag()) {
+/** Adressen in de nep-tabel collegas, op naam in kleine letters. */
+const ADRESSEN: Record<string, string> = { britt: 'britt@nbcevents.nl', karen: 'karen@nbcevents.nl', bo: 'bo@nbcevents.nl' }
+
+function fakeDb(row: AanvraagDetail | null = aanvraag(), gestoptAantal = 0) {
   const aanvullingen: (AanvullingRow & NewAanvulling)[] = []
   const patches: Record<string, unknown>[] = []
   const counters = new Map<string, number>()
-  const db: Db & { aanvullingen: typeof aanvullingen; patches: typeof patches; counters: typeof counters } = {
+  const gestopt: { aanvraagId: string; reden: unknown }[] = []
+  const db: Db & { aanvullingen: typeof aanvullingen; patches: typeof patches; counters: typeof counters; gestopt: typeof gestopt } = {
     aanvullingen,
     patches,
     counters,
+    gestopt,
     findByClientRequestId: () => Promise.resolve(null),
     insert: () => Promise.reject(new Error('niet gebruikt')),
     async update(_id, patch) {
@@ -129,6 +134,14 @@ function fakeDb(row: AanvraagDetail | null = aanvraag()) {
     zoekOpId: () => Promise.resolve(null),
     findDetailByAsanaTaskGid: () => Promise.resolve(null),
     collegaEmail: () => Promise.resolve(null),
+    // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
+    collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
+    laatsteVerstuurd: () => Promise.resolve(null),
+    async stopHerinneringen(aanvraagId, _moment, reden) {
+      gestopt.push({ aanvraagId, reden })
+      return gestoptAantal
+    },
+    zetAkkoord: () => Promise.resolve(false),
     findOplevering: () => Promise.resolve(null),
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
@@ -639,7 +652,7 @@ Deno.test('een aangepast menu komt bij de aanvraag, zodat het volgende menuscher
   const res = await createHandler(deps({ db, asana }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon' })))
   assertEquals(res.status, 200)
   assertEquals((await res.json()).bijgewerkt, ['Menu'])
-  assertEquals(db.patches[0], { menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon', menu_pakket: 'lunch-basic' })
+  assertEquals(db.patches[0], { menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes\n• Clubsandwich | kip | bacon', menu_pakket: 'lunch-basic', menu_taal: 'nl' })
   // In de reactie: het nieuwe pakket, het oude, en wat Marketing nu moet doen.
   assertStringIncludes(asana.comments[0], 'Menu aangepast</strong>, pakket Basic Lunch (was Grab &amp; Go)')
   assertStringIncludes(asana.comments[0], 'Genereer nu')
@@ -678,4 +691,22 @@ Deno.test('hetzelfde pakket: geen "was" in de reactie, en de mail toont het nieu
   await createHandler(deps({ db, asana, mail }))(post(payload({ menu_inhoud: nieuwMenu, menu_tekst: 'Broodjes' })))
   assertStringIncludes(asana.comments[0], 'pakket Basic Lunch.')
   assertStringIncludes(mail.verstuurd[0].html, 'Nieuw menu: Basic Lunch')
+})
+
+// ── De herinneringen ───────────────────────────────────
+
+Deno.test('een aanvulling is feedback: de herinneringen om akkoord te geven stoppen', async () => {
+  const mail = fakeMail()
+  const db = fakeDb(aanvraag(), 1)
+  await createHandler(deps({ db, mail }))(post(payload()))
+  assertEquals(db.gestopt, [{ aanvraagId: AANVRAAG_ID, reden: { feedback: true } }])
+  assertStringIncludes(mail.verstuurd[0].html, 'herinneringen zijn gestopt')
+})
+
+Deno.test('wie niet in de lijst staat, kan niets aanvullen', async () => {
+  const db = fakeDb()
+  const res = await createHandler(deps({ db }))(post(payload({ naam: 'Jan Nieuwkomer' })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvulling.naam')
+  assertEquals(db.aanvullingen.length, 0)
 })

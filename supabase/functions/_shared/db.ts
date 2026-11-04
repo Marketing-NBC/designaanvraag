@@ -54,6 +54,8 @@ export interface AanvraagDetail extends AanvraagRow {
   omschrijving: string
   /** Het pakket van het menu; leeg als er geen menu bij hoort. Voor "was: …" bij een nieuw menu. */
   menu_pakket: string
+  /** Nederlands of Engels; ontbreekt in een rij van voor de migratie van november 2026. */
+  menu_taal?: 'nl' | 'en'
 }
 
 export interface AanvullingRow {
@@ -111,6 +113,17 @@ export interface OpleveringRow {
   verstuurd_op: string | null
   /** De Asana-gebruiker die op Verstuur nu drukte; voor een mail die op de 3D-preview wacht. */
   door: string | null
+  /** Krijgt deze oplevering herinneringen? Alleen wat na de invoering van het akkoord verstuurd is. */
+  herinneren: boolean
+  akkoord_op: string | null
+  akkoord_door: string | null
+  /** Er kwam een aanvulling binnen na deze oplevering. */
+  feedback_op: string | null
+  /** Herinneringen gestopt om een andere reden: afgerond in Asana, of een nieuwere versie. */
+  gestopt_op: string | null
+  gestopt_reden: string | null
+  herinneringen: number
+  laatste_herinnering: string | null
 }
 
 export type LedkolomStatus = 'wacht' | 'klaar' | 'mislukt'
@@ -140,7 +153,12 @@ export interface Db {
   findByClientRequestId(id: string): Promise<AanvraagRow | null>
   insert(row: NewAanvraag): Promise<AanvraagRow>
   /** Ook het menu, als een aanvulling het aanpast; dat staat niet in AanvraagRow. */
-  update(id: string, patch: Partial<AanvraagRow> & { menu_inhoud?: MenuInhoud; menu_tekst?: string; menu_pakket?: string }): Promise<void>
+  update(id: string, patch: Partial<AanvraagRow> & {
+    menu_inhoud?: MenuInhoud
+    menu_tekst?: string
+    menu_pakket?: string
+    menu_taal?: 'nl' | 'en'
+  }): Promise<void>
   /** De aanvraag achter een Asana-taak; nodig voor de knop "Genereer nu". */
   findByAsanaTaskGid(gid: string): Promise<AanvraagRow | null>
   /** Verhoogt de teller voor `key` in het venster en geeft de nieuwe stand terug. */
@@ -186,11 +204,28 @@ export interface Db {
   findDetailByAsanaTaskGid(gid: string): Promise<AanvraagDetail | null>
   /** Het e-mailadres van een collega, op naam (hoofdletters daargelaten). Null als het er niet is. */
   collegaEmail(naam: string): Promise<string | null>
+  /**
+   * De naam zoals hij in de lijst met (actieve) collega's staat, of null als hij er niet in staat.
+   * Alleen collega's uit de lijst mogen een aanvraag doen.
+   */
+  collega(naam: string): Promise<string | null>
   /** De oplevering die van deze subtaak gemaakt is, als die er al is. */
   findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
   aantalVerstuurd(aanvraagId: string): Promise<number>
-  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'> & Partial<Pick<OpleveringRow, 'status' | 'door'>>): Promise<OpleveringRow>
+  /** De laatst verstuurde oplevering van een aanvraag: daar gaat een akkoord over. */
+  laatsteVerstuurd(aanvraagId: string): Promise<OpleveringRow | null>
+  /**
+   * Stopt de herinneringen van alle verstuurde opleveringen van deze aanvraag waar nog niets op
+   * gebeurd is. `feedback`: er kwam een aanvulling binnen; anders een andere reden (gestopt_reden).
+   */
+  stopHerinneringen(aanvraagId: string, moment: Date, reden: { feedback: true } | { gestopt: string }): Promise<number>
+  /**
+   * Akkoord op deze oplevering, alleen als er nog geen akkoord op staat. False als iemand anders net
+   * eerder was; dan is het al geregeld.
+   */
+  zetAkkoord(opleveringId: string, door: string, moment: Date): Promise<boolean>
+  insertOplevering(row: Pick<OpleveringRow, 'aanvraag_id' | 'subtaak_gid' | 'versie' | 'ontvangers' | 'bijlagen'> & Partial<Pick<OpleveringRow, 'status' | 'door' | 'herinneren'>>): Promise<OpleveringRow>
   updateOplevering(id: string, patch: Partial<Omit<OpleveringRow, 'id'>>): Promise<void>
   /**
    * Een wachtende oplevering oppakken om te versturen: alleen als hij nog op wacht_op_preview staat.
@@ -209,11 +244,11 @@ export interface Db {
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket`
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket, menu_taal`
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'
-const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op, door'
+const OPLEVERING_COLUMNS = 'id, created_at, aanvraag_id, subtaak_gid, versie, ontvangers, bijlagen, status, fout, verstuurd_op, door, herinneren, akkoord_op, akkoord_door, feedback_op, gestopt_op, gestopt_reden, herinneringen, laatste_herinnering'
 const LEDKOLOM_COLUMNS = 'id, aanvraag_id, bron, status, fout, previews, gevraagd_op, klaar_op'
 
 /** Tekens waarmee je in een PostgREST-filter uit de waarde zou kunnen breken. */
@@ -393,6 +428,38 @@ export function createDb(url: string, secretKey: string): Db {
       if (error) throw new Error(`db collegas: ${error.message}`)
       const email = (data as { email: string | null }[] | null)?.[0]?.email?.trim()
       return email || null
+    },
+    async collega(naam) {
+      const term = veiligeZoekterm(naam)
+      if (!term) return null
+      // ilike zonder jokertekens: dezelfde naam, alleen de hoofdletters mogen verschillen.
+      const { data, error } = await sb.from('collegas').select('naam').ilike('naam', term).eq('actief', true).limit(1)
+      if (error) throw new Error(`db collegas: ${error.message}`)
+      return (data as { naam: string }[] | null)?.[0]?.naam?.trim() || null
+    },
+    async laatsteVerstuurd(aanvraagId) {
+      const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS)
+        .eq('aanvraag_id', aanvraagId).eq('status', 'verstuurd')
+        .order('verstuurd_op', { ascending: false }).limit(1).maybeSingle()
+      if (error) throw new Error(`db select oplevering: ${error.message}`)
+      return (data as OpleveringRow | null) ?? null
+    },
+    async stopHerinneringen(aanvraagId, moment, reden) {
+      const patch = 'feedback' in reden
+        ? { feedback_op: moment.toISOString() }
+        : { gestopt_op: moment.toISOString(), gestopt_reden: reden.gestopt }
+      const { data, error } = await sb.from('opleveringen').update(patch)
+        .eq('aanvraag_id', aanvraagId).eq('status', 'verstuurd')
+        .is('akkoord_op', null).is('feedback_op', null).is('gestopt_op', null)
+        .select('id')
+      if (error) throw new Error(`db herinneringen stoppen: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length
+    },
+    async zetAkkoord(opleveringId, door, moment) {
+      const { data, error } = await sb.from('opleveringen').update({ akkoord_op: moment.toISOString(), akkoord_door: door })
+        .eq('id', opleveringId).is('akkoord_op', null).select('id')
+      if (error) throw new Error(`db akkoord: ${error.message}`)
+      return ((data as unknown[] | null) ?? []).length > 0
     },
     async findOplevering(subtaakGid) {
       const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS).eq('subtaak_gid', subtaakGid).maybeSingle()

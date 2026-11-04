@@ -203,17 +203,24 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.getByPlaceholder('Typ of kies je naam')).toHaveValue('Fenna Demo')
   })
 
-  test('interne aanvraag met een naam die niet in de lijst staat', async ({ page }, testInfo) => {
+  test('interne aanvraag; wie niet in de lijst staat kan niet verder', async ({ page }, testInfo) => {
     const p = testInfo.project.name
     await page.goto('/')
     await page.getByRole('button', { name: 'Start' }).click()
     await page.getByRole('radio', { name: 'NBC' }).click()
     await page.locator('[data-primary-action]').click()
 
-    // Een naam die niet in de lijst staat: gewoon typen en door met Enter.
+    // Een naam die niet in de lijst staat: het formulier zegt het meteen, en je kunt niet door.
     await page.getByPlaceholder('Typ of kies je naam').fill('Jan Nieuwkomer')
-    await expect(page.locator('.combo__nieuw')).toContainText('Niet in de lijst')
+    await expect(page.locator('.combo__nieuw')).toContainText('staat niet in de lijst')
     await page.keyboard.press('Enter')
+    await expect(page.getByRole('alert')).toContainText('Vraag Marketing om je toe te voegen')
+    await expect(page.getByRole('heading', { name: 'Hoe heet je?' })).toBeVisible()
+
+    // Met kleine letters getypt is ook goed: de naam komt zoals hij in de lijst staat.
+    await page.getByPlaceholder('Typ of kies je naam').fill('fenna demo')
+    await page.keyboard.press('Escape')
+    await page.locator('[data-primary-action]').click()
 
     await expect(page.getByRole('heading', { name: 'Is het voor een evenement of intern?' })).toBeVisible()
     await page.keyboard.press('b')
@@ -239,7 +246,7 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.getByRole('heading', { name: 'Klopt dit?' })).toBeVisible()
     const labels = await page.locator('.review__label').allTextContents()
     expect(labels).toEqual(['locatie', 'naam', 'voor', 'wat je aanvraagt', 'nodig op'])
-    await expect(page.locator('.review__row', { hasText: 'naam' }).first().locator('.review__value')).toHaveText('Jan Nieuwkomer')
+    await expect(page.locator('.review__row', { hasText: 'naam' }).first().locator('.review__value')).toHaveText('Fenna Demo')
     await shot(page, '22-overzicht-intern', p)
 
     await page.getByRole('button', { name: 'Verstuur aanvraag' }).click()
@@ -263,9 +270,14 @@ test.describe('designaanvraag-flow', () => {
     await page.locator('[data-primary-action]').click()
 
     await expect(page.getByRole('heading', { name: 'Wie ben je?' })).toBeVisible()
-    // Een naam buiten de lijst, en dan één Enter: die moet meteen door.
+    // Een naam buiten de lijst kan niet: je moet in de lijst staan.
     await page.getByPlaceholder('Typ of kies je naam').fill('Iemand Anders')
     await page.keyboard.press('Enter')
+    await expect(page.getByRole('alert')).toContainText('Vraag Marketing om je toe te voegen')
+    // Een naam uit de lijst, getypt en dan één Enter: die moet meteen door.
+    await page.getByPlaceholder('Typ of kies je naam').fill('demi demo')
+    await page.keyboard.press('Escape')
+    await page.locator('[data-primary-action]').click()
 
     await expect(page.getByRole('heading', { name: 'Wat moet erbij of anders?' })).toBeVisible()
     await page.locator('#a-toelichting').fill('Er komen ook vlaggen bij.')
@@ -314,5 +326,30 @@ test.describe('designaanvraag-flow', () => {
     await expect(page.locator('.datumregel')).toContainText('Deadline')
     await page.getByRole('button', { name: 'Versturen' }).click()
     await expect(page.getByRole('heading', { name: 'Genoteerd.' })).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('akkoord geven vanuit de link in de mail', async ({ page }, testInfo) => {
+    const p = testInfo.project.name
+    await page.goto('/?akkoord=11111111-2222-4333-8444-555555555555')
+    await expect(page.getByRole('heading', { name: 'Akkoord geven' })).toBeVisible()
+    // De link zelf geeft geen akkoord: dat zou een virusscanner ook doen.
+    await expect(page).toHaveURL(/\/$/)
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('alert')).toContainText('Vul je naam in')
+    await page.getByPlaceholder('Typ of kies je naam').fill('Iemand Anders')
+    await page.keyboard.press('Escape')
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('alert')).toContainText('Vraag Marketing om je toe te voegen')
+    // Een andere collega: alleen de aanvrager kan akkoord geven.
+    await page.getByPlaceholder('Typ of kies je naam').fill('bo')
+    await page.getByRole('option', { name: 'Bo Demo' }).click()
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('alert')).toContainText('Alleen Alex Demo')
+    await page.getByPlaceholder('Typ of kies je naam').fill('alex')
+    await page.getByRole('option', { name: 'Alex Demo' }).click()
+    await shot(page, '30-akkoord', p)
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('heading', { name: 'Dank je wel.' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('.success__status')).toContainText('Akkoord van Alex Demo')
   })
 })

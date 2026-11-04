@@ -662,8 +662,42 @@
 
   // ------------------------------------------------------------- opbouw
 
+  /**
+   * Schuift de dieetwens-regel (icoon en tekst samen) naar links als de tekst de blob raakt.
+   *
+   * In het Nederlands gebeurt dat nooit: daar staat hij waar de ontwerper hem zette. Een Engels
+   * menu heeft een langere regel ("Dietary requirements or allergies?"), en op sommige ontwerpen
+   * loopt die dan de blob in. Dan schuift het hele blok net zo ver op als nodig, plus wat lucht,
+   * en niet verder dan de linkermarge. Het ontwerp verschuift dus alleen als het anders kapot is.
+   */
+  function schuifVoetregel(grenzen) {
+    const voet = basis.voetregel
+    if (!grenzen || !voet || !voet.regels || !voet.regels.length) return 0
+    const LUCHT = 40
+    let schuif = 0
+    for (const regel of voet.regels) {
+      const x1 = regel.x + breedte(regel.tekst, regel.font, regel.grootte)
+      const boven = Math.max(0, Math.round(regel.baseline - regel.grootte))
+      const onder = Math.min(2159, Math.round(regel.baseline + regel.grootte * 0.3))
+      let rand = Infinity
+      for (let y = boven; y <= onder; y++) rand = Math.min(rand, grenzen.rechts[y])
+      if (x1 > rand) schuif = Math.max(schuif, x1 - rand + LUCHT)
+    }
+    if (!schuif) return 0
+    const links = Math.min(...voet.regels.map((r) => r.x), voet.icoon ? voet.icoon.x : Infinity)
+    schuif = Math.min(schuif, Math.max(0, links - 120))
+    for (const regel of voet.regels) regel.x -= schuif
+    if (voet.icoon) voet.icoon.x -= schuif
+    return schuif
+  }
+
   function bouw(grenzen) {
     const doek = document.getElementById('doek')
+    const voetGeschoven = schuifVoetregel(grenzen)
+    if (voetGeschoven) {
+      meldingen.structuur.push(`De dieetwens-regel is ${Math.round(voetGeschoven)} px naar links geschoven, `
+        + 'anders liep de tekst de blob in.')
+    }
 
     // --- titel
     const titelGroep = document.getElementById('titel')
@@ -673,6 +707,14 @@
       const t = el('text', { x: tb.x, y: tb.baseline, 'font-family': tb.font,
                              'font-size': tb.grootte, fill: merk.tekstkleur || tb.kleur })
       t.textContent = tekst
+      titelGroep.appendChild(t)
+    }
+    // Een ondertitel onder de titel ("vegetarian" onder "Lunch"), als het ontwerp er een heeft.
+    const ot = basis.ondertitel
+    if (ot && ot.tekst) {
+      const t = el('text', { x: ot.x, y: ot.baseline, 'font-family': ot.font,
+                             'font-size': ot.grootte, fill: merk.tekstkleur || ot.kleur })
+      t.textContent = ot.tekst
       titelGroep.appendChild(t)
     }
 

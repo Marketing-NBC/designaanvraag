@@ -9,6 +9,22 @@
 /** Het formulier zelf. De knop "Feedback geven" in de opleveringsmail wijst hierheen. */
 export const FORMULIER_URL = 'https://marketing-nbc.github.io/designaanvraag/'
 
+/** Een link naar het formulier met één aanvraag al gekozen: `?<soort>=<id>`. */
+function formulierMet(soort: 'aanvullen' | 'akkoord', aanvraagId: string, basis = FORMULIER_URL): string {
+  const url = new URL(basis)
+  url.searchParams.set(soort, aanvraagId)
+  return url.toString()
+}
+
+/** "Iets aanvullen of wijzigen" uit de bevestigingsmail: het aanvulscherm met deze aanvraag gekozen. */
+export const aanvullenUrl = (aanvraagId: string, basis = FORMULIER_URL) => formulierMet('aanvullen', aanvraagId, basis)
+
+/**
+ * De knop "Akkoord geven" in de opleveringsmail en de herinneringen. Opent een scherm met een knop:
+ * een link die bij openen al akkoord zou geven, gaat af zodra een virusscanner van de mail hem opent.
+ */
+export const akkoordUrl = (aanvraagId: string, basis = FORMULIER_URL) => formulierMet('akkoord', aanvraagId, basis)
+
 /** Het postvak van het marketingteam. */
 export const MARKETING_MAIL = 'marketing@nbcevents.nl'
 

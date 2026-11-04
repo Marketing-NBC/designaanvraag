@@ -68,6 +68,8 @@ export function renderNotes(a: Aanvraag, opts: { aanvraagId: string; bijlagen?: 
     ['Aanvraag', describeRequestTypes(a.aanvraag_types, a.anders_tekst)],
     ['Design', modusLabel(a)],
   ]
+  // Het menuscherm komt in het Engels: dat moet Marketing zien voordat het op Genereer nu drukt.
+  if (a.menu_tekst && a.menu_taal === 'en') rows.push(['Taal van het menu', 'Engels'])
 
   const htmlLines: string[] = []
   for (const [k, v] of rows) htmlLines.push(`<strong>${escapeXml(k)}:</strong> ${escapeXml(v)}`)
@@ -145,6 +147,8 @@ export function renderAanvullingComment(v: {
   heropendVoor?: string | null
   /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
   menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
+  /** Er wachtte een oplevering op akkoord; die herinneringen zijn nu gestopt. */
+  herinneringenGestopt?: boolean
 }): string {
   const lines: string[] = []
 
@@ -180,6 +184,9 @@ export function renderAanvullingComment(v: {
     lines.push(
       `<strong>Schijf volgens de aanvrager:</strong> ${escapeXml(v.schijfNietOvergenomen)} — het veld Schijf was al ingevuld, dus dat is niet overschreven.`,
     )
+  }
+  if (v.herinneringenGestopt) {
+    lines.push('<strong>Akkoord:</strong> was nog niet gegeven; de dagelijkse herinneringen zijn gestopt omdat dit feedback is.')
   }
   if (!v.bijgewerkt.length && !v.link && !v.schijfNietOvergenomen && !v.bijlagen?.length && v.heropendVoor === undefined && !v.menu) {
     lines.push('<em>Er zijn geen velden aangepast; dit is alleen een toelichting.</em>')

@@ -40,7 +40,7 @@ export interface OpleverDeps {
   asana: AsanaTaskClient
   db: Pick<Db,
     | 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
-    | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview'>
+    | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview' | 'stopHerinneringen'>
   /** Null als Microsoft 365 niet is ingesteld; dan zegt de reactie dat. */
   mail: MailClient | null
   cfg: AsanaFieldsConfig
@@ -226,7 +226,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         if (rij) {
           // Een eerdere poging met deze subtaak mislukte (of bleef hangen, of wachtte op de
           // 3D-preview): dezelfde rij opnieuw.
-          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door }
+          const patch = { versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, fout: null, created_at: now().toISOString(), door, herinneren: true }
           if (rij.status === 'wacht_op_preview' && status === 'bezig') {
             // Twee meldingen tegelijk (twee kolommen klaar), of een melding en een druk op de knop:
             // wie hem het eerst oppakt, verstuurt hem.
@@ -235,7 +235,9 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
             await db.updateOplevering(rij.id, patch)
           }
         } else {
-          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door })
+          // herinneren: tot er akkoord of feedback is, krijgt iedereen die deze mail kreeg
+          // elke werkdag een herinnering (scripts/herinneringen.mjs).
+          rij = await db.insertOplevering({ aanvraag_id: aanvraag.id, subtaak_gid: subtaak.gid, versie, ontvangers: aan, bijlagen: bijlagenAdmin, status, door, herinneren: true })
         }
       }
 
@@ -279,6 +281,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         andersTekst: aanvraag.anders_tekst,
         berichtHtml,
         afzenderNaam: wie.naam,
+        aanvrager: aanvraag.naam,
         bijlagen: bijlagen.map((b) => ({ naam: b.naam, bytes: b.bytes.length })),
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
         previews,
@@ -305,6 +308,11 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
 
       const moment = now()
       const datum = vandaagInNl(moment)
+      // Een vorige versie die nog op akkoord wachtte, hoeft geen herinneringen meer: het gaat nu om
+      // deze. Vóór het op verstuurd zetten van deze rij, anders stopt hij zichzelf.
+      await db.stopHerinneringen(aanvraag.id, moment, { gestopt: `versie ${versie} verstuurd` }).catch((e) => {
+        log('warn', 'herinneringen van vorige versie stoppen mislukt', { aanvraag: aanvraag.id, error: fout(e) })
+      })
       await db.updateOplevering(rij!.id, { status: 'verstuurd', fout: null, verstuurd_op: moment.toISOString() })
       log('info', 'opleveringsmail verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, versie, ontvangers: aan.length, bijlagen: bijlagen.length })
 

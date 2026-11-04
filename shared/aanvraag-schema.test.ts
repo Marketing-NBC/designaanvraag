@@ -224,3 +224,14 @@ describe('evenement of intern', () => {
     expect(aanvraagSchema.safeParse({ ...valid, naam: ' ' }).success).toBe(false)
   })
 })
+
+describe('de taal van het menu', () => {
+  it('zonder iets erbij: Nederlands', () => {
+    expect(aanvraagSchema.parse(valid).menu_taal).toBe('nl')
+  })
+
+  it('kent alleen Nederlands en Engels', () => {
+    expect(aanvraagSchema.safeParse({ ...valid, menu_taal: 'en' }).success).toBe(true)
+    expect(aanvraagSchema.safeParse({ ...valid, menu_taal: 'de' }).success).toBe(false)
+  })
+})

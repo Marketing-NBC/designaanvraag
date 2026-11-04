@@ -9,12 +9,13 @@ import { DateField } from './components/DateField'
 import { Icon } from './components/Icon'
 import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
+import { NIET_IN_LIJST_AANVULLEN, naamUitLijst } from './state'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
 import { ApiError, haalAanvraag, verstuurAanvulling, zoekAanvragen, zoekInterneAanvragen } from './lib/api'
 import { useBijlagen } from './lib/uploads'
-import { PAKKETTEN_OP_SCHERM, aantalGerechten, leegMenu, naarInhoud, naarTekst, uitPakket, type MenuKeuze } from './lib/menu'
+import { aantalGerechten, leegMenu, naarInhoud, naarTekst, pakkettenOpScherm, taalVan, uitPakket, type MenuKeuze } from './lib/menu'
 import { formatShort, isBeforeToday, todayIso } from './lib/dates'
 
 /**
@@ -48,6 +49,11 @@ interface Props {
   collegas: string[]
   /** Id van een aanvraag die al gekozen is: de feedbacklink uit de opleveringsmail. */
   vooraf?: string | null
+  /**
+   * Waar de link met `vooraf` vandaan kwam: de knop "Feedback geven" (opleveringsmail, herinnering)
+   * of "Iets aanvullen of wijzigen" (bevestigingsmail). Verandert alleen de teksten.
+   */
+  bron?: 'feedback' | 'aanvullen'
   onSluit: () => void
 }
 
@@ -74,9 +80,11 @@ const leeg: Draft = {
 
 /** Het menu van de aanvraag als keuze voor het menuscherm: wat er stond, of het pakket van toen. */
 function menuVan(m: GevondenAanvraag['menu']): MenuKeuze {
-  if (m?.inhoud) return { pakket: m.inhoud.pakket, secties: m.inhoud.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map((g) => ({ ...g })) })) }
-  if (m?.pakket) return uitPakket(m.pakket)
-  return leegMenu()
+  // Ontbreekt de taal, dan is het een menu van voor de taalkeuze: Nederlands.
+  const taal = m?.inhoud?.taal === 'en' ? 'en' : 'nl'
+  if (m?.inhoud) return { pakket: m.inhoud.pakket, taal, secties: m.inhoud.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map((g) => ({ ...g })) })) }
+  if (m?.pakket) return uitPakket(m.pakket, taal)
+  return leegMenu(taal)
 }
 
 /** Is de deadline van deze aanvraag al voorbij? Dan moet er een nieuwe bij. Zonder deadline niet. */
@@ -84,7 +92,7 @@ function deadlineVerlopen(a: Pick<GevondenAanvraag, 'deadline'> | null): boolean
   return Boolean(a?.deadline && isBeforeToday(a.deadline))
 }
 
-export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
+export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit }: Props) {
   const [index, setIndex] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [soort, setSoort] = useState<Soort | null>(null)
@@ -127,6 +135,8 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
   const heeftMenu = Boolean(gekozen && vraagtOmMenu(gekozen.aanvraag_types))
   const [menuLaden, setMenuLaden] = useState(false)
   const stap: Stap = stappen[index]
+  // Via de feedbackknop gaat het over het ontwerp; via de bevestigingsmail is het een gewone aanvulling.
+  const alsFeedback = feedback === 'ja' && bron === 'feedback'
   const verlopen = deadlineVerlopen(gekozen)
   const patch = (p: Partial<Draft>) => setDraft((d) => ({ ...d, ...p }))
 
@@ -191,6 +201,8 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
       const n = draft.naam.trim()
       if (n.length < 2) return 'Vul je naam in.'
       if (n.length > 80) return 'Houd het bij maximaal 80 tekens.'
+      // Alleen collega's uit de lijst; is de lijst niet geladen, dan houdt de function het tegen.
+      if (collegas.length && !naamUitLijst(n, collegas)) return NIET_IN_LIJST_AANVULLEN
       return null
     }
     if (stap === 'toelichting') {
@@ -220,6 +232,11 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
   const volgende = () => {
     const f = valideer()
     if (f) return fout(f)
+    // De naam zoals hij in de lijst staat: "britt" wordt "Britt".
+    if (stap === 'naam') {
+      const lijstnaam = naamUitLijst(draft.naam, collegas)
+      if (lijstnaam && lijstnaam !== draft.naam) patch({ naam: lijstnaam })
+    }
     if (index < stappen.length - 1) ga(index + 1, 1)
     else void verstuur()
   }
@@ -275,10 +292,11 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
       }
       // Op de pakketkeuze werken de letters, net als in het formulier.
       if (stap === 'menu' && draft.menu && !draft.menu.pakket && el?.tagName !== 'INPUT' && !e.metaKey && !e.ctrlKey && e.key.length === 1) {
-        const pakket = PAKKETTEN_OP_SCHERM[LETTERS.indexOf(e.key.toUpperCase())]
+        const taal = taalVan(draft.menu)
+        const pakket = pakkettenOpScherm(taal)[LETTERS.indexOf(e.key.toUpperCase())]
         if (pakket) {
           e.preventDefault()
-          patch({ menu: uitPakket(pakket.pakket) })
+          patch({ menu: uitPakket(pakket.pakket, taal) })
           return
         }
       }
@@ -298,7 +316,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  if (klaar) return <Gelukt result={klaar} gekozen={gekozen} feedback={feedback === 'ja'} onSluit={onSluit} />
+  if (klaar) return <Gelukt result={klaar} gekozen={gekozen} feedback={alsFeedback} onSluit={onSluit} />
 
   if (feedback === 'laden') {
     return (
@@ -315,20 +333,22 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
     zoek: 'Bij welk event hoort het?',
     naam: 'Wie ben je?',
     kies: 'Over welke aanvraag gaat het?',
-    toelichting: feedback === 'ja' ? 'Wat wil je anders?' : 'Wat moet erbij of anders?',
+    toelichting: alsFeedback ? 'Wat wil je anders?' : 'Wat moet erbij of anders?',
     menu: 'Pas het menu aan',
     extra: verlopen ? 'De deadline is verstreken' : 'Verandert er nog iets aan de aanvraag?',
   }
   const hulp: Record<Stap, string | undefined> = {
     soort: 'Dan zoeken we de goede aanvraag erbij.',
     zoek: 'Typ een deel van de eventnaam. Je ziet de aanvragen van de afgelopen maanden.',
-    naam: feedback === 'ja'
+    naam: alsFeedback
       ? `Je geeft feedback op ${waarover}. Dan weet Marketing van wie hij komt.`
+      : feedback === 'ja'
+        ? `Je vult ${waarover} aan. Dan weet Marketing van wie het komt.`
       : soort === 'intern'
         ? 'Je naam zoals je hem bij de aanvraag invulde; dan zoeken we je interne aanvragen erbij.'
         : 'Dan weet Marketing wie deze aanvulling stuurde.',
     kies: 'Je interne aanvragen van de afgelopen maanden.',
-    toelichting: feedback === 'ja'
+    toelichting: alsFeedback
       ? 'Wat moet er anders aan het ontwerp? Hoe concreter, hoe sneller het goed is. Heb je bestanden of een screenshot met aantekeningen, voeg ze hier toe.'
       : 'Extra wensen, iets wat erbij moet komen, aanvullende informatie of feedback op het concept. Heb je bestanden, voeg ze hier meteen toe. Het marketingteam krijgt er meteen bericht van.',
     menu: 'Zo staat het menu nu bij je aanvraag. Wissel of verwijder gerechten, voeg er een toe, of kies onder "Pakket wijzigen" een ander pakket.',
@@ -388,6 +408,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
                 names={collegas}
                 invalid={Boolean(error)}
                 onEnter={volgende}
+                nieuwHint="Deze naam staat niet in de lijst. Vraag Marketing om je toe te voegen."
               />
             ) : null}
 
@@ -409,7 +430,7 @@ export function Aanvulling({ collegas, vooraf = null, onSluit }: Props) {
             ) : null}
             {/* Alleen als er een menukaart of menuscherm bij de aanvraag hoort. */}
             {stap === 'toelichting' && heeftMenu ? (
-              <MenuKnop feedback={feedback === 'ja'} aangepast={Boolean(draft.menu)} laden={menuLaden} onOpen={() => void openMenu()} onLaat={() => patch({ menu: null })} />
+              <MenuKnop feedback={alsFeedback} aangepast={Boolean(draft.menu)} laden={menuLaden} onOpen={() => void openMenu()} onLaat={() => patch({ menu: null })} />
             ) : null}
 
             {stap === 'menu' && draft.menu ? (

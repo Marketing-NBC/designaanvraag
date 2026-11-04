@@ -1,0 +1,1667 @@
+{
+  "_comment": "Gegenereerd door worker/menu/pakketten-export.mjs --taal en uit de Engelse basisontwerpen (worker/menu/basis/en/, uit Flexibele-template-designs-V1_ENG.ai). Niet met de hand bewerken.",
+  "pakketten": [
+    {
+      "pakket": "buffet",
+      "naam": "Winter buffet",
+      "titel": "Buffet",
+      "secties": [
+        {
+          "kop": "Salad Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "dried mini figs",
+                "Brussels sprouts",
+                "pistachio",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Beetroot",
+              "ingredienten": [
+                "apple",
+                "smoked mackerel",
+                "horseradish cream"
+              ]
+            },
+            {
+              "naam": "Thai chicken",
+              "ingredienten": [
+                "romaine lettuce",
+                "carrot",
+                "cucumber",
+                "roasted sweet pepper"
+              ]
+            },
+            {
+              "naam": "Pumpkin",
+              "ingredienten": [
+                "feta",
+                "raisins",
+                "red cabbage",
+                "carrot"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hot dishes",
+          "gerechten": [
+            {
+              "naam": "Crispy Parmesan potatoes"
+            },
+            {
+              "naam": "Winter ratatouille"
+            },
+            {
+              "naam": "Seared salmon",
+              "ingredienten": [
+                "sauerkraut",
+                "fermented mustard"
+              ]
+            },
+            {
+              "naam": "Coq au vin",
+              "ingredienten": [
+                "silverskin onions",
+                "red wine",
+                "winter carrot"
+              ]
+            },
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "miso butter jus"
+              ]
+            },
+            {
+              "naam": "Pumpkin risotto",
+              "ingredienten": [
+                "gorgonzola",
+                "fresh figs"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Dessert",
+          "gerechten": [
+            {
+              "naam": "Chocolate trifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "cherries",
+                "Tony’s Chocolonely shavings"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "diner-3gangen",
+      "naam": "Three-course sit-down dinner",
+      "titel": "Dinner",
+      "secties": [
+        {
+          "kop": "On the Table",
+          "gerechten": [
+            {
+              "naam": "Sourdough bread",
+              "ingredienten": [
+                "butter",
+                "fleur de sel",
+                "lime",
+                "olives",
+                "sun-dried tomato",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "tuna tartare",
+                "horseradish",
+                "affilla cress",
+                "onion crumble"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Starter",
+          "gerechten": [
+            {
+              "naam": "Pulled chicken",
+              "ingredienten": [
+                "red chicory",
+                "mozzarella",
+                "fermented mustard",
+                "caramelised pecan nuts",
+                "citrus mayonnaise"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Main course",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "winter carrot crème",
+                "parsnip spaghetti",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Dessert",
+          "gerechten": [
+            {
+              "naam": "Chocolate trifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "cherries",
+                "Tony’s Chocolonely shavings"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "diner-4gangen",
+      "naam": "Four-course sit-down dinner",
+      "titel": "Dinner",
+      "secties": [
+        {
+          "kop": "On the Table",
+          "gerechten": [
+            {
+              "naam": "Sourdough bread",
+              "ingredienten": [
+                "butter",
+                "fleur de sel",
+                "lime",
+                "olives",
+                "sun-dried tomato",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "tuna tartare",
+                "horseradish",
+                "affilla cress",
+                "onion crumble"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Starter",
+          "gerechten": [
+            {
+              "naam": "Pulled chicken",
+              "ingredienten": [
+                "red chicory",
+                "mozzarella",
+                "fermented mustard",
+                "caramelised pecan nuts",
+                "citrus mayonnaise"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Intermediate course",
+          "gerechten": [
+            {
+              "naam": "Pumpkin ravioli",
+              "ingredienten": [
+                "cured Italian ham",
+                "sage butter sauce"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Main course",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "winter carrot crème",
+                "parsnip spaghetti",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Dessert",
+          "gerechten": [
+            {
+              "naam": "Chocolate trifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "cherries",
+                "Tony’s Chocolonely shavings"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "grab-and-go",
+      "naam": "Grab & Go",
+      "titel": "Grab & Go",
+      "secties": [
+        {
+          "kop": "Appetisers",
+          "gerechten": [
+            {
+              "naam": "Tartlet",
+              "onderdelen": [
+                {
+                  "naam": "Beef tartare",
+                  "toelichting": [
+                    "umami cream",
+                    "quail’s egg"
+                  ]
+                },
+                {
+                  "naam": "Taleggio (vegetarian)",
+                  "toelichting": [
+                    "creamy Taleggio cheese filling",
+                    "herb crunch"
+                  ]
+                }
+              ]
+            },
+            {
+              "naam": "Pão de queijo",
+              "ingredienten": [
+                "Brazilian cheese bites",
+                "piri piri dip"
+              ]
+            },
+            {
+              "naam": "Bruschetta skewers with seasonal dips",
+              "ingredienten": [
+                "(vegetarian)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Starters",
+          "gerechten": [
+            {
+              "naam": "Pulled chicken",
+              "ingredienten": [
+                "red chicory",
+                "mozzarella",
+                "fermented mustard",
+                "caramelised pecan nuts",
+                "citrus mayonnaise"
+              ]
+            },
+            {
+              "naam": "Dutch prime beef",
+              "ingredienten": [
+                "ravigote",
+                "herb crunch",
+                "lime"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Main courses",
+          "gerechten": [
+            {
+              "naam": "Winter burger",
+              "ingredienten": [
+                "red onion chutney",
+                "red cabbage slaw",
+                "chilli pepper sauce"
+              ]
+            },
+            {
+              "naam": "Schiacciata Toscana",
+              "ingredienten": [
+                "burrata",
+                "Parmesan",
+                "tomato salsa"
+              ]
+            },
+            {
+              "naam": "Pumpkin ravioli",
+              "ingredienten": [
+                "cured Italian ham",
+                "sage butter sauce"
+              ]
+            },
+            {
+              "naam": "Grip ’n dip fries",
+              "ingredienten": [
+                "coq au vin",
+                "tomato crunch",
+                "smoked beetroot mayonnaise"
+              ]
+            },
+            {
+              "naam": "Sauerkraut mash",
+              "ingredienten": [
+                "seared salmon",
+                "pancetta crumble",
+                "fermented mustard"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Dessert",
+          "gerechten": [
+            {
+              "naam": "Chocolate trifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "cherries",
+                "Tony’s Chocolonely shavings"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salad Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "dried mini figs",
+                "Brussels sprouts",
+                "pistachio",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Beetroot",
+              "ingredienten": [
+                "apple",
+                "smoked mackerel",
+                "horseradish cream"
+              ]
+            },
+            {
+              "naam": "Thai chicken",
+              "ingredienten": [
+                "romaine lettuce",
+                "carrot",
+                "cucumber",
+                "roasted sweet pepper"
+              ]
+            },
+            {
+              "naam": "Pumpkin",
+              "ingredienten": [
+                "feta",
+                "raisins",
+                "red cabbage",
+                "carrot"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-basic",
+      "naam": "Basic Lunch",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Sandwiches",
+          "gerechten": [
+            {
+              "naam": "Wholemeal bun",
+              "ingredienten": [
+                "aged cheese",
+                "truffle mayonnaise",
+                "Lollo Bianca lettuce",
+                "cucumber (vegetarian)"
+              ]
+            },
+            {
+              "naam": "White sesame bun",
+              "ingredienten": [
+                "ham",
+                "herb spread",
+                "butter lettuce",
+                "tomato"
+              ]
+            },
+            {
+              "naam": "Brown bun",
+              "ingredienten": [
+                "chicken breast",
+                "piri-piri",
+                "rocket",
+                "mixed raw vegetables"
+              ]
+            },
+            {
+              "naam": "Multigrain baguette",
+              "ingredienten": [
+                "goat’s cheese",
+                "harissa",
+                "romaine lettuce (vegetarian)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hot dishes",
+          "gerechten": [
+            {
+              "naam": "Beef croquette sandwich",
+              "ingredienten": [
+                "Beef (halal)"
+              ]
+            },
+            {
+              "naam": "Oyster mushroom croquette sandwich",
+              "ingredienten": [
+                "Oyster mushroom (vegetarian)"
+              ]
+            },
+            {
+              "naam": "Wild mushroom soup",
+              "ingredienten": [
+                "(vegetarian)"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-standaard",
+      "naam": "Standard Lunch",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Spanish tortillas",
+          "gerechten": [
+            {
+              "naam": "Beetroot tortilla",
+              "ingredienten": [
+                "hummus",
+                "grilled vegetables (vegetarian)"
+              ]
+            },
+            {
+              "naam": "Spinach tortilla",
+              "ingredienten": [
+                "salmon",
+                "cottage cheese"
+              ]
+            },
+            {
+              "naam": "Wholemeal tortilla",
+              "ingredienten": [
+                "pulled chicken",
+                "Madras yoghurt dressing"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Pinsas",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "tomato mix",
+                "basil oil"
+              ]
+            },
+            {
+              "naam": "Mortadella",
+              "ingredienten": [
+                "ricotta",
+                "rocket"
+              ]
+            },
+            {
+              "naam": "Tuna melt",
+              "ingredienten": [
+                "onion",
+                "jalapeño"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Baguettes",
+          "gerechten": [
+            {
+              "naam": "White baguette",
+              "ingredienten": [
+                "chicken",
+                "Korean kimchi mayonnaise",
+                "pickled red onion",
+                "cucumber"
+              ]
+            },
+            {
+              "naam": "Multigrain baguette",
+              "ingredienten": [
+                "avocado",
+                "cucumber spread",
+                "spring onion",
+                "tomato"
+              ]
+            },
+            {
+              "naam": "Cheese baguette",
+              "ingredienten": [
+                "mustard mayonnaise",
+                "cucumber",
+                "rocket"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hot dishes",
+          "gerechten": [
+            {
+              "naam": "Minestrone Bar",
+              "ingredienten": [
+                "spicy tomato broth",
+                "tortellini",
+                "mozzarella",
+                "Parmesan",
+                "sweet pepper",
+                "basil",
+                "bruschetta",
+                "tomato mix",
+                "mixed green herbs"
+              ]
+            },
+            {
+              "naam": "Sandwich beef croquette or Oyster mushroom croquette",
+              "ingredienten": [
+                "mustard mayonnaise",
+                "beef (halal) or oyster mushroom (vegetarian)"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Fresh & Sweet",
+          "gerechten": [
+            {
+              "naam": "Greek Yoghurt Bar",
+              "ingredienten": [
+                "Greek yoghurt",
+                "quark",
+                "fresh fruit",
+                "fruit compotes",
+                "muesli",
+                "granola",
+                "oats"
+              ]
+            },
+            {
+              "naam": "Fresh fruit"
+            },
+            {
+              "naam": "Sweet Buns",
+              "ingredienten": [
+                "mini brioche",
+                "whipped cream",
+                "pistachio crunch",
+                "icing sugar"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salad Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "dried mini figs",
+                "Brussels sprouts",
+                "pistachio",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Beetroot",
+              "ingredienten": [
+                "apple",
+                "smoked mackerel",
+                "horseradish cream"
+              ]
+            },
+            {
+              "naam": "Thai chicken",
+              "ingredienten": [
+                "romaine lettuce",
+                "carrot",
+                "cucumber",
+                "roasted sweet pepper"
+              ]
+            },
+            {
+              "naam": "Pumpkin",
+              "ingredienten": [
+                "feta",
+                "raisins",
+                "red cabbage",
+                "carrot"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-vega-basic",
+      "naam": "Basic Lunch (vegetarian)",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Sandwiches",
+          "gerechten": [
+            {
+              "naam": "Wholemeal bun",
+              "ingredienten": [
+                "aged cheese",
+                "truffle mayonnaise",
+                "Lollo Bianca lettuce",
+                "cucumber"
+              ]
+            },
+            {
+              "naam": "White sesame bun",
+              "ingredienten": [
+                "spicy hummus",
+                "butter lettuce",
+                "tomato"
+              ]
+            },
+            {
+              "naam": "Brown bun",
+              "ingredienten": [
+                "herb spread",
+                "avocado",
+                "rocket",
+                "mixed raw vegetables"
+              ]
+            },
+            {
+              "naam": "Multigrain baguette",
+              "ingredienten": [
+                "goat’s cheese",
+                "harissa",
+                "romaine lettuce"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hot dishes",
+          "gerechten": [
+            {
+              "naam": "Oyster mushroom croquette sandwich",
+              "ingredienten": [
+                "Oyster mushroom"
+              ]
+            },
+            {
+              "naam": "Wild mushroom soup"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "lunch-vega-standaard",
+      "naam": "Standard Lunch (vegetarian)",
+      "titel": "Lunch",
+      "secties": [
+        {
+          "kop": "Spanish tortillas",
+          "gerechten": [
+            {
+              "naam": "Beetroot tortilla",
+              "ingredienten": [
+                "hummus",
+                "grilled vegetables"
+              ]
+            },
+            {
+              "naam": "Spinach tortilla",
+              "ingredienten": [
+                "cottage cheese",
+                "sun-dried tomatoes"
+              ]
+            },
+            {
+              "naam": "Wholemeal tortilla",
+              "ingredienten": [
+                "mature Dutch cumin cheese",
+                "Madras yoghurt dressing"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Pinsas",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "tomato mix",
+                "basil oil"
+              ]
+            },
+            {
+              "naam": "Provolone",
+              "ingredienten": [
+                "tomato chutney"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Baguettes",
+          "gerechten": [
+            {
+              "naam": "White baguette",
+              "ingredienten": [
+                "grilled halloumi",
+                "Korean kimchi mayonnaise",
+                "pickled red onion",
+                "cucumber"
+              ]
+            },
+            {
+              "naam": "Multigrain baguette",
+              "ingredienten": [
+                "avocado",
+                "cucumber spread",
+                "spring onion",
+                "tomato"
+              ]
+            },
+            {
+              "naam": "Cheese baguette",
+              "ingredienten": [
+                "mustard mayonnaise",
+                "cucumber",
+                "rocket"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Hot dishes",
+          "gerechten": [
+            {
+              "naam": "Minestrone Bar",
+              "ingredienten": [
+                "spicy tomato broth",
+                "tortellini",
+                "mozzarella",
+                "Parmesan",
+                "sweet pepper",
+                "basil",
+                "bruschetta",
+                "tomato mix",
+                "mixed green herbs"
+              ]
+            },
+            {
+              "naam": "Oyster mushroom croquette sandwich",
+              "ingredienten": [
+                "mustard mayonnaise",
+                "Oyster mushroom"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Fresh & Sweet",
+          "gerechten": [
+            {
+              "naam": "Greek Yoghurt Bar",
+              "ingredienten": [
+                "Greek yoghurt",
+                "quark",
+                "fresh fruit",
+                "fruit compotes",
+                "muesli",
+                "granola",
+                "oats"
+              ]
+            },
+            {
+              "naam": "Fresh fruit"
+            },
+            {
+              "naam": "Sweet Buns",
+              "ingredienten": [
+                "mini brioche",
+                "whipped cream",
+                "pistachio crunch",
+                "icing sugar"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Salad Bar",
+          "gerechten": [
+            {
+              "naam": "Burrata",
+              "ingredienten": [
+                "dried mini figs",
+                "Brussels sprouts",
+                "pistachio",
+                "mesclun"
+              ]
+            },
+            {
+              "naam": "Beetroot",
+              "ingredienten": [
+                "apple",
+                "horseradish cream"
+              ]
+            },
+            {
+              "naam": "Pumpkin",
+              "ingredienten": [
+                "feta",
+                "raisins",
+                "red cabbage",
+                "carrot"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "pakket": "walking-dinner",
+      "naam": "Walking dinner",
+      "titel": "Dinner",
+      "secties": [
+        {
+          "kop": "On the Table",
+          "gerechten": [
+            {
+              "naam": "Sourdough bread",
+              "ingredienten": [
+                "butter",
+                "fleur de sel",
+                "lime",
+                "olives",
+                "sun-dried tomato",
+                "curry dip"
+              ]
+            },
+            {
+              "naam": "Tasteful gift",
+              "ingredienten": [
+                "tuna tartare",
+                "horseradish",
+                "affilla cress",
+                "onion crumble",
+                "saffron"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Starter",
+          "gerechten": [
+            {
+              "naam": "Pulled chicken",
+              "ingredienten": [
+                "red chicory",
+                "mozzarella",
+                "fermented mustard",
+                "caramelised pecan nuts",
+                "citrus mayonnaise"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Intermediate course",
+          "gerechten": [
+            {
+              "naam": "Pumpkin ravioli",
+              "ingredienten": [
+                "cured Italian ham",
+                "sage butter sauce"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Main course",
+          "gerechten": [
+            {
+              "naam": "Boneless short ribs",
+              "ingredienten": [
+                "winter carrot crème",
+                "parsnip spaghetti",
+                "sticky hoisin"
+              ]
+            }
+          ]
+        },
+        {
+          "kop": "Dessert",
+          "gerechten": [
+            {
+              "naam": "Chocolate trifle",
+              "ingredienten": [
+                "Oreo crunch",
+                "cherries",
+                "Tony’s Chocolonely shavings"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "gerechten": [
+    {
+      "naam": "Beef croquette sandwich",
+      "ingredienten": [
+        "Beef (halal)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Beetroot",
+      "ingredienten": [
+        "apple",
+        "smoked mackerel",
+        "horseradish cream"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Beetroot",
+      "ingredienten": [
+        "apple",
+        "horseradish cream"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Beetroot tortilla",
+      "ingredienten": [
+        "hummus",
+        "grilled vegetables (vegetarian)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Beetroot tortilla",
+      "ingredienten": [
+        "hummus",
+        "grilled vegetables"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "miso butter jus"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "winter carrot crème",
+        "parsnip spaghetti",
+        "sticky hoisin"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Brown bun",
+      "ingredienten": [
+        "chicken breast",
+        "piri-piri",
+        "rocket",
+        "mixed raw vegetables"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Brown bun",
+      "ingredienten": [
+        "herb spread",
+        "avocado",
+        "rocket",
+        "mixed raw vegetables"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Bruschetta skewers with seasonal dips",
+      "ingredienten": [
+        "(vegetarian)"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Burrata",
+      "ingredienten": [
+        "dried mini figs",
+        "Brussels sprouts",
+        "pistachio",
+        "mesclun"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Burrata",
+      "ingredienten": [
+        "tomato mix",
+        "basil oil"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Cheese baguette",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "cucumber",
+        "rocket"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Chocolate trifle",
+      "ingredienten": [
+        "Oreo crunch",
+        "cherries",
+        "Tony’s Chocolonely shavings"
+      ],
+      "uit": [
+        "buffet",
+        "diner-3gangen",
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Coq au vin",
+      "ingredienten": [
+        "silverskin onions",
+        "red wine",
+        "winter carrot"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Crispy Parmesan potatoes",
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Dutch prime beef",
+      "ingredienten": [
+        "ravigote",
+        "herb crunch",
+        "lime"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Fresh fruit",
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Greek Yoghurt Bar",
+      "ingredienten": [
+        "Greek yoghurt",
+        "quark",
+        "fresh fruit",
+        "fruit compotes",
+        "muesli",
+        "granola",
+        "oats"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Grip ’n dip fries",
+      "ingredienten": [
+        "coq au vin",
+        "tomato crunch",
+        "smoked beetroot mayonnaise"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Minestrone Bar",
+      "ingredienten": [
+        "spicy tomato broth",
+        "tortellini",
+        "mozzarella",
+        "Parmesan",
+        "sweet pepper",
+        "basil",
+        "bruschetta",
+        "tomato mix",
+        "mixed green herbs"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Mortadella",
+      "ingredienten": [
+        "ricotta",
+        "rocket"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "goat’s cheese",
+        "harissa",
+        "romaine lettuce (vegetarian)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "avocado",
+        "cucumber spread",
+        "spring onion",
+        "tomato"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "goat’s cheese",
+        "harissa",
+        "romaine lettuce"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "Oyster mushroom (vegetarian)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "Oyster mushroom"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "Oyster mushroom"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Pão de queijo",
+      "ingredienten": [
+        "Brazilian cheese bites",
+        "piri piri dip"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Provolone",
+      "ingredienten": [
+        "tomato chutney"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "red chicory",
+        "mozzarella",
+        "fermented mustard",
+        "caramelised pecan nuts",
+        "citrus mayonnaise"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Pumpkin",
+      "ingredienten": [
+        "feta",
+        "raisins",
+        "red cabbage",
+        "carrot"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Pumpkin ravioli",
+      "ingredienten": [
+        "cured Italian ham",
+        "sage butter sauce"
+      ],
+      "uit": [
+        "diner-4gangen",
+        "grab-and-go",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Pumpkin risotto",
+      "ingredienten": [
+        "gorgonzola",
+        "fresh figs"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Sandwich beef croquette or Oyster mushroom croquette",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "beef (halal) or oyster mushroom (vegetarian)"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Sauerkraut mash",
+      "ingredienten": [
+        "seared salmon",
+        "pancetta crumble",
+        "fermented mustard"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Schiacciata Toscana",
+      "ingredienten": [
+        "burrata",
+        "Parmesan",
+        "tomato salsa"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Seared salmon",
+      "ingredienten": [
+        "sauerkraut",
+        "fermented mustard"
+      ],
+      "uit": [
+        "buffet"
+      ]
+    },
+    {
+      "naam": "Sourdough bread",
+      "ingredienten": [
+        "butter",
+        "fleur de sel",
+        "lime",
+        "olives",
+        "sun-dried tomato",
+        "curry dip"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen",
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Spinach tortilla",
+      "ingredienten": [
+        "salmon",
+        "cottage cheese"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Spinach tortilla",
+      "ingredienten": [
+        "cottage cheese",
+        "sun-dried tomatoes"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Sweet Buns",
+      "ingredienten": [
+        "mini brioche",
+        "whipped cream",
+        "pistachio crunch",
+        "icing sugar"
+      ],
+      "uit": [
+        "lunch-standaard",
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Tartlet",
+      "onderdelen": [
+        {
+          "naam": "Beef tartare",
+          "toelichting": [
+            "umami cream",
+            "quail’s egg"
+          ]
+        },
+        {
+          "naam": "Taleggio (vegetarian)",
+          "toelichting": [
+            "creamy Taleggio cheese filling",
+            "herb crunch"
+          ]
+        }
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "tuna tartare",
+        "horseradish",
+        "affilla cress",
+        "onion crumble"
+      ],
+      "uit": [
+        "diner-3gangen",
+        "diner-4gangen"
+      ]
+    },
+    {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "tuna tartare",
+        "horseradish",
+        "affilla cress",
+        "onion crumble",
+        "saffron"
+      ],
+      "uit": [
+        "walking-dinner"
+      ]
+    },
+    {
+      "naam": "Thai chicken",
+      "ingredienten": [
+        "romaine lettuce",
+        "carrot",
+        "cucumber",
+        "roasted sweet pepper"
+      ],
+      "uit": [
+        "buffet",
+        "grab-and-go",
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Tuna melt",
+      "ingredienten": [
+        "onion",
+        "jalapeño"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "White baguette",
+      "ingredienten": [
+        "chicken",
+        "Korean kimchi mayonnaise",
+        "pickled red onion",
+        "cucumber"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "White baguette",
+      "ingredienten": [
+        "grilled halloumi",
+        "Korean kimchi mayonnaise",
+        "pickled red onion",
+        "cucumber"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "White sesame bun",
+      "ingredienten": [
+        "ham",
+        "herb spread",
+        "butter lettuce",
+        "tomato"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "White sesame bun",
+      "ingredienten": [
+        "spicy hummus",
+        "butter lettuce",
+        "tomato"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Wholemeal bun",
+      "ingredienten": [
+        "aged cheese",
+        "truffle mayonnaise",
+        "Lollo Bianca lettuce",
+        "cucumber (vegetarian)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Wholemeal bun",
+      "ingredienten": [
+        "aged cheese",
+        "truffle mayonnaise",
+        "Lollo Bianca lettuce",
+        "cucumber"
+      ],
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Wholemeal tortilla",
+      "ingredienten": [
+        "pulled chicken",
+        "Madras yoghurt dressing"
+      ],
+      "uit": [
+        "lunch-standaard"
+      ]
+    },
+    {
+      "naam": "Wholemeal tortilla",
+      "ingredienten": [
+        "mature Dutch cumin cheese",
+        "Madras yoghurt dressing"
+      ],
+      "uit": [
+        "lunch-vega-standaard"
+      ]
+    },
+    {
+      "naam": "Wild mushroom soup",
+      "ingredienten": [
+        "(vegetarian)"
+      ],
+      "uit": [
+        "lunch-basic"
+      ]
+    },
+    {
+      "naam": "Wild mushroom soup",
+      "uit": [
+        "lunch-vega-basic"
+      ]
+    },
+    {
+      "naam": "Winter burger",
+      "ingredienten": [
+        "red onion chutney",
+        "red cabbage slaw",
+        "chilli pepper sauce"
+      ],
+      "uit": [
+        "grab-and-go"
+      ]
+    },
+    {
+      "naam": "Winter ratatouille",
+      "uit": [
+        "buffet"
+      ]
+    }
+  ]
+}

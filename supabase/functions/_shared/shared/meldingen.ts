@@ -132,6 +132,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       ['Schijf', leegOf(a.schijf_locatie)],
     ]
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
+  if (!intern && a.menu_tekst && a.menu_taal === 'en') rijen.push(['Menu', 'In het Engels'])
   delen.push(gegevensTabel(rijen))
 
   if (a.omschrijving) delen.push(kopje(intern ? 'Wat er gevraagd wordt' : 'Wensen en bijzonderheden'), citaat(a.omschrijving, thema))
@@ -193,6 +194,8 @@ export interface AanvullingMail {
   heropend: boolean
   /** Het menu is aangepast: het nieuwe menu als tekst, het pakket, en het oude pakket als dat anders was. */
   menu?: { tekst: string; pakket: string; vorigPakket: string | null } | null
+  /** Er wachtte een oplevering op akkoord; door deze aanvulling stoppen de herinneringen. */
+  herinneringenGestopt?: boolean
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
 }
@@ -239,6 +242,7 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
   if (m.schijfLocatie) rijen.push(['Schijf', escapeHtml(m.schijfLocatie)])
   if (m.bijlagen.length) rijen.push(['Meegestuurd', escapeHtml(m.bijlagen.join(', '))])
   if (m.bijgewerkt.length) rijen.push(['Bijgewerkt in Asana', escapeHtml(m.bijgewerkt.join(', '))])
+  if (m.herinneringenGestopt) rijen.push(['Akkoord', 'Was nog niet gegeven; de herinneringen zijn gestopt omdat dit feedback is'])
   delen.push(ruimte(gegevensTabel(rijen), 20))
 
   if (m.asanaUrl) delen.push(knop(m.asanaUrl, 'Open de taak in Asana', thema))

@@ -125,6 +125,24 @@ for (const key of veldsleutels(map)) {
 
 // Bord-kolommen (sleutel → gid), op naam uit asana-field-map.json.
 const sections = await lees(`/projects/${projectGid}/sections?opt_fields=name`)
+// Met --aanmaken eerst de kolommen die nog ontbreken, elk direct na de kolom die er in de map voor
+// staat. Zo kwam "Afgerond" erbij (na Klaar): die is nodig voor het akkoord.
+if (args.aanmaken && args.aanmaken !== 'false') {
+  let vorige = null
+  for (const name of Object.values(map.sections ?? {})) {
+    let s = sections.find((x) => norm(x.name) === norm(name))
+    if (!s) {
+      try {
+        s = await asana(`/projects/${projectGid}/sections`, { method: 'POST', body: { data: { name, ...(vorige ? { insert_after: vorige.gid } : {}) } } })
+        sections.push(s)
+        console.log(`Kolom "${name}" aangemaakt${vorige ? ` na "${vorige.name}"` : ''}.`)
+      } catch (e) {
+        warnings.push(`Kolom "${name}" aanmaken mislukt: ${e.message}`)
+      }
+    }
+    if (s) vorige = s
+  }
+}
 for (const [key, name] of Object.entries(map.sections ?? {})) {
   const s = sections.find((x) => norm(x.name) === norm(name))
   if (s) out.sections[key] = { gid: s.gid, name: s.name }

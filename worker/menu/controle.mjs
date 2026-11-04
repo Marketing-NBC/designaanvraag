@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { WORKER_DIR, parseArgs, log } from '../lib/config.mjs'
-import { renderMenu, pakketten, laadBasis, inhoudVanBasis } from './render.mjs'
+import { basisDir, renderMenu, pakketten, laadBasis, inhoudVanBasis } from './render.mjs'
 
 const MENU_DIR = join(WORKER_DIR, 'menu')
 const BASIS_DIR = join(MENU_DIR, 'basis')
@@ -105,10 +105,11 @@ export function tussenruimtes(regels) {
   return ki.slice(1).map((k, i) => Math.round(per.get(k).x0 - per.get(ki[i]).x1))
 }
 
-export async function controleer(namen, uitDir) {
+export async function controleer(namen, uitDir, taal = 'nl') {
   const uitslagen = []
   for (const pakket of namen) {
-    const referentie = join(REFERENTIE_DIR, `${pakket}.png`)
+    // Het Engelse ontwerp heeft zijn eigen referentiebeelden, uit het Engelse .ai.
+    const referentie = join(taal === 'en' ? join(basisDir('en'), 'referentie') : REFERENTIE_DIR, `${pakket}.png`)
     if (!existsSync(referentie)) {
       log(`${pakket}: geen referentiebeeld - draai eerst worker/menu/basis-extract.py`)
       continue
@@ -133,15 +134,15 @@ export async function controleer(namen, uitDir) {
     // controle moet bewaken: dat de engine de tekst precies zet zoals de ontwerper.
     // Hoe de verdeling zelf uitvalt wordt hieronder apart getoetst, op een render waar
     // hij wel aan staat.
-    const basis = laadBasis(pakket)
+    const basis = laadBasis(pakket, taal)
     const zoalsBron = Boolean(basis.titel.bronTekst || basis.correcties)
-    const kaal = await renderMenu({ pakket, zoalsBron, balanceren: false })
-    const rond = await renderMenu({ ...inhoudVanBasis(basis), titel: undefined, zoalsBron,
+    const kaal = await renderMenu({ pakket, taal, zoalsBron, balanceren: false })
+    const rond = await renderMenu({ ...inhoudVanBasis(basis), taal, titel: undefined, zoalsBron,
                                     balanceren: false })
-    const herbouw = await renderMenu({ pakket, forceerHerberekening: true, zoalsBron,
+    const herbouw = await renderMenu({ pakket, taal, forceerHerberekening: true, zoalsBron,
                                        balanceren: false })
     // En hetzelfde ontwerp zoals het echt de deur uit gaat: met gelijke tussenruimtes.
-    const verdeeld = await renderMenu({ pakket })
+    const verdeeld = await renderMenu({ pakket, taal })
     const uitslagKaal = await vergelijk(kaal.png, referentie)
     const uitslagRond = await vergelijk(rond.png, referentie)
     const uitslagHerbouw = await vergelijk(herbouw.png, referentie)
@@ -188,13 +189,14 @@ export async function controleer(namen, uitDir) {
   return uitslagen
 }
 
-// CLI: node worker/menu/controle.mjs [--pakket naam] [--uit map]
+// CLI: node worker/menu/controle.mjs [--pakket naam] [--uit map] [--taal en]
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = parseArgs()
-  const namen = args.pakket ? [args.pakket] : pakketten()
-  const uitDir = args.uit || join(MENU_DIR, 'out')
-  log(`Controle van ${namen.length} basisontwerp(en) tegen het Illustrator-bestand`)
-  const uitslagen = await controleer(namen, uitDir)
+  const taal = args.taal === 'en' ? 'en' : 'nl'
+  const namen = args.pakket ? [args.pakket] : pakketten(taal)
+  const uitDir = args.uit || join(MENU_DIR, taal === 'en' ? 'out-en' : 'out')
+  log(`Controle van ${namen.length} ${taal === 'en' ? 'Engelse ' : ''}basisontwerp(en) tegen het Illustrator-bestand`)
+  const uitslagen = await controleer(namen, uitDir, taal)
 
   // Bij herberekening kijken we naar de regelval en niet naar het pixelverschil:
   // een alinea met eigen opmaak per regel is nu eenmaal niet uit platte tekst te

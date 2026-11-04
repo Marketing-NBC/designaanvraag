@@ -66,6 +66,10 @@ const handler = createHandler({
   startMenu: menuRoutine ? startMenu : undefined,
   startHuisstijl: brandRoutine ? startHuisstijl : undefined,
   oplever,
+  async stopHerinneringen(gid, moment) {
+    const aanvraag = await db.findByAsanaTaskGid(gid)
+    return aanvraag ? db.stopHerinneringen(aanvraag.id, moment, { gestopt: 'naar Afgerond gesleept in Asana' }) : 0
+  },
   // Supabase laat de function doorlopen tot dit klaar is, ook nadat Asana zijn antwoord heeft.
   achtergrond: typeof EdgeRuntime !== 'undefined' ? (werk) => EdgeRuntime!.waitUntil(werk) : undefined,
   asana,

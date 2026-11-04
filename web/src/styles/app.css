@@ -521,3 +521,30 @@ button.menuknop:disabled { opacity: .6; }
 .menuknop__tekst strong { font: 600 17px/1.35 var(--font-body); }
 .menuknop__uitleg { font: 400 14px/1.4 var(--font-body); color: var(--fg-secondary); }
 .menu-laat { margin-top: 20px; }
+
+/* Taal van het menu: twee knoppen naast elkaar boven de pakketten. */
+.menutaal { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; }
+.menutaal__label {
+  font: 800 12px/1 var(--font-body); letter-spacing: 0.09em; text-transform: uppercase; color: var(--fg-muted);
+}
+.menutaal__knoppen { display: inline-flex; border: 1px solid var(--border-default); border-radius: var(--r-sm); overflow: hidden; }
+.menutaal__knop {
+  border: none; background: var(--bg-surface); padding: 9px 16px; cursor: pointer;
+  font: 600 15px/1.2 var(--font-body); color: var(--fg-secondary);
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.menutaal__knop + .menutaal__knop { border-left: 1px solid var(--border-default); }
+.menutaal__knop:hover { color: var(--fg-primary); }
+.menutaal__knop.is-gekozen { background: var(--nbc-ink); color: var(--nbc-paper); }
+.menutaal__uitleg { margin: -8px 0 0; font: 400 14px/1.4 var(--font-body); color: var(--fg-secondary); }
+/* Een pakket dat er in deze taal (nog) niet is: zichtbaar, maar niet te kiezen. */
+.pakket--niet, .pakket--niet:hover { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.menu__taalwissel { display: inline-block; align-self: flex-start; justify-self: start; margin: -4px 0 12px; font-size: 15px; }
+
+/* Akkoord geven: de samenvatting van wat er klaarstaat. */
+.akkoord__wat {
+  display: grid; gap: 4px; max-width: 560px; padding: 14px 18px; margin-bottom: 16px;
+  border-left: 4px solid var(--nbc-blue); background: var(--nbc-blue-soft); border-radius: var(--r-xs);
+  font: 400 16px/1.45 var(--font-body);
+}
+.akkoord__wat strong { font-weight: 800; }

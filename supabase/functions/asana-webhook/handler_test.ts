@@ -36,6 +36,7 @@ const cfg: AsanaFieldsConfig = {
     nieuwe_aanvragen: { gid: 'sec-nieuw' },
     in_planning: { gid: 'sec-plan' },
     klaar: { gid: 'sec-klaar' },
+    afgerond: { gid: 'sec-afgerond' },
   },
   planning_project: { gid: 'werk1', name: '4. Werkplanning' },
 }
@@ -114,6 +115,7 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: {
   oplever?: (t: AsanaTask, opties: { proef: boolean; door: string | null }) => Promise<string>
   achtergrond?: (werk: Promise<unknown>) => void
 } = {}) {
+  const herinneringenGestopt: string[] = []
   const store = fakeStore(opts.secrets)
   const asana = fakeAsana(tasks, opts.comments)
   // Welke taken een aanvraag in onze database hebben; standaard allemaal die in `tasks` staan.
@@ -145,8 +147,9 @@ function setup(tasks: Record<string, Partial<AsanaTask>>, opts: {
     deadlineVan: opts.mijlpalen ? (gid) => Promise.resolve(opts.mijlpalen?.[gid] ?? null) : undefined,
     oplever: opts.oplever,
     achtergrond: opts.achtergrond,
+    stopHerinneringen: (gid) => (herinneringenGestopt.push(gid), Promise.resolve(1)),
   })
-  return { handler, store, asana, vervallen, gestart }
+  return { handler, store, asana, vervallen, gestart, herinneringenGestopt }
 }
 
 async function signed(events: unknown[], secret = SECRET, token = TOKEN): Promise<Request> {
@@ -549,4 +552,31 @@ Deno.test('naar een kolom van een ander project gesleept: niets', async () => {
   const { handler, asana } = setup({ t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-plan' }] } })
   await handler(await signed([naarKolom('t1', 'werkplanning-week-44')]))
   assertEquals(asana.vinkjes, [])
+})
+
+// ── Afgerond ──────────────────────────────────────────────────────────
+
+Deno.test('naar Afgerond gesleept: afgevinkt, en de herinneringen om akkoord te geven stoppen', async () => {
+  const { handler, asana, herinneringenGestopt } = setup({
+    t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-afgerond' }] },
+  })
+  await handler(await signed([naarKolom('t1', 'sec-afgerond')]))
+  assertEquals(asana.vinkjes, [['t1', true]])
+  assertEquals(herinneringenGestopt, ['t1'])
+})
+
+Deno.test('van Klaar naar Afgerond: het vinkje blijft staan', async () => {
+  const { handler, asana } = setup({
+    t1: { completed: true, memberships: [{ project: 'proj1', section: 'sec-afgerond' }] },
+  })
+  await handler(await signed([naarKolom('t1', 'sec-afgerond')]))
+  assertEquals(asana.vinkjes, [])
+})
+
+Deno.test('naar Klaar gesleept stopt de herinneringen niet: dan is er nog geen akkoord', async () => {
+  const { handler, herinneringenGestopt } = setup({
+    t1: { completed: false, memberships: [{ project: 'proj1', section: 'sec-klaar' }] },
+  })
+  await handler(await signed([naarKolom('t1', 'sec-klaar')]))
+  assertEquals(herinneringenGestopt, [])
 })

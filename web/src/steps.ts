@@ -87,7 +87,8 @@ export const STEPS: StepDef[] = [
     id: 'naam',
     kind: 'naam',
     title: 'Hoe heet je?',
-    help: 'Kies je naam uit de lijst. Sta je er niet tussen? Typ dan gewoon je naam.',
+    // Of de naam in de lijst staat controleert App.tsx: alleen daar is de lijst bekend.
+    help: 'Kies je naam uit de lijst. Sta je er niet tussen? Vraag Marketing dan om je toe te voegen.',
     validate: (d) => {
       const v = d.naam.trim()
       if (v.length < 2) return 'Vul je naam in.'
@@ -265,7 +266,7 @@ export const STEPS: StepDef[] = [
     // Komt meteen na "Wat wil je aanvragen?", want het hoort bij die keuze.
     toon: (ctx) => isEvenement(ctx) && ctx.metMenu,
     title: 'Welk pakket is het?',
-    help: 'Kies het pakket; je ziet daarna wat erin zit en kunt gerechten weghalen, '
+    help: 'Kies de taal en het pakket; je ziet daarna wat erin zit en kunt gerechten weghalen, '
       + 'wisselen of toevoegen.',
     validate: (d) => {
       if (!vraagtOmMenu(d.aanvraag_types)) return null

@@ -124,7 +124,7 @@ describe('de mail', () => {
     types: ['torenscherm', 'vlaggen'],
     andersTekst: '',
     berichtHtml: 'Hier is het.',
-    afzenderNaam: 'Devi',
+    afzenderNaam: 'Devi', aanvrager: 'Britt',
     bijlagen: [{ naam: 'torenscherm.png', bytes: 2048 }],
     links: [],
   }
@@ -145,6 +145,10 @@ describe('de mail', () => {
     expect(m.html).toContain('torenscherm.png')
     expect(m.html).toContain('Feedback geven')
     expect(m.html).toContain(feedbackUrl(basis.aanvraagId))
+    // Akkoord geven gaat via een scherm in het formulier, niet via een link die meteen iets doet.
+    expect(m.html).toContain('Akkoord geven')
+    expect(m.html).toContain(`?akkoord=${basis.aanvraagId}`)
+    expect(m.html).toContain('Akkoord geven kan alleen Britt')
   })
 
   it('een tweede versie zegt dat', () => {
@@ -205,7 +209,7 @@ describe('opmaak voor de klassieke Outlook', () => {
   // Outlook rendert met Word: padding op een link of div en margin op een tabel tellen daar niet.
   const m = renderOpleveringMail({
     aan: ['a@x.nl'], antwoordAan: ['m@x.nl'], aanvraagId: 'id', versie: 1, locatie: 'nbc', soort: 'evenement', event: 'E', eventDatum: null,
-    omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, bijlagen: [], links: [],
+    omschrijving: '', types: [], andersTekst: '', berichtHtml: 'Hallo', afzenderNaam: null, aanvrager: 'Britt', bijlagen: [], links: [],
   })
 
   it('de knop krijgt zijn lucht van de cel, niet van de link', () => {

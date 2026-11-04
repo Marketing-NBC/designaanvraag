@@ -12,6 +12,7 @@ Dat is het hele punt: het basisontwerp is de norm, niet iets dat per run opnieuw
 wordt afgeleid.
 
 Draaien:  python3 worker/menu/basis-extract.py
+          python3 worker/menu/basis-extract.py --taal en   (het Engelse bestand, naar basis/en/)
 """
 
 import json
@@ -29,6 +30,10 @@ BRON = BASIS / 'bron' / 'Flexibele-template-designs-V9.ai'
 # in V4, en de manier waarop de ontwerper daar de kolommen heeft opgelost is precies
 # wat de doorstroom-regels moeten blijven halen.
 VOORBEELD_BRON = BASIS / 'bron' / 'Flexibele-template-designs.ai'
+# De Engelse menuschermen: een eigen Illustrator-bestand, met dezelfde blobs en kolommen
+# maar Engelse teksten, door de ontwerper zelf gezet. Bevroren met --taal en; de
+# uitkomst komt in basis/en/, met dezelfde bestandsnamen als de Nederlandse.
+BRON_EN = BASIS / 'bron' / 'Flexibele-template-designs-V1_ENG.ai'
 
 GOUD = (0.965, 0.631, 0.027)
 ROOD = (1.0, 0.0, 0.0)
@@ -38,7 +43,10 @@ ACCENT = '#f6a107'
 # de eerste regel is onderweg gecorrigeerd (Dieetswens -> Dieetwens); allebei blijven
 # staan zodat een ouder bestand ook nog leesbaar is.
 VOET_REGELS = ('Dieetwens of allergie?', 'Dieetswens of allergie?',
-               'Laat het ons team weten,', 'we helpen je graag.')
+               'Laat het ons team weten,', 'we helpen je graag.',
+               # Engels; de eerste regel staat daar over twee regels.
+               'Dietary requirements', 'or allergies?', 'Dietary requirements or allergies?',
+               'Please let our team know,', 'we are happy to help.')
 LOGO_TEKST = 'Logo opdrachtgever'
 
 # Correcties op het Illustrator-bestand: {pakket: {'titel': (zoals het er staat, zoals het moet)}}.
@@ -61,6 +69,10 @@ WOORDCORRECTIES = [
     ('Grip ‘n dip fries', 'Grip ’n dip fries'),
 ]
 
+# Alleen voor het Engelse bestand; main() voegt ze toe bij --taal en. Nu leeg: wat er
+# eerder stond (Chocoladetrifle) is in het .ai zelf rechtgezet.
+WOORDCORRECTIES_EN: list = []
+
 
 def corrigeer_woorden(tekst: str, toegepast: set | None = None) -> str:
     for fout, goed in WOORDCORRECTIES:
@@ -81,6 +93,20 @@ PAKKETTEN = [
     (7, 'diner-3gangen'),
     (8, 'diner-4gangen'),
     (9, 'walking-dinner'),
+]
+
+# Pagina (1-based) -> pakketnaam in het Engelse bestand. Een andere volgorde dan het
+# Nederlandse: de pakketten zijn herkend aan hun gerechten (de blobs zijn per groep gelijk).
+PAKKETTEN_EN = [
+    (1, 'lunch-standaard'),
+    (2, 'lunch-basic'),
+    (3, 'lunch-vega-basic'),
+    (4, 'grab-and-go'),
+    (5, 'buffet'),
+    (6, 'diner-3gangen'),
+    (7, 'diner-4gangen'),
+    (8, 'walking-dinner'),
+    (9, 'lunch-vega-standaard'),
 ]
 
 # Pagina's die geen pakket zijn maar wel laten zien hoe een gerecht gezet hoort te
@@ -264,6 +290,10 @@ def soort_van(font: str, grootte: float, kleur: str) -> str:
     """Welke rol een tekstfragment in het ontwerp speelt."""
     if 'Pockota' in font and grootte > 150:
         return 'titel'
+    # Een regel in een groot corps onder de titel, zoals "vegetarian" onder "Lunch" in het
+    # Engelse bestand. Hoort bij de titel, niet bij de menu-inhoud.
+    if font == 'AreaNormal-Regular' and grootte > 60:
+        return 'ondertitel'
     if kleur == ACCENT:
         return 'kop'
     if 'ExtraBold' in font:
@@ -634,7 +664,7 @@ def opsomming_ratios(doc):
     for pagina_nr, _ in PAKKETTEN:
         page = doc[pagina_nr - 1]
         alles = spans_van(page)
-        inhoud = [s for s in alles if s['soort'] != 'titel' and not is_sjabloontekst(s)]
+        inhoud = [s for s in alles if s['soort'] not in ('titel', 'ondertitel') and not is_sjabloontekst(s)]
         marges = kolom_x(inhoud)
         for i, links in enumerate(marges):
             grens = marges[i + 1] - 40 if i + 1 < len(marges) else 1e9
@@ -734,9 +764,10 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
     alles = spans_van(page, woordcorrecties)
 
     titel = next((s for s in alles if s['soort'] == 'titel'), None)
+    ondertitel = next((s for s in alles if s['soort'] == 'ondertitel'), None)
     voet = [s for s in alles if s['tekst'].strip() in VOET_REGELS]
     logo_span = next((s for s in alles if s['tekst'].strip() == LOGO_TEKST), None)
-    inhoud = [s for s in alles if s['soort'] != 'titel' and not is_sjabloontekst(s)]
+    inhoud = [s for s in alles if s['soort'] not in ('titel', 'ondertitel') and not is_sjabloontekst(s)]
 
     groottes = {k: statistics.median([s['grootte'] for s in inhoud if s['soort'] == k] or [0])
                 for k in ('kop', 'naam', 'ingr')}
@@ -814,6 +845,12 @@ def pakket_extraheren(doc, pagina_nr: int, naam: str, ratios=None) -> dict:
             'grootte': titel['grootte'] if titel else 199.53,
             'kleur': titel['kleur'] if titel else '#000000',
         },
+        # Alleen als het ontwerp er een heeft; de engine tekent hem zoals hij er staat.
+        **({'ondertitel': {
+            'tekst': ondertitel['tekst'].strip(),
+            'x': rond(ondertitel['x']), 'baseline': rond(ondertitel['baseline']),
+            'font': ondertitel['font'], 'grootte': ondertitel['grootte'], 'kleur': ondertitel['kleur'],
+        }} if ondertitel else {}),
         'logobalk': {
             'x': rond(balk.x0), 'y': rond(balk.y0),
             'breedte': rond(balk.width), 'hoogte': rond(balk.height),
@@ -1030,18 +1067,29 @@ def gerechtsleutel(tekst: str) -> str:
     return re.sub(r'\s+', ' ', tekstsleutel(tekst).replace('|', ' ')).strip()
 
 
-def main():
-    BASIS.mkdir(parents=True, exist_ok=True)
+def main(taal: str = 'nl'):
+    # Engels: een ander bronbestand, een andere paginavolgorde, geen voorbeeldpagina's
+    # (die zijn Nederlands), en alles in basis/en/. De functies hierboven lezen BRON en
+    # PAKKETTEN, dus die zetten we hier om.
+    global BRON, PAKKETTEN, VOORBEELDEN
+    uit = BASIS
+    if taal == 'en':
+        BRON, PAKKETTEN, VOORBEELDEN = BRON_EN, PAKKETTEN_EN, []
+        WOORDCORRECTIES.extend(WOORDCORRECTIES_EN)
+        uit = BASIS / 'en'
+    uit.mkdir(parents=True, exist_ok=True)
     doc = pymupdf.open(BRON)
 
     # Het bestek-icoon is op elke pagina hetzelfde vectorwerk, alleen anders geschaald.
     icoon = icoon_pad(doc[6])
     kader = goud_rect(doc[6])
-    (BASIS / 'bestek-icoon.svg').write_text(
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {kader.width:.2f} {kader.height:.2f}">'
-        f'{icoon}</svg>\n', encoding='utf-8')
+    # Het icoon is in beide talen hetzelfde; het Nederlandse bestand is de bron.
+    if taal == 'nl':
+        (uit / 'bestek-icoon.svg').write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {kader.width:.2f} {kader.height:.2f}">'
+            f'{icoon}</svg>\n', encoding='utf-8')
 
-    referentie = BASIS / 'referentie'
+    referentie = uit / 'referentie'
     referentie.mkdir(exist_ok=True)
 
     ratios = opsomming_ratios(doc)
@@ -1057,11 +1105,11 @@ def main():
     kaders_delen(alles)
     # De voorbeeldpagina's delen hun tekstkaders niet: dat zijn geen pakketten, en
     # hun kolommen staan net ergens anders. Hun gerechten tellen wel mee.
-    voorbeeld_doc = pymupdf.open(VOORBEELD_BRON)
+    voorbeeld_doc = pymupdf.open(VOORBEELD_BRON) if VOORBEELDEN else None
     voorbeelden = {naam: pakket_extraheren(voorbeeld_doc, pagina_nr, naam, ratios)
                    for pagina_nr, naam in VOORBEELDEN}
     bibliotheek = gerechtenbibliotheek({**alles, **voorbeelden})
-    (BASIS / 'gerechten.json').write_text(
+    (uit / 'gerechten.json').write_text(
         json.dumps(bibliotheek, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(f"Gerechtenbibliotheek: {len(bibliotheek['gerechten'])} gerechten, "
           f"{len(bibliotheek['alineas'])} losse alinea's vastgelegd.")
@@ -1070,10 +1118,10 @@ def main():
     for pagina_nr, naam in PAKKETTEN:
         data = alles[naam]
         pix = maak_achtergrond(pagina_nr)
-        pix.save(BASIS / f'{naam}.png')
+        pix.save(uit / f'{naam}.png')
         # De volledige pagina uit het .ai: hiertegen vergelijkt controle.mjs de render.
         doc[pagina_nr - 1].get_pixmap(dpi=72, alpha=False).save(referentie / f'{naam}.png')
-        (BASIS / f'{naam}.json').write_text(
+        (uit / f'{naam}.json').write_text(
             json.dumps(data, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
         gerechten = sum(1 for k in data['kolommen'] for a in k['alineas'] if a['soort'] == 'naam')
         secties = sum(1 for k in data['kolommen'] for a in k['alineas'] if a['soort'] == 'kop')
@@ -1092,4 +1140,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    main('en' if '--taal' in sys.argv and sys.argv[sys.argv.index('--taal') + 1:][:1] == ['en'] else 'nl')

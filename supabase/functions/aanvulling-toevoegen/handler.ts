@@ -178,7 +178,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvulling: invoer, client_request_id, bijlage_ids } = parsed.data
+    const { aanvulling: ingevuld, client_request_id, bijlage_ids } = parsed.data
 
     // Idempotent: dubbelklik of retry plaatst geen tweede reactie.
     const bestaand = await db.findAanvullingByClientRequestId(client_request_id)
@@ -190,6 +190,17 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const n = await db.bumpRateLimit(`ip:${ipHash}`, '1 hour')
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel aanvragen achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
     }
+
+    // Alleen collega's uit de lijst mogen aanvullen of feedback geven, net als een aanvraag doen.
+    // De naam gaat verder zoals hij in de lijst staat.
+    const lijstnaam = await db.collega(ingevuld.naam)
+    if (!lijstnaam) {
+      return json({
+        error: `${ingevuld.naam} staat niet in de lijst met collega's. Vraag Marketing (${MARKETING_MAIL}) om je toe te voegen.`,
+        field: 'aanvulling.naam',
+      }, 400, cors)
+    }
+    const invoer = { ...ingevuld, naam: lijstnaam }
 
     const row = await db.findById(invoer.aanvraag_id)
     if (!row) return json({ error: 'We konden die aanvraag niet meer vinden. Zoek hem opnieuw op.' }, 404, cors)
@@ -246,11 +257,25 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
     log('info', 'aanvulling opgeslagen', { id: aanvullingRij.id, aanvraag: row.id, event: row.event })
 
     // Het nieuwe menu meteen bij de aanvraag zetten, ook als Asana straks niet meewerkt: daar maakt
-    // de knop "Genereer nu" het volgende menuscherm van.
+    // de knop "Genereer nu" het volgende menuscherm van. De taal gaat mee: Engels kan ook later nog.
     if (aanvulling.menu_inhoud) {
-      await db.update(row.id, { menu_inhoud: aanvulling.menu_inhoud, menu_tekst: aanvulling.menu_tekst, menu_pakket: aanvulling.menu_inhoud.pakket })
+      await db.update(row.id, {
+        menu_inhoud: aanvulling.menu_inhoud,
+        menu_tekst: aanvulling.menu_tekst,
+        menu_pakket: aanvulling.menu_inhoud.pakket,
+        menu_taal: aanvulling.menu_inhoud.taal === 'en' ? 'en' : 'nl',
+      })
     }
     const menuBijgewerkt = menu ? ['Menu'] : []
+
+    // Een aanvulling na een oplevering is feedback: dan hoeft niemand meer herinnerd te worden om
+    // akkoord te geven. Pas hier, nu de aanvulling echt binnen is; op de knop klikken telt niet.
+    let herinneringenGestopt = false
+    try {
+      herinneringenGestopt = (await db.stopHerinneringen(row.id, now(), { feedback: true })) > 0
+    } catch (e) {
+      log('warn', 'herinneringen stoppen mislukt', { id: aanvullingRij.id, error: e instanceof Error ? e.message : String(e) })
+    }
 
     // Meegestuurde bestanden aan deze aanvulling hangen. Voorwaardelijk, dus ids die al ergens bij
     // horen of niet bestaan vallen vanzelf af.
@@ -298,6 +323,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijlagen: v.bijlagen,
           heropend: v.heropend,
           menu,
+          herinneringenGestopt,
           asanaFout: v.asanaFout,
         }))
         log('info', 'aanvulling gemaild', { id: aanvullingRij.id })
@@ -347,7 +373,8 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       // De sectie uit ónze projectkoppeling halen: een taak zit ook in "4. Werkplanning".
       const onzeSectie = taak.memberships.find((m) => m.project === projectGid)?.section ?? null
       const klaarGid = cfg.sections?.klaar?.gid ?? null
-      const afgerond = taak.completed || (klaarGid !== null && onzeSectie === klaarGid)
+      const afgerondGid = cfg.sections?.afgerond?.gid ?? null
+      const afgerond = taak.completed || (onzeSectie !== null && (onzeSectie === klaarGid || onzeSectie === afgerondGid))
 
       if (afgerond) {
         heropendVoor = taak.assignee
@@ -417,6 +444,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
           bijlagen: gekoppeldeBijlagen,
           heropendVoor,
           menu,
+          herinneringenGestopt,
         }),
       )
     } catch (e) {

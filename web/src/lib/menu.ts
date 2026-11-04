@@ -12,6 +12,7 @@
  * aanvrager aanklikt staat gegarandeerd in dezelfde spelling als op het scherm.
  */
 import data from '../../../shared/menu-pakketten.json'
+import dataEn from '../../../shared/menu-pakketten-en.json'
 
 export interface Gerecht {
   naam: string
@@ -38,8 +39,55 @@ export interface Pakket {
   secties: { kop: string | null; gerechten: Gerecht[] }[]
 }
 
+/**
+ * In welke taal het menu op het scherm komt. Nederlands is de standaard. De Engelse pakketten
+ * (shared/menu-pakketten-en.json) zijn afgeleid uit de Engelse basisontwerpen, net zoals de
+ * Nederlandse uit de Nederlandse: dezelfde spelling als op het scherm.
+ */
+export type MenuTaal = 'nl' | 'en'
+
+export const MENU_TALEN: { key: MenuTaal; label: string }[] = [
+  { key: 'nl', label: 'Nederlands' },
+  { key: 'en', label: 'Engels' },
+]
+
+/** De pakketten en gerechten van een taal, plus de opzoeklijsten die erbij horen. */
+interface Bibliotheek {
+  pakketten: Pakket[]
+  gerechten: Gerecht[]
+  /** Alle regels die we kennen; alles daarbuiten is door iemand zelf ingetypt. */
+  bekend: Set<string>
+  /** Het gerecht achter een regel. */
+  perRegel: Map<string, Gerecht>
+}
+
+function bibliotheekVan(pakketten: Pakket[], gerechten: Gerecht[]): Bibliotheek {
+  return {
+    pakketten,
+    gerechten,
+    bekend: new Set(gerechten.map(regelVan)),
+    perRegel: new Map(gerechten.map((g) => [regelVan(g), g])),
+  }
+}
+
+/** Lui opgebouwd: regelVan staat verderop in dit bestand. */
+let bibliotheken: Record<MenuTaal, Bibliotheek> | null = null
+
+export function bibliotheek(taal: MenuTaal = 'nl'): Bibliotheek {
+  bibliotheken ??= {
+    nl: bibliotheekVan(data.pakketten as Pakket[], data.gerechten as Gerecht[]),
+    en: bibliotheekVan(dataEn.pakketten as Pakket[], dataEn.gerechten as Gerecht[]),
+  }
+  return bibliotheken[taal] ?? bibliotheken.nl
+}
+
+/** De Nederlandse pakketten en gerechten; de Engelse via bibliotheek('en'). */
 export const PAKKETTEN: Pakket[] = data.pakketten as Pakket[]
 export const ALLE_GERECHTEN: Gerecht[] = data.gerechten as Gerecht[]
+
+/** Bestaat dit pakket in deze taal? */
+export const pakketInTaal = (sleutel: string, taal: MenuTaal) =>
+  bibliotheek(taal).pakketten.some((p) => p.pakket === sleutel)
 
 /**
  * De pakketten zoals ze op het scherm staan: gegroepeerd per soort.
@@ -62,18 +110,28 @@ export const PAKKETGROEPEN: { kop: string; pakketten: string[] }[] = [
  * Een pakket dat in de data staat maar in geen enkele groep, valt er hier achteraan bij
  * - beter onderaan dan onvindbaar.
  */
-export const PAKKETTEN_OP_SCHERM: Pakket[] = (() => {
+export function pakkettenOpScherm(taal: MenuTaal = 'nl'): Pakket[] {
+  const { pakketten } = bibliotheek(taal)
   const gegroepeerd = PAKKETGROEPEN.flatMap((g) => g.pakketten)
-  const vind = (sleutel: string) => PAKKETTEN.find((p) => p.pakket === sleutel)
+  const vind = (sleutel: string) => pakketten.find((p) => p.pakket === sleutel)
   return [
     ...gegroepeerd.map(vind).filter((p): p is Pakket => Boolean(p)),
-    ...PAKKETTEN.filter((p) => !gegroepeerd.includes(p.pakket)),
+    ...pakketten.filter((p) => !gegroepeerd.includes(p.pakket)),
   ]
-})()
+}
+
+export const PAKKETTEN_OP_SCHERM: Pakket[] = pakkettenOpScherm('nl')
+
+/** De groepen zoals ze in deze taal op het scherm staan: een groep zonder pakketten valt weg. */
+export function pakketgroepen(taal: MenuTaal = 'nl'): { kop: string; pakketten: string[] }[] {
+  return PAKKETGROEPEN
+    .map((g) => ({ ...g, pakketten: g.pakketten.filter((k) => pakketInTaal(k, taal)) }))
+    .filter((g) => g.pakketten.length)
+}
 
 /** Welke letter hoort bij dit pakket? Null als het er niet bij staat. */
-export const letterVoorPakket = (sleutel: string) => {
-  const i = PAKKETTEN_OP_SCHERM.findIndex((p) => p.pakket === sleutel)
+export const letterVoorPakket = (sleutel: string, taal: MenuTaal = 'nl') => {
+  const i = pakkettenOpScherm(taal).findIndex((p) => p.pakket === sleutel)
   return i === -1 ? null : i
 }
 
@@ -98,9 +156,13 @@ export interface MenuKeuze {
    * en vielen de bolletjes weg.
    */
   secties: { kop: string | null; gerechten: Gerechtkeuze[] }[]
+  /** Nederlands of Engels. Ontbreekt bij een concept van voor deze keuze: dan Nederlands. */
+  taal?: MenuTaal
 }
 
-export const leegMenu = (): MenuKeuze => ({ pakket: null, secties: [] })
+export const taalVan = (menu: Pick<MenuKeuze, 'taal'> | null | undefined): MenuTaal => (menu?.taal === 'en' ? 'en' : 'nl')
+
+export const leegMenu = (taal: MenuTaal = 'nl'): MenuKeuze => ({ pakket: null, secties: [], taal })
 
 /**
  * Een gerecht als één regel: naam en ingredienten met een streep ertussen. Dit is
@@ -112,23 +174,32 @@ export function regelVan(g: Gerecht): string {
   return [g.naam, ...(g.ingredienten ?? [])].filter(Boolean).join(' | ')
 }
 
-export const pakketVan = (naam: string | null) =>
-  PAKKETTEN.find((p) => p.pakket === naam) ?? null
+export const pakketVan = (naam: string | null, taal: MenuTaal = 'nl') =>
+  bibliotheek(taal).pakketten.find((p) => p.pakket === naam) ?? null
 
 /** Het menu zoals het pakket het levert: alles erin, nog niets gewijzigd. */
-export function uitPakket(naam: string): MenuKeuze {
-  const p = pakketVan(naam)
-  if (!p) return { pakket: null, secties: [] }
+export function uitPakket(naam: string, taal: MenuTaal = 'nl'): MenuKeuze {
+  const p = pakketVan(naam, taal)
+  if (!p) return { pakket: null, secties: [], taal }
   return {
     pakket: p.pakket,
     secties: p.secties.map((s) => ({ kop: s.kop, gerechten: s.gerechten.map((g) => ({ ...g })) })),
+    taal,
   }
 }
 
-/** Alle regels die we kennen; alles daarbuiten is door iemand zelf ingetypt. */
-const BEKEND = new Set(ALLE_GERECHTEN.map(regelVan))
+/**
+ * Een andere taal kiezen. Het pakket blijft als het in die taal bestaat, maar dan wel zoals het
+ * pakket het levert: een gewijzigd Nederlands gerecht laat zich niet vertalen. Bestaat het pakket
+ * niet in die taal, dan begin je opnieuw bij de pakketkeuze.
+ */
+export function inTaal(menu: MenuKeuze, taal: MenuTaal): MenuKeuze {
+  if (taalVan(menu) === taal) return menu
+  if (menu.pakket && pakketInTaal(menu.pakket, taal)) return uitPakket(menu.pakket, taal)
+  return leegMenu(taal)
+}
 
-export const isBekend = (g: Gerechtkeuze) => BEKEND.has(regelVan(g))
+export const isBekend = (g: Gerechtkeuze, taal: MenuTaal = 'nl') => bibliotheek(taal).bekend.has(regelVan(g))
 
 /**
  * De gerechten die niet (meer) in het repertoire staan, in schermvolgorde.
@@ -139,7 +210,8 @@ export const isBekend = (g: Gerechtkeuze) => BEKEND.has(regelVan(g))
  * hij is afgeweken en Marketing het achteraf terugvindt.
  */
 export function eigenGerechten(menu: MenuKeuze): string[] {
-  return menu.secties.flatMap((s) => s.gerechten).filter((g) => !isBekend(g)).map(regelVan)
+  const taal = taalVan(menu)
+  return menu.secties.flatMap((s) => s.gerechten).filter((g) => !isBekend(g, taal)).map(regelVan)
 }
 
 export const aantalGerechten = (menu: MenuKeuze) =>
@@ -150,7 +222,8 @@ export const aantalGerechten = (menu: MenuKeuze) =>
  * Asana, dus het moet te begrijpen zijn zonder het pakket ernaast te leggen.
  */
 export function wijzigingen(menu: MenuKeuze): string[] {
-  const basis = menu.pakket ? uitPakket(menu.pakket) : null
+  const taal = taalVan(menu)
+  const basis = menu.pakket ? uitPakket(menu.pakket, taal) : null
   if (!basis) return []
   const uit: string[] = []
   for (const [i, sectie] of menu.secties.entries()) {
@@ -162,7 +235,7 @@ export function wijzigingen(menu: MenuKeuze): string[] {
     for (const r of was) if (!nu.includes(r)) uit.push(`${kop}${r} gaat eruit`)
     for (const [j, r] of nu.entries()) {
       if (was.includes(r)) continue
-      const onbekend = isBekend(sectie.gerechten[j]) ? '' : ' (staat niet in de gerechtenlijst)'
+      const onbekend = isBekend(sectie.gerechten[j], taal) ? '' : ' (staat niet in de gerechtenlijst)'
       uit.push(`${kop}${r} komt erbij${onbekend}`)
     }
   }
@@ -185,16 +258,13 @@ export function naarTekst(menu: MenuKeuze): string {
   return delen.join('\n').trim()
 }
 
-/** Het gerecht achter een regel, of null als niemand het kent. */
-const PER_REGEL = new Map(ALLE_GERECHTEN.map((g) => [regelVan(g), g]))
-
 /**
  * Het gerecht achter een regel. Staat het niet in het repertoire, dan is de naam
  * alles tot de eerste streep en is de rest ingredient - zo leest de opmaak-engine
  * losse tekst ook, dus zo ziet de aanvrager het straks ook op het scherm.
  */
-export function gerechtVan(regel: string): Gerechtkeuze {
-  const bekend = PER_REGEL.get(regel)
+export function gerechtVan(regel: string, taal: MenuTaal = 'nl'): Gerechtkeuze {
+  const bekend = bibliotheek(taal).perRegel.get(regel)
   if (bekend) return bekend
   const [naam, ...rest] = regel.split('|').map((d) => d.trim())
   return rest.length ? { naam, ingredienten: rest } : { naam }
@@ -213,6 +283,7 @@ export function naarInhoud(menu: MenuKeuze) {
   if (!menu.pakket) return null
   return {
     pakket: menu.pakket,
+    taal: taalVan(menu),
     secties: menu.secties
       .filter((s) => s.gerechten.length)
       .map((s) => ({

@@ -12,8 +12,10 @@ import { formatDateShortNl } from '../_shared/shared/asana-title.ts'
  *    verdwijnt en er geen aanvulling meer op kan;
  *  - het veld Oplevermail stuurt de aanvrager de opleveringsmail, of eerst een proef naar wie op
  *    de knop drukte (zie oplevering.ts);
- *  - kolom en vinkje zeggen hetzelfde: naar Klaar gesleept → afgevinkt, uit Klaar gesleept → vinkje
- *    eraf. Zo hoeft niemand twee dingen te doen, en loopt de deadline-mijlpaal mee met de kolom;
+ *  - kolom en vinkje zeggen hetzelfde: naar Klaar of Afgerond gesleept → afgevinkt, daaruit gesleept
+ *    → vinkje eraf. Zo hoeft niemand twee dingen te doen, en loopt de deadline-mijlpaal mee met de kolom;
+ *  - naar Afgerond gesleept → de herinneringen om akkoord te geven stoppen (zie shared/akkoord.ts):
+ *    Marketing heeft het akkoord dan buiten het formulier om gekregen;
  *  - de deadline-mijlpaal in "Deadlines designaanvragen" loopt mee: dezelfde datum als het veld
  *    Deadline, afgerond als de taak afgerond is, en weg als de taak weg is. Of de deadline nu via
  *    een aanvulling verschuift of Marketing hem in Asana aanpast, het komt hier langs.
@@ -54,6 +56,11 @@ export interface Deps {
    * uitkomst voor in de log. Ontbreekt de functie, dan doet de knop niets.
    */
   oplever?(taak: AsanaTask, opties: { proef: boolean; door: string | null }): Promise<string>
+  /**
+   * De taak is naar Afgerond gesleept: stop de herinneringen voor de aanvraag achter deze taak.
+   * Geeft terug hoeveel opleveringen er stopten. Ontbreekt de functie, dan gebeurt er niets.
+   */
+  stopHerinneringen?(asanaTaskGid: string, moment: Date): Promise<number>
   /**
    * Laat werk doorlopen nadat Asana zijn antwoord heeft. Asana wacht maar even op de webhook, en
    * bestanden downloaden en mailen duurt langer. Zonder dit wordt er gewoon gewacht (zo testen we).
@@ -113,6 +120,9 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   const sections = cfg.sections ?? {}
   const inPlanning = sections.in_planning?.gid ?? null
   const klaar = sections.klaar?.gid ?? null
+  // Na een akkoord gaat een taak van Klaar naar Afgerond. Allebei zijn ze af.
+  const afgerond = sections.afgerond?.gid ?? null
+  const isAf = (sectie: string | null) => sectie !== null && (sectie === klaar || sectie === afgerond)
   const planningGid = deps.planningProjectGid ?? cfg.planning_project?.gid ?? null
   const planningName = cfg.planning_project?.name ?? 'de werkplanning'
 
@@ -241,13 +251,21 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
   }
 
   /**
-   * De taak is naar een andere kolom gesleept: zet het vinkje gelijk met de kolom. Naar Klaar is af,
-   * uit Klaar is weer open. Alleen bij slepen: wie in een andere kolom zelf het vinkje zet, krijgt
+   * De taak is naar een andere kolom gesleept: zet het vinkje gelijk met de kolom. Naar Klaar of
+   * Afgerond is af, daaruit is weer open. Alleen bij slepen: wie in een andere kolom zelf het vinkje zet, krijgt
    * dat niet teruggedraaid. Geeft de taak terug zoals hij nu is.
    */
   async function volgKolom(t: AsanaTask, sectie: string | null, naar: string | undefined): Promise<AsanaTask> {
-    if (!naar || naar !== sectie || !klaar) return t
-    const moetAf = sectie === klaar
+    if (!naar || naar !== sectie || (!klaar && !afgerond)) return t
+    if (sectie === afgerond && afgerond && deps.stopHerinneringen) {
+      try {
+        const n = await deps.stopHerinneringen(t.gid, now())
+        if (n) log('info', 'herinneringen gestopt: naar Afgerond gesleept', { gid: t.gid, opleveringen: n })
+      } catch (e) {
+        log('warn', 'herinneringen stoppen na slepen mislukt', { gid: t.gid, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+    const moetAf = isAf(sectie)
     if (t.completed === moetAf) return t
     try {
       await asana.werkTaakBij(t.gid, { completed: moetAf })

@@ -26,16 +26,23 @@ datum, het veld Deadline blijft leeg, er komt geen mijlpaal in de deadline-agend
 als spoed. Komt er later toch een datum, dan kan die via "Iets aanvullen of wijzigen". Bij een
 evenement blijft de deadline verplicht.
 
-**Je naam** kies je uit de lijst, maar wie er niet tussen staat typt gewoon zijn naam: iedereen kan een
-aanvraag doen.
+**Je naam** moet in de lijst met collega's staan; alleen dan kun je een aanvraag doen. Daar staat ook
+je mailadres, voor de bevestiging, de oplevering en de herinneringen. Typt iemand een naam die er
+niet in staat, dan zegt het formulier dat meteen en kan hij niet verder: hij vraagt Marketing om
+toegevoegd te worden. De function `submit-aanvraag` controleert het ook, zodat het niet om het
+formulier heen kan. Hoofdletters maken niet uit; de naam gaat verder zoals hij in de lijst staat.
+Hetzelfde geldt bij **Iets aanvullen of wijzigen**, bij **Feedback geven** en bij **Akkoord geven**:
+alleen met een naam uit de lijst.
 
 Het volledige plan met architectuur en fasen staat in [PLAN.md](PLAN.md).
 
 ```
 Formulier (GitHub Pages) → Edge Function (Supabase) → Asana-taak voor Marketing
                                                   ├→ Claude Code Routine → huisstijl bij de taak
-                                                  └→ meldingsmail (Microsoft 365) → marketingpostvak
+                                                  ├→ meldingsmail (Microsoft 365) → marketingpostvak
+                                                  └→ bevestiging → aanvrager
 Elke maandag: GitHub Actions → Asana → weekoverzicht per mail
+Elke werkdag: GitHub Actions → Supabase → herinnering om akkoord te geven
 ```
 
 ## Structuur
@@ -44,10 +51,10 @@ Elke maandag: GitHub Actions → Asana → weekoverzicht per mail
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook` en `ledkolom-preview` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, `ledkolom-preview` en `akkoord-geven` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
 | `docs/` | Handleidingen: de [gids voor projecten](docs/gids-projecten/) en de [gids voor Marketing](docs/gids-marketing/) |
-| `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `weekmail.mjs` (weekoverzicht op maandag), `sync-shared.mjs` (schema's kopiëren naar de function) |
+| `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden en kolommen aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `weekmail.mjs` (weekoverzicht op maandag), `herinneringen.mjs` (herinnering om akkoord te geven, elke werkdag), `sync-shared.mjs` (schema's kopiëren naar de function) |
 
 ## Lokaal draaien
 
@@ -144,21 +151,23 @@ alle gegevens in de beschrijving.
   subtaak `Oplevering`, voor de opleveringsmail (zie **Opleveren** hieronder).
 - **Vervaldatum:** wordt niet automatisch gezet. Eventdatum en Deadline staan als velden; de
   vervaldatum kiest Marketing zelf bij het inplannen.
-- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Klaar. De volgorde komt uit
-  `scripts/asana-field-map.json`; die bepaalt ook de volgorde op het bord.
+- **Kolommen:** Nieuwe aanvragen → Feedback → In planning → Klaar → Afgerond. De volgorde komt uit
+  `scripts/asana-field-map.json`; die bepaalt ook de volgorde op het bord. **Klaar** is opgeleverd;
+  **Afgerond** is opgeleverd én akkoord (zie **Akkoord en herinneringen**). De kolom Afgerond maakt
+  de workflow **Asana-velden vernieuwen** zelf aan, met "Ontbrekende velden aanmaken" aan.
 - **Planning-flow (webhook):** sleept Marketing een taak naar **In planning** zonder vervaldatum, dan
   plaatst de function `asana-webhook` één comment met een mention: kies een vervaldatum. Zodra er
   een vervaldatum staat in "In planning", komt de taak automatisch ook in het
   planningsproject ("4. Werkplanning") met een bevestigings-comment. De vervaldatum is een eigenschap
   van de taak, dus in beide projecten gelijk.
-- **Klaar en het vinkje lopen gelijk:** sleep je een taak naar **Klaar**, dan wordt hij afgevinkt;
-  sleep je hem er weer uit, dan gaat het vinkje eraf. De deadline-mijlpaal volgt het vinkje, dus die
+- **Klaar en het vinkje lopen gelijk:** sleep je een taak naar **Klaar** of **Afgerond**, dan wordt
+  hij afgevinkt; sleep je hem eruit, dan gaat het vinkje eraf. Naar Afgerond slepen stopt bovendien
+  de herinneringen om akkoord te geven: handig als het akkoord per telefoon kwam. De deadline-mijlpaal volgt het vinkje, dus die
   verdwijnt dan ook uit de deadline-agenda (of komt terug). Alleen slepen telt: vink je zelf een taak
   af in een andere kolom, dan blijft dat zo.
 - **Aanvrager** is een keuzelijst. De opties staan bewust niet in deze repo (die is publiek): de
   function zoekt de optie bij het indienen op naam op en maakt hem aan als die nog niet bestaat.
-  Dat geldt ook voor een naam die niet in de Supabase-tabel `collegas` staat: iedereen mag een
-  aanvraag doen en telt in het dashboard mee. Hoofdletters maken niet uit ("britt" en "Britt" zijn
+  Dat is nodig voor een collega die net aan de tabel `collegas` is toegevoegd. Hoofdletters maken niet uit ("britt" en "Britt" zijn
   één optie), een tikfout wel - die haal je in Asana weg of voeg je samen.
 - **Soort** (Evenement / Intern) is een keuzelijst met een eigen kleur per optie, zodat je op het
   bord meteen ziet wat intern is. Asana kan de kaart zelf niet inkleuren; het gekleurde label op de
@@ -219,9 +228,9 @@ subtaak vanzelf.
    lijstjes en links blijven staan.
 2. Zet de **bestanden** als bijlage bij die subtaak. Precies die bestanden gaan mee, niet die van de
    hoofdtaak. Gekoppelde bestanden (OneDrive, Google Drive, Dropbox) gaan als link mee.
-3. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
-   e-mailadressen gescheiden door een komma, ook van buiten NBC. Je mag ze ook uit Outlook plakken
-   (`Jan Jansen <jan@klant.nl>`). Het veld blijft staan voor een volgende versie.
+3. De mail gaat naar de aanvrager, als er een adres bij staat. Wie de mail nog meer moet krijgen, zet je op de hoofdtaak in het veld **Ook mailen naar**:
+   e-mailadressen van collega's, gescheiden door een komma (de tool is niet voor klanten). Je mag ze ook uit Outlook plakken
+   (`Jan Jansen <jan@nbcevents.nl>`). Het veld blijft staan voor een volgende versie.
 4. Zet het veld **Oplevermail** op de hoofdtaak op **Stuur proef naar mij**. Jij krijgt dan precies de
    mail die de aanvrager krijgt, met `[PROEF]` in het onderwerp en bovenaan wie de echte zou krijgen.
    Het veld springt op *Proef verstuurd*. Er wordt niets afgevinkt of geteld.
@@ -242,8 +251,7 @@ opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: de subtaak is leeg, er is gee
 geen open subtaak Oplevering, bijvoorbeeld een taak van voor deze functie, dan maakt de knop hem aan
 en vraagt hij je die te vullen.
 
-**De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat:
-Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
+**De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat: Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
 lezen het. Staat er geen adres, dan gaan alleen de adressen uit "Ook mailen naar" mee. Is dat ook
 leeg, dan gaat er niets uit. Antwoordt iemand toch op de mail, dan komt dat bij het marketingpostvak
 van de locatie terecht in plaats van bij het afzenderpostvak waar niemand kijkt; de mail zelf vraagt
@@ -262,10 +270,12 @@ daarnaast het recht `Mail.ReadWrite` nodig (zie **Mail instellen**, stap 4).
 nieuwe subtaak, dan heet de mail "Versie 2 klaar: …". Een verstuurde subtaak gaat nooit een tweede
 keer de deur uit. Na een mislukte poging mag dezelfde subtaak wel opnieuw.
 
-**Geen reactie is akkoord.** Er is geen akkoordknop en geen herinnering. Wie iets anders wil, gebruikt
-de knop **Feedback geven**. Die opent het formulier met de aanvraag al gekozen: geen zoeken, alleen
-naam, feedback (met bestanden) en eventueel een nieuwe deadline. Dat komt binnen als gewone
-aanvulling, dus de taak gaat terug naar **Feedback**, zoals hieronder beschreven.
+**Feedback of akkoord.** Onder het bericht staan twee knoppen: **Feedback geven** en daaronder
+**Akkoord geven**, in een eigen kleur (zie **Opmaak** onder **Meldingen per mail**). Zolang geen van beide gebeurd is, krijgt iedereen die de mail kreeg elke
+werkdag een herinnering; zie **Akkoord en herinneringen** hieronder. **Feedback geven** opent het
+formulier met de aanvraag al gekozen: geen zoeken, alleen naam, feedback (met bestanden) en
+eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taak gaat terug naar
+**Feedback**, zoals hieronder beschreven.
 
 **Zelf terugzien.** Supabase → Table editor → `opleveringen`: per oplevering de versie, ontvangers,
 bijlagen, status (`bezig`, `verstuurd`, `mislukt`) en de reden als het misging.
@@ -341,11 +351,78 @@ deur uit, namens wie op de knop drukte. Herkennen en weghalen van de links staat
 Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een release-link op *Mislukt*, met de melding
 dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er niets van.
 
+## Akkoord en herinneringen
+
+Na een oplevering wil Marketing weten of het goed is. Daarom staat er in de opleveringsmail onder
+**Feedback geven** een knop **Akkoord geven**, en krijgt iedereen die de oplevering kreeg elke
+werkdag een herinnering tot er akkoord of feedback is.
+
+**Akkoord geven.** De knop opent een scherm in het formulier (`?akkoord=<id>`) met de aanvraag, de
+versie en de vraag wie je bent; pas de knop op dat scherm geeft het akkoord. Dat is met opzet: de
+virusscanner van Outlook opent elke link in een mail, en een link die bij het openen al akkoord zou
+geven, ging dan vanzelf af. Na het akkoord:
+
+- staat het in Supabase → `opleveringen`: `akkoord_op` en `akkoord_door`;
+- komt er een reactie bij de taak in Asana (*Akkoord van Britt op versie 2, 4 november*), gaat de
+  taak naar de kolom **Afgerond** en is hij afgevinkt. Bestaat die kolom nog niet, dan blijft hij in
+  Klaar en zegt de mail aan Marketing dat;
+- krijgt het marketingpostvak van de locatie een mail *Akkoord: EY - 11 december - Torenscherm*;
+- stoppen de herinneringen.
+
+Akkoord gaat altijd over de **laatst verstuurde versie**. Een tweede akkoord op dezelfde versie doet
+niets, en het scherm zegt wie het al gaf.
+
+**Wie mag akkoord geven?** Alleen de aanvrager (besloten met Karen, manager projecten). Wie de mail
+via "Ook mailen naar" kreeg, kan wel feedback geven maar geen akkoord; de mail en het akkoordscherm
+zeggen dat. Op het akkoordscherm kies je je naam uit de lijst; is dat niet de aanvrager, dan zegt het
+scherm wie wel akkoord kan geven. De function `akkoord-geven` controleert het ook.
+
+**De herinnering.** De workflow **Herinneringen akkoord** (`scripts/herinneringen.mjs`) draait elke
+werkdag (maandag tot en met vrijdag) om 9:00. Per aanvraag kijkt hij naar de laatst verstuurde
+oplevering, en stuurt een herinnering als:
+
+- er nog geen akkoord op staat;
+- er na de oplevering geen aanvulling via het formulier binnenkwam. Feedback telt pas als hij echt
+  verstuurd is, niet als iemand alleen op de knop klikte;
+- Marketing de taak niet zelf naar **Afgerond** sleepte;
+- hij niet vandaag pas verstuurd is (de eerste herinnering komt de werkdag erna);
+- er vandaag nog geen herinnering voor uit is.
+
+De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager en de adressen uit
+"Ook mailen naar"; die staan in `opleveringen.ontvangers`). Er is geen maximum:
+de herinneringen lopen door tot er akkoord of feedback is, of tot Marketing de taak naar Afgerond
+sleept. Feestdagen tellen als werkdag.
+
+Komt er feedback, dan maakt Marketing een nieuwe versie; zodra die verstuurd is, beginnen de
+herinneringen voor die versie. Een oudere versie die nog openstond, stopt dan vanzelf.
+
+Opleveringen van vóór deze functie (november 2026) krijgen geen herinneringen: alleen wat daarna
+verstuurd is, heeft `herinneren` aan.
+
+**Zelf draaien:** Actions → **Herinneringen akkoord** → Run workflow. Met **aan** gaat alles naar dat
+adres (telt niet als herinnering); met **proef** wordt er niets verstuurd en staan de mails als
+bijlage bij de run.
+
+**Terugzien:** Supabase → `opleveringen`: `akkoord_op`, `akkoord_door`, `feedback_op` (er kwam
+feedback), `gestopt_op` en `gestopt_reden` (Afgerond in Asana, of een nieuwere versie verstuurd),
+`herinneringen` (hoeveel er al uit zijn) en `laatste_herinnering`.
+
+## De bevestiging
+
+Wie een aanvraag doet, krijgt meteen een mail *Ontvangen: …* met wat er is aangevraagd, hoe het
+verder gaat, en een knop **Iets aanvullen of wijzigen** (die opent het aanvulscherm met deze
+aanvraag al gekozen, `?aanvullen=<id>`). Alleen als bij de aanvrager in de tabel `collegas` een
+adres staat; anders gaat er geen bevestiging uit.
+
+Collega's aan een aanvraag koppelen, zodat ze ook de mails krijgen, kan niet: dat is na overleg met
+Karen (manager projecten) bewust weggelaten. Moet iemand anders de oplevering ook krijgen, dan zet
+Marketing die in "Ook mailen naar".
+
 ## Feedback op werk dat al af is
 
 Een taak die in **Klaar** staat, wordt niet meer bekeken. Maar juist daarna komt de feedback. Dus:
-komt er een aanvulling binnen op een taak die **in Klaar staat of afgevinkt is**, dan trekt de
-function hem terug in beeld:
+komt er een aanvulling binnen op een taak die **in Klaar of Afgerond staat, of afgevinkt is**, dan
+trekt de function hem terug in beeld:
 
 - de taak gaat naar de kolom **Feedback** (tweede kolom op het bord);
 - het **vinkje gaat eraf** — hij is immers niet meer af;
@@ -469,8 +546,13 @@ rekenen.
 
 ## Meldingen per mail
 
-Marketing krijgt een mail in het eigen postvak als er via het formulier iets binnenkomt, en elke
-maandagochtend een weekoverzicht. Wat Marketing zelf in Asana doet levert geen mail op.
+Marketing krijgt een mail in het eigen postvak als er via het formulier iets binnenkomt (een
+aanvraag, een aanvulling, een akkoord), en elke maandagochtend een weekoverzicht. Wat Marketing zelf
+in Asana doet levert geen mail op.
+
+Collega's krijgen zelf ook mail: de bevestiging van hun aanvraag, de opleveringsmail en de
+herinnering om akkoord te geven. Zie **De bevestiging** en **Akkoord en herinneringen**. Een antwoord op zo'n mail komt bij het
+marketingpostvak van de locatie terecht.
 
 | Locatie | Postvak |
 | --- | --- |
@@ -482,7 +564,11 @@ De adressen staan in `shared/contact.ts`.
 
 **Opmaak.** Een NBC-mail heeft een kop en knop in NBC-teal (`#229d96`), een Green Village-mail in het
 GV-donkergroen (`#23251b`). Allebei met witte tekst. Dat geldt voor alle
-mails: aanvraag, aanvulling, weekoverzicht en oplevering. De kleuren staan in `THEMAS` in
+mails: aanvraag, aanvulling, weekoverzicht, oplevering, bevestiging, herinnering en
+akkoord. Alleen de knop **Akkoord geven** heeft een eigen kleur, zodat hij niet met **Feedback geven**
+verward wordt: bij NBC Goudgeel (`#f6a304`) met zwarte tekst (wit haalt daarop maar 2,1:1), bij Green
+Village Orange Roughy 700 (`#833113`) met witte tekst. Dat is de accentkleur van Green Village in een
+donkerdere tint, omdat witte tekst op de hoofdtint (600) net geen 4,5:1 haalt. De kleuren staan in `THEMAS` in
 `shared/mail.ts`. De opmaak is gebouwd voor de klassieke Outlook, die mail met Word rendert: ruimte
 zit op tabelcellen en niet op links of divs, en elke cel noemt zelf het lettertype.
 
@@ -674,6 +760,52 @@ nodig:
 Zonder die secrets gebeurt er niets als je op de knop drukt, en zegt de webhook dat ook — hij doet
 niet alsof.
 
+## Engelse menu's
+
+Een menuscherm kan ook in het **Engels**. In het formulier staat boven de pakketten de keuze
+**Taal van het menu**: Nederlands of Engels. Alle negen pakketten bestaan in het Engels. Gerechten
+wisselen, weghalen, toevoegen en zelf typen werkt hetzelfde; de zoeklijst bij *Wissel* is dan de
+Engelse. Een gekozen pakket kan ook nog van taal wisselen (*Dit menu in het Engels*), en via
+**Menu aanpassen** in een aanvulling kan het later ook.
+
+**Het Engelse basisontwerp.** Het Engels heeft een eigen Illustrator-bestand,
+`worker/menu/basis/bron/Flexibele-template-designs-V1_ENG.ai`: dezelfde blobs en kolommen als het
+Nederlandse, met de Engelse teksten zoals de ontwerper ze zette. Het wordt net zo bevroren als het
+Nederlandse, in een eigen map:
+
+```bash
+python3 worker/menu/basis-extract.py --taal en       # naar worker/menu/basis/en/
+node worker/menu/pakketten-export.mjs --taal en      # de Engelse lijst voor het formulier
+node worker/menu/controle.mjs --taal en              # elk Engels ontwerp naast het .ai
+```
+
+De Engelse pagina's staan in een andere volgorde dan de Nederlandse; welke pagina welk pakket is,
+staat in `PAKKETTEN_EN` in `basis-extract.py`. Het Engelse bestand heeft een eigen
+gerechtenbibliotheek (`basis/en/gerechten.json`), dus een onaangeroerd Engels gerecht staat er net
+zo bij als de ontwerper het zette. De controle legt alle negen Engelse schermen pixel voor pixel
+naast het .ai: niets staat verschoven.
+
+**De Engelse lijst in het formulier** (`shared/menu-pakketten-en.json`) komt uit die
+basisontwerpen, niet meer met de hand uit het doc
+[Menu's Food Lookbook Winter NBC 26-27](https://claude.ai/artifact/RHokNUrQukBni3hR79Mdji). Het
+Illustrator-bestand is de bron: wat daar staat, staat in het formulier en op het scherm, met
+dezelfde spelling. Verandert er iets in het Engels, pas dan het .ai aan en draai de drie regels
+hierboven.
+
+Moet een woord op het scherm bewust anders staan dan in het .ai, dan kan dat in
+`WOORDCORRECTIES_EN` in `basis-extract.py`; die lijst is nu leeg.
+
+Bij *Lunch (vegetarian)* staat *vegetarian* als ondertitel onder de titel. Dat element kent alleen
+het Engelse ontwerp; de engine tekent hem zoals hij in het .ai staat.
+
+In de taak in Asana staat *Taal van het menu: Engels*, en in Supabase `aanvragen.menu_taal`. Die
+kolom blijft ook gelden als Marketing het menu in de taakbeschrijving corrigeert.
+
+**Een concept voor een nieuw ontwerp.** `worker/menu/naar-illustrator.py` zet Engelse teksten op
+de Nederlandse pagina's van het .ai (blobs en lagen blijven), met rode kaders waar de tekst iets
+raakt. Zo is het eerste concept van het Engelse bestand gemaakt; de ontwerper heeft het daarna in
+Illustrator afgemaakt.
+
 ## Huisstijl van het formulier
 
 `web/src/styles/tokens.css` is een subset van het NBC Design System (kleuren, type, spacing,
@@ -684,9 +816,9 @@ voor titels, Area Normal voor de rest.
 ## Collega's
 
 De namenlijst komt uit de Supabase-tabel `collegas` (Table editor → collegas: naam toevoegen,
-`actief` uitzetten om iemand te verbergen). In de kolom `email` staat waar de opleveringsmail naartoe
-gaat als die collega de aanvraag deed; die kolom is niet publiek. Die lijst is een hulp om snel te kiezen, geen
-toegangscontrole: wie er niet in staat typt zijn naam gewoon zelf. Fallback: `web/src/data/collegas.fallback.ts`.
+`actief` uitzetten om iemand te verbergen). In de kolom `email` staat het adres voor de bevestiging,
+de opleveringsmail en de herinneringen; die kolom is niet publiek. Alleen wie in de lijst staat kan
+een aanvraag doen, aanvullen of akkoord geven (zie bovenaan). Fallback: `web/src/data/collegas.fallback.ts`.
 
 ## Aanvragen bekijken
 

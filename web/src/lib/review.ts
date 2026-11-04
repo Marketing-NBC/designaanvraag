@@ -1,4 +1,4 @@
-import { aantalGerechten, pakketVan, wijzigingen, type MenuKeuze } from './menu'
+import { aantalGerechten, pakketVan, taalVan, wijzigingen, type MenuKeuze } from './menu'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel, soortLabel, vraagtOmMenu } from '../../../shared/request-types'
 import { formatLong } from './dates'
 import type { Draft } from '../state'
@@ -13,12 +13,13 @@ export interface ReviewRow {
 
 /** Het menu in het overzicht: het pakket, en hoeveel ervan is afgeweken. */
 function menuSamenvatting(menu: MenuKeuze): string {
-  const pakket = pakketVan(menu.pakket)
+  const taal = taalVan(menu)
+  const pakket = pakketVan(menu.pakket, taal)
   if (!pakket) return 'Niet ingevuld'
   const n = aantalGerechten(menu)
   const anders = wijzigingen(menu).length
   const staart = anders ? `, ${anders} ${anders === 1 ? 'wijziging' : 'wijzigingen'}` : ' (ongewijzigd)'
-  return `${pakket.naam} — ${n} ${n === 1 ? 'gerecht' : 'gerechten'}${staart}`
+  return `${pakket.naam}${taal === 'en' ? ' (Engels)' : ''} — ${n} ${n === 1 ? 'gerecht' : 'gerechten'}${staart}`
 }
 
 export function reviewRows(d: Draft): ReviewRow[] {

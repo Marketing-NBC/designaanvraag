@@ -10,7 +10,9 @@ import { OPLEVER_SUBTAAK } from '../_shared/shared/oplevering.ts'
 import type { RoutineClient } from '../_shared/routine.ts'
 import type { Storage } from '../_shared/storage.ts'
 import { submitPayloadSchema, type SubmitResult } from '../_shared/shared/aanvraag-schema.ts'
-import { MARKETING_MAIL } from '../_shared/shared/contact.ts'
+import { MARKETING_MAIL, MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
+import { renderBevestigingMail } from '../_shared/shared/bevestiging.ts'
+import pakketData from '../_shared/shared/menu-pakketten.json' with { type: 'json' }
 import type { MailClient } from '../_shared/shared/mail.ts'
 import { renderNieuweAanvraagMail } from '../_shared/shared/meldingen.ts'
 import { isSpoed, vandaagInNl, werkdagenTotEvent } from '../_shared/shared/spoed.ts'
@@ -84,7 +86,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvraag, client_request_id, bijlage_ids } = parsed.data
+    const { aanvraag: ingevuld, client_request_id, bijlage_ids } = parsed.data
 
     // Idempotent: dubbelklik of retry geeft hetzelfde resultaat terug. Wél nog even kijken of er
     // bijlagen zijn blijven liggen: viel de verbinding weg tijdens het doorzetten, dan is dit de
@@ -106,6 +108,19 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       }
       return json(resultOf(existing), 200, cors)
     }
+
+    // Alleen collega's uit de lijst mogen een aanvraag doen: zonder plek in de lijst is er geen
+    // mailadres voor de bevestiging, de oplevering en de herinneringen. Het formulier houdt dit al
+    // tegen; dit is de controle die er niet omheen kan. De naam gaat verder zoals hij in de lijst
+    // staat, zodat "britt" en "Britt" één aanvrager zijn.
+    const lijstnaam = await db.collega(ingevuld.naam)
+    if (!lijstnaam) {
+      return json({
+        error: `${ingevuld.naam} staat niet in de lijst met collega's. Vraag Marketing (${MARKETING_MAIL}) om je toe te voegen; daarna kun je een aanvraag doen.`,
+        field: 'aanvraag.naam',
+      }, 400, cors)
+    }
+    const aanvraag = { ...ingevuld, naam: lijstnaam }
 
     // Rate limits: per IP per uur, en een globaal dagplafond (beschermt Routine-runs en Asana).
     const ip = clientIp(req)
@@ -166,6 +181,30 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       }
     }
 
+    // De bevestiging aan de aanvrager, als er bij de collega een adres staat. Ook als Asana het
+    // liet afweten: de aanvraag is binnen, Marketing heeft hem in de mail. Een mislukte mail houdt
+    // niets tegen.
+    let bevestigd = false
+    const bevestig = async () => {
+      if (!deps.mail || bevestigd) return
+      bevestigd = true
+      try {
+        const eigen = await db.collegaEmail(aanvraag.naam)
+        if (!eigen) {
+          log('info', 'geen bevestiging: geen mailadres bij de aanvrager', { id: row.id })
+          return
+        }
+        const antwoordAan = MELDING_ONTVANGERS[aanvraag.locatie] ?? MELDING_ONTVANGERS.nbc
+        const menuPakket = aanvraag.menu_pakket
+          ? (pakketData as { pakketten: { pakket: string; naam: string }[] }).pakketten.find((p) => p.pakket === aanvraag.menu_pakket)?.naam ?? aanvraag.menu_pakket
+          : null
+        await deps.mail.verstuur(renderBevestigingMail({ aanvraag, aanvraagId: row.id, aan: eigen, antwoordAan, menuPakket }))
+        log('info', 'bevestiging gemaild', { id: row.id })
+      } catch (e) {
+        log('error', 'bevestiging mailen mislukt', { id: row.id, error: e instanceof Error ? e.message : String(e) })
+      }
+    }
+
     // Asana-taak (fase 3). Zonder configuratie slaan we dit over; de aanvraag blijft bewaard.
     let asanaUrl: string | null = null
     let asanaGid: string | null = null
@@ -174,8 +213,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       try {
         // Aanvrager is een keuzelijst zodat het dashboard erop kan groeperen. De optie-gids staan
         // niet in de repo (die is publiek), dus zoeken we de optie hier op naam op en maken hem zo
-        // nodig aan. Ook voor een naam die niet in de lijst met collega's staat: iedereen mag een
-        // aanvraag doen, en wie dat doet hoort in het dashboard mee te tellen.
+        // nodig aan: een collega die net aan de lijst is toegevoegd, heeft er nog geen.
         const aanvragerVeld = cfg.fields?.aanvrager
         let aanvragerOptieGid: string | null = null
         if (aanvragerVeld?.type === 'enum') {
@@ -250,15 +288,18 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
         log('error', 'asana mislukt', { id: row.id, error: msg })
         await db.update(row.id, { asana_error: msg, brand_status: 'failed', brand_error: 'Geen Asana-taak, dus geen huisstijl-extractie.' })
         await meld(null, `Asana gaf een fout: ${msg}`)
+        await bevestig()
         return json({ aanvraag_id: row.id, asana_task_url: null, brand_dispatched: false } satisfies SubmitResult, 200, cors)
       }
     } else {
       await db.update(row.id, { asana_error: 'Asana niet geconfigureerd', brand_status: 'failed', brand_error: 'Asana niet geconfigureerd' })
       await meld(null, 'De koppeling met Asana is niet ingesteld.')
+      await bevestig()
       return json({ aanvraag_id: row.id, asana_task_url: null, brand_dispatched: false } satisfies SubmitResult, 200, cors)
     }
 
     await meld(asanaUrl, null)
+    await bevestig()
 
     // Huisstijl-extractie via de Routine (fase 4). Zonder website valt er niets op te halen; dat is
     // geen mislukking maar een overslag, en de Routine hoeft er geen run aan te verspillen. Een

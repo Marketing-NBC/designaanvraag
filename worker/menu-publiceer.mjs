@@ -7,6 +7,7 @@
  *   node worker/menu-publiceer.mjs --data menu.json --out scherm.png --dry-run
  *   node worker/menu-publiceer.mjs --tekst menu.txt --logo logo.png --dry-run
  *   node worker/menu-publiceer.mjs --aanvraag-id <uuid> --kleuren opdrachtgever
+ *   node worker/menu-publiceer.mjs --data menu.json --taal en --dry-run
  *
  * De collega die de aanvraag indient ziet hier niets van. Het scherm komt als
  * bijlage bij de Asana-taak en alles wat de opmaak-engine opmerkt komt daar als
@@ -22,7 +23,7 @@ import { menuIsBruikbaar, renderMenuComment, renderMenuFailureComment } from './
 import { kleurenVerslag } from './menu/kleuren.mjs'
 import { herstelOnderdelen, kiesMenuBron } from './menu/bron.mjs'
 import { leesMenuTekst, kiesPakket } from './menu/menu-tekst.mjs'
-import { renderMenu, pakketten, pakketkenmerken } from './menu/render.mjs'
+import { engelseMenus, renderMenu, pakketten, pakkettenInTaal, pakketkenmerken } from './menu/render.mjs'
 
 const args = parseArgs()
 const dryRun = Boolean(args['dry-run'])
@@ -37,8 +38,12 @@ if (!id && !args.data && !args.tekst) {
   process.exit(2)
 }
 
-/** De gerechten zoals het formulier ze kent, met hun onderdelen (shared/menu-pakketten.json). */
-function formulierGerechten() {
+/**
+ * De gerechten zoals het formulier ze kent, met hun onderdelen: shared/menu-pakketten.json, of bij
+ * een Engels menu shared/menu-pakketten-en.json.
+ */
+function formulierGerechten(taal = 'nl') {
+  if (taal === 'en') return engelseMenus().gerechten ?? []
   const pad = new URL('../shared/menu-pakketten.json', import.meta.url)
   return JSON.parse(readFileSync(pad, 'utf8')).gerechten ?? []
 }
@@ -52,6 +57,11 @@ let aanvraag = null
 let inhoud = args.data ? JSON.parse(readFileSync(args.data, 'utf8')) : null
 let ruweTekst = args.tekst ? readFileSync(args.tekst, 'utf8') : null
 const invoerNotities = []
+/**
+ * De taal van het menu. Het formulier zet hem in menu_inhoud én in de kolom menu_taal; die laatste
+ * blijft ook staan als Marketing het menu in de taakbeschrijving corrigeert (dan is er alleen tekst).
+ */
+let taal = args.taal === 'en' ? 'en' : null
 
 if (id) {
   const { getAanvraag } = await import('./lib/supabase.mjs')
@@ -87,7 +97,7 @@ if (!inhoud && ruweTekst && ruweTekst.trim()) {
   const gelezen = leesMenuTekst(ruweTekst)
   const { opmerkingen } = gelezen
   // Tekst verliest de opbouw van gerechten met onderdelen; die halen we uit de bibliotheek terug.
-  const secties = herstelOnderdelen(gelezen.secties, formulierGerechten())
+  const secties = herstelOnderdelen(gelezen.secties, formulierGerechten(taal ?? aanvraag?.menu_taal ?? 'nl'))
   if (!secties.length) {
     await afbreken('De menu-invulling is niet te lezen: er staan geen gerechten in. '
       + 'Verwacht wordt een kopje per gang en daaronder de gerechten met een bolletje ervoor.')
@@ -157,6 +167,14 @@ if (!inhoud.pakket) {
 if (!pakketten().includes(inhoud.pakket)) {
   await afbreken(`Onbekend pakket "${inhoud.pakket}". `
     + `Beschikbaar: ${pakketten().join(', ')}.`, inhoud.pakket)
+}
+taal = taal ?? (inhoud.taal === 'en' || aanvraag?.menu_taal === 'en' ? 'en' : 'nl')
+if (taal === 'en') {
+  if (!pakkettenInTaal('en').includes(inhoud.pakket)) {
+    await afbreken(`Het pakket "${inhoud.pakket}" is er nog niet in het Engels. `
+      + `In het Engels zijn er: ${pakkettenInTaal('en').join(', ')}.`, inhoud.pakket)
+  }
+  invoerNotities.push('Engels menu, op het Engelse basisontwerp.')
 }
 
 /**
@@ -236,7 +254,7 @@ let png
 let meldingen
 let logoVak
 try {
-  ({ png, meldingen, logoVak } = await renderMenu({ ...inhoud, merk }))
+  ({ png, meldingen, logoVak } = await renderMenu({ ...inhoud, taal, merk }))
 } catch (e) {
   await afbreken(`De opmaak liep vast: ${e.message}`, inhoud.pakket)
 }

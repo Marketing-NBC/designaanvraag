@@ -1,4 +1,5 @@
 import type { SubmitPayload, SubmitResult } from '../../../shared/aanvraag-schema'
+import type { AkkoordInfo, AkkoordResultaat } from '../../../shared/akkoord'
 import type { AanvullingPayload, AanvullingResult, GevondenAanvraag } from '../../../shared/aanvulling-schema'
 import type { UploadLink, UploadlinkPayload, UploadlinkResult } from '../../../shared/bijlagen'
 import { vraagtOmMenu } from '../../../shared/request-types'
@@ -220,4 +221,46 @@ export function uploadBestand(link: UploadLink, file: File, onVoortgang: (deel: 
     xhr.onabort = () => reject(new Error('Uploaden afgebroken.'))
     xhr.send(file)
   })
+}
+
+/**
+ * Wat er klaarstaat om akkoord op te geven: de aanvraag, de laatst verstuurde versie, en of er al
+ * akkoord is. Null als de aanvraag niet (meer) openstaat. Mock-modus: een open oplevering.
+ */
+export async function haalAkkoordInfo(id: string): Promise<AkkoordInfo | null> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    await new Promise((r) => setTimeout(r, 300))
+    const a = zoekMock('').find((x) => x.id === id) ?? zoekMock('')[0]
+    return a ? {
+      status: 'open', soort: a.soort, event: a.event, event_datum: a.event_datum, omschrijving: a.omschrijving,
+      aanvraag_types: a.aanvraag_types, anders_tekst: a.anders_tekst, aanvrager: a.naam, versie: 1,
+      verstuurd_op: new Date().toISOString(), akkoord_op: null, akkoord_door: null,
+    } : null
+  }
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/akkoord-geven?id=${encodeURIComponent(id)}`, { headers: { apikey: PUBLISHABLE_KEY } })
+    if (res.status === 404) return null
+    if (!res.ok) throw new ApiError(res.status, `Ophalen mislukt (${res.status})`)
+    return (await res.json()) as AkkoordInfo
+  } catch (e) {
+    if (e instanceof ApiError) throw e
+    throw new ApiError(0, 'Kon de aanvraag niet ophalen. Controleer je verbinding en probeer het opnieuw.')
+  }
+}
+
+/** Het akkoord zelf. Gaat over de laatst verstuurde versie van de aanvraag. */
+export async function geefAkkoord(aanvraagId: string, naam: string): Promise<AkkoordResultaat> {
+  if (!FUNCTIONS_URL || !PUBLISHABLE_KEY) {
+    await new Promise((r) => setTimeout(r, 700))
+    console.info('[mock akkoord]', { aanvraagId, naam })
+    return { versie: 1, door: naam, al: false }
+  }
+  const res = await fetch(`${FUNCTIONS_URL}/akkoord-geven`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: PUBLISHABLE_KEY },
+    body: JSON.stringify({ aanvraag_id: aanvraagId, naam, website_confirm: '' }),
+  })
+  const body = (await res.json().catch(() => null)) as (AkkoordResultaat & { error?: string }) | null
+  if (!res.ok || !body) throw new ApiError(res.status, body?.error ?? `Akkoord geven mislukt (${res.status})`)
+  return body
 }

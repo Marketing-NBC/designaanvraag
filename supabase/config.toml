@@ -56,3 +56,11 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/ledkolom-preview/index.ts"
+
+# Akkoord geven op een oplevering, vanuit de knop in de opleveringsmail en de herinneringen. Leest
+# wat er klaarstaat (GET) en legt het akkoord vast (POST). Eigen uurlimiet per IP.
+[functions.akkoord-geven]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/akkoord-geven/index.ts"

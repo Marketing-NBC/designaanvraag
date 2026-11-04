@@ -17,10 +17,11 @@ import { Success } from './components/Success'
 import { TextArea, TextField } from './components/TextField'
 import { COLLEGAS_FALLBACK } from './data/collegas.fallback'
 import { ApiError, fetchCollegas, submitAanvraag } from './lib/api'
-import { PAKKETTEN_OP_SCHERM, naarInhoud, naarTekst, uitPakket } from './lib/menu'
+import { naarInhoud, naarTekst, pakkettenOpScherm, taalVan, uitPakket } from './lib/menu'
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from './lib/storage'
-import { alleenTeKiezenTypes, emptyDraft, eventDatumUitNaam, metEventNaam, type Draft } from './state'
+import { NIET_IN_LIJST, alleenTeKiezenTypes, emptyDraft, eventDatumUitNaam, metEventNaam, naamUitLijst, type Draft } from './state'
 import { Aanvulling } from './Aanvulling'
+import { Akkoord } from './Akkoord'
 import { FileField } from './components/FileField'
 import { Icon } from './components/Icon'
 import { todayIso } from './lib/dates'
@@ -35,16 +36,33 @@ type Screen =
   /**
    * De tweede flow: iets nasturen op een aanvraag die al loopt. Heeft zijn eigen state. Met
    * `vooraf` staat de aanvraag al gekozen: zo komt de knop "Feedback geven" uit de opleveringsmail
-   * binnen.
+   * binnen. `bron` zegt waar de link vandaan kwam: de feedbackknop, of "Iets aanvullen of
+   * wijzigen" uit de bevestigingsmail; dat verandert alleen een paar teksten.
    */
-  | { kind: 'aanvulling'; vooraf?: string }
+  | { kind: 'aanvulling'; vooraf?: string; bron?: 'feedback' | 'aanvullen' }
+  /** Akkoord geven op een oplevering: de knop uit de opleveringsmail en de herinneringen. */
+  | { kind: 'akkoord'; aanvraagId: string }
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** Het id uit `?feedback=` in de link van de opleveringsmail, of null. */
-function feedbackUitUrl(): string | null {
-  const id = new URLSearchParams(window.location.search).get('feedback')?.trim().toLowerCase() ?? ''
+/** De parameters in een link uit een mail die het formulier bij één aanvraag openen. */
+const LINK_PARAMS = ['feedback', 'aanvullen', 'akkoord'] as const
+
+/** Het id uit `?feedback=`, `?aanvullen=` of `?akkoord=` in de link uit een mail, of null. */
+function idUitUrl(param: (typeof LINK_PARAMS)[number]): string | null {
+  const id = new URLSearchParams(window.location.search).get(param)?.trim().toLowerCase() ?? ''
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id) ? id : null
+}
+
+/** Het eerste scherm: het startscherm, of meteen de aanvraag uit de link in een mail. */
+function eersteScherm(): Screen {
+  const akkoord = idUitUrl('akkoord')
+  if (akkoord) return { kind: 'akkoord', aanvraagId: akkoord }
+  const feedback = idUitUrl('feedback')
+  if (feedback) return { kind: 'aanvulling', vooraf: feedback, bron: 'feedback' }
+  const aanvullen = idUitUrl('aanvullen')
+  if (aanvullen) return { kind: 'aanvulling', vooraf: aanvullen, bron: 'aanvullen' }
+  return { kind: 'start' }
 }
 
 function isTypingTarget(el: EventTarget | null): el is HTMLElement {
@@ -62,10 +80,7 @@ export default function App() {
   // overzicht en het bewaarde concept lezen. Afgeleid tijdens het renderen, dus geen extra ronde.
   const volledig: Draft = useMemo(() => ({ ...draft, bijlagen: uploads.bijlagen }), [draft, uploads.bijlagen])
 
-  const [screen, setScreen] = useState<Screen>(() => {
-    const vooraf = feedbackUitUrl()
-    return vooraf ? { kind: 'aanvulling', vooraf } : { kind: 'start' }
-  })
+  const [screen, setScreen] = useState<Screen>(eersteScherm)
   const [dir, setDir] = useState<1 | -1>(1)
   const [error, setError] = useState<string | null>(null)
   const [errorNonce, setErrorNonce] = useState(0)
@@ -97,12 +112,12 @@ export default function App() {
     fetchCollegas(COLLEGAS_FALLBACK).then(setCollegas)
   }, [])
 
-  // De feedbacklink heeft zijn werk gedaan zodra het scherm open is. Uit de adresbalk halen, zodat
+  // De link uit de mail heeft zijn werk gedaan zodra het scherm open is. Uit de adresbalk halen, zodat
   // verversen of "terug naar het begin" niet weer bij dezelfde aanvraag uitkomt.
   useEffect(() => {
     const url = new URL(window.location.href)
-    if (!url.searchParams.has('feedback')) return
-    url.searchParams.delete('feedback')
+    if (!LINK_PARAMS.some((p) => url.searchParams.has(p))) return
+    for (const p of LINK_PARAMS) url.searchParams.delete(p)
     window.history.replaceState(null, '', url)
   }, [])
 
@@ -132,7 +147,15 @@ export default function App() {
   const next = useCallback(() => {
     if (screen.kind !== 'step') return
     const lijst = zichtbareStappen({ metMenu, soort })
-    const msg = lijst[screen.index]?.validate(volledig) ?? null
+    const huidige = lijst[screen.index]
+    let msg = huidige?.validate(volledig) ?? null
+    // Alleen collega's uit de lijst mogen een aanvraag doen. Is de lijst niet geladen (een
+    // storing), dan houdt de function het tegen; hier zou dan iedereen vastlopen.
+    if (!msg && huidige?.id === 'naam' && collegas.length) {
+      const lijstnaam = naamUitLijst(volledig.naam, collegas)
+      if (!lijstnaam) msg = NIET_IN_LIJST
+      else if (lijstnaam !== volledig.naam) setDraft((d) => ({ ...d, naam: lijstnaam }))
+    }
     if (msg) {
       setError(msg)
       setErrorNonce((n) => n + 1)
@@ -140,7 +163,7 @@ export default function App() {
     }
     if (screen.index + 1 < lijst.length) go({ kind: 'step', index: screen.index + 1 }, 1)
     else go({ kind: 'review' }, 1)
-  }, [screen, volledig, go, metMenu, soort])
+  }, [screen, volledig, go, metMenu, soort, collegas])
 
   const prev = useCallback(() => {
     if (screen.kind === 'step') {
@@ -225,6 +248,7 @@ export default function App() {
         menu_tekst: naarTekst(volledig.menu),
         menu_pakket: volledig.menu.pakket ?? '',
         menu_inhoud: naarInhoud(volledig.menu),
+        menu_taal: taalVan(volledig.menu),
         omschrijving: volledig.omschrijving,
       },
       client_request_id: clientRequestId.current,
@@ -290,8 +314,8 @@ export default function App() {
         return
       }
 
-      // De aanvulling-flow luistert zelf; hier niets doen.
-      if (screen.kind === 'aanvulling') return
+      // De aanvulling-flow en het akkoordscherm luisteren zelf; hier niets doen.
+      if (screen.kind === 'aanvulling' || screen.kind === 'akkoord') return
 
       if (screen.kind === 'review') {
         if (e.key === 'Enter' && !typing && !(target instanceof HTMLAnchorElement)) {
@@ -337,10 +361,11 @@ export default function App() {
         if (letter.length === 1 && i >= 0) {
           if (kind === 'menu') {
             // Dezelfde volgorde als op het scherm: A is de bovenste in de eerste groep.
-            const pakket = PAKKETTEN_OP_SCHERM[i]
+            const taal = draft.menu.taal === 'en' ? 'en' : 'nl'
+            const pakket = pakkettenOpScherm(taal)[i]
             if (pakket) {
               e.preventDefault()
-              patch({ menu: uitPakket(pakket.pakket) })
+              patch({ menu: uitPakket(pakket.pakket, taal) })
             }
             return
           }
@@ -378,7 +403,7 @@ export default function App() {
     // erop kijken: welke lijst er op het scherm staat hangt van de locatie en de designkeuze af,
     // en of de pakketkeuze nog open is van het gekozen pakket. Zonder deze blijft de oude waarde hangen.
   }, [screen, next, prev, go, submit, toggleType, kiesLocatie, kiesModus, patch, focusPrimary, metMenu, soort,
-      draft.locatie, draft.design_modus, draft.menu.pakket])
+      draft.locatie, draft.design_modus, draft.menu.pakket, draft.menu.taal])
 
   const variants = useMemo(
     () => ({
@@ -429,7 +454,18 @@ export default function App() {
   }
 
   if (screen.kind === 'aanvulling') {
-    return <Aanvulling collegas={collegas} vooraf={screen.vooraf ?? null} onSluit={() => go({ kind: 'start' }, -1)} />
+    return <Aanvulling collegas={collegas} vooraf={screen.vooraf ?? null} bron={screen.bron ?? 'feedback'} onSluit={() => go({ kind: 'start' }, -1)} />
+  }
+
+  if (screen.kind === 'akkoord') {
+    return (
+      <Akkoord
+        aanvraagId={screen.aanvraagId}
+        collegas={collegas}
+        onSluit={() => go({ kind: 'start' }, -1)}
+        onFeedback={() => go({ kind: 'aanvulling', vooraf: screen.aanvraagId, bron: 'feedback' }, 1)}
+      />
+    )
   }
 
   if (screen.kind === 'success') {
@@ -477,7 +513,16 @@ export default function App() {
               }
             >
               {step.kind === 'naam' ? (
-                <NameCombobox id="f-naam" value={draft.naam} onChange={(v) => patch({ naam: v })} names={collegas} invalid={Boolean(error)} onEnter={next} />
+                <NameCombobox
+                  id="f-naam"
+                  value={draft.naam}
+                  onChange={(v) => patch({ naam: v })}
+                  names={collegas}
+                  invalid={Boolean(error)}
+                  onEnter={next}
+                  // Alleen collega's uit de lijst mogen een aanvraag doen; dat zeggen we meteen.
+                  nieuwHint="Deze naam staat niet in de lijst. Vraag Marketing om je toe te voegen; daarna kun je een aanvraag doen."
+                />
               ) : null}
               {step.kind === 'text' && step.id === 'event' ? (
                 <TextField id="f-event" value={draft.event} onChange={(v) => patch(metEventNaam(draft, v, todayIso()))} placeholder="Bijvoorbeeld Zorgcongres 20 november 2026" maxLength={120} invalid={Boolean(error)} aria-labelledby={`q-${step.id}`} />

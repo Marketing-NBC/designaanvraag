@@ -11,7 +11,7 @@
  */
 import { eventEnDatum, formatDateShortNl, kortVan } from './asana-title.ts'
 import { formatBytes } from './bijlagen.ts'
-import { FORMULIER_URL } from './contact.ts'
+import { FORMULIER_URL, akkoordUrl } from './contact.ts'
 import { THEMAS, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, vlak, waarschuwingBlok } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
 import { asanaLink } from './ledkolom-preview.ts'
@@ -256,6 +256,8 @@ export interface OpleveringMail {
   berichtHtml: string
   /** Wie op de knop drukte; staat onder het bericht. */
   afzenderNaam: string | null
+  /** Wie de aanvraag deed: alleen die kan akkoord geven. */
+  aanvrager: string
   bijlagen: { naam: string; bytes: number }[]
   links: { naam: string; url: string }[]
   /** De 3D-previews van de ledkolom die online staan; alleen bij een LED-kolom met een release-link. */
@@ -282,7 +284,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
   if (m.proef) {
     delen.push(waarschuwingBlok(
       `<strong>Proefmail.</strong> Alleen jij krijgt deze. De echte mail gaat naar ${escapeHtml(opsomming(m.proef.echteOntvangers))}. `
-        + 'De knop werkt echt: klik er niet op, anders komt er feedback bij de taak.',
+        + 'De knoppen werken echt: klik er niet op, anders komt er een akkoord of feedback bij de taak.',
     ))
   }
   delen.push(`<p style="margin:0 0 16px;">Hoi,</p>`)
@@ -328,8 +330,13 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
 
   delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Iets aan te passen?</p>`)
   delen.push(`<p style="margin:4px 0 0;">Geef je feedback via de knop hieronder. Dan komt hij meteen bij de juiste aanvraag terecht, `
-    + `en kun je er bestanden en een nieuwe deadline bij doen. Is alles goed, dan hoef je niets te doen.</p>`)
+    + `en kun je er bestanden en een nieuwe deadline bij doen.</p>`)
   delen.push(knop(feedbackUrl(m.aanvraagId), 'Feedback geven', thema))
+  delen.push(`<p style="margin:24px 0 0;font-weight:bold;">Is het goed?</p>`)
+  delen.push(`<p style="margin:4px 0 0;">Geef dan akkoord. Dan weet Marketing dat het af is.</p>`)
+  delen.push(knop(akkoordUrl(m.aanvraagId), 'Akkoord geven', thema, 'akkoord'))
+  delen.push(`<p style="margin:20px 0 0;color:#596165;font-size:13px;">Zolang er geen akkoord of feedback is, krijg je elke werkdag een herinnering. `
+    + `Akkoord geven kan alleen ${escapeHtml(m.aanvrager)}, die de aanvraag deed; feedback geven kan iedereen die deze mail krijgt.</p>`)
 
   const kop = nieuweVersie ? `Versie ${m.versie} staat klaar` : 'Je design staat klaar'
   return {

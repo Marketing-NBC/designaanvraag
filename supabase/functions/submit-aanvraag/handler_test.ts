@@ -32,9 +32,14 @@ const env: Env = {
   ledkolomGeheim: null,
 }
 
+/** Adressen in de nep-tabel collegas, op naam in kleine letters. */
+const ADRESSEN: Record<string, string> = { britt: 'britt@nbcevents.nl', karen: 'karen@nbcevents.nl', bo: 'bo@nbcevents.nl' }
+
 function fakeDb() {
   const rows = new Map<string, AanvraagRow & NewAanvraag>()
   const counters = new Map<string, number>()
+  const gestopt: { aanvraagId: string; reden: unknown }[] = []
+  const gestoptAantal = 0
   const db: Db & { rows: typeof rows; counters: typeof counters } = {
     rows,
     counters,
@@ -73,7 +78,15 @@ function fakeDb() {
     markeerBijlage: () => Promise.resolve(),
     zoekOpId: () => Promise.resolve(null),
     findDetailByAsanaTaskGid: () => Promise.resolve(null),
-    collegaEmail: () => Promise.resolve(null),
+    collegaEmail: (naam) => Promise.resolve(ADRESSEN[naam.trim().toLowerCase()] ?? null),
+    // Iedereen staat in de lijst, behalve "Jan Nieuwkomer"; de naam komt terug zoals in de lijst.
+    collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
+    laatsteVerstuurd: () => Promise.resolve(null),
+    async stopHerinneringen(aanvraagId, _moment, reden) {
+      gestopt.push({ aanvraagId, reden })
+      return gestoptAantal
+    },
+    zetAkkoord: () => Promise.resolve(false),
     findOplevering: () => Promise.resolve(null),
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
@@ -886,4 +899,62 @@ Deno.test('een interne aanvraag mailt zonder event, met de vraag in het onderwer
   assertStringIncludes(m.html, 'Wat er gevraagd wordt')
   assertEquals(m.html.includes('Eventdatum'), false)
   assertEquals(m.html.includes('Website'), false)
+})
+
+// ── Bevestiging ───────────────────────────────────────────────────────────────
+
+Deno.test('de aanvrager krijgt een bevestiging, met een knop om aan te vullen', async () => {
+  const mail = fakeMail()
+  const { handler, db } = setup({ mail })
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Britt' } })))
+  assertEquals(res.status, 200)
+  const [rij] = [...db.rows.values()]
+  assertEquals(mail.verstuurd.map((m) => m.onderwerp.split(':')[0]), ['Nieuwe aanvraag', 'Ontvangen'])
+  const bevestiging = mail.verstuurd[1]
+  assertEquals(bevestiging.aan, ['britt@nbcevents.nl'])
+  assertEquals(bevestiging.antwoordAan, ['marketing@nbcevents.nl'])
+  assertStringIncludes(bevestiging.html, `?aanvullen=${rij.id}`)
+})
+
+Deno.test('zonder mailadres bij de aanvrager geen bevestiging', async () => {
+  const mail = fakeMail()
+  const { handler } = setup({ mail })
+  await handler(post(payload()))
+  assertEquals(mail.verstuurd.length, 1)
+})
+
+Deno.test('ook als Asana het laat afweten komt de bevestiging', async () => {
+  const mail = fakeMail()
+  const { handler } = setup({ mail, asana: fakeAsana({ fail: true }) })
+  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Britt' } })))
+  assertEquals(mail.verstuurd.map((m) => m.onderwerp.split(':')[0]), ['[Niet in Asana] Nieuwe aanvraag', 'Ontvangen'])
+})
+
+Deno.test('een Engels menu staat in de taak', async () => {
+  const { handler, asana } = setup()
+  await handler(post(payload({ aanvraag: {
+    ...validAanvraag, aanvraag_types: ['menu_scherm'], menu_tekst: 'Sandwiches\n• Brown bun', menu_pakket: 'lunch-basic', menu_taal: 'en',
+  } })))
+  assertStringIncludes(asana.calls[0].htmlNotes, '<strong>Taal van het menu:</strong> Engels')
+})
+
+// ── Alleen collega's uit de lijst ─────────────────────────────────────────────
+
+Deno.test('wie niet in de lijst staat, kan geen aanvraag doen', async () => {
+  const mail = fakeMail()
+  const { handler, db, asana } = setup({ mail })
+  const res = await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'Jan Nieuwkomer' } })))
+  assertEquals(res.status, 400)
+  const body = await res.json()
+  assertEquals(body.field, 'aanvraag.naam')
+  assertStringIncludes(body.error, 'staat niet in de lijst')
+  assertEquals(db.rows.size, 0)
+  assertEquals(asana.calls.length, 0)
+  assertEquals(mail.verstuurd.length, 0)
+})
+
+Deno.test('de naam gaat verder zoals hij in de lijst staat', async () => {
+  const { handler, db } = setup()
+  await handler(post(payload({ aanvraag: { ...validAanvraag, naam: 'noa' } })))
+  assertEquals([...db.rows.values()][0].naam, 'Noa')
 })

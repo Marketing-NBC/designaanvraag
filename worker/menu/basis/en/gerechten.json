@@ -1,0 +1,2914 @@
+{
+  "gerechten": {
+    "56|beetroot apple horseradish cream": {
+      "naam": "Beetroot",
+      "ingredienten": [
+        "apple",
+        "horseradish cream"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Beetroot",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "apple | horseradish cream",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|beetroot apple smoked mackerel horseradish cream": {
+      "naam": "Beetroot",
+      "ingredienten": [
+        "apple",
+        "smoked mackerel",
+        "horseradish cream"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Beetroot",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "apple | smoked mackerel | horseradish cream",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|beetroot tortilla hummus grilled vegetables": {
+      "naam": "Beetroot tortilla",
+      "ingredienten": [
+        "hummus",
+        "grilled vegetables"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Beetroot tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "hummus | grilled vegetables",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|beetroot tortilla hummus grilled vegetables (vegetarian)": {
+      "naam": "Beetroot tortilla",
+      "ingredienten": [
+        "hummus",
+        "grilled vegetables (vegetarian)"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Beetroot tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "hummus | grilled vegetables (vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|boneless short ribs miso butter jus": {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "miso butter jus"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Boneless short ribs",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "miso butter jus",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|bruschetta skewers with seasonal dips (vegetarian)": {
+      "naam": "Bruschetta skewers with seasonal dips",
+      "ingredienten": [
+        "(vegetarian)"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Bruschetta skewers",
+          "offset": 0.0
+        },
+        {
+          "tekst": "with seasonal  dips",
+          "offset": 67.2
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "(vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|burrata dried mini figs brussels sprouts pistachio mesclun": {
+      "naam": "Burrata",
+      "ingredienten": [
+        "dried mini figs",
+        "Brussels sprouts",
+        "pistachio",
+        "mesclun"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Burrata",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "dried mini figs | Brussels sprouts | pistachio |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mesclun",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|burrata tomato mix basil oil": {
+      "naam": "Burrata",
+      "ingredienten": [
+        "tomato mix",
+        "basil oil"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Burrata",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "tomato mix | basil oil",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|cheese baguette mustard mayonnaise cucumber rocket": {
+      "naam": "Cheese baguette",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "cucumber",
+        "rocket"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Cheese baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "mustard mayonnaise | cucumber | rocket",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|chocolate trifle oreo crunch cherries tony's chocolonely shavings": {
+      "naam": "Chocolate trifle",
+      "ingredienten": [
+        "Oreo crunch",
+        "cherries",
+        "Tony’s Chocolonely shavings"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Chocolate trifle",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "Oreo crunch | cherries |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Tony’s Chocolonely shavings",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|coq au vin silverskin onions red wine winter carrot": {
+      "naam": "Coq au vin",
+      "ingredienten": [
+        "silverskin onions",
+        "red wine",
+        "winter carrot"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Coq au vin",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "silverskin onions | red wine | winter carrot",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|crispy parmesan potatoes": {
+      "naam": "Crispy Parmesan potatoes",
+      "ingredienten": [],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Crispy Parmesan potatoes",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
+    },
+    "56|dutch prime beef ravigote herb crunch lime": {
+      "naam": "Dutch prime beef",
+      "ingredienten": [
+        "ravigote",
+        "herb crunch",
+        "lime"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Dutch prime beef",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "ravigote | herb crunch | lime",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|fresh fruit": {
+      "naam": "Fresh fruit",
+      "ingredienten": [],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Fresh fruit",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
+    },
+    "56|greek yoghurt bar greek yoghurt quark fresh fruit fruit compotes muesli granola oats": {
+      "naam": "Greek Yoghurt Bar",
+      "ingredienten": [
+        "Greek yoghurt",
+        "quark",
+        "fresh fruit",
+        "fruit compotes",
+        "muesli",
+        "granola",
+        "oats"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Greek Yoghurt Bar",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "Greek yoghurt | quark | fresh fruit | fruit",
+          "offset": 0.0
+        },
+        {
+          "tekst": "compotes | muesli | granola | oats",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|grip 'n dip fries coq au vin tomato crunch smoked beetroot mayonnaise": {
+      "naam": "Grip ’n dip fries",
+      "ingredienten": [
+        "coq au vin",
+        "tomato crunch",
+        "smoked beetroot mayonnaise"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Grip ’n dip fries",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "coq au vin | tomato crunch |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "smoked beetroot mayonnaise",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|minestrone bar spicy tomato broth tortellini mozzarella parmesan sweet pepper basil bruschetta tomato mix mixed green herbs": {
+      "naam": "Minestrone Bar",
+      "ingredienten": [
+        "spicy tomato broth",
+        "tortellini",
+        "mozzarella",
+        "Parmesan",
+        "sweet pepper",
+        "basil",
+        "bruschetta",
+        "tomato mix",
+        "mixed green herbs"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Minestrone Bar",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "spicy tomato broth | tortellini | mozzarella |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Parmesan | sweet pepper | basil | bruschetta |",
+          "offset": 50.01
+        },
+        {
+          "tekst": "tomato mix | mixed green herbs",
+          "offset": 100.02
+        }
+      ]
+    },
+    "56|mortadella ricotta rocket": {
+      "naam": "Mortadella",
+      "ingredienten": [
+        "ricotta",
+        "rocket"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Mortadella",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "ricotta | rocket",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|multigrain baguette avocado cucumber spread spring onion tomato": {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "avocado",
+        "cucumber spread",
+        "spring onion",
+        "tomato"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Multigrain baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "avocado | cucumber spread | spring onion |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "tomato",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|oyster mushroom croquette sandwich mustard mayonnaise oyster mushroom": {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "Oyster mushroom"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        },
+        {
+          "tekst": "croquette sandwich",
+          "offset": 67.2
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "mustard mayonnaise | Oyster mushroom",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|provolone tomato chutney": {
+      "naam": "Provolone",
+      "ingredienten": [
+        "tomato chutney"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Provolone",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "tomato chutney",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|pulled chicken red chicory mozzarella fermented mustard caramelised pecan nuts citrus mayonnaise": {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "red chicory",
+        "mozzarella",
+        "fermented mustard",
+        "caramelised pecan nuts",
+        "citrus mayonnaise"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "red chicory | mozzarella | fermented mustard |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "caramelised pecan nuts | citrus mayonnaise",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|pumpkin feta raisins red cabbage carrot": {
+      "naam": "Pumpkin",
+      "ingredienten": [
+        "feta",
+        "raisins",
+        "red cabbage",
+        "carrot"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pumpkin",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "feta | raisins | red cabbage | carrot",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|pumpkin ravioli cured italian ham sage butter sauce": {
+      "naam": "Pumpkin ravioli",
+      "ingredienten": [
+        "cured Italian ham",
+        "sage butter sauce"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pumpkin ravioli",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "cured Italian ham | sage butter sauce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|pumpkin risotto gorgonzola fresh figs": {
+      "naam": "Pumpkin risotto",
+      "ingredienten": [
+        "gorgonzola",
+        "fresh figs"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pumpkin risotto",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "gorgonzola | fresh figs",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|pão de queijo brazilian cheese bites piri piri dip": {
+      "naam": "Pão de queijo",
+      "ingredienten": [
+        "Brazilian cheese bites",
+        "piri piri dip"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Pão de queijo",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "Brazilian cheese bites | piri piri dip",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|sandwich beef croquette or oyster mushroom croquette mustard mayonnaise beef (halal) or oyster mushroom (vegetarian)": {
+      "naam": "Sandwich beef croquette or Oyster mushroom croquette",
+      "ingredienten": [
+        "mustard mayonnaise",
+        "beef (halal) or oyster mushroom (vegetarian)"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Sandwich beef croquette or",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Oyster mushroom croquette",
+          "offset": 67.2
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "mustard mayonnaise | beef (halal) or",
+          "offset": 0.0
+        },
+        {
+          "tekst": "oyster mushroom (vegetarian)",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|sauerkraut mash seared salmon pancetta crumble fermented mustard": {
+      "naam": "Sauerkraut mash",
+      "ingredienten": [
+        "seared salmon",
+        "pancetta crumble",
+        "fermented mustard"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Sauerkraut mash",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "seared salmon | pancetta crumble |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "fermented mustard",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|schiacciata toscana burrata parmesan tomato salsa": {
+      "naam": "Schiacciata Toscana",
+      "ingredienten": [
+        "burrata",
+        "Parmesan",
+        "tomato salsa"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Schiacciata Toscana",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "burrata | Parmesan | tomato salsa",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|seared salmon sauerkraut fermented mustard": {
+      "naam": "Seared salmon",
+      "ingredienten": [
+        "sauerkraut",
+        "fermented mustard"
+      ],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Seared salmon",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "sauerkraut | fermented mustard",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|spinach tortilla cottage cheese sun-dried tomatoes": {
+      "naam": "Spinach tortilla",
+      "ingredienten": [
+        "cottage cheese",
+        "sun-dried tomatoes"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Spinach tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "cottage cheese | sun-dried tomatoes",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|spinach tortilla salmon cottage cheese": {
+      "naam": "Spinach tortilla",
+      "ingredienten": [
+        "salmon",
+        "cottage cheese"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Spinach tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "salmon | cottage cheese",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|sweet buns mini brioche whipped cream pistachio crunch icing sugar": {
+      "naam": "Sweet Buns",
+      "ingredienten": [
+        "mini brioche",
+        "whipped cream",
+        "pistachio crunch",
+        "icing sugar"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Sweet Buns",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "mini brioche | whipped cream |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "pistachio crunch | icing sugar",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|thai chicken romaine lettuce carrot cucumber roasted sweet pepper": {
+      "naam": "Thai chicken",
+      "ingredienten": [
+        "romaine lettuce",
+        "carrot",
+        "cucumber",
+        "roasted sweet pepper"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Thai chicken",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "romaine lettuce | carrot | cucumber | roasted",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sweet pepper",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|tuna melt onion jalapeño": {
+      "naam": "Tuna melt",
+      "ingredienten": [
+        "onion",
+        "jalapeño"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Tuna melt",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "onion | jalapeño",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|white baguette chicken korean kimchi mayonnaise pickled red onion cucumber": {
+      "naam": "White baguette",
+      "ingredienten": [
+        "chicken",
+        "Korean kimchi mayonnaise",
+        "pickled red onion",
+        "cucumber"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "White baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "chicken | Korean kimchi mayonnaise | pickled",
+          "offset": 0.0
+        },
+        {
+          "tekst": "red onion | cucumber",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|white baguette grilled halloumi korean kimchi mayonnaise pickled red onion cucumber": {
+      "naam": "White baguette",
+      "ingredienten": [
+        "grilled halloumi",
+        "Korean kimchi mayonnaise",
+        "pickled red onion",
+        "cucumber"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "White baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "grilled halloumi | Korean kimchi mayonnaise |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "pickled red onion | cucumber",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|wholemeal tortilla mature dutch cumin cheese madras yoghurt dressing": {
+      "naam": "Wholemeal tortilla",
+      "ingredienten": [
+        "mature Dutch cumin cheese",
+        "Madras yoghurt dressing"
+      ],
+      "bron": "lunch-vega-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Wholemeal tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "mature Dutch cumin cheese |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Madras yoghurt dressing",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|wholemeal tortilla pulled chicken madras yoghurt dressing": {
+      "naam": "Wholemeal tortilla",
+      "ingredienten": [
+        "pulled chicken",
+        "Madras yoghurt dressing"
+      ],
+      "bron": "lunch-standaard",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Wholemeal tortilla",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "pulled chicken | Madras yoghurt dressing",
+          "offset": 0.0
+        }
+      ]
+    },
+    "56|winter burger red onion chutney red cabbage slaw chilli pepper sauce": {
+      "naam": "Winter burger",
+      "ingredienten": [
+        "red onion chutney",
+        "red cabbage slaw",
+        "chilli pepper sauce"
+      ],
+      "bron": "grab-and-go",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Winter burger",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 38.0,
+      "ingrRegels": [
+        {
+          "tekst": "red onion chutney | red cabbage slaw |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "chilli pepper sauce",
+          "offset": 50.01
+        }
+      ]
+    },
+    "56|winter ratatouille": {
+      "naam": "Winter ratatouille",
+      "ingredienten": [],
+      "bron": "buffet",
+      "naamGrootte": 56.0,
+      "naamRegels": [
+        {
+          "tekst": "Winter ratatouille",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
+    },
+    "61.6|beef croquette sandwich beef (halal)": {
+      "naam": "Beef croquette sandwich",
+      "ingredienten": [
+        "Beef (halal)"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Beef croquette sandwich",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "Beef (halal)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|boneless short ribs winter carrot crème parsnip spaghetti sticky hoisin": {
+      "naam": "Boneless short ribs",
+      "ingredienten": [
+        "winter carrot crème",
+        "parsnip spaghetti",
+        "sticky hoisin"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Boneless short ribs",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "winter carrot crème | parsnip spaghetti |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sticky hoisin",
+          "offset": 55.01
+        }
+      ]
+    },
+    "61.6|brown bun chicken breast piri-piri rocket mixed raw vegetables": {
+      "naam": "Brown bun",
+      "ingredienten": [
+        "chicken breast",
+        "piri-piri",
+        "rocket",
+        "mixed raw vegetables"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Brown bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "chicken breast | piri-piri | rocket |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mixed raw vegetables",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|brown bun herb spread avocado rocket mixed raw vegetables": {
+      "naam": "Brown bun",
+      "ingredienten": [
+        "herb spread",
+        "avocado",
+        "rocket",
+        "mixed raw vegetables"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Brown bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "herb spread | avocado | rocket |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mixed raw vegetables",
+          "offset": 55.01
+        }
+      ]
+    },
+    "61.6|chocolate trifle oreo crunch cherries tony's chocolonely shavings": {
+      "naam": "Chocolate trifle",
+      "ingredienten": [
+        "Oreo crunch",
+        "cherries",
+        "Tony’s Chocolonely shavings"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Chocolate trifle",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "Oreo crunch | cherries |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Tony’s Chocolonely shavings",
+          "offset": 55.01
+        }
+      ]
+    },
+    "61.6|multigrain baguette goat's cheese harissa romaine lettuce": {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "goat’s cheese",
+        "harissa",
+        "romaine lettuce"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Multigrain baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "goat’s cheese | harissa | romaine lettuce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|multigrain baguette goat's cheese harissa romaine lettuce (vegetarian)": {
+      "naam": "Multigrain baguette",
+      "ingredienten": [
+        "goat’s cheese",
+        "harissa",
+        "romaine lettuce (vegetarian)"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Multigrain baguette",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "goat’s cheese | harissa | romaine lettuce",
+          "offset": 0.0
+        },
+        {
+          "tekst": "(vegetarian)",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|oyster mushroom croquette sandwich oyster mushroom": {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "Oyster mushroom"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        },
+        {
+          "tekst": "croquette sandwich",
+          "offset": 73.92
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|oyster mushroom croquette sandwich oyster mushroom (vegetarian)": {
+      "naam": "Oyster mushroom croquette sandwich",
+      "ingredienten": [
+        "Oyster mushroom (vegetarian)"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        },
+        {
+          "tekst": "croquette sandwich",
+          "offset": 73.92
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "Oyster mushroom (vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|pulled chicken red chicory mozzarella fermented mustard caramelised pecan nuts citrus mayonnaise": {
+      "naam": "Pulled chicken",
+      "ingredienten": [
+        "red chicory",
+        "mozzarella",
+        "fermented mustard",
+        "caramelised pecan nuts",
+        "citrus mayonnaise"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "red chicory | mozzarella | fermented",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mustard | caramelised pecan nuts | citrus",
+          "offset": 55.01
+        },
+        {
+          "tekst": "mayonnaise",
+          "offset": 110.02
+        }
+      ]
+    },
+    "61.6|pumpkin ravioli cured italian ham sage butter sauce": {
+      "naam": "Pumpkin ravioli",
+      "ingredienten": [
+        "cured Italian ham",
+        "sage butter sauce"
+      ],
+      "bron": "diner-4gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Pumpkin ravioli",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "cured Italian ham | sage butter sauce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|sourdough bread butter fleur de sel lime olives sun-dried tomato curry dip": {
+      "naam": "Sourdough bread",
+      "ingredienten": [
+        "butter",
+        "fleur de sel",
+        "lime",
+        "olives",
+        "sun-dried tomato",
+        "curry dip"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Sourdough bread",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "butter | fleur de sel | lime | olives |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sun-dried tomato | curry dip",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|tasteful gift tuna tartare horseradish affilla cress onion crumble": {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "tuna tartare",
+        "horseradish",
+        "affilla cress",
+        "onion crumble"
+      ],
+      "bron": "diner-3gangen",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Tasteful gift",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "tuna tartare | horseradish | affilla cress |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "onion crumble",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|tasteful gift tuna tartare horseradish affilla cress onion crumble saffron": {
+      "naam": "Tasteful gift",
+      "ingredienten": [
+        "tuna tartare",
+        "horseradish",
+        "affilla cress",
+        "onion crumble",
+        "saffron"
+      ],
+      "bron": "walking-dinner",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Tasteful gift",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "tuna tartare | horseradish | affilla cress |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "onion crumble | saffron",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|white sesame bun ham herb spread butter lettuce tomato": {
+      "naam": "White sesame bun",
+      "ingredienten": [
+        "ham",
+        "herb spread",
+        "butter lettuce",
+        "tomato"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "White sesame bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "ham | herb spread | butter lettuce | tomato",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|white sesame bun spicy hummus butter lettuce tomato": {
+      "naam": "White sesame bun",
+      "ingredienten": [
+        "spicy hummus",
+        "butter lettuce",
+        "tomato"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "White sesame bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "spicy hummus | butter lettuce | tomato",
+          "offset": 0.0
+        }
+      ]
+    },
+    "61.6|wholemeal bun aged cheese truffle mayonnaise lollo bianca lettuce cucumber": {
+      "naam": "Wholemeal bun",
+      "ingredienten": [
+        "aged cheese",
+        "truffle mayonnaise",
+        "Lollo Bianca lettuce",
+        "cucumber"
+      ],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Wholemeal bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "aged cheese | truffle mayonnaise | Lollo",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Bianca lettuce | cucumber",
+          "offset": 55.0
+        }
+      ]
+    },
+    "61.6|wholemeal bun aged cheese truffle mayonnaise lollo bianca lettuce cucumber (vegetarian)": {
+      "naam": "Wholemeal bun",
+      "ingredienten": [
+        "aged cheese",
+        "truffle mayonnaise",
+        "Lollo Bianca lettuce",
+        "cucumber (vegetarian)"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Wholemeal bun",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "aged cheese | truffle mayonnaise |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Lollo Bianca lettuce | cucumber",
+          "offset": 55.0
+        },
+        {
+          "tekst": "(vegetarian)",
+          "offset": 110.01
+        }
+      ]
+    },
+    "61.6|wild mushroom soup": {
+      "naam": "Wild mushroom soup",
+      "ingredienten": [],
+      "bron": "lunch-vega-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Wild mushroom soup",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": null,
+      "ingrRegels": null
+    },
+    "61.6|wild mushroom soup (vegetarian)": {
+      "naam": "Wild mushroom soup",
+      "ingredienten": [
+        "(vegetarian)"
+      ],
+      "bron": "lunch-basic",
+      "naamGrootte": 61.6,
+      "naamRegels": [
+        {
+          "tekst": "Wild mushroom soup",
+          "offset": 0.0
+        }
+      ],
+      "ingrGrootte": 41.8,
+      "ingrRegels": [
+        {
+          "tekst": "(vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    }
+  },
+  "alineas": {
+    "ingr|38|(vegetarian)": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "(vegetarian)",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "(vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|apple | horseradish cream": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "apple | horseradish cream",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "apple | horseradish cream",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|apple | smoked mackerel | horseradish cream": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "apple | smoked mackerel | horseradish cream",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "apple | smoked mackerel | horseradish cream",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|avocado | cucumber spread | spring onion | tomato": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "avocado | cucumber spread | spring onion | tomato",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "avocado | cucumber spread | spring onion |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "tomato",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|brazilian cheese bites | piri piri dip": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "Brazilian cheese bites | piri piri dip",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Brazilian cheese bites | piri piri dip",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|burrata | parmesan | tomato salsa": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "burrata | Parmesan | tomato salsa",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "burrata | Parmesan | tomato salsa",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|chicken | korean kimchi mayonnaise | pickled red onion | cucumber": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "chicken | Korean kimchi mayonnaise | pickled red onion | cucumber",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "chicken | Korean kimchi mayonnaise | pickled",
+          "offset": 0.0
+        },
+        {
+          "tekst": "red onion | cucumber",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|coq au vin | tomato crunch | smoked beetroot mayonnaise": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "coq au vin | tomato crunch | smoked beetroot mayonnaise",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "coq au vin | tomato crunch |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "smoked beetroot mayonnaise",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|cottage cheese | sun-dried tomatoes": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "cottage cheese | sun-dried tomatoes",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "cottage cheese | sun-dried tomatoes",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|cured italian ham | sage butter sauce": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "cured Italian ham | sage butter sauce",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "cured Italian ham | sage butter sauce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|dried mini figs | brussels sprouts | pistachio | mesclun": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "dried mini figs | Brussels sprouts | pistachio | mesclun",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "dried mini figs | Brussels sprouts | pistachio |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mesclun",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|feta | raisins | red cabbage | carrot": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "feta | raisins | red cabbage | carrot",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "feta | raisins | red cabbage | carrot",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|gorgonzola | fresh figs": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "gorgonzola | fresh figs",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "gorgonzola | fresh figs",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|greek yoghurt | quark | fresh fruit | fruit compotes | muesli | granola | oats": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "Greek yoghurt | quark | fresh fruit | fruit compotes | muesli | granola | oats",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Greek yoghurt | quark | fresh fruit | fruit",
+          "offset": 0.0
+        },
+        {
+          "tekst": "compotes | muesli | granola | oats",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|grilled halloumi | korean kimchi mayonnaise | pickled red onion | cucumber": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "grilled halloumi | Korean kimchi mayonnaise | pickled red onion | cucumber",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "grilled halloumi | Korean kimchi mayonnaise |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "pickled red onion | cucumber",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|hummus | grilled vegetables": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "hummus | grilled vegetables",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "hummus | grilled vegetables",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|hummus | grilled vegetables (vegetarian)": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "hummus | grilled vegetables (vegetarian)",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "hummus | grilled vegetables (vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|mature dutch cumin cheese | madras yoghurt dressing": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "mature Dutch cumin cheese | Madras yoghurt dressing",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "mature Dutch cumin cheese |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Madras yoghurt dressing",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|mini brioche | whipped cream | pistachio crunch | icing sugar": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "mini brioche | whipped cream | pistachio crunch | icing sugar",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "mini brioche | whipped cream |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "pistachio crunch | icing sugar",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|miso butter jus": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "miso butter jus",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "miso butter jus",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|mustard mayonnaise | beef (halal) or oyster mushroom (vegetarian)": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "mustard mayonnaise | beef (halal) or oyster mushroom (vegetarian)",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "mustard mayonnaise | beef (halal) or",
+          "offset": 0.0
+        },
+        {
+          "tekst": "oyster mushroom (vegetarian)",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|mustard mayonnaise | cucumber | rocket": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "mustard mayonnaise | cucumber | rocket",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "mustard mayonnaise | cucumber | rocket",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|mustard mayonnaise | oyster mushroom": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "mustard mayonnaise | Oyster mushroom",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "mustard mayonnaise | Oyster mushroom",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|onion | jalapeño": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "onion | jalapeño",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "onion | jalapeño",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|oreo crunch | cherries | tony's chocolonely shavings": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "Oreo crunch | cherries | Tony’s Chocolonely shavings",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Oreo crunch | cherries |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Tony’s Chocolonely shavings",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|pulled chicken | madras yoghurt dressing": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "pulled chicken | Madras yoghurt dressing",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "pulled chicken | Madras yoghurt dressing",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|ravigote | herb crunch | lime": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "ravigote | herb crunch | lime",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "ravigote | herb crunch | lime",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|red chicory | mozzarella | fermented mustard | caramelised pecan nuts | citrus mayonnaise": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "red chicory | mozzarella | fermented mustard | caramelised pecan nuts | citrus mayonnaise",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "red chicory | mozzarella | fermented mustard |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "caramelised pecan nuts | citrus mayonnaise",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|red onion chutney | red cabbage slaw | chilli pepper sauce": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "red onion chutney | red cabbage slaw | chilli pepper sauce",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "red onion chutney | red cabbage slaw |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "chilli pepper sauce",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|ricotta | rocket": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "ricotta | rocket",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "ricotta | rocket",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|romaine lettuce | carrot | cucumber | roasted sweet pepper": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "romaine lettuce | carrot | cucumber | roasted sweet pepper",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "romaine lettuce | carrot | cucumber | roasted",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sweet pepper",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|salmon | cottage cheese": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "salmon | cottage cheese",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "salmon | cottage cheese",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|sauerkraut | fermented mustard": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "sauerkraut | fermented mustard",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "sauerkraut | fermented mustard",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|seared salmon | pancetta crumble | fermented mustard": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "seared salmon | pancetta crumble | fermented mustard",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "seared salmon | pancetta crumble |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "fermented mustard",
+          "offset": 50.01
+        }
+      ]
+    },
+    "ingr|38|silverskin onions | red wine | winter carrot": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "silverskin onions | red wine | winter carrot",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "silverskin onions | red wine | winter carrot",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|spicy tomato broth | tortellini | mozzarella | parmesan | sweet pepper | basil | bruschetta | tomato mix | mixed green herbs": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "spicy tomato broth | tortellini | mozzarella | Parmesan | sweet pepper | basil | bruschetta | tomato mix | mixed green herbs",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "spicy tomato broth | tortellini | mozzarella |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Parmesan | sweet pepper | basil | bruschetta |",
+          "offset": 50.01
+        },
+        {
+          "tekst": "tomato mix | mixed green herbs",
+          "offset": 100.02
+        }
+      ]
+    },
+    "ingr|38|tomato chutney": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "tomato chutney",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "tomato chutney",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|38|tomato mix | basil oil": {
+      "soort": "ingr",
+      "grootte": 38.0,
+      "tekst": "tomato mix | basil oil",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "tomato mix | basil oil",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|(vegetarian)": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "(vegetarian)",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "(vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|aged cheese | truffle mayonnaise | lollo bianca lettuce | cucumber": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "aged cheese | truffle mayonnaise | Lollo Bianca lettuce | cucumber",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "aged cheese | truffle mayonnaise | Lollo",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Bianca lettuce | cucumber",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|aged cheese | truffle mayonnaise | lollo bianca lettuce | cucumber (vegetarian)": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "aged cheese | truffle mayonnaise | Lollo Bianca lettuce | cucumber (vegetarian)",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "aged cheese | truffle mayonnaise |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Lollo Bianca lettuce | cucumber",
+          "offset": 55.0
+        },
+        {
+          "tekst": "(vegetarian)",
+          "offset": 110.01
+        }
+      ]
+    },
+    "ingr|41.8|beef (halal)": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "Beef (halal)",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Beef (halal)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|butter | fleur de sel | lime | olives | sun-dried tomato | curry dip": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "butter | fleur de sel | lime | olives | sun-dried tomato | curry dip",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "butter | fleur de sel | lime | olives |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sun-dried tomato | curry dip",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|chicken breast | piri-piri | rocket | mixed raw vegetables": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "chicken breast | piri-piri | rocket | mixed raw vegetables",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "chicken breast | piri-piri | rocket |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mixed raw vegetables",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|cured italian ham | sage butter sauce": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "cured Italian ham | sage butter sauce",
+      "bron": "diner-4gangen",
+      "regels": [
+        {
+          "tekst": "cured Italian ham | sage butter sauce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|goat's cheese | harissa | romaine lettuce": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "goat’s cheese | harissa | romaine lettuce",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "goat’s cheese | harissa | romaine lettuce",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|goat's cheese | harissa | romaine lettuce (vegetarian)": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "goat’s cheese | harissa | romaine lettuce (vegetarian)",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "goat’s cheese | harissa | romaine lettuce",
+          "offset": 0.0
+        },
+        {
+          "tekst": "(vegetarian)",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|ham | herb spread | butter lettuce | tomato": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "ham | herb spread | butter lettuce | tomato",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "ham | herb spread | butter lettuce | tomato",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|herb spread | avocado | rocket | mixed raw vegetables": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "herb spread | avocado | rocket | mixed raw vegetables",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "herb spread | avocado | rocket |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mixed raw vegetables",
+          "offset": 55.01
+        }
+      ]
+    },
+    "ingr|41.8|oreo crunch | cherries | tony's chocolonely shavings": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "Oreo crunch | cherries | Tony’s Chocolonely shavings",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Oreo crunch | cherries |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Tony’s Chocolonely shavings",
+          "offset": 55.01
+        }
+      ]
+    },
+    "ingr|41.8|oyster mushroom": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "Oyster mushroom",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|oyster mushroom (vegetarian)": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "Oyster mushroom (vegetarian)",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Oyster mushroom (vegetarian)",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|red chicory | mozzarella | fermented mustard | caramelised pecan nuts | citrus mayonnaise": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "red chicory | mozzarella | fermented mustard | caramelised pecan nuts | citrus mayonnaise",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "red chicory | mozzarella | fermented",
+          "offset": 0.0
+        },
+        {
+          "tekst": "mustard | caramelised pecan nuts | citrus",
+          "offset": 55.01
+        },
+        {
+          "tekst": "mayonnaise",
+          "offset": 110.02
+        }
+      ]
+    },
+    "ingr|41.8|spicy hummus | butter lettuce | tomato": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "spicy hummus | butter lettuce | tomato",
+      "bron": "lunch-vega-basic",
+      "regels": [
+        {
+          "tekst": "spicy hummus | butter lettuce | tomato",
+          "offset": 0.0
+        }
+      ]
+    },
+    "ingr|41.8|tuna tartare | horseradish | affilla cress | onion crumble": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "tuna tartare | horseradish | affilla cress | onion crumble",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "tuna tartare | horseradish | affilla cress |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "onion crumble",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|tuna tartare | horseradish | affilla cress | onion crumble | saffron": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "tuna tartare | horseradish | affilla cress | onion crumble | saffron",
+      "bron": "walking-dinner",
+      "regels": [
+        {
+          "tekst": "tuna tartare | horseradish | affilla cress |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "onion crumble | saffron",
+          "offset": 55.0
+        }
+      ]
+    },
+    "ingr|41.8|winter carrot crème | parsnip spaghetti | sticky hoisin": {
+      "soort": "ingr",
+      "grootte": 41.8,
+      "tekst": "winter carrot crème | parsnip spaghetti | sticky hoisin",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "winter carrot crème | parsnip spaghetti |",
+          "offset": 0.0
+        },
+        {
+          "tekst": "sticky hoisin",
+          "offset": 55.01
+        }
+      ]
+    },
+    "naam|56|beetroot": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Beetroot",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Beetroot",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|beetroot tortilla": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Beetroot tortilla",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Beetroot tortilla",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|boneless short ribs": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Boneless short ribs",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Boneless short ribs",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|bruschetta skewers with seasonal dips": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Bruschetta skewers with seasonal dips",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Bruschetta skewers",
+          "offset": 0.0
+        },
+        {
+          "tekst": "with seasonal  dips",
+          "offset": 67.2
+        }
+      ]
+    },
+    "naam|56|burrata": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Burrata",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Burrata",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|cheese baguette": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Cheese baguette",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Cheese baguette",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|chocolate trifle": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Chocolate trifle",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Chocolate trifle",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|coq au vin": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Coq au vin",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Coq au vin",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|crispy parmesan potatoes": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Crispy Parmesan potatoes",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Crispy Parmesan potatoes",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|dutch prime beef": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Dutch prime beef",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Dutch prime beef",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|fresh fruit": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Fresh fruit",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Fresh fruit",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|greek yoghurt bar": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Greek Yoghurt Bar",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Greek Yoghurt Bar",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|grip 'n dip fries": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Grip ’n dip fries",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Grip ’n dip fries",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|minestrone bar": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Minestrone Bar",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Minestrone Bar",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|mortadella": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Mortadella",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Mortadella",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|multigrain baguette": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Multigrain baguette",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Multigrain baguette",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|oyster mushroom croquette sandwich": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Oyster mushroom croquette sandwich",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        },
+        {
+          "tekst": "croquette sandwich",
+          "offset": 67.2
+        }
+      ]
+    },
+    "naam|56|provolone": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Provolone",
+      "bron": "lunch-vega-standaard",
+      "regels": [
+        {
+          "tekst": "Provolone",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pulled chicken": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pulled chicken",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pumpkin": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pumpkin",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Pumpkin",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pumpkin ravioli": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pumpkin ravioli",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Pumpkin ravioli",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pumpkin risotto": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pumpkin risotto",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Pumpkin risotto",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|pão de queijo": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Pão de queijo",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Pão de queijo",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|sandwich beef croquette or oyster mushroom croquette": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Sandwich beef croquette or Oyster mushroom croquette",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Sandwich beef croquette or",
+          "offset": 0.0
+        },
+        {
+          "tekst": "Oyster mushroom croquette",
+          "offset": 67.2
+        }
+      ]
+    },
+    "naam|56|sauerkraut mash": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Sauerkraut mash",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Sauerkraut mash",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|schiacciata toscana": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Schiacciata Toscana",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Schiacciata Toscana",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|seared salmon": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Seared salmon",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Seared salmon",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|spinach tortilla": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Spinach tortilla",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Spinach tortilla",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|sweet buns": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Sweet Buns",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Sweet Buns",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|tartlet": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Tartlet",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Tartlet",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|thai chicken": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Thai chicken",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Thai chicken",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|tuna melt": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Tuna melt",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Tuna melt",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|white baguette": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "White baguette",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "White baguette",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|wholemeal tortilla": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Wholemeal tortilla",
+      "bron": "lunch-standaard",
+      "regels": [
+        {
+          "tekst": "Wholemeal tortilla",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|winter burger": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Winter burger",
+      "bron": "grab-and-go",
+      "regels": [
+        {
+          "tekst": "Winter burger",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|56|winter ratatouille": {
+      "soort": "naam",
+      "grootte": 56.0,
+      "tekst": "Winter ratatouille",
+      "bron": "buffet",
+      "regels": [
+        {
+          "tekst": "Winter ratatouille",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|beef croquette sandwich": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Beef croquette sandwich",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Beef croquette sandwich",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|boneless short ribs": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Boneless short ribs",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Boneless short ribs",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|brown bun": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Brown bun",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Brown bun",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|chocolate trifle": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Chocolate trifle",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Chocolate trifle",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|multigrain baguette": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Multigrain baguette",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Multigrain baguette",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|oyster mushroom croquette sandwich": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Oyster mushroom croquette sandwich",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Oyster mushroom",
+          "offset": 0.0
+        },
+        {
+          "tekst": "croquette sandwich",
+          "offset": 73.92
+        }
+      ]
+    },
+    "naam|61.6|pulled chicken": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Pulled chicken",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Pulled chicken",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|pumpkin ravioli": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Pumpkin ravioli",
+      "bron": "diner-4gangen",
+      "regels": [
+        {
+          "tekst": "Pumpkin ravioli",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|sourdough bread": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Sourdough bread",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Sourdough bread",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|tasteful gift": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Tasteful gift",
+      "bron": "diner-3gangen",
+      "regels": [
+        {
+          "tekst": "Tasteful gift",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|white sesame bun": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "White sesame bun",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "White sesame bun",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|wholemeal bun": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Wholemeal bun",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Wholemeal bun",
+          "offset": 0.0
+        }
+      ]
+    },
+    "naam|61.6|wild mushroom soup": {
+      "soort": "naam",
+      "grootte": 61.6,
+      "tekst": "Wild mushroom soup",
+      "bron": "lunch-basic",
+      "regels": [
+        {
+          "tekst": "Wild mushroom soup",
+          "offset": 0.0
+        }
+      ]
+    }
+  }
+}

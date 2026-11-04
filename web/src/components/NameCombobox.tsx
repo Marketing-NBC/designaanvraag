@@ -14,6 +14,8 @@ interface Props {
    * lijst, zodat je voor een nieuwe naam twee keer moet drukken.
    */
   onEnter?: () => void
+  /** Wat er onder het veld staat als de naam niet in de lijst staat. */
+  nieuwHint?: string
 }
 
 function normalize(s: string) {
@@ -31,7 +33,7 @@ function filter(names: string[], query: string): string[] {
   return [...starts, ...contains]
 }
 
-export function NameCombobox({ value, onChange, names, invalid, id, onEnter }: Props) {
+export function NameCombobox({ value, onChange, names, invalid, id, onEnter, nieuwHint }: Props) {
   const [query, setQuery] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -95,7 +97,7 @@ export function NameCombobox({ value, onChange, names, invalid, id, onEnter }: P
           ))}
         </ComboboxOptions>
       ) : null}
-      {nieuweNaam ? <p className="hint combo__nieuw">Niet in de lijst? Geen probleem: typ je volledige naam en ga door.</p> : null}
+      {nieuweNaam ? <p className="hint combo__nieuw">{nieuwHint ?? 'Niet in de lijst? Geen probleem: typ je volledige naam en ga door.'}</p> : null}
     </Combobox>
   )
 }
