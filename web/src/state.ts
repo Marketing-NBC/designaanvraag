@@ -100,3 +100,9 @@ export function naamUitLijst(naam: string, lijst: readonly string[]): string | n
 
 /** Wat het formulier zegt als iemand niet in de lijst staat. */
 export const NIET_IN_LIJST = 'Je staat niet in de lijst met collega\'s. Vraag Marketing om je toe te voegen; daarna kun je een aanvraag doen.'
+
+/** Hetzelfde bij een aanvulling of feedback. */
+export const NIET_IN_LIJST_AANVULLEN = 'Je staat niet in de lijst met collega\'s. Vraag Marketing om je toe te voegen; daarna kun je iets aanvullen of feedback geven.'
+
+/** Hetzelfde bij akkoord geven. */
+export const NIET_IN_LIJST_AKKOORD = 'Je staat niet in de lijst met collega\'s. Vraag Marketing om je toe te voegen; daarna kun je akkoord geven.'

@@ -46,6 +46,7 @@ function setup(opts: { aanvraag?: AanvraagDetail | null; oplevering?: Oplevering
         return Promise.resolve(true)
       },
       bumpRateLimit: () => Promise.resolve(1),
+      collega: (naam) => Promise.resolve(naam.trim().toLowerCase() === 'jan nieuwkomer' ? null : naam.trim().replace(/^./, (c) => c.toUpperCase())),
     },
     asana: {
       addComment: (_gid, html) => opts.asanaFout ? Promise.reject(new Error('Asana 500')) : (comments.push(html), Promise.resolve()),
@@ -129,4 +130,18 @@ Deno.test('POST: zonder kolom Afgerond gaat de taak naar Klaar, en zegt de mail 
   await s.handler(post({ aanvraag_id: ID, naam: 'Britt' }))
   assertEquals(s.afgerond, ['t1:sec-klaar'])
   assertStringIncludes(s.gemaild[0].html, 'Afgerond bestaat nog niet')
+})
+
+Deno.test('POST: wie niet in de lijst staat, kan geen akkoord geven', async () => {
+  const s = setup()
+  const res = await s.handler(post({ aanvraag_id: ID, naam: 'Jan Nieuwkomer' }))
+  assertEquals(res.status, 400)
+  assertStringIncludes((await res.json()).error, 'staat niet in de lijst')
+  assertEquals(s.rij()?.akkoord_op, null)
+})
+
+Deno.test('POST: de naam komt zoals hij in de lijst staat', async () => {
+  const s = setup()
+  await s.handler(post({ aanvraag_id: ID, naam: 'britt' }))
+  assertEquals(s.rij()?.akkoord_door, 'Britt')
 })

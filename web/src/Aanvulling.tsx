@@ -10,6 +10,7 @@ import { Icon } from './components/Icon'
 import { MenuPicker } from './components/MenuPicker'
 import { NameCombobox } from './components/NameCombobox'
 import { CollegaKiezer } from './components/CollegaKiezer'
+import { NIET_IN_LIJST_AANVULLEN, naamUitLijst } from './state'
 import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { TextArea, TextField } from './components/TextField'
@@ -204,6 +205,8 @@ export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit
       const n = draft.naam.trim()
       if (n.length < 2) return 'Vul je naam in.'
       if (n.length > 80) return 'Houd het bij maximaal 80 tekens.'
+      // Alleen collega's uit de lijst; is de lijst niet geladen, dan houdt de function het tegen.
+      if (collegas.length && !naamUitLijst(n, collegas)) return NIET_IN_LIJST_AANVULLEN
       return null
     }
     if (stap === 'toelichting') {
@@ -233,6 +236,11 @@ export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit
   const volgende = () => {
     const f = valideer()
     if (f) return fout(f)
+    // De naam zoals hij in de lijst staat: "britt" wordt "Britt".
+    if (stap === 'naam') {
+      const lijstnaam = naamUitLijst(draft.naam, collegas)
+      if (lijstnaam && lijstnaam !== draft.naam) patch({ naam: lijstnaam })
+    }
     if (index < stappen.length - 1) ga(index + 1, 1)
     else void verstuur()
   }
@@ -405,6 +413,7 @@ export function Aanvulling({ collegas, vooraf = null, bron = 'feedback', onSluit
                 names={collegas}
                 invalid={Boolean(error)}
                 onEnter={volgende}
+                nieuwHint="Deze naam staat niet in de lijst. Vraag Marketing om je toe te voegen."
               />
             ) : null}
 

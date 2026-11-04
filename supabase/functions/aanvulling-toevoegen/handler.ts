@@ -179,7 +179,7 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvulling: invoer, client_request_id, bijlage_ids } = parsed.data
+    const { aanvulling: ingevuld, client_request_id, bijlage_ids } = parsed.data
 
     // Idempotent: dubbelklik of retry plaatst geen tweede reactie.
     const bestaand = await db.findAanvullingByClientRequestId(client_request_id)
@@ -191,6 +191,17 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const n = await db.bumpRateLimit(`ip:${ipHash}`, '1 hour')
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel aanvragen achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
     }
+
+    // Alleen collega's uit de lijst mogen aanvullen of feedback geven, net als een aanvraag doen.
+    // De naam gaat verder zoals hij in de lijst staat.
+    const lijstnaam = await db.collega(ingevuld.naam)
+    if (!lijstnaam) {
+      return json({
+        error: `${ingevuld.naam} staat niet in de lijst met collega's. Vraag Marketing (${MARKETING_MAIL}) om je toe te voegen.`,
+        field: 'aanvulling.naam',
+      }, 400, cors)
+    }
+    const invoer = { ...ingevuld, naam: lijstnaam }
 
     const row = await db.findById(invoer.aanvraag_id)
     if (!row) return json({ error: 'We konden die aanvraag niet meer vinden. Zoek hem opnieuw op.' }, 404, cors)

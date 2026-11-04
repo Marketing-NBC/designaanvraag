@@ -22,7 +22,7 @@ import { z } from 'zod'
  *  - krijgt Marketing een mail.
  *
  * Iedereen die de opleveringsmail kreeg mag akkoord geven, ook wie in "Ook mailen naar" staat; dat
- * zijn altijd collega's, de tool is niet voor klanten. Of dat zo moet blijven, bespreekt Abel nog
+ * zijn altijd collega's, de tool is niet voor klanten. De naam moet in de lijst met collega's staan. Of dat zo moet blijven, bespreekt Abel nog
  * met Karen (zie README, "Akkoord en herinneringen").
  *
  * Een tweede akkoord op dezelfde versie doet niets en zegt wie het al gaf. Asana mag mislukken:
@@ -31,7 +31,7 @@ import { z } from 'zod'
 
 export interface Deps {
   env: Env
-  db: Pick<Db, 'findById' | 'laatsteVerstuurd' | 'zetAkkoord' | 'bumpRateLimit'>
+  db: Pick<Db, 'findById' | 'laatsteVerstuurd' | 'zetAkkoord' | 'bumpRateLimit' | 'collega'>
   asana: Pick<AsanaTaskClient, 'addComment' | 'rondAf'> | null
   mail?: MailClient | null
   fields?: AsanaFieldsConfig
@@ -113,12 +113,18 @@ export function createHandler(deps: Deps): (req: Request) => Promise<Response> {
       const first = parsed.error.issues[0]
       return json({ error: first?.message ?? 'Controleer je invoer', field: first?.path?.join('.') ?? null }, 400, cors)
     }
-    const { aanvraag_id, naam } = parsed.data
+    const { aanvraag_id, naam: ingevuld } = parsed.data
 
     const ip = clientIp(req)
     if (ip) {
       const n = await db.bumpRateLimit(`ip:${(await sha256(`${ip}|${env.rateSalt}`)).slice(0, 32)}`, '1 hour')
       if (n > env.rateLimitIpPerHour) return json({ error: 'Te veel verzoeken achter elkaar. Probeer het over een uur opnieuw.' }, 429, cors)
+    }
+
+    // Alleen collega's uit de lijst mogen akkoord geven; de naam gaat verder zoals hij daar staat.
+    const naam = await db.collega(ingevuld)
+    if (!naam) {
+      return json({ error: `${ingevuld} staat niet in de lijst met collega's. Vraag Marketing (${MARKETING_MAIL}) om je toe te voegen.`, field: 'naam' }, 400, cors)
     }
 
     const a = await db.findById(aanvraag_id.toLowerCase())

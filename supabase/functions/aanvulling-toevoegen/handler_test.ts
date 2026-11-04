@@ -726,3 +726,11 @@ Deno.test('een aanvulling is feedback: de herinneringen om akkoord te geven stop
   assertEquals(db.gestopt, [{ aanvraagId: AANVRAAG_ID, reden: { feedback: true } }])
   assertStringIncludes(mail.verstuurd[0].html, 'herinneringen zijn gestopt')
 })
+
+Deno.test('wie niet in de lijst staat, kan niets aanvullen', async () => {
+  const db = fakeDb()
+  const res = await createHandler(deps({ db }))(post(payload({ naam: 'Jan Nieuwkomer' })))
+  assertEquals(res.status, 400)
+  assertEquals((await res.json()).field, 'aanvulling.naam')
+  assertEquals(db.aanvullingen.length, 0)
+})

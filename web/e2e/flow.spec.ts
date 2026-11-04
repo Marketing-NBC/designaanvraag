@@ -283,9 +283,14 @@ test.describe('designaanvraag-flow', () => {
     await page.locator('[data-primary-action]').click()
 
     await expect(page.getByRole('heading', { name: 'Wie ben je?' })).toBeVisible()
-    // Een naam buiten de lijst, en dan één Enter: die moet meteen door.
+    // Een naam buiten de lijst kan niet: je moet in de lijst staan.
     await page.getByPlaceholder('Typ of kies je naam').fill('Iemand Anders')
     await page.keyboard.press('Enter')
+    await expect(page.getByRole('alert')).toContainText('Vraag Marketing om je toe te voegen')
+    // Een naam uit de lijst, getypt en dan één Enter: die moet meteen door.
+    await page.getByPlaceholder('Typ of kies je naam').fill('demi demo')
+    await page.keyboard.press('Escape')
+    await page.locator('[data-primary-action]').click()
 
     await expect(page.getByRole('heading', { name: 'Wat moet erbij of anders?' })).toBeVisible()
     await page.locator('#a-toelichting').fill('Er komen ook vlaggen bij.')
@@ -344,6 +349,10 @@ test.describe('designaanvraag-flow', () => {
     await expect(page).toHaveURL(/\/$/)
     await page.locator('[data-primary-action]').click()
     await expect(page.getByRole('alert')).toContainText('Vul je naam in')
+    await page.getByPlaceholder('Typ of kies je naam').fill('Iemand Anders')
+    await page.keyboard.press('Escape')
+    await page.locator('[data-primary-action]').click()
+    await expect(page.getByRole('alert')).toContainText('Vraag Marketing om je toe te voegen')
     await page.getByPlaceholder('Typ of kies je naam').fill('bo')
     await page.getByRole('option', { name: 'Bo Demo' }).click()
     await shot(page, '30-akkoord', p)

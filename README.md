@@ -31,6 +31,8 @@ je mailadres, voor de bevestiging, de oplevering en de herinneringen. Typt ieman
 niet in staat, dan zegt het formulier dat meteen en kan hij niet verder: hij vraagt Marketing om
 toegevoegd te worden. De function `submit-aanvraag` controleert het ook, zodat het niet om het
 formulier heen kan. Hoofdletters maken niet uit; de naam gaat verder zoals hij in de lijst staat.
+Hetzelfde geldt bij **Iets aanvullen of wijzigen**, bij **Feedback geven** en bij **Akkoord geven**:
+alleen met een naam uit de lijst.
 
 De **laatste vraag** is *Wie moet er nog meer op de hoogte blijven?* Daar vink je collega's aan uit
 dezelfde lijst. Zie **Collega's koppelen en de bevestiging** hieronder.
@@ -377,7 +379,7 @@ niets, en het scherm zegt wie het al gaf.
 
 **Wie mag akkoord geven?** Voor nu iedereen die de mail kreeg: de aanvrager, de gekoppelde collega's,
 en ook wie in "Ook mailen naar" staat. Dat zijn altijd collega's: de tool wordt nooit gebruikt voor
-opdrachtgevers of klanten. Op het akkoordscherm kies je je naam uit de lijst of typ je hem. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
+opdrachtgevers of klanten. Op het akkoordscherm kies je je naam uit de lijst; een naam die er niet in staat kan niet. *Open punt: Abel bespreekt nog met Karen (manager projecten) of dat zo moet blijven, of dat
 alleen de aanvrager (of alleen collega's uit de lijst) akkoord mag geven.* Dat aanpassen zit in
 `supabase/functions/akkoord-geven/handler.ts`.
 

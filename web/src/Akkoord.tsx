@@ -7,6 +7,7 @@ import { PrimaryAction, Question } from './components/Question'
 import { Shell } from './components/Shell'
 import { ApiError, geefAkkoord, haalAkkoordInfo } from './lib/api'
 import { formatLong } from './lib/dates'
+import { NIET_IN_LIJST_AKKOORD, naamUitLijst } from './state'
 
 interface Props {
   /** Het id uit `?akkoord=` in de link van de opleveringsmail of een herinnering. */
@@ -68,10 +69,17 @@ export function Akkoord({ aanvraagId, collegas, onSluit, onFeedback }: Props) {
       setErrorNonce((n) => n + 1)
       return
     }
+    // Alleen collega's uit de lijst; is de lijst niet geladen, dan houdt de function het tegen.
+    const lijstnaam = collegas.length ? naamUitLijst(naam, collegas) : naam.trim()
+    if (!lijstnaam) {
+      setError(NIET_IN_LIJST_AKKOORD)
+      setErrorNonce((n) => n + 1)
+      return
+    }
     setBusy(true)
     setError(null)
     try {
-      setKlaar(await geefAkkoord(aanvraagId, naam.trim()))
+      setKlaar(await geefAkkoord(aanvraagId, lijstnaam))
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Akkoord geven is niet gelukt. Controleer je verbinding en probeer het opnieuw.')
       setErrorNonce((n) => n + 1)
@@ -144,6 +152,7 @@ export function Akkoord({ aanvraagId, collegas, onSluit, onFeedback }: Props) {
           names={collegas}
           invalid={Boolean(error)}
           onEnter={() => void verstuur()}
+          nieuwHint="Deze naam staat niet in de lijst. Vraag Marketing om je toe te voegen."
         />
         <p className="hint" style={{ marginTop: 16 }}>
           Moet er toch iets anders?{' '}
