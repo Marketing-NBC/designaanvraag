@@ -35,6 +35,8 @@ const PROEF = { proef: true, door: 'devi' }
 
 const aanvraag = {
   id: '11111111-2222-4333-8444-555555555555',
+  // Na de invoering van het akkoord: dan doen de akkoordknop en de herinneringen mee.
+  created_at: '2026-11-05T09:00:00Z',
   naam: 'Britt',
   locatie: 'nbc',
   soort: 'evenement',
@@ -577,4 +579,14 @@ Deno.test('een proef stopt geen herinneringen', async () => {
   const s = setup()
   await s.oplever(taak(), PROEF)
   assertEquals(s.gestopt, [])
+})
+
+Deno.test('een aanvraag van voor het akkoord krijgt de mail zoals vroeger, zonder herinneringen', async () => {
+  const s = setup({ aanvraag: { ...aanvraag, created_at: '2026-10-20T09:00:00Z' } as AanvraagDetail })
+  await s.oplever(taak(), ECHT)
+  const html = s.gemaild[0].html
+  assertEquals(html.includes('Akkoord geven'), false)
+  assertStringIncludes(html, 'Is alles goed, dan hoef je niets te doen.')
+  assertStringIncludes(html, 'Feedback geven')
+  assertEquals(s.rijen[0].herinneren, false)
 })

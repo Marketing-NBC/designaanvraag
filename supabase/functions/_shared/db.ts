@@ -39,6 +39,8 @@ export interface AanvraagRow {
 export interface AanvraagDetail extends AanvraagRow {
   /** De oorspronkelijke aanvrager; staat in de meldingsmail bij een aanvulling. */
   naam: string
+  /** Wanneer de aanvraag is ingediend; bepaalt of akkoord en herinneringen meedoen. */
+  created_at: string
   locatie: Locatie
   soort: Soort
   /** Leeg bij een interne aanvraag. */
@@ -244,7 +246,7 @@ export interface Db {
 }
 
 const ROW_COLUMNS = 'id, client_request_id, asana_task_gid, asana_task_url, asana_error, asana_deadline_gid, spoed, werkdagen_tot_event, brand_status, brand_error, brand_session_url, menu_status, menu_error, menu_kleuren, vervallen_op'
-const DETAIL_COLUMNS = `${ROW_COLUMNS}, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket, menu_taal`
+const DETAIL_COLUMNS = `${ROW_COLUMNS}, created_at, naam, locatie, soort, event, event_datum, deadline, aanvraag_types, anders_tekst, schijf_locatie, omschrijving, menu_pakket, menu_taal`
 const ZOEK_COLUMNS = 'id, soort, event, event_datum, deadline, naam, aanvraag_types, anders_tekst, schijf_locatie, omschrijving'
 const AANVULLING_COLUMNS = 'id, aanvraag_id, client_request_id, bijgewerkt, asana_error'
 const BIJLAGE_COLUMNS = 'id, groep_id, bestandsnaam, mime, bytes, storage_path, status, asana_gid'

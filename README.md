@@ -272,7 +272,8 @@ keer de deur uit. Na een mislukte poging mag dezelfde subtaak wel opnieuw.
 
 **Feedback of akkoord.** Onder het bericht staan twee knoppen: **Feedback geven** en daaronder
 **Akkoord geven**, in een eigen kleur (zie **Opmaak** onder **Meldingen per mail**). Zolang geen van beide gebeurd is, krijgt iedereen die de mail kreeg elke
-werkdag een herinnering; zie **Akkoord en herinneringen** hieronder. **Feedback geven** opent het
+werkdag een herinnering; zie **Akkoord en herinneringen** hieronder. (Bij een aanvraag van voor
+4 november 2026 staat er alleen **Feedback geven**, zonder herinneringen.) **Feedback geven** opent het
 formulier met de aanvraag al gekozen: geen zoeken, alleen naam, feedback (met bestanden) en
 eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taak gaat terug naar
 **Feedback**, zoals hieronder beschreven.
@@ -356,6 +357,11 @@ dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er
 Na een oplevering wil Marketing weten of het goed is. Daarom staat er in de opleveringsmail onder
 **Feedback geven** een knop **Akkoord geven**, en krijgt iedereen die de oplevering kreeg elke
 werkdag een herinnering tot er akkoord of feedback is.
+
+**Alleen voor nieuwe aanvragen.** Akkoord en herinneringen gelden voor aanvragen die zijn ingediend
+vanaf 4 november 2026, 15:36 (`AKKOORD_VANAF` in `shared/akkoord.ts`). Een oudere aanvraag krijgt
+de opleveringsmail zoals vroeger: alleen **Feedback geven**, met "Is alles goed, dan hoef je niets
+te doen.", en geen herinneringen. Wil je het ook voor oudere aanvragen, zet die datum dan eerder.
 
 **Akkoord geven.** De knop opent een scherm in het formulier (`?akkoord=<id>`) met de aanvraag, de
 versie en de vraag wie je bent; pas de knop op dat scherm geeft het akkoord. Dat is met opzet: de
