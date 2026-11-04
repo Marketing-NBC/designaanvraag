@@ -1,0 +1,25 @@
+name: Testmail eenmalig
+
+# Tijdelijk: GitHub registreerde "Testmail versturen" niet, dus deze stuurt de gevraagde testmail
+# één keer bij een push naar deze branch. Wordt meteen weer verwijderd.
+
+on:
+  push:
+    branches: [claude/modest-faraday-xgicfh]
+    paths: ['.github/workflows/testmail-eenmalig.yml']
+
+jobs:
+  testmail:
+    runs-on: ubuntu-latest
+    env:
+      MS_TENANT_ID: ${{ secrets.MS_TENANT_ID }}
+      MS_CLIENT_ID: ${{ secrets.MS_CLIENT_ID }}
+      MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
+      MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Testmail versturen
+        run: node --experimental-strip-types --no-warnings scripts/testmail.mjs --aan "abel@nbcevents.nl" --mail oplevering --locatie nbc
