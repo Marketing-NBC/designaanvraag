@@ -1,7 +1,7 @@
 name: Testmail versturen
 
 # Een mail van het formulier met verzonnen gegevens, alleen naar het adres dat je invult. Om te zien
-# hoe een mail eruitziet. Zie scripts/testmail.mjs.
+# hoe een mail eruitziet. Zie scripts/testmail.mjs. Te vinden onder Actions → Testmail versturen.
 # Vereist secrets MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
 
 on:
