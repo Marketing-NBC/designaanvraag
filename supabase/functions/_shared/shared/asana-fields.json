@@ -1,6 +1,6 @@
 {
   "_comment": "Gegenereerd door scripts/asana-fields.mjs. Niet met de hand bewerken.",
-  "generated_at": "2026-10-28T10:00:20.133Z",
+  "generated_at": "2026-11-04T15:27:33.139Z",
   "project": {
     "gid": "1218459975593983",
     "name": "Designaanvragen",
@@ -169,6 +169,10 @@
     "klaar": {
       "gid": "1218459914834826",
       "name": "Klaar"
+    },
+    "afgerond": {
+      "gid": "1220210929706071",
+      "name": "Afgerond"
     }
   },
   "planning_project": {
