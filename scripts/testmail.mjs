@@ -12,9 +12,11 @@
  *                        oplevering-oud is de mail van een aanvraag van voor het akkoord.
  *   --locatie <locatie>  nbc (standaard) of green_village: bepaalt de kleuren.
  *   --proef              Niets versturen; de mail komt als HTML in testmail-proef/.
- *   --gif-basis <url>    Waar de gifjes staan (zie shared/mail-gifs.ts). Standaard GitHub Pages; de
- *                        workflow geeft de map in de repo op de commit van de run, zodat een nieuw
- *                        gifje al vanaf een branch te testen is, voor het op Pages staat.
+ *   --gif-basis <url>    Waar de gifjes online staan (zie shared/mail-gifs.ts). De workflow geeft de
+ *                        map in de repo op de commit van de run. Welke gifjes er zijn, leest dit
+ *                        script uit web/public/mail-gifs/ van dezelfde checkout, zodat een nieuw
+ *                        gifje al vanaf een branch te testen is, voor het op Pages staat. Zonder
+ *                        deze optie: de gifjes en de lijst op GitHub Pages.
  *
  * De knoppen in de mail wijzen naar een aanvraag die niet bestaat: wie erop klikt, krijgt in het
  * formulier te zien dat de aanvraag niet te vinden is. Zo kan een test nooit per ongeluk akkoord
@@ -24,8 +26,9 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { renderHerinneringMail } from '../shared/akkoord.ts'
 import { renderBevestigingMail } from '../shared/bevestiging.ts'
 import { MELDING_AFZENDER, MELDING_ONTVANGERS } from '../shared/contact.ts'
-import { createGraphMail, themaVoor } from '../shared/mail.ts'
-import { MAIL_GIF_BASIS, kiesGif } from '../shared/mail-gifs.ts'
+import { createGraphMail, themaVoor, vulGifIn } from '../shared/mail.ts'
+import { MAIL_GIF_BASIS, gifLijstVan } from '../shared/mail-gifs.ts'
+import { leesGifs } from './mail-gifs.mjs'
 import { beschrijvingAlsMailHtml, renderOpleveringMail } from '../shared/oplevering.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
 
@@ -49,8 +52,10 @@ const soort = String(args.mail && args.mail !== 'true' ? args.mail : 'oplevering
 const SOORTEN = ['oplevering', 'oplevering-oud', 'herinnering', 'bevestiging']
 if (!SOORTEN.includes(soort)) fail(`Onbekende mail "${soort}". Kies uit: ${SOORTEN.join(', ')}.`)
 const locatie = args.locatie === 'green_village' ? 'green_village' : 'nbc'
-const gifBasis = args['gif-basis'] && args['gif-basis'] !== 'true' ? String(args['gif-basis']) : MAIL_GIF_BASIS
-const gifVan = (mail) => kiesGif(mail, gifBasis)
+const eigenGifs = args['gif-basis'] && args['gif-basis'] !== 'true' ? String(args['gif-basis']) : null
+const gifs = eigenGifs
+  ? { lijst: async () => leesGifs().lijst, basis: eigenGifs }
+  : { lijst: gifLijstVan(MAIL_GIF_BASIS), basis: MAIL_GIF_BASIS }
 
 // Verzonnen, en bestaat niet: zie boven.
 const AANVRAAG_ID = '00000000-0000-4000-8000-000000000000'
@@ -81,7 +86,6 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     akkoord: soort === 'oplevering',
     bijlagen: [{ naam: 'Testevent - LED-kolom.jpg', bytes: 1_240_000 }, { naam: 'Testevent - Torenscherm.jpg', bytes: 2_080_000 }],
     links: [],
-    gif: gifVan('oplevering'),
   })
 } else if (soort === 'herinnering') {
   bericht = renderHerinneringMail({
@@ -94,7 +98,6 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     verstuurdOp: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
     nummer: 1,
     aanvrager: 'de aanvrager',
-    gif: gifVan('herinnering'),
   })
 } else {
   bericht = renderBevestigingMail({
@@ -106,12 +109,12 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     aanvraagId: AANVRAAG_ID,
     aan,
     antwoordAan: antwoordAan[0],
-    gif: gifVan('bevestiging'),
   })
 }
 bericht = { ...bericht, aan: [aan], onderwerp: `Test: ${bericht.onderwerp}` }
 
 if (proef) {
+  bericht = { ...bericht, html: vulGifIn(bericht.html, await gifs.lijst(), gifs.basis) }
   mkdirSync('testmail-proef', { recursive: true })
   writeFileSync(`testmail-proef/${soort}-${locatie}.html`, bericht.html)
   console.log(`(proef) ${bericht.onderwerp} → testmail-proef/${soort}-${locatie}.html`)
@@ -121,7 +124,7 @@ if (proef) {
 const ms = { tenantId: process.env.MS_TENANT_ID, clientId: process.env.MS_CLIENT_ID, clientSecret: process.env.MS_CLIENT_SECRET }
 if (!ms.tenantId || !ms.clientId || !ms.clientSecret) fail('MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET zijn nodig om te mailen.')
 try {
-  await createGraphMail({ ...ms, afzender: process.env.MAIL_AFZENDER || MELDING_AFZENDER }).verstuur(bericht)
+  await createGraphMail({ ...ms, afzender: process.env.MAIL_AFZENDER || MELDING_AFZENDER, gifs }).verstuur(bericht)
 } catch (e) {
   fail(`Versturen mislukt: ${e instanceof Error ? e.message : String(e)}`)
 }

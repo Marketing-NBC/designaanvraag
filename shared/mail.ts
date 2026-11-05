@@ -8,8 +8,8 @@
  * "Mail instellen".
  */
 
-import { MAX_GIF_BREEDTE } from './mail-gifs.ts'
-import type { MailGif } from './mail-gifs.ts'
+import { MAIL_GIF_BASIS, gifLijstVan, isGifMap, kiesGif, maatInMail } from './mail-gifs.ts'
+import type { GifLijst, GifMap, MailGif } from './mail-gifs.ts'
 
 export interface MailBericht {
   aan: string[]
@@ -44,6 +44,17 @@ export interface GraphMailConfig {
   clientSecret: string
   /** Het postvak waar de mail vandaan komt, bijvoorbeeld designaanvraag@nbcevents.nl. */
   afzender: string
+  /**
+   * Waar het gifje bovenaan vandaan komt (zie shared/mail-gifs.ts). Standaard de lijst op GitHub
+   * Pages; de testmail geeft hier de gifjes van zijn eigen branch.
+   */
+  gifs?: GifBron
+}
+
+/** De gifjes voor de mail: de lijst, en waar de bestanden online staan. */
+export interface GifBron {
+  lijst: () => Promise<GifLijst | null>
+  basis: string
 }
 
 type Fetch = typeof fetch
@@ -80,6 +91,7 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
   }
 
   const postvak = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}`
+  const gifs: GifBron = cfg.gifs ?? { lijst: gifLijstVan(MAIL_GIF_BASIS, doFetch), basis: MAIL_GIF_BASIS }
 
   /** Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. */
   async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS): Promise<Record<string, unknown>> {
@@ -166,6 +178,7 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
   return {
     async verstuur(m) {
       if (!m.aan.length) throw new Error('Geen ontvanger opgegeven')
+      if (heeftGifPlek(m.html)) m = { ...m, html: vulGifIn(m.html, await gifs.lijst(), gifs.basis) }
       const bijlagen = m.bijlagen ?? []
       const totaal = bijlagen.reduce((n, b) => n + b.bytes.length, 0)
       if (totaal > MAIL_IN_EEN_KEER_BYTES) return verstuurInStappen(m)
@@ -235,8 +248,7 @@ export function themaVoor(locatie: string | null | undefined): Thema {
  * meekrimpen. Het staat op GitHub Pages en zit dus niet in de mail (zie shared/mail-gifs.ts).
  */
 export function gifRegel(gif: MailGif): string {
-  const breedte = Math.min(gif.breedte, MAX_GIF_BREEDTE)
-  const hoogte = Math.round((gif.hoogte * breedte) / gif.breedte)
+  const { breedte, hoogte } = maatInMail(gif.breedte, gif.hoogte)
   return `<tr><td align="center" style="padding:24px 24px 0;">`
     + `<img src="${escapeHtml(gif.url)}" width="${breedte}" height="${hoogte}" alt="${escapeHtml(gif.alt)}" `
     + `style="display:block;border:0;outline:none;max-width:100%;height:auto;${LETTER}font-size:15px;color:#596165;">`
@@ -244,17 +256,41 @@ export function gifRegel(gif: MailGif): string {
 }
 
 /**
+ * Waar het gifje komt. mailOpmaak zet alleen deze plek in de mail; welk gifje het wordt, beslist het
+ * versturen (vulGifIn), want daarvoor is de lijst van Pages nodig. Een mail die zo blijft, zoals een
+ * proef als HTML-bestand, heeft dus geen gifje: een HTML-commentaar zie je niet.
+ */
+const GIF_PLEK = /<!--mailgif:([a-z-]+)-->\n?/g
+
+export function gifPlek(map: GifMap): string {
+  return `<!--mailgif:${map}-->\n`
+}
+
+export function heeftGifPlek(html: string): boolean {
+  return html.includes('<!--mailgif:')
+}
+
+/** Zet op de plek een willekeurig gifje uit de map, of niets als de map leeg is of de lijst er niet is. */
+export function vulGifIn(html: string, lijst: GifLijst | null, basis = MAIL_GIF_BASIS, kans: () => number = Math.random): string {
+  return html.replace(GIF_PLEK, (_, map: string) => {
+    const gif = isGifMap(map) ? kiesGif(lijst, map, basis, kans) : null
+    return gif ? gifRegel(gif) : ''
+  })
+}
+
+/**
  * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen,
  * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
  * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
- * een eigen stijl mist, zoals lijstjes uit Asana. Met een gifje staat dat tussen kop en inhoud.
+ * een eigen stijl mist, zoals lijstjes uit Asana. Met `gif` komt er tussen kop en inhoud een gifje uit
+ * die map (zie gifPlek).
  */
 export function mailOpmaak(
   kop: string,
   inhoud: string,
   voet = 'Automatische melding van het designaanvraag-formulier.',
   thema: Thema = THEMAS.nbc,
-  gif: MailGif | null = null,
+  gif: GifMap | null = null,
 ): string {
   return `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -265,7 +301,7 @@ export function mailOpmaak(
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
 <tr><td bgcolor="${thema.kleur}" style="background:${thema.kleur};color:${thema.opKleur};padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
-${gif ? gifRegel(gif) : ''}<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
+${gif ? gifPlek(gif) : ''}<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
 </td></tr>

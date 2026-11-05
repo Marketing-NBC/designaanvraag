@@ -40,7 +40,8 @@ jobs:
       - run: npm ci --workspace shared --no-audit --no-fund
       - name: Testmail versturen
         # De gifjes komen uit de repo op de commit van deze run, niet van Pages: zo is een nieuw gifje
-        # al vanaf een branch te testen (kies de branch bij "Use workflow from").
+        # al vanaf een branch te testen (kies de branch bij "Use workflow from"). Welke er zijn, leest
+        # het script uit web/public/mail-gifs/ van deze checkout.
         # Het adres komt uit de gegevens van de run en wordt gemaskeerd: de logs van deze (publieke)
         # repo zijn voor iedereen te zien, en een env-waarde staat daar gewoon in.
         run: |

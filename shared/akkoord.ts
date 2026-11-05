@@ -22,8 +22,6 @@ import { eventEnDatum, formatDateShortNl, kortVan } from './asana-title.ts'
 import { akkoordUrl } from './contact.ts'
 import { escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor } from './mail.ts'
 import type { MailBericht } from './mail.ts'
-import { gifVoor } from './mail-gifs.ts'
-import type { MailGif } from './mail-gifs.ts'
 import { feedbackUrl } from './oplevering.ts'
 import { describeRequestTypes } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
@@ -106,8 +104,6 @@ export interface HerinneringMail extends Waarover {
   nummer: number
   /** Wie de aanvraag deed: alleen die kan akkoord geven. */
   aanvrager: string
-  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
-  gif?: MailGif | null
 }
 
 /** De herinnering: het staat klaar, geef akkoord of feedback. */
@@ -135,7 +131,7 @@ export function renderHerinneringMail(m: HerinneringMail): MailBericht {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
     onderwerp: `Herinnering: wacht op je akkoord - ${waaroverTekst(m)}`.slice(0, 250),
-    html: mailOpmaak('Wacht op je akkoord', delen.join('\n'), 'Herinnering van het designaanvraag-formulier.', thema, gifVoor('herinnering', m.gif)),
+    html: mailOpmaak('Wacht op je akkoord', delen.join('\n'), 'Herinnering van het designaanvraag-formulier.', thema, 'herinnering'),
   }
 }
 
@@ -147,8 +143,6 @@ export interface AkkoordMelding extends Waarover {
   asanaUrl: string | null
   /** Gezet als het in Asana niet lukte; dan moet Marketing het met de hand doen. */
   asanaFout: string | null
-  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
-  gif?: MailGif | null
 }
 
 /** De melding aan Marketing: er is akkoord gegeven. */
@@ -165,7 +159,7 @@ export function renderAkkoordMelding(m: AkkoordMelding): MailBericht {
   return {
     aan: [m.aan],
     onderwerp: `Akkoord: ${waaroverTekst(m)}`.slice(0, 250),
-    html: mailOpmaak(`Akkoord van ${m.door}`, delen.join('\n'), undefined, thema, gifVoor('akkoord', m.gif)),
+    html: mailOpmaak(`Akkoord van ${m.door}`, delen.join('\n'), undefined, thema, 'akkoord'),
   }
 }
 

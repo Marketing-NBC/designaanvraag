@@ -9,8 +9,6 @@ import { eventEnDatum, formatDateShortNl, kortVan, taskTitle } from './asana-tit
 import { MELDING_ONTVANGERS } from './contact.ts'
 import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, waarschuwingBlok } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
-import { gifVoor } from './mail-gifs.ts'
-import type { MailGif } from './mail-gifs.ts'
 import { DESIGN_MODES, describeRequestTypes, locatieLabel } from './request-types.ts'
 import type { Locatie, RequestTypeKey, Soort } from './request-types.ts'
 import { SPOED_WERKDAGEN } from './spoed.ts'
@@ -89,8 +87,6 @@ export interface NieuweAanvraagMail {
   /** Waarom er geen taak is; alleen gezet als er geen is. */
   asanaFout: string | null
   bijlagen: string[]
-  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
-  gif?: MailGif | null
 }
 
 export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
@@ -158,7 +154,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       types: describeRequestTypes(a.aanvraag_types, a.anders_tekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema, gifVoor('nieuwe_aanvraag', m.gif)),
+    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema, 'nieuwe-aanvraag'),
   }
 }
 
@@ -202,8 +198,6 @@ export interface AanvullingMail {
   herinneringenGestopt?: boolean
   /** Gezet als de reactie niet in Asana terechtkwam. */
   asanaFout: string | null
-  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
-  gif?: MailGif | null
 }
 
 export function renderAanvullingMail(m: AanvullingMail): MailBericht {
@@ -264,6 +258,6 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       types: describeRequestTypes(a.types, m.andersTekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema, gifVoor('aanvulling', m.gif)),
+    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema, 'aanvulling'),
   }
 }
