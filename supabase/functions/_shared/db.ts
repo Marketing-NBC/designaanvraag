@@ -211,6 +211,13 @@ export interface Db {
    * Alleen collega's uit de lijst mogen een aanvraag doen.
    */
   collega(naam: string): Promise<string | null>
+  /**
+   * Een knop in Asana claimen: true als deze aanroep hem mag uitvoeren. False als een ander (een
+   * dubbel bericht van Asana) er al mee bezig is. Een claim ouder dan `geldigSeconden` telt niet meer.
+   */
+  claimKnop(sleutel: string, geldigSeconden: number): Promise<boolean>
+  /** De claim weer vrijgeven, zodat de knop meteen opnieuw kan. */
+  geefKnopVrij(sleutel: string): Promise<void>
   /** De oplevering die van deze subtaak gemaakt is, als die er al is. */
   findOplevering(subtaakGid: string): Promise<OpleveringRow | null>
   /** Hoeveel opleveringen van deze aanvraag al verstuurd zijn; de volgende is dat plus één. */
@@ -462,6 +469,15 @@ export function createDb(url: string, secretKey: string): Db {
         .eq('id', opleveringId).is('akkoord_op', null).select('id')
       if (error) throw new Error(`db akkoord: ${error.message}`)
       return ((data as unknown[] | null) ?? []).length > 0
+    },
+    async claimKnop(sleutel, geldigSeconden) {
+      const { data, error } = await sb.rpc('claim_knop', { p_sleutel: sleutel, p_geldig_seconden: geldigSeconden })
+      if (error) throw new Error(`db claim knop: ${error.message}`)
+      return data === true
+    },
+    async geefKnopVrij(sleutel) {
+      const { error } = await sb.from('knop_claims').delete().eq('sleutel', sleutel)
+      if (error) throw new Error(`db knop vrijgeven: ${error.message}`)
     },
     async findOplevering(subtaakGid) {
       const { data, error } = await sb.from('opleveringen').select(OPLEVERING_COLUMNS).eq('subtaak_gid', subtaakGid).maybeSingle()

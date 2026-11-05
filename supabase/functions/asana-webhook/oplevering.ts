@@ -40,7 +40,7 @@ import { metAkkoord } from '../_shared/shared/akkoord.ts'
 export interface OpleverDeps {
   asana: AsanaTaskClient
   db: Pick<Db,
-    | 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
+    | 'findDetailByAsanaTaskGid' | 'collegaEmail' | 'claimKnop' | 'geefKnopVrij' | 'findOplevering' | 'aantalVerstuurd' | 'insertOplevering' | 'updateOplevering'
     | 'pakWachtendeOplevering' | 'ledkolomPreviews' | 'insertLedkolomPreview' | 'updateLedkolomPreview' | 'stopHerinneringen'>
   /** Null als Microsoft 365 niet is ingesteld; dan zegt de reactie dat. */
   mail: MailClient | null
@@ -150,7 +150,35 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
     return `${opties.proef ? 'proefmail' : 'oplevermail'} niet verstuurd: ${reden}`
   }
 
-  return async (taak, { proef, door, naPreview = false }) => {
+  /**
+   * Asana stuurt dezelfde druk op de knop soms twee keer, een fractie van een seconde na elkaar.
+   * Zonder claim zien ze allebei "Stuur proef naar mij" en gaan er twee mails de deur uit. Proef en
+   * echt hebben elk hun eigen claim: een proef en meteen daarna "Verstuur nu" mogen allebei.
+   * Een melding van de 3D-repo (naPreview) claimt niet: daar zorgt pakWachtendeOplevering voor.
+   */
+  async function metClaim(taak: AsanaTask, opties: OpleverOpties): Promise<string> {
+    if (opties.naPreview) return voerUit(taak, opties)
+    const sleutel = `oplevermail:${opties.proef ? 'proef' : 'verstuur'}:${taak.gid}`
+    let geclaimd = false
+    try {
+      geclaimd = await db.claimKnop(sleutel, BEZIG_GELDIG_MS / 1000)
+      if (!geclaimd) return `${opties.proef ? 'proefmail' : 'oplevermail'} al bezig`
+    } catch (e) {
+      // Liever een mail te veel dan geen mail: zonder claim gewoon door.
+      log('warn', 'knop claimen mislukt; zonder claim verder', { gid: taak.gid, error: fout(e) })
+    }
+    try {
+      return await voerUit(taak, opties)
+    } finally {
+      if (geclaimd) {
+        await db.geefKnopVrij(sleutel).catch((e) => log('warn', 'knop vrijgeven mislukt', { gid: taak.gid, error: fout(e) }))
+      }
+    }
+  }
+
+  return metClaim
+
+  async function voerUit(taak: AsanaTask, { proef, door, naPreview = false }: OpleverOpties): Promise<string> {
     let rij: OpleveringRow | null = null
     try {
       if (!deps.mail) throw new Weigering('Het mailen is nog niet ingesteld (zie "Mail instellen" in de README).')
