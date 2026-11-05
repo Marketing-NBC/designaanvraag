@@ -49,8 +49,6 @@ BEELDEN = {
         (1, (1240, 101, 1365, 134)), (2, (1238, 588, 1490, 698)), (3, (1238, 848, 1445, 952))]),
     'm14-oplevermail': ('a14', (1228, 560, 1905, 990), [], [
         (1, (1244, 910, 1882, 947)), (2, (1543, 613, 1682, 642), 'l'), (3, (1543, 650, 1630, 678), 'l'), (4, (1244, 952, 1882, 982))]),
-    'm15-proefmail': ('a15', (636, 198, 1903, 1110), [], [
-        (1, (640, 204, 1275, 234)), (2, (984, 426, 1594, 506))]),
     'm16-verstuurd': ('a19', (1228, 685, 1905, 805), [], [
         (1, (1240, 688, 1872, 752))]),
     'm17-nieuwe-oplevering': ('a20', (1228, 380, 1905, 600), [], [
@@ -93,8 +91,10 @@ def omlijst(im):
     return uit
 
 
-for naam, spec in BEELDEN.items():
-    maak(naam, *spec)
+# Zonder de originelen (niet in git) maakt hij alleen de mails opnieuw.
+if os.path.isdir('asana-origineel'):
+    for naam, spec in BEELDEN.items():
+        maak(naam, *spec)
 
 # De nagemaakte mails (mails.cjs) krijgen alleen de rand.
 import glob

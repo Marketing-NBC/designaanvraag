@@ -6,12 +6,16 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { renderAanvullingMail, renderNieuweAanvraagMail } from '../../../shared/meldingen.ts'
 import { maakWeekoverzicht, renderWeekmail, type WeekTaak } from '../../../shared/weekmail.ts'
+import { beschrijvingAlsMailHtml, renderOpleveringMail } from '../../../shared/oplevering.ts'
+import { renderAkkoordMelding, renderHerinneringMail } from '../../../shared/akkoord.ts'
+import { renderBevestigingMail } from '../../../shared/bevestiging.ts'
+import { themaVoor } from '../../../shared/mail.ts'
 
 const hier = dirname(fileURLToPath(import.meta.url))
 const asanaUrl = 'https://app.asana.com/0/0/1'
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-function venster(naam: string, onderwerp: string, html: string, tijd: string) {
+function venster(naam: string, onderwerp: string, html: string, tijd: string, aan = 'marketing@nbcevents.nl') {
   const pagina = `<!doctype html><html><head><meta charset="utf-8"><style>
 body { margin: 0; background: #fff; font: 14px/1.4 "Segoe UI", "Area Normal", Arial, sans-serif; color: #242424; }
 .vak { padding: 22px 32px 0; }
@@ -23,7 +27,7 @@ iframe { border: 0; width: 100%; height: 2200px; display: block; }
 </style></head><body><div class="vak">
 <div class="kop">${esc(onderwerp)}</div>
 <div class="van"><div class="foto">D</div><div><div class="naam">Designaanvraag <span class="adres">&lt;designaanvraag@nbcevents.nl&gt;</span></div>
-<div class="aan">Aan: marketing@nbcevents.nl</div></div><div class="tijd">${tijd}</div></div></div>
+<div class="aan">Aan: ${esc(aan)}</div></div><div class="tijd">${tijd}</div></div></div>
 <iframe srcdoc="${esc(html)}"></iframe></body></html>`
   mkdirSync(join(hier, 'mail'), { recursive: true })
   writeFileSync(join(hier, 'mail', `${naam}.html`), pagina)
@@ -61,3 +65,23 @@ const taken: WeekTaak[] = [
 const o = maakWeekoverzicht(taken, '2026-11-16')
 const week = renderWeekmail(o, 'nbc', 'https://app.asana.com/0/0')
 venster('weekmail', week.onderwerp, week.html, 'ma 16-11-2026 08:04')
+
+// De proefmail van de oplevering, zoals Marketing hem krijgt na "Stuur proef naar mij".
+const waarover = { soort: 'evenement', event: 'Zorgcongres 2026', eventDatum: '2026-12-01', omschrijving: '', types: ['torenscherm', 'menu_scherm', 'vlaggen'], andersTekst: '' } as any
+const proef = renderOpleveringMail({
+  ...waarover, aan: ['sanne@nbcevents.nl'], antwoordAan: ['marketing@nbcevents.nl'], aanvraagId: 'x', versie: 1, locatie: 'nbc',
+  berichtHtml: beschrijvingAlsMailHtml('<body>Hoi Abel,\n\nHierbij de designs voor de torenschermen, het menuscherm en de vlaggen. De drukbestanden van de vlaggen staan op <strong>G:\\Events\\2026\\Zorgcongres</strong>.</body>', themaVoor('nbc')),
+  afzenderNaam: 'Sanne', aanvrager: 'Abel', akkoord: true, links: [], proef: { echteOntvangers: ['abel@nbcevents.nl'] },
+  bijlagen: [{ naam: 'Torenscherm Zorgcongres.jpg', bytes: 1843000 }, { naam: 'menuscherm-lunch.png', bytes: 386000 }, { naam: 'Vlag Zorgcongres.pdf', bytes: 2400000 }],
+})
+venster('proef', proef.onderwerp, proef.html, 'do 19-11-2026 14:08', 'sanne@nbcevents.nl')
+
+const akkoord = renderAkkoordMelding({ ...waarover, aan: 'marketing@nbcevents.nl', locatie: 'nbc', door: 'Abel', versie: 1, asanaUrl, asanaFout: null })
+venster('akkoord', akkoord.onderwerp, akkoord.html, 'vr 20-11-2026 10:21')
+
+const herinnering = renderHerinneringMail({ ...waarover, aan: ['abel@nbcevents.nl'], antwoordAan: ['marketing@nbcevents.nl'], aanvraagId: 'x', locatie: 'nbc',
+  versie: 1, verstuurdOp: '2026-11-19T13:12:00Z', nummer: 1, aanvrager: 'Abel' })
+venster('herinnering', herinnering.onderwerp, herinnering.html, 'vr 20-11-2026 09:00', 'abel@nbcevents.nl')
+
+const bevestiging = renderBevestigingMail({ aanvraag: { ...aanvraag, menu_taal: 'nl' }, aanvraagId: 'x', aan: 'abel@nbcevents.nl', antwoordAan: 'marketing@nbcevents.nl', menuPakket: 'Lunch' })
+venster('bevestiging', bevestiging.onderwerp, bevestiging.html, 'wo 28-10-2026 16:13', 'abel@nbcevents.nl')

@@ -29,6 +29,10 @@ async function mark(p, marks) {
     'mail-nieuwe-aanvraag': (p, m) => [[p.locator('.kop'), 1], [m.locator('td', { hasText: /^Spoed$/ }).locator('xpath=..'), 2, 4], [m.locator('a', { hasText: 'Open de taak in Asana' }).locator('xpath=ancestor::table[1]'), 3]],
     'mail-aanvulling': (p, m) => [[m.getByText('Deze taak was al afgerond').locator('xpath=ancestor::td[1]'), 1], [m.getByText('Graag de kopjes').locator('xpath=ancestor::td[1]'), 2], [m.locator('a', { hasText: 'Open de taak in Asana' }).locator('xpath=ancestor::table[1]'), 3]],
     'mail-weekmail': (p, m) => [[m.getByText('Deadlines deze week', { exact: true }), 1, 4], [m.getByText('Let op', { exact: true }), 2, 4], [m.getByText('Volgende week', { exact: true }), 3, 4]],
+    'mail-proef': (p, m) => [[p.locator('.kop'), 1], [m.getByText('Proefmail.').locator('xpath=ancestor::td[1]'), 2], [m.locator('a', { hasText: 'Feedback geven' }).locator('xpath=ancestor::table[1]'), 3], [m.locator('a', { hasText: 'Akkoord geven' }).locator('xpath=ancestor::table[1]'), 4]],
+    'mail-akkoord': (p, m) => [[p.locator('.kop'), 1], [m.getByText('gaf akkoord'), 2, 4], [m.locator('a', { hasText: 'Open de taak in Asana' }).locator('xpath=ancestor::table[1]'), 3]],
+    'mail-herinnering': (p, m) => [[p.locator('.kop'), 1], [m.locator('a', { hasText: 'Akkoord geven' }).locator('xpath=ancestor::table[1]'), 2], [m.getByText('elke werkdag tot er akkoord'), 3, 4]],
+    'mail-bevestiging': (p, m) => [[p.locator('.kop'), 1], [m.getByText('Hoe gaat het verder?'), 2, 4], [m.locator('a', { hasText: 'Iets aanvullen of wijzigen' }).locator('xpath=ancestor::table[1]'), 3]],
   }
   for (const [naam, marks] of Object.entries(mails)) {
     const p = await b.newPage({ viewport: { width: 820, height: 900 }, deviceScaleFactor: 2 })
