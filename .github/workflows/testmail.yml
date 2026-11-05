@@ -35,6 +35,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      # Alleen wat shared/ nodig heeft (zod); de rest van de repo hoeft niet.
+      - run: npm ci --workspace shared --no-audit --no-fund
       - name: Testmail versturen
         # Het adres komt uit de gegevens van de run en wordt gemaskeerd: de logs van deze (publieke)
         # repo zijn voor iedereen te zien, en een env-waarde staat daar gewoon in.
