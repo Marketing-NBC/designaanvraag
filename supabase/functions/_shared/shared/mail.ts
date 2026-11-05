@@ -260,12 +260,19 @@ export function mailOpmaak(
  * en dan staat er een strak gekleurd vlak zonder lucht om de tekst. De ruimte erboven zit om
  * dezelfde reden in een buitencel in plaats van in een `margin`.
  */
+/**
+ * Alle knoppen even breed, zodat twee knoppen onder elkaar (Feedback geven, Akkoord geven) netjes
+ * gelijk lopen. Ruim genoeg voor de langste tekst ("Bekijk Ledkolom links in 3D", ±200px) en smal
+ * genoeg voor een telefoon. Een langere tekst maakt de knop vanzelf breder.
+ */
+export const KNOP_BREEDTE = 240
+
 export function knop(href: string, tekst: string, thema: Thema = THEMAS.nbc, soort: 'gewoon' | 'akkoord' = 'gewoon'): string {
   const achter = soort === 'akkoord' ? thema.akkoord : thema.kleur
   const voor = soort === 'akkoord' ? thema.opAkkoord : thema.opKleur
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 0 4px;">`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
-    + `<td align="center" bgcolor="${achter}" style="background:${achter};border-radius:4px;padding:12px 24px;">`
+    + `<table role="presentation" width="${KNOP_BREEDTE}" cellpadding="0" cellspacing="0" border="0" style="width:${KNOP_BREEDTE}px;"><tr>`
+    + `<td align="center" width="${KNOP_BREEDTE}" bgcolor="${achter}" style="background:${achter};border-radius:4px;padding:12px 16px;">`
     + `<a href="${escapeHtml(href)}" style="${LETTER}font-size:15px;line-height:20px;color:${voor};text-decoration:none;font-weight:bold;display:inline-block;">${escapeHtml(tekst)}</a>`
     + `</td></tr></table></td></tr></table>`
 }

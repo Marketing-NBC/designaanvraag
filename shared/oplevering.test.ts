@@ -149,6 +149,10 @@ describe('de mail', () => {
     expect(m.html).toContain('Akkoord geven')
     expect(m.html).toContain(`?akkoord=${basis.aanvraagId}`)
     expect(m.html).toContain('Akkoord geven kan alleen Britt')
+    // Feedback en Akkoord even breed, onder elkaar.
+    const breedtes = [...m.html.matchAll(/<td align="center" width="(\d+)" bgcolor/g)].map((x) => x[1])
+    expect(breedtes.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(breedtes).size).toBe(1)
     // Een aanvraag van voor het akkoord: geen knop, zoals vroeger.
     const oud = renderOpleveringMail({ ...basis, akkoord: false })
     expect(oud.html).not.toContain('Akkoord geven')
@@ -217,7 +221,7 @@ describe('opmaak voor de klassieke Outlook', () => {
   })
 
   it('de knop krijgt zijn lucht van de cel, niet van de link', () => {
-    expect(m.html).toMatch(/<td align="center" bgcolor="#229d96" style="[^"]*padding:12px 24px;[^"]*"><a /)
+    expect(m.html).toMatch(/<td align="center" width="240" bgcolor="#229d96" style="[^"]*padding:12px 16px;[^"]*"><a /)
     expect(m.html).not.toMatch(/<a [^>]*padding/)
   })
 
