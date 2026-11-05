@@ -221,7 +221,7 @@ describe('opmaak voor de klassieke Outlook', () => {
   })
 
   it('de knop krijgt zijn lucht van de cel, niet van de link', () => {
-    expect(m.html).toMatch(/<td align="center" width="240" bgcolor="#229d96" style="[^"]*padding:12px 16px;[^"]*"><a /)
+    expect(m.html).toMatch(/<td align="center" width="165" bgcolor="#229d96" style="[^"]*padding:12px 24px;[^"]*"><a /)
     expect(m.html).not.toMatch(/<a [^>]*padding/)
   })
 
