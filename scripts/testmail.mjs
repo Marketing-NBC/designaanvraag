@@ -12,6 +12,9 @@
  *                        oplevering-oud is de mail van een aanvraag van voor het akkoord.
  *   --locatie <locatie>  nbc (standaard) of green_village: bepaalt de kleuren.
  *   --proef              Niets versturen; de mail komt als HTML in testmail-proef/.
+ *   --gif-basis <url>    Waar de gifjes staan (zie shared/mail-gifs.ts). Standaard GitHub Pages; de
+ *                        workflow geeft de map in de repo op de commit van de run, zodat een nieuw
+ *                        gifje al vanaf een branch te testen is, voor het op Pages staat.
  *
  * De knoppen in de mail wijzen naar een aanvraag die niet bestaat: wie erop klikt, krijgt in het
  * formulier te zien dat de aanvraag niet te vinden is. Zo kan een test nooit per ongeluk akkoord
@@ -22,6 +25,7 @@ import { renderHerinneringMail } from '../shared/akkoord.ts'
 import { renderBevestigingMail } from '../shared/bevestiging.ts'
 import { MELDING_AFZENDER, MELDING_ONTVANGERS } from '../shared/contact.ts'
 import { createGraphMail, themaVoor } from '../shared/mail.ts'
+import { MAIL_GIF_BASIS, kiesGif } from '../shared/mail-gifs.ts'
 import { beschrijvingAlsMailHtml, renderOpleveringMail } from '../shared/oplevering.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
 
@@ -45,6 +49,8 @@ const soort = String(args.mail && args.mail !== 'true' ? args.mail : 'oplevering
 const SOORTEN = ['oplevering', 'oplevering-oud', 'herinnering', 'bevestiging']
 if (!SOORTEN.includes(soort)) fail(`Onbekende mail "${soort}". Kies uit: ${SOORTEN.join(', ')}.`)
 const locatie = args.locatie === 'green_village' ? 'green_village' : 'nbc'
+const gifBasis = args['gif-basis'] && args['gif-basis'] !== 'true' ? String(args['gif-basis']) : MAIL_GIF_BASIS
+const gifVan = (mail) => kiesGif(mail, gifBasis)
 
 // Verzonnen, en bestaat niet: zie boven.
 const AANVRAAG_ID = '00000000-0000-4000-8000-000000000000'
@@ -75,6 +81,7 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     akkoord: soort === 'oplevering',
     bijlagen: [{ naam: 'Testevent - LED-kolom.jpg', bytes: 1_240_000 }, { naam: 'Testevent - Torenscherm.jpg', bytes: 2_080_000 }],
     links: [],
+    gif: gifVan('oplevering'),
   })
 } else if (soort === 'herinnering') {
   bericht = renderHerinneringMail({
@@ -87,6 +94,7 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     verstuurdOp: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
     nummer: 1,
     aanvrager: 'de aanvrager',
+    gif: gifVan('herinnering'),
   })
 } else {
   bericht = renderBevestigingMail({
@@ -98,6 +106,7 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     aanvraagId: AANVRAAG_ID,
     aan,
     antwoordAan: antwoordAan[0],
+    gif: gifVan('bevestiging'),
   })
 }
 bericht = { ...bericht, aan: [aan], onderwerp: `Test: ${bericht.onderwerp}` }

@@ -8,6 +8,9 @@
  * "Mail instellen".
  */
 
+import { MAX_GIF_BREEDTE } from './mail-gifs.ts'
+import type { MailGif } from './mail-gifs.ts'
+
 export interface MailBericht {
   aan: string[]
   onderwerp: string
@@ -227,16 +230,31 @@ export function themaVoor(locatie: string | null | undefined): Thema {
 }
 
 /**
+ * Het gifje bovenaan, als eigen regel tussen de kop en de inhoud. De klassieke Outlook rekent met
+ * `width` en `height` op het plaatje zelf; `max-width` en `height:auto` laten het op een telefoon
+ * meekrimpen. Het staat op GitHub Pages en zit dus niet in de mail (zie shared/mail-gifs.ts).
+ */
+export function gifRegel(gif: MailGif): string {
+  const breedte = Math.min(gif.breedte, MAX_GIF_BREEDTE)
+  const hoogte = Math.round((gif.hoogte * breedte) / gif.breedte)
+  return `<tr><td align="center" style="padding:24px 24px 0;">`
+    + `<img src="${escapeHtml(gif.url)}" width="${breedte}" height="${hoogte}" alt="${escapeHtml(gif.alt)}" `
+    + `style="display:block;border:0;outline:none;max-width:100%;height:auto;${LETTER}font-size:15px;color:#596165;">`
+    + `</td></tr>\n`
+}
+
+/**
  * De omlijsting van elke mail: een kop in NBC-teal en daaronder de inhoud. Opgebouwd met tabellen,
  * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
  * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
- * een eigen stijl mist, zoals lijstjes uit Asana.
+ * een eigen stijl mist, zoals lijstjes uit Asana. Met een gifje staat dat tussen kop en inhoud.
  */
 export function mailOpmaak(
   kop: string,
   inhoud: string,
   voet = 'Automatische melding van het designaanvraag-formulier.',
   thema: Thema = THEMAS.nbc,
+  gif: MailGif | null = null,
 ): string {
   return `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -247,7 +265,7 @@ export function mailOpmaak(
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
 <tr><td bgcolor="${thema.kleur}" style="background:${thema.kleur};color:${thema.opKleur};padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
-<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
+${gif ? gifRegel(gif) : ''}<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
 </td></tr>

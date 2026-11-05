@@ -39,10 +39,13 @@ jobs:
       # Alleen wat shared/ nodig heeft (zod); de rest van de repo hoeft niet.
       - run: npm ci --workspace shared --no-audit --no-fund
       - name: Testmail versturen
+        # De gifjes komen uit de repo op de commit van deze run, niet van Pages: zo is een nieuw gifje
+        # al vanaf een branch te testen (kies de branch bij "Use workflow from").
         # Het adres komt uit de gegevens van de run en wordt gemaskeerd: de logs van deze (publieke)
         # repo zijn voor iedereen te zien, en een env-waarde staat daar gewoon in.
         run: |
           AAN=$(jq -r '.inputs.aan // ""' "$GITHUB_EVENT_PATH")
           echo "::add-mask::$AAN"
           node --experimental-strip-types --no-warnings scripts/testmail.mjs --aan "$AAN" \
-            --mail "${{ inputs.mail }}" --locatie "${{ inputs.locatie }}"
+            --mail "${{ inputs.mail }}" --locatie "${{ inputs.locatie }}" \
+            --gif-basis "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}/web/public/mail-gifs/"

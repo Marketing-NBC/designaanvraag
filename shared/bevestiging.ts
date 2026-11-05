@@ -8,6 +8,8 @@ import { eventEnDatum, kortVan } from './asana-title.ts'
 import { aanvullenUrl } from './contact.ts'
 import { citaat, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor } from './mail.ts'
 import type { MailBericht } from './mail.ts'
+import { gifVoor } from './mail-gifs.ts'
+import type { MailGif } from './mail-gifs.ts'
 import { datumLang } from './meldingen.ts'
 import { describeRequestTypes, locatieLabel } from './request-types.ts'
 
@@ -32,6 +34,8 @@ export interface BevestigingMail {
   antwoordAan: string
   /** De naam van het pakket ("Standard Lunch"), als er een menu bij hoort. */
   menuPakket?: string | null
+  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
+  gif?: MailGif | null
 }
 
 /** "Je aanvraag is binnen": de bevestiging aan wie de aanvraag deed. */
@@ -68,6 +72,6 @@ export function renderBevestigingMail(m: BevestigingMail): MailBericht {
     aan: [m.aan],
     antwoordAan: [m.antwoordAan],
     onderwerp: `Ontvangen: ${waarover(a)}`.slice(0, 250),
-    html: mailOpmaak('Je aanvraag is binnen', delen.join('\n'), 'Je krijgt deze mail omdat je een aanvraag deed via het designaanvraag-formulier.', thema),
+    html: mailOpmaak('Je aanvraag is binnen', delen.join('\n'), 'Je krijgt deze mail omdat je een aanvraag deed via het designaanvraag-formulier.', thema, gifVoor('bevestiging', m.gif)),
   }
 }

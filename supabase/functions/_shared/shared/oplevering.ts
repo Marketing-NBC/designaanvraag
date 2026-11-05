@@ -14,6 +14,8 @@ import { formatBytes } from './bijlagen.ts'
 import { FORMULIER_URL, akkoordUrl } from './contact.ts'
 import { THEMAS, escapeHtml, gegevensTabel, knop, mailOpmaak, ruimte, themaVoor, vlak, waarschuwingBlok } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
+import { gifVoor } from './mail-gifs.ts'
+import type { MailGif } from './mail-gifs.ts'
 import { asanaLink } from './ledkolom-preview.ts'
 import type { PreviewLink } from './ledkolom-preview.ts'
 import { describeRequestTypes } from './request-types.ts'
@@ -271,6 +273,8 @@ export interface OpleveringMail {
   previewsOnderweg?: boolean
   /** Een proefmail: alleen naar wie hem vroeg, met bovenaan wie de echte mail zou krijgen. */
   proef?: { echteOntvangers: string[] } | null
+  /** Het gifje bovenaan; weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
+  gif?: MailGif | null
 }
 
 /** "EY - 11 december - Torenscherm", of bij intern "Intern - Nieuwe visitekaartjes…". */
@@ -353,7 +357,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
     onderwerp: `${m.proef ? '[PROEF] ' : ''}${nieuweVersie ? `Versie ${m.versie} klaar` : 'Klaar'}: ${waarover(m)}`.slice(0, 250),
-    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.', thema),
+    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.', thema, gifVoor('oplevering', m.gif)),
   }
 }
 

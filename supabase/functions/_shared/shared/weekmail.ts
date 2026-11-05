@@ -10,6 +10,8 @@ import { formatDateShortNl } from './asana-title.ts'
 import { MELDING_ONTVANGERS } from './contact.ts'
 import { escapeHtml, knop, mailOpmaak, themaVoor } from './mail.ts'
 import type { MailBericht, Thema } from './mail.ts'
+import { gifVoor } from './mail-gifs.ts'
+import type { MailGif } from './mail-gifs.ts'
 import { LOCATIES, locatieLabel } from './request-types.ts'
 import type { Locatie } from './request-types.ts'
 
@@ -191,7 +193,8 @@ function meervoud(n: number, een: string, meer: string): string {
   return `${n} ${n === 1 ? een : meer}`
 }
 
-export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: string | null): MailBericht {
+/** `gif`: weglaten is er zelf een kiezen, null is geen (zie shared/mail-gifs.ts). */
+export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: string | null, gif?: MailGif | null): MailBericht {
   const thema = themaVoor(locatie)
   const lijst = (taken: WeekTaak[], extra?: (t: WeekTaak) => string[]) => lijstMet(thema, taken, extra)
   const { week, letOp } = o
@@ -256,6 +259,7 @@ export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: s
       delen.join('\n'),
       'Elke maandagochtend automatisch verstuurd vanuit het designaanvraag-formulier.',
       thema,
+      gifVoor('weekmail', gif),
     ),
   }
 }
