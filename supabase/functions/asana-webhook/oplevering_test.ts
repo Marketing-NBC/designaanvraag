@@ -93,6 +93,8 @@ function setup(opts: {
   /** false: de koppeling met de 3D-repo is niet ingesteld; 'fout': GitHub weigert. */
   bouwer?: false | 'fout'
   now?: Date
+  /** 'fout': de claimtabel is er niet (migratie nog niet gedraaid). */
+  claims?: 'fout'
 } = {}) {
   const comments: string[] = []
   const velden: Record<string, unknown>[] = []
@@ -105,6 +107,8 @@ function setup(opts: {
   const bestanden = opts.bestanden ?? { 'sub-1': [bestand()] }
   const previews: LedkolomPreviewRow[] = (opts.previews ?? []).map((p) => ({ ...p }))
   let gestart = 0
+  const claims = new Set<string>()
+  const geclaimd: string[] = []
   const gestopt: { aanvraagId: string; reden: unknown }[] = []
 
   const asana = {
@@ -128,6 +132,14 @@ function setup(opts: {
   const db: OpleverDeps['db'] = {
     findDetailByAsanaTaskGid: () => Promise.resolve(opts.aanvraag === undefined ? aanvraag : opts.aanvraag),
     collegaEmail: () => Promise.resolve(opts.email === undefined ? 'britt@nbcevents.nl' : opts.email),
+    claimKnop: (sleutel) => {
+      if (opts.claims === 'fout') return Promise.reject(new Error('relation "knop_claims" does not exist'))
+      geclaimd.push(sleutel)
+      if (claims.has(sleutel)) return Promise.resolve(false)
+      claims.add(sleutel)
+      return Promise.resolve(true)
+    },
+    geefKnopVrij: (sleutel) => (claims.delete(sleutel), Promise.resolve()),
     stopHerinneringen: (aanvraagId, _moment, reden) => (gestopt.push({ aanvraagId, reden }), Promise.resolve(0)),
     findOplevering: (gid) => Promise.resolve(rijen.find((r) => r.subtaak_gid === gid) ?? null),
     aantalVerstuurd: () => Promise.resolve(opts.verstuurd ?? 0),
@@ -174,7 +186,7 @@ function setup(opts: {
   const oplever = createOplever({
     asana, db, mail, cfg, previewBouwer, now: () => opts.now ?? NU, log: () => {},
   })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart }
+  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart, claims, geclaimd }
 }
 
 // ── Echt versturen ────────────────────────────────────────────────────
@@ -589,4 +601,56 @@ Deno.test('een aanvraag van voor het akkoord krijgt de mail zoals vroeger, zonde
   assertStringIncludes(html, 'Is alles goed, dan hoef je niets te doen.')
   assertStringIncludes(html, 'Feedback geven')
   assertEquals(s.rijen[0].herinneren, false)
+})
+
+// ── Dubbele berichten van Asana ───────────────────────────────────────
+
+Deno.test('Asana stuurt de proefknop twee keer tegelijk: één proefmail', async () => {
+  const s = setup()
+  const [a, b] = await Promise.all([s.oplever(taak(), PROEF), s.oplever(taak(), PROEF)])
+
+  assertEquals([a, b].sort(), ['proefmail al bezig', 'proefmail verstuurd'])
+  assertEquals(s.gemaild.length, 1)
+  assertEquals(s.comments.length, 1, 'ook maar één verslag in Asana')
+  assertEquals(s.claims.size, 0, 'na afloop is de knop weer vrij')
+})
+
+Deno.test('Asana stuurt "Verstuur nu" twee keer tegelijk: één mail, en geen Mislukt erachteraan', async () => {
+  const s = setup()
+  const [a, b] = await Promise.all([s.oplever(taak(), ECHT), s.oplever(taak(), ECHT)])
+
+  assertEquals([a, b].sort(), ['oplevermail al bezig', 'oplevermail verstuurd (versie 1)'])
+  assertEquals(s.gemaild.length, 1)
+  assert(!s.velden.some((v) => Object.values(v).includes('opt-mislukt')))
+})
+
+Deno.test('een proef en meteen "Verstuur nu" mogen allebei', async () => {
+  const s = setup()
+  await Promise.all([s.oplever(taak(), PROEF), s.oplever(taak(), ECHT)])
+  assertEquals(s.gemaild.length, 2)
+})
+
+Deno.test('na een proef kan meteen een tweede proef', async () => {
+  const s = setup()
+  await s.oplever(taak(), PROEF)
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.gemaild.length, 2)
+})
+
+Deno.test('een mislukte proef geeft de knop ook weer vrij', async () => {
+  const s = setup({ mailFout: 'Graph 500' })
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.claims.size, 0)
+})
+
+Deno.test('lukt het claimen niet, dan gaat de mail toch', async () => {
+  const s = setup({ claims: 'fout' })
+  assertEquals(await s.oplever(taak(), PROEF), 'proefmail verstuurd')
+  assertEquals(s.gemaild.length, 1)
+})
+
+Deno.test('een melding van de 3D-repo claimt de knop niet', async () => {
+  const s = setup()
+  await s.oplever(taak(), { proef: false, door: null, naPreview: true })
+  assertEquals(s.geclaimd, [])
 })

@@ -143,6 +143,8 @@ function fakeDb(row: AanvraagDetail | null = aanvraag(), gestoptAantal = 0) {
       return gestoptAantal
     },
     zetAkkoord: () => Promise.resolve(false),
+    claimKnop: () => Promise.resolve(true),
+    geefKnopVrij: () => Promise.resolve(),
     findOplevering: () => Promise.resolve(null),
     aantalVerstuurd: () => Promise.resolve(0),
     insertOplevering: () => Promise.reject(new Error('niet gebruikt')),
