@@ -203,18 +203,28 @@ async function stappen(b) {
   await shot(p, 'g51-feedback', [[L(p, '.q__head'), 1, 8], [p.getByPlaceholder('Typ of kies je naam'), 2, 6]]);
   await p.close();
 
-  // ── De opleveringsmail zelf, zoals hij in je inbox staat (zie mail.mts) ──
-  p = await b.newPage({ viewport: { width: 820, height: 880 }, deviceScaleFactor: 2 });
+}
+
+// De opleveringsmail zelf, zoals hij in je inbox staat (zie mail.mts). Los te draaien met
+// `node screenshots.cjs mail`: daar is het formulier niet voor nodig.
+async function mailShot(b) {
+  const p = await b.newPage({ viewport: { width: 820, height: 880 }, deviceScaleFactor: 2 });
   await p.goto('file://' + path.join(__dirname, 'mail', 'inbox.html'));
   const mail = p.frameLocator('iframe');
-  await mail.getByText('Feedback geven').first().waitFor();
-  await shot(p, 'g50-mail', [[p.locator('.kop'), 1, 6], [mail.locator('td', { hasText: /^Bijlagen$/ }).locator('xpath=..'), 2, 4], [mail.locator('a', { hasText: 'Feedback geven' }).locator('xpath=ancestor::table[1]'), 3, 6]]);
+  await mail.getByText('Akkoord geven').first().waitFor();
+  // Tot en met de voetregel, zodat Feedback geven en Akkoord geven er allebei op staan.
+  const voet = await mail.getByText('Verstuurd door', { exact: false }).last().boundingBox();
+  await p.setViewportSize({ width: 820, height: Math.ceil(voet.y + voet.height + 14) });
+  const knop = (t) => mail.locator('a', { hasText: t }).locator('xpath=ancestor::table[1]');
+  await shot(p, 'g50-mail', [[p.locator('.kop'), 1, 6], [mail.locator('td', { hasText: /^Bijlagen$/ }).locator('xpath=..'), 2, 4],
+    [knop('Feedback geven'), 3, 6], [knop('Akkoord geven'), 4, 6]]);
   await p.close();
 }
 
 (async () => {
   require('child_process').execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', path.join(__dirname, 'mail.mts')], { stdio: 'inherit' });
   const b = await chromium.launch({ args: ['--no-proxy-server'] });
-  await stappen(b);
+  if (process.argv[2] !== 'mail') await stappen(b);
+  await mailShot(b);
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
