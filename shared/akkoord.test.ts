@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { herinneringVandaag, isWerkdag, metAkkoord, renderAkkoordMelding, renderHerinneringMail, verslagAkkoord, type OpenOplevering } from './akkoord'
+import { herinneringVandaag, isWerkdag, uurInNl, metAkkoord, renderAkkoordMelding, renderHerinneringMail, verslagAkkoord, type OpenOplevering } from './akkoord'
 
 describe('werkdagen', () => {
   it('maandag tot en met vrijdag', () => {
@@ -35,6 +35,44 @@ describe('wie krijgt vandaag een herinnering', () => {
     expect(herinneringVandaag({ ...basis, akkoord_op: '2026-11-04T10:00:00Z' }, '2026-11-05')).toBe(false)
     expect(herinneringVandaag({ ...basis, feedback_op: '2026-11-04T10:00:00Z' }, '2026-11-05')).toBe(false)
     expect(herinneringVandaag({ ...basis, gestopt_op: '2026-11-04T10:00:00Z' }, '2026-11-05')).toBe(false)
+  })
+
+  it('na 15:00 verstuurd: de volgende dag pas om 12:00', () => {
+    // Maandag 2 november om 15:30 (wintertijd, UTC+1).
+    const laat = { ...basis, verstuurd_op: '2026-11-02T14:30:00Z' }
+    expect(herinneringVandaag(laat, '2026-11-03', 'ochtend')).toBe(false)
+    expect(herinneringVandaag(laat, '2026-11-03', 'middag')).toBe(true)
+    // Daarna gewoon weer om 9:00.
+    expect(herinneringVandaag({ ...laat, laatste_herinnering: '2026-11-03T11:00:00Z' }, '2026-11-04', 'ochtend')).toBe(true)
+  })
+
+  it('om 14:59 verstuurd telt nog als op tijd: de volgende dag om 9:00', () => {
+    const net = { ...basis, verstuurd_op: '2026-11-02T13:59:00Z' }
+    expect(herinneringVandaag(net, '2026-11-03', 'ochtend')).toBe(true)
+  })
+
+  it('om 15:00 in de zomertijd ook laat', () => {
+    // Maandag 5 oktober om 15:00 (zomertijd, UTC+2).
+    expect(herinneringVandaag({ ...basis, verstuurd_op: '2026-10-05T13:00:00Z' }, '2026-10-06', 'ochtend')).toBe(false)
+  })
+
+  it('vrijdagmiddag verstuurd: maandag gewoon om 9:00', () => {
+    // Vrijdag 6 november om 16:00.
+    expect(herinneringVandaag({ ...basis, verstuurd_op: '2026-11-06T15:00:00Z' }, '2026-11-09', 'ochtend')).toBe(true)
+  })
+
+  it('de middagronde stuurt niet nog eens wie er om 9:00 al een kreeg', () => {
+    expect(herinneringVandaag({ ...basis, laatste_herinnering: '2026-11-04T08:00:00Z' }, '2026-11-04', 'middag')).toBe(false)
+  })
+
+  it('de middagronde vangt op wat de ochtendronde miste', () => {
+    expect(herinneringVandaag(basis, '2026-11-04', 'middag')).toBe(true)
+  })
+
+  it('uur in Nederlandse tijd', () => {
+    expect(uurInNl(new Date('2026-11-02T14:30:00Z'))).toBe(15)
+    expect(uurInNl(new Date('2026-10-05T13:00:00Z'))).toBe(15)
+    expect(uurInNl(new Date('2026-11-02T23:30:00Z'))).toBe(0)
   })
 
   it('niet voor opleveringen van voor het akkoord bestond', () => {

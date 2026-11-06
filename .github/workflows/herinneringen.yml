@@ -1,16 +1,19 @@
 name: Herinneringen akkoord
 
 # Elke werkdag om 9:00 een herinnering aan wie een oplevering kreeg en nog geen akkoord of feedback
-# gaf: de aanvrager en de gekoppelde collega's. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
+# gaf: de aanvrager en de gekoppelde collega's. Om 12:00 nog een ronde: een oplevering die gisteren na
+# 15:00 verstuurd is, krijgt dan pas zijn eerste herinnering. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
 # Vereist secrets SUPABASE_PROJECT_ID, SUPABASE_SECRET_KEY, MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
 
 on:
   schedule:
-    # 9:00 Nederlandse tijd, maandag tot en met vrijdag. GitHub kent alleen UTC, dus twee tijden:
-    # 07:00 UTC is 9:00 in de zomer, 08:00 UTC is 9:00 in de winter. De eerste stap laat alleen de
-    # juiste doorgaan. GitHub start een geplande run soms een kwartier of meer later.
+    # 9:00 en 12:00 Nederlandse tijd, maandag tot en met vrijdag. GitHub kent alleen UTC, dus per ronde
+    # twee tijden: 07:00 en 10:00 UTC in de zomer, 08:00 en 11:00 UTC in de winter. De eerste stap laat
+    # alleen de juiste doorgaan. GitHub start een geplande run soms een kwartier of meer later.
     - cron: '0 7 * * 1-5'
     - cron: '0 8 * * 1-5'
+    - cron: '0 10 * * 1-5'
+    - cron: '0 11 * * 1-5'
   workflow_dispatch:
     inputs:
       aan:
@@ -23,6 +26,11 @@ on:
         type: boolean
         required: false
         default: false
+      ronde:
+        description: 'Welke ronde (automatisch = ochtend voor 12:00, anders middag)'
+        type: choice
+        options: [automatisch, ochtend, middag]
+        default: automatisch
 
 concurrency:
   group: herinneringen
@@ -39,15 +47,17 @@ jobs:
       MS_CLIENT_SECRET: ${{ secrets.MS_CLIENT_SECRET }}
       MAIL_AFZENDER: ${{ vars.MAIL_AFZENDER }}
     steps:
-      - name: Is het 9:00 in Nederland?
+      - name: Is het 9:00 of 12:00 in Nederland?
         id: tijd
         if: github.event_name == 'schedule'
         env:
           SCHEMA: ${{ github.event.schedule }}
         run: |
-          # +0200 is zomertijd, dan hoort de run van 07:00 UTC erbij; +0100 is wintertijd: 08:00 UTC.
-          if [ "$(TZ=Europe/Amsterdam date +%z)" = "+0200" ]; then juist='0 7 * * 1-5'; else juist='0 8 * * 1-5'; fi
-          if [ "$SCHEMA" = "$juist" ]; then echo "door=true" >> "$GITHUB_OUTPUT"; else echo "door=false" >> "$GITHUB_OUTPUT"; echo "Niet de 9:00-run van dit seizoen; overgeslagen."; fi
+          # +0200 is zomertijd: dan horen de runs van 07:00 en 10:00 UTC erbij; +0100 is wintertijd: 08:00 en 11:00 UTC.
+          if [ "$(TZ=Europe/Amsterdam date +%z)" = "+0200" ]; then ochtend='0 7 * * 1-5'; middag='0 10 * * 1-5'; else ochtend='0 8 * * 1-5'; middag='0 11 * * 1-5'; fi
+          if [ "$SCHEMA" = "$ochtend" ]; then echo "door=true" >> "$GITHUB_OUTPUT"; echo "ronde=ochtend" >> "$GITHUB_OUTPUT"
+          elif [ "$SCHEMA" = "$middag" ]; then echo "door=true" >> "$GITHUB_OUTPUT"; echo "ronde=middag" >> "$GITHUB_OUTPUT"
+          else echo "door=false" >> "$GITHUB_OUTPUT"; echo "Niet de 9:00- of 12:00-run van dit seizoen; overgeslagen."; fi
       - uses: actions/checkout@v4
         if: steps.tijd.outputs.door != 'false'
       - uses: actions/setup-node@v4
@@ -59,11 +69,13 @@ jobs:
         env:
           AAN: ${{ inputs.aan }}
           PROEF: ${{ inputs.proef }}
+          RONDE: ${{ steps.tijd.outputs.ronde || inputs.ronde }}
         run: |
           export SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
           args=()
           [ -n "$AAN" ] && args+=(--aan "$AAN")
           [ "$PROEF" = "true" ] && args+=(--proef)
+          [ -n "$RONDE" ] && [ "$RONDE" != "automatisch" ] && args+=(--ronde "$RONDE")
           node --experimental-strip-types --no-warnings scripts/herinneringen.mjs "${args[@]}"
       - name: Proefmails bewaren
         if: inputs.proef
