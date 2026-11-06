@@ -18,11 +18,14 @@
  *                        gifje al vanaf een branch te testen is, voor het op Pages staat. Zonder
  *                        deze optie: de gifjes en de lijst op GitHub Pages.
  *
+ * Bij de oplevering voor NBC staat bovenaan geen gifje maar de torenscherm-preview: het voorbeelddesign
+ * scripts/testmail/Testevent - Torenscherm.jpg op de foto uit web/public/torenscherm/ van deze checkout.
+ *
  * De knoppen in de mail wijzen naar een aanvraag die niet bestaat: wie erop klikt, krijgt in het
  * formulier te zien dat de aanvraag niet te vinden is. Zo kan een test nooit per ongeluk akkoord
  * geven op een echte aanvraag.
  */
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { renderHerinneringMail } from '../shared/akkoord.ts'
 import { renderBevestigingMail } from '../shared/bevestiging.ts'
 import { MELDING_AFZENDER, MELDING_ONTVANGERS } from '../shared/contact.ts'
@@ -31,6 +34,8 @@ import { MAIL_GIF_BASIS, gifLijstVan } from '../shared/mail-gifs.ts'
 import { leesGifs } from './mail-gifs.mjs'
 import { beschrijvingAlsMailHtml, renderOpleveringMail } from '../shared/oplevering.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
+import { SCHERM_FOTOS, heeftTorenschermPreview } from '../shared/torenscherm-preview.ts'
+import { decodeerBeeld, maakTorenschermPreview } from '../shared/torenscherm-render.ts'
 
 const args = Object.fromEntries(
   process.argv.slice(2).reduce((acc, a, i, arr) => {
@@ -71,6 +76,17 @@ const voorbeeld = {
 }
 
 let bericht
+/** De torenscherm-preview als plaatje in de mail (zie shared/torenscherm-preview.ts). */
+const inline = []
+const torenscherm = []
+if ((soort === 'oplevering' || soort === 'oplevering-oud') && heeftTorenschermPreview(voorbeeld.types, locatie)) {
+  const info = SCHERM_FOTOS[locatie]
+  const map = new URL('..', import.meta.url)
+  const foto = decodeerBeeld(readFileSync(new URL(`web/public/torenscherm/${info.bestand}`, map)))
+  const bytes = maakTorenschermPreview(readFileSync(new URL('scripts/testmail/Testevent - Torenscherm.jpg', map)), foto, info)
+  torenscherm.push({ cid: 'torenscherm-1', breedte: info.breedte, hoogte: info.hoogte, alt: info.alt })
+  inline.push({ naam: 'Torenscherm-preview.jpg', mime: 'image/jpeg', bytes, inline: 'torenscherm-1' })
+}
 if (soort === 'oplevering' || soort === 'oplevering-oud') {
   bericht = renderOpleveringMail({
     ...voorbeeld,
@@ -86,6 +102,7 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     akkoord: soort === 'oplevering',
     bijlagen: [{ naam: 'Testevent - LED-kolom.jpg', bytes: 1_240_000 }, { naam: 'Testevent - Torenscherm.jpg', bytes: 2_080_000 }],
     links: [],
+    torenscherm,
   })
 } else if (soort === 'herinnering') {
   bericht = renderHerinneringMail({
@@ -111,10 +128,14 @@ if (soort === 'oplevering' || soort === 'oplevering-oud') {
     antwoordAan: antwoordAan[0],
   })
 }
-bericht = { ...bericht, aan: [aan], onderwerp: `Test: ${bericht.onderwerp}` }
+bericht = { ...bericht, aan: [aan], onderwerp: `Test: ${bericht.onderwerp}`, bijlagen: inline }
 
 if (proef) {
   bericht = { ...bericht, html: vulGifIn(bericht.html, await gifs.lijst(), gifs.basis) }
+  // Een HTML-bestand heeft geen bijlagen: de preview gaat er dan zelf in.
+  for (const b of inline) {
+    bericht.html = bericht.html.replaceAll(`cid:${b.inline}`, `data:${b.mime};base64,${Buffer.from(b.bytes).toString('base64')}`)
+  }
   mkdirSync('testmail-proef', { recursive: true })
   writeFileSync(`testmail-proef/${soort}-${locatie}.html`, bericht.html)
   console.log(`(proef) ${bericht.onderwerp} → testmail-proef/${soort}-${locatie}.html`)

@@ -24,6 +24,11 @@ export interface MailBijlage {
   naam: string
   mime: string
   bytes: Uint8Array
+  /**
+   * Een plaatje dat in de mail zelf staat in plaats van als bijlage eronder, zoals de
+   * torenscherm-preview: de Content-ID waarmee de HTML ernaar verwijst (`<img src="cid:…">`).
+   */
+  inline?: string
 }
 
 /**
@@ -125,6 +130,7 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     name: b.naam,
     contentType: b.mime,
     contentBytes: naarBase64(b.bytes),
+    ...(b.inline ? { isInline: true, contentId: b.inline } : {}),
   })
 
   /**
@@ -256,6 +262,21 @@ export function gifRegel(gif: MailGif): string {
 }
 
 /**
+ * Een plaatje over de volle breedte bovenaan, in plaats van het gifje: de torenscherm-preview. Het
+ * plaatje zit als bijlage in de mail zelf (`cid:`), zodat de klassieke Outlook het meteen laat zien
+ * in plaats van eerst te vragen of hij afbeeldingen mag downloaden.
+ */
+export function beeldRegel(beelden: { cid: string; breedte: number; hoogte: number; alt: string }[], onderschrift = ''): string {
+  if (!beelden.length) return ''
+  const img = beelden.map((b, i) => `<img src="cid:${escapeHtml(b.cid)}" width="${b.breedte}" height="${b.hoogte}" alt="${escapeHtml(b.alt)}" `
+    + `style="display:block;border:0;outline:none;width:100%;max-width:${b.breedte}px;height:auto;${i ? 'margin-top:8px;' : ''}${LETTER}font-size:15px;color:#596165;">`)
+  const tekst = onderschrift
+    ? `<p style="margin:8px 0 0;${LETTER}font-size:13px;line-height:18px;color:#596165;">${escapeHtml(onderschrift)}</p>`
+    : ''
+  return `<tr><td align="center" style="padding:24px 24px 0;">${img.join('')}${tekst}</td></tr>\n`
+}
+
+/**
  * Waar het gifje komt. mailOpmaak zet alleen deze plek in de mail; welk gifje het wordt, beslist het
  * versturen (vulGifIn), want daarvoor is de lijst van Pages nodig. Een mail die zo blijft, zoals een
  * proef als HTML-bestand, heeft dus geen gifje: een HTML-commentaar zie je niet.
@@ -283,7 +304,8 @@ export function vulGifIn(html: string, lijst: GifLijst | null, basis = MAIL_GIF_
  * inline stijlen en ruimte via `padding` op cellen, want Word negeert `padding` en `margin` op
  * vrijwel al het andere. Het stijlblok bovenin is een vangnet voor het lettertype van alles wat
  * een eigen stijl mist, zoals lijstjes uit Asana. Met `gif` komt er tussen kop en inhoud een gifje uit
- * die map (zie gifPlek).
+ * die map (zie gifPlek). Met `bovenaan` komt daar iets anders, zoals de torenscherm-preview (beeldRegel);
+ * dat gaat voor het gifje.
  */
 export function mailOpmaak(
   kop: string,
@@ -291,6 +313,7 @@ export function mailOpmaak(
   voet = 'Automatische melding van het designaanvraag-formulier.',
   thema: Thema = THEMAS.nbc,
   gif: GifMap | null = null,
+  bovenaan = '',
 ): string {
   return `<!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -301,7 +324,7 @@ export function mailOpmaak(
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;width:100%;background:#ffffff;">
 <tr><td bgcolor="${thema.kleur}" style="background:${thema.kleur};color:${thema.opKleur};padding:20px 24px;${LETTER}font-size:20px;line-height:26px;font-weight:bold;">${escapeHtml(kop)}</td></tr>
-${gif ? gifPlek(gif) : ''}<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
+${bovenaan || (gif ? gifPlek(gif) : '')}<tr><td style="padding:24px;${LETTER}font-size:15px;line-height:22px;color:#0e0e0e;">${inhoud}</td></tr>
 <tr><td style="padding:16px 24px;border-top:1px solid #eaebec;${LETTER}color:#828b8d;font-size:12px;line-height:18px;">${escapeHtml(voet)}</td></tr>
 </table>
 </td></tr>
