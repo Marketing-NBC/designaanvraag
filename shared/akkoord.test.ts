@@ -56,9 +56,11 @@ describe('wie krijgt vandaag een herinnering', () => {
     expect(herinneringVandaag({ ...basis, verstuurd_op: '2026-10-05T13:00:00Z' }, '2026-10-06', 'ochtend')).toBe(false)
   })
 
-  it('vrijdagmiddag verstuurd: maandag gewoon om 9:00', () => {
+  it('vrijdagmiddag verstuurd: maandag ook pas om 12:00', () => {
     // Vrijdag 6 november om 16:00.
-    expect(herinneringVandaag({ ...basis, verstuurd_op: '2026-11-06T15:00:00Z' }, '2026-11-09', 'ochtend')).toBe(true)
+    const vrijdag = { ...basis, verstuurd_op: '2026-11-06T15:00:00Z' }
+    expect(herinneringVandaag(vrijdag, '2026-11-09', 'ochtend')).toBe(false)
+    expect(herinneringVandaag(vrijdag, '2026-11-09', 'middag')).toBe(true)
   })
 
   it('de middagronde stuurt niet nog eens wie er om 9:00 al een kreeg', () => {

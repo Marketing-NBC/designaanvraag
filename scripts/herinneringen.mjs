@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * De herinnering om akkoord te geven: elke werkdag om 9:00 en 12:00 via .github/workflows/herinneringen.yml.
- * Om 12:00 krijgen alleen opleveringen die gisteren na 15:00 verstuurd zijn hun eerste herinnering
+ * Om 12:00 krijgen opleveringen die na 15:00 verstuurd zijn hun eerste herinnering
  * (en wat de ronde van 9:00 eventueel miste); de regels staan in herinneringVandaag in shared/akkoord.ts.
  *
  *   SUPABASE_URL=... SUPABASE_SECRET_KEY=... MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... \

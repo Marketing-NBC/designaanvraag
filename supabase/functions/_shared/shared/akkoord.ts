@@ -10,7 +10,7 @@
  *  - Na een akkoord gaat de taak in Asana naar de kolom Afgerond, met een reactie wie en wanneer.
  *  - Tot er akkoord of feedback is, krijgt iedereen die de opleveringsmail kreeg (de aanvrager en
  *    wie in "Ook mailen naar" staat) elke werkdag om 9:00 een herinnering (scripts/herinneringen.mjs).
- *    Is de oplevering na 15:00 verstuurd, dan komt de eerste de volgende dag pas om 12:00.
+ *    Is de oplevering na 15:00 verstuurd, dan komt de eerste de volgende werkdag pas om 12:00.
  *    Feedback telt pas als hij echt via het formulier is verstuurd, niet als iemand alleen op de
  *    knop klikte.
  *  - Dit alles alleen bij aanvragen van na AKKOORD_VANAF; oudere krijgen de mail zoals vroeger.
@@ -59,8 +59,8 @@ export interface OpenOplevering {
 }
 
 /**
- * Na dit uur (Nederlandse tijd) verstuurd: de eerste herinnering komt de volgende dag pas in de
- * ronde van 12:00, niet al om 9:00. Wie om vijf uur 's middags een oplevering krijgt, heeft er de
+ * Na dit uur (Nederlandse tijd) verstuurd: de eerste herinnering komt de volgende werkdag pas in de
+ * ronde van 12:00, niet al om 9:00. Ook na een weekend. Wie om vijf uur 's middags een oplevering krijgt, heeft er de
  * volgende ochtend om negen uur nog nauwelijks naar kunnen kijken.
  */
 export const LAAT_VERSTUURD_VANAF_UUR = 15
@@ -73,23 +73,16 @@ export function uurInNl(moment: Date): number {
   return Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Amsterdam', hour: '2-digit', hourCycle: 'h23' }).format(moment))
 }
 
-/** De kalenderdag voor deze ISO-datum. */
-function dagErvoor(iso: string): string {
-  const d = new Date(`${iso}T12:00:00Z`)
-  d.setUTCDate(d.getUTCDate() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 /**
  * Krijgt deze oplevering vandaag in deze ronde een herinnering?
  *
  * Alleen op een werkdag, niet op de dag zelf dat hij verstuurd is (dan heeft de mail net in de
  * inbox gestaan), en hooguit één keer per dag, ook als de workflow twee keer draait.
  *
- * De ochtendronde (9:00) slaat een oplevering over die gisteren na 15:00 verstuurd is; die krijgt
- * zijn eerste herinnering in de middagronde (12:00). De middagronde stuurt verder alles wat vandaag
- * nog geen herinnering had, dus ook wat de ochtendronde miste (GitHub viel uit, bijvoorbeeld).
- * Na het weekend telt het niet: een oplevering van vrijdagmiddag krijgt maandag om 9:00 gewoon de eerste.
+ * De ochtendronde (9:00) slaat de eerste herinnering over van een oplevering die na 15:00 verstuurd
+ * is; die komt in de middagronde (12:00). Ook na een weekend: vrijdag om 16:00 verstuurd wordt maandag
+ * om 12:00. De middagronde stuurt verder alles wat vandaag nog geen herinnering had, dus ook wat de
+ * ochtendronde miste (GitHub viel uit, bijvoorbeeld).
  */
 export function herinneringVandaag(o: OpenOplevering, vandaag: string, ronde: HerinneringRonde = 'ochtend'): boolean {
   if (!o.herinneren || !o.verstuurd_op || o.akkoord_op || o.feedback_op || o.gestopt_op) return false
@@ -97,7 +90,7 @@ export function herinneringVandaag(o: OpenOplevering, vandaag: string, ronde: He
   const verstuurd = new Date(o.verstuurd_op)
   if (vandaagInNl(verstuurd) >= vandaag) return false
   if (o.laatste_herinnering && vandaagInNl(new Date(o.laatste_herinnering)) >= vandaag) return false
-  if (ronde === 'ochtend' && vandaagInNl(verstuurd) === dagErvoor(vandaag) && uurInNl(verstuurd) >= LAAT_VERSTUURD_VANAF_UUR) return false
+  if (ronde === 'ochtend' && !o.laatste_herinnering && uurInNl(verstuurd) >= LAAT_VERSTUURD_VANAF_UUR) return false
   return true
 }
 

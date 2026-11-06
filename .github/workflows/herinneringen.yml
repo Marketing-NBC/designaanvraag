@@ -1,8 +1,8 @@
 name: Herinneringen akkoord
 
 # Elke werkdag om 9:00 een herinnering aan wie een oplevering kreeg en nog geen akkoord of feedback
-# gaf: de aanvrager en de gekoppelde collega's. Om 12:00 nog een ronde: een oplevering die gisteren na
-# 15:00 verstuurd is, krijgt dan pas zijn eerste herinnering. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
+# gaf: de aanvrager en de gekoppelde collega's. Om 12:00 nog een ronde: een oplevering die na 15:00
+# verstuurd is, krijgt dan pas zijn eerste herinnering. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
 # Vereist secrets SUPABASE_PROJECT_ID, SUPABASE_SECRET_KEY, MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
 
 on:

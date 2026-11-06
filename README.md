@@ -398,9 +398,9 @@ oplevering, en stuurt een herinnering als:
 - Marketing de taak niet zelf naar **Afgerond** sleepte;
 - hij niet vandaag pas verstuurd is (de eerste herinnering komt de werkdag erna);
 - er vandaag nog geen herinnering voor uit is;
-- in de ronde van 9:00: hij niet gisteren na 15:00 verstuurd is. Die krijgt zijn eerste herinnering om
-  12:00, zodat er na een late oplevering een ochtend zit om ernaar te kijken. Na het weekend telt dat
-  niet: een oplevering van vrijdagmiddag krijgt maandag om 9:00 de eerste. De ronde van 12:00 stuurt
+- in de ronde van 9:00: het niet de eerste herinnering is van een oplevering die na 15:00 verstuurd
+  is. Die eerste komt om 12:00, zodat er na een late oplevering een ochtend zit om ernaar te kijken.
+  Ook na het weekend: vrijdag om 16:00 verstuurd wordt maandag om 12:00. De ronde van 12:00 stuurt
   verder alles wat vandaag nog geen herinnering kreeg, dus ook wat de ronde van 9:00 miste.
 
 De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager en de adressen uit
