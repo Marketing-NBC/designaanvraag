@@ -138,3 +138,19 @@ Deno.test('base64 in stukken geeft hetzelfde als in één keer', () => {
   const bytes = new Uint8Array(100_000).map((_, i) => i % 256)
   assertEquals(naarBase64(bytes), btoa(String.fromCharCode(...bytes)))
 })
+
+Deno.test('een afbeelding in de tekst gaat mee als inline bijlage met zijn Content-ID', async () => {
+  const { calls, fetch } = fakeFetch()
+  await createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    html: '<img src="cid:torenscherm-1@designaanvraag">',
+    bijlagen: [
+      { naam: 'ontwerp.png', mime: 'image/png', bytes: new Uint8Array([1]) },
+      { naam: 'Torenscherm - ontwerp.jpg', mime: 'image/jpeg', bytes: new Uint8Array([2]), inline: 'torenscherm-1@designaanvraag' },
+    ],
+  })
+  const [los, inline] = JSON.parse(String(calls[1].init.body)).message.attachments
+  assertEquals(los.isInline, undefined)
+  assertEquals(inline.isInline, true)
+  assertEquals(inline.contentId, 'torenscherm-1@designaanvraag')
+})

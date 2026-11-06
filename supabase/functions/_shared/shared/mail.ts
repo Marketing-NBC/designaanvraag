@@ -21,6 +21,8 @@ export interface MailBijlage {
   naam: string
   mime: string
   bytes: Uint8Array
+  /** Content-ID van een afbeelding die in de tekst staat (`<img src="cid:...">`); dan geen losse bijlage. */
+  inline?: string
 }
 
 /**
@@ -110,6 +112,7 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     name: b.naam,
     contentType: b.mime,
     contentBytes: naarBase64(b.bytes),
+    ...(b.inline ? { isInline: true, contentId: b.inline } : {}),
   })
 
   /**
@@ -136,7 +139,9 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
           continue
         }
         const sessie = await graph(`/messages/${concept}/attachments/createUploadSession`, 'POST', {
-          AttachmentItem: { attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime },
+          AttachmentItem: {
+            attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime, ...(b.inline ? { isInline: true, contentId: b.inline } : {}),
+          },
         }, `Upload van "${b.naam}" starten`)
         const uploadUrl = String(sessie.uploadUrl ?? '')
         if (!uploadUrl) throw new Error(`Upload van "${b.naam}" starten mislukt (geen uploadadres)`)

@@ -1,11 +1,17 @@
 {
   "imports": {
     "zod": "npm:zod@^4.5",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2"
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
+    "jpeg-js": "npm:jpeg-js@0.4.4",
+    "upng-js": "npm:upng-js@2.1.0",
+    "omggif": "npm:omggif@1.0.10"
   },
   "compilerOptions": {
     "strict": true,
-    "lib": ["deno.window", "deno.ns"]
+    "lib": [
+      "deno.window",
+      "deno.ns"
+    ]
   },
   "fmt": {
     "semiColons": false,

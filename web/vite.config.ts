@@ -20,14 +20,6 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: false,
     chunkSizeWarningLimit: 700,
-    // Twee pagina's: het formulier, en de preview van het torenscherm uit de opleveringsmail
-    // (torenscherm/?p=<sleutel>, zie shared/torenscherm-preview.ts).
-    rolldownOptions: {
-      input: {
-        formulier: fileURLToPath(new URL('index.html', import.meta.url)),
-        torenscherm: fileURLToPath(new URL('torenscherm/index.html', import.meta.url)),
-      },
-    },
   },
   test: {
     include: ['src/**/*.test.ts', '../shared/**/*.test.ts'],

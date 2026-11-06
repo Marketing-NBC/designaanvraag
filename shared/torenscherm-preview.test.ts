@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { renderOpleveringMail, verslagProef, verslagVerstuurd } from './oplevering'
-import {
-  SLEUTEL, isTorenschermAanvraag, mediaType, nieuweSleutel, ontwerpPad, previewNaam, teGrootVoorPreview, torenschermBestanden, torenschermUrl,
-} from './torenscherm-preview'
+import { isTorenschermAanvraag, torenschermBeeldNaam, torenschermBestanden, torenschermCid } from './torenscherm-preview'
 
-const b = (naam: string, host = 'asana') => ({ naam, host })
+const b = (naam: string, host = 'asana', bytes: number | null = 1000) => ({ naam, host, bytes })
 
-describe('torenscherm-preview', () => {
+describe('torenscherm in de opleveringsmail', () => {
   it('alleen bij een torenscherm, en alleen waar we een foto van hebben', () => {
     expect(isTorenschermAanvraag(['torenscherm'], 'nbc')).toBe(true)
     expect(isTorenschermAanvraag(['led_kolom', 'torenscherm'], 'nbc')).toBe(true)
@@ -15,72 +13,49 @@ describe('torenscherm-preview', () => {
     expect(isTorenschermAanvraag(null, 'nbc')).toBe(false)
   })
 
-  it('kent beelden en video, geen pdf of zip', () => {
-    expect(mediaType('Scherm.JPG')).toBe('image/jpeg')
-    expect(mediaType('anim.gif')).toBe('image/gif')
-    expect(mediaType('loop.mp4')).toBe('video/mp4')
-    expect(mediaType('export.mov')).toBe('video/quicktime')
-    expect(mediaType('drukwerk.pdf')).toBeNull()
-    expect(mediaType('bestanden.zip')).toBeNull()
-    expect(mediaType('zonder-extensie')).toBeNull()
+  it('alleen een torenscherm gevraagd: elke jpg, png en gif in de subtaak', () => {
+    const lijst = [b('ontwerp.JPG'), b('anim.gif'), b('scherm.png'), b('drukwerk.pdf'), b('loop.mp4'), b('link.png', 'onedrive')]
+    expect(torenschermBestanden(lijst, ['torenscherm']).map((x) => x.naam)).toEqual(['ontwerp.JPG', 'anim.gif', 'scherm.png'])
   })
 
-  it('alleen een torenscherm gevraagd: elk beeld en elke video in de subtaak', () => {
-    const lijst = [b('ontwerp.jpg'), b('anim.gif'), b('drukwerk.pdf'), b('link.png', 'onedrive')]
-    expect(torenschermBestanden(lijst, ['torenscherm']).map((x) => x.naam)).toEqual(['ontwerp.jpg', 'anim.gif'])
+  it('meer designs gevraagd: alleen beelden met "toren" in de naam', () => {
+    const lijst = [b('Koffiescherm.png'), b('EY_Torenscherm.jpg'), b('TOREN.gif'), b('Torenscherm.mp4')]
+    expect(torenschermBestanden(lijst, ['torenscherm', 'koffiescherm']).map((x) => x.naam)).toEqual(['EY_Torenscherm.jpg', 'TOREN.gif'])
   })
 
-  it('meer designs gevraagd: alleen bestanden met "toren" in de naam', () => {
-    const lijst = [b('Koffiescherm.png'), b('EY_Torenscherm.mp4'), b('TOREN.jpg'), b('ledkolom.mp4')]
-    expect(torenschermBestanden(lijst, ['torenscherm', 'koffiescherm']).map((x) => x.naam)).toEqual(['EY_Torenscherm.mp4', 'TOREN.jpg'])
+  it('een heel groot bestand niet: dat past niet in de rekentijd', () => {
+    expect(torenschermBestanden([b('toren.png', 'asana', 40 * 1024 * 1024)], ['torenscherm'])).toEqual([])
   })
 
-  it('maakt van de bestandsnaam een nette naam', () => {
-    expect(previewNaam('EY_Torenscherm_v2.mp4')).toBe('EY Torenscherm v2')
-    expect(previewNaam('.png')).toBe('Torenscherm')
+  it('naam en Content-ID van de afbeelding', () => {
+    expect(torenschermBeeldNaam('EY_Welkom.png')).toBe('Torenscherm - EY_Welkom.jpg')
+    expect(torenschermCid(0)).toBe('torenscherm-1@designaanvraag')
   })
 
-  it('een sleutel is 24 hextekens en elke keer anders', () => {
-    const a = nieuweSleutel()
-    expect(a).toMatch(SLEUTEL)
-    expect(nieuweSleutel()).not.toBe(a)
-  })
-
-  it('pad en link', () => {
-    expect(ontwerpPad('abc', 'Scherm.JPEG')).toBe('abc/ontwerp.jpeg')
-    expect(torenschermUrl('0123456789abcdef01234567')).toBe('https://marketing-nbc.github.io/designaanvraag/torenscherm/?p=0123456789abcdef01234567')
-  })
-
-  it('te groot voor de bucket', () => {
-    expect(teGrootVoorPreview('a.mp4', 10 * 1024 * 1024)).toBeNull()
-    expect(teGrootVoorPreview('a.mp4', 60 * 1024 * 1024)).toMatch(/^a\.mp4 is 60 MB.*hooguit 50 MB/)
-  })
-})
-
-describe('torenscherm in de opleveringsmail', () => {
   const basis = {
     aan: ['britt@nbcevents.nl'], antwoordAan: ['marketing@nbcevents.nl'], aanvraagId: '11111111-2222-4333-8444-555555555555', versie: 1,
     locatie: 'nbc' as const, soort: 'evenement' as const, event: 'EY', eventDatum: '2026-12-11', omschrijving: '', types: ['torenscherm' as const],
     andersTekst: '', berichtHtml: 'Hierbij het torenscherm.', afzenderNaam: 'Devi', aanvrager: 'Britt', akkoord: true, bijlagen: [], links: [],
   }
 
-  it('een knop naar de preview', () => {
-    const m = renderOpleveringMail({ ...basis, torenschermen: [{ naam: 'EY', url: 'https://x.test/torenscherm/?p=abc' }] })
-    expect(m.html).toContain('Bekijk het design op het torenscherm')
-    expect(m.html).toContain('href="https://x.test/torenscherm/?p=abc"')
-    expect(m.html).toContain('>Bekijk op het torenscherm<')
+  it('de afbeelding staat in de mail, direct onder het bericht, zonder knop', () => {
+    const html = renderOpleveringMail({ ...basis, torenscherm: [{ naam: 'EY', cid: 'torenscherm-1@designaanvraag' }] }).html
+    expect(html).toContain('<img src="cid:torenscherm-1@designaanvraag" width="552" alt="EY op het torenscherm"')
+    expect(html.indexOf('Hierbij het torenscherm.')).toBeLessThan(html.indexOf('cid:torenscherm-1'))
+    expect(html.indexOf('cid:torenscherm-1')).toBeLessThan(html.indexOf('Feedback geven'))
+    expect(html).not.toContain('Bekijk op het torenscherm')
   })
 
-  it('zonder preview geen kopje', () => {
-    expect(renderOpleveringMail(basis).html).not.toContain('op het torenscherm')
+  it('zonder afbeelding geen kopje', () => {
+    expect(renderOpleveringMail(basis).html).not.toContain('torenscherm bij de ingang')
   })
 
-  it('in de verslagen in Asana', () => {
-    const t = [{ naam: 'EY', url: 'https://x.test/?p=abc' }]
-    expect(verslagProef({ naar: 'devi@nbcevents.nl', aan: ['britt@nbcevents.nl'], bijlagen: [], links: [], torenschermen: t }))
-      .toContain('britt@nbcevents.nl. Op het torenscherm: <a href="https://x.test/?p=abc">EY</a>.')
-    const v = verslagVerstuurd({ versie: 1, aan: ['britt@nbcevents.nl'], bijlagen: [], links: [], datum: '2026-11-06', torenschermen: t })
-    expect(v).toContain('Op het torenscherm:')
-    expect(v).not.toContain('Zonder bijlagen')
+  it('in de reactie bij de taak', () => {
+    const t = { gelukt: ['EY.png'], mislukt: [{ naam: 'oud.gif', reden: 'het bestand is niet te lezen' }] }
+    const p = verslagProef({ naar: 'devi@nbcevents.nl', aan: ['britt@nbcevents.nl'], bijlagen: ['EY.png', 'oud.gif'], links: [], torenscherm: t })
+    expect(p).toContain('Op de foto van het torenscherm in de mail: EY.png.')
+    expect(p).toContain('oud.gif kon niet op de foto van het torenscherm (het bestand is niet te lezen); die gaat alleen als bijlage mee.')
+    expect(verslagVerstuurd({ versie: 1, aan: ['britt@nbcevents.nl'], bijlagen: ['EY.png'], links: [], datum: '2026-11-06', torenscherm: t }))
+      .toContain('Op de foto van het torenscherm in de mail: EY.png.')
   })
 })

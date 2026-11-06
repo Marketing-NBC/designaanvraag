@@ -1,7 +1,6 @@
 import { assert, assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert@1'
 import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import type { AanvraagDetail, LedkolomPreviewRow, OpleveringRow } from '../_shared/db.ts'
-import type { NieuweTorenschermPreview, TorenschermOpslag, TorenschermPreviewRow } from '../_shared/torenscherm.ts'
 import type { MailBericht } from '../_shared/shared/mail.ts'
 import type { AsanaBestand, Subtaak } from '../_shared/shared/oplevering.ts'
 import { createOplever, type OpleverDeps } from './oplevering.ts'
@@ -96,7 +95,7 @@ function setup(opts: {
   now?: Date
   /** 'fout': de claimtabel is er niet (migratie nog niet gedraaid). */
   claims?: 'fout'
-  /** De opslag van de torenscherm-previews: aan (true), of de bucket weigert ('fout'). Standaard uit. */
+  /** Het design op de foto van het torenscherm zetten: aan (true), of het lukt niet ('fout'). Standaard uit. */
   torenscherm?: boolean | 'fout'
 } = {}) {
   const comments: string[] = []
@@ -113,8 +112,6 @@ function setup(opts: {
   const claims = new Set<string>()
   const geclaimd: string[] = []
   const gestopt: { aanvraagId: string; reden: unknown }[] = []
-  const torenRijen: TorenschermPreviewRow[] = []
-  const bewaard: NieuweTorenschermPreview[] = []
 
   const asana = {
     listSubtaken: () => Promise.resolve(opts.subtaken ?? [subtaak()]),
@@ -188,23 +185,17 @@ function setup(opts: {
     },
   }
 
-  const torenscherm: TorenschermOpslag | null = !opts.torenscherm ? null : {
-    bestaand: (gid) => Promise.resolve(torenRijen.find((r) => r.bestand_gid === gid) ?? null),
-    bewaar: (p) => {
-      if (opts.torenscherm === 'fout') return Promise.reject(new Error('Payload too large'))
-      bewaard.push(p)
-      const rij: TorenschermPreviewRow = {
-        id: `ts-${torenRijen.length + 1}`, aanvraag_id: p.aanvraagId, bestand_gid: p.bestandGid, bestandsnaam: p.bestandsnaam, naam: p.naam, sleutel: p.sleutel, bytes: p.bytes.length,
-      }
-      torenRijen.push(rij)
-      return Promise.resolve(rij)
-    },
+  const gerenderd: { bytes: number; locatie: string }[] = []
+  const torenschermBeeld = !opts.torenscherm ? null : (ontwerp: Uint8Array, locatie: string) => {
+    if (opts.torenscherm === 'fout') throw new Error('het is geen jpg, png of gif')
+    gerenderd.push({ bytes: ontwerp.length, locatie })
+    return new Uint8Array([0xff, 0xd8, gerenderd.length])
   }
 
   const oplever = createOplever({
-    asana, db, mail, cfg, previewBouwer, torenscherm, now: () => opts.now ?? NU, log: () => {},
+    asana, db, mail, cfg, previewBouwer, torenschermBeeld, now: () => opts.now ?? NU, log: () => {},
   })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart, claims, geclaimd, bewaard, torenRijen }
+  return { gerenderd, oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart, claims, geclaimd }
 }
 
 // ── Echt versturen ────────────────────────────────────────────────────
@@ -673,133 +664,80 @@ Deno.test('een melding van de 3D-repo claimt de knop niet', async () => {
   assertEquals(s.geclaimd, [])
 })
 
-// ── Torenscherm-preview ───────────────────────────────────────────────
+// ── Torenscherm in de mail ────────────────────────────────────────────
 
-const TOREN_LINK = /https:\/\/marketing-nbc\.github\.io\/designaanvraag\/torenscherm\/\?p=([0-9a-f]{24})/
+type MetBijlagen = MailBericht & { bijlagen: { naam: string; mime: string; inline?: string }[] }
 
-Deno.test('torenscherm: het design wordt een preview op de foto, en gaat niet als bijlage mee', async () => {
-  const s = setup({ torenscherm: true, bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'Torenscherm_Zorgcongres.mp4', bytes: 12_000_000 })] } })
-  const uitkomst = await s.oplever(taak(), ECHT)
+Deno.test('torenscherm: het design staat op de foto in de mail, en gaat ook als bijlage mee', async () => {
+  const s = setup({ torenscherm: true, bestanden: { 'sub-1': [bestand({ naam: 'EY_Torenscherm.png', bytes: 1234 })] } })
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
 
-  assertEquals(uitkomst, 'oplevermail verstuurd (versie 1)')
-  assertEquals(s.bewaard.length, 1)
-  const b = s.bewaard[0]
-  assertEquals(b.bestandGid, 'att-1')
-  assertEquals(b.naam, 'Torenscherm Zorgcongres')
-  assertEquals(b.meta.mime, 'video/mp4')
-  assertEquals(b.meta.bestand, 'ontwerp.mp4')
-  assertEquals(b.meta.event, 'Zorgcongres')
-  assertEquals(b.meta.eventDatum, '2026-12-11')
-  assertMatch(b.sleutel, /^[0-9a-f]{24}$/)
-
-  const m = s.gemaild[0]
-  assertEquals((m as MailBericht & { bijlagen: unknown[] }).bijlagen.length, 0)
-  assertStringIncludes(m.html, 'Bekijk op het torenscherm')
-  assertStringIncludes(m.html, `torenscherm/?p=${b.sleutel}`)
-  assert(!m.html.includes('Torenscherm_Zorgcongres.mp4'), 'het bestand staat niet als bijlage in de mail')
-  assertStringIncludes(s.comments.at(-1)!, 'Op het torenscherm:')
-  assertMatch(s.comments.at(-1)!, TOREN_LINK)
-  assertEquals(s.rijen[0].bijlagen, [])
+  assertEquals(s.gerenderd, [{ bytes: 1234, locatie: 'nbc' }])
+  const m = s.gemaild[0] as MetBijlagen
+  assertEquals(m.bijlagen.map((b) => [b.naam, b.inline ?? null]), [
+    ['EY_Torenscherm.png', null],
+    ['Torenscherm - EY_Torenscherm.jpg', 'torenscherm-1@designaanvraag'],
+  ])
+  assertEquals(m.bijlagen[1].mime, 'image/jpeg')
+  assertStringIncludes(m.html, 'Zo staat het op het torenscherm bij de ingang')
+  assertStringIncludes(m.html, 'src="cid:torenscherm-1@designaanvraag"')
+  assert(!m.html.includes('Bekijk op het torenscherm'), 'geen knop')
+  assertStringIncludes(s.comments.at(-1)!, 'Op de foto van het torenscherm in de mail: EY_Torenscherm.png.')
+  // In de administratie staat alleen wat Marketing in de subtaak zette.
+  assertEquals(s.rijen[0].bijlagen, [{ naam: 'EY_Torenscherm.png', bytes: 1234 }])
 })
 
-Deno.test('torenscherm: de proef en daarna Verstuur nu geven dezelfde link, en het bestand gaat maar één keer de bucket in', async () => {
+Deno.test('torenscherm: ook in de proefmail', async () => {
   const s = setup({ torenscherm: true })
   await s.oplever(taak(), PROEF)
-  await s.oplever(taak(), ECHT)
-
-  assertEquals(s.bewaard.length, 1)
-  assertEquals(s.downloads, ['att-1'])
-  const [proef, echt] = s.gemaild.map((m) => TOREN_LINK.exec(m.html)?.[1])
-  assert(proef)
-  assertEquals(proef, echt)
-  assertStringIncludes(s.comments[0], 'Op het torenscherm:')
+  assertStringIncludes(s.gemaild[0].html, 'src="cid:torenscherm-1@designaanvraag"')
+  assertStringIncludes(s.comments[0], 'Op de foto van het torenscherm in de mail: torenscherm.png.')
 })
 
-Deno.test('torenscherm: andere bestanden in de subtaak gaan gewoon als bijlage mee', async () => {
+Deno.test('torenscherm: een pdf of mp4 gaat alleen als bijlage mee', async () => {
   const s = setup({
     torenscherm: true,
-    bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'scherm.jpg' }), bestand({ gid: 'att-2', naam: 'drukwerk.pdf', createdAt: '2026-10-28T09:55:00Z' })] },
+    bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'drukwerk.pdf' }), bestand({ gid: 'att-2', naam: 'loop.mp4', createdAt: '2026-10-28T09:55:00Z' })] },
   })
   await s.oplever(taak(), ECHT)
-
-  assertEquals(s.bewaard.map((b) => b.bestandGid), ['att-1'])
-  const m = s.gemaild[0] as MailBericht & { bijlagen: { naam: string }[] }
-  assertEquals(m.bijlagen.map((b) => b.naam), ['drukwerk.pdf'])
-  assertStringIncludes(m.html, 'Bekijk op het torenscherm')
+  assertEquals(s.gerenderd.length, 0)
+  assert(!s.gemaild[0].html.includes('torenscherm bij de ingang'))
 })
 
-Deno.test('torenscherm: bij meer designs alleen de bestanden met "toren" in de naam', async () => {
+Deno.test('torenscherm: bij meer designs alleen de beelden met "toren" in de naam', async () => {
   const s = setup({
     torenscherm: true,
     aanvraag: { ...aanvraag, aanvraag_types: ['torenscherm', 'koffiescherm'] } as AanvraagDetail,
-    bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'Koffiescherm.png' }), bestand({ gid: 'att-2', naam: 'Torenscherm.png', createdAt: '2026-10-28T09:55:00Z' })] },
+    bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'Koffiescherm.png', bytes: 11 }), bestand({ gid: 'att-2', naam: 'Torenscherm.jpg', bytes: 22, createdAt: '2026-10-28T09:55:00Z' })] },
   })
   await s.oplever(taak(), ECHT)
-
-  assertEquals(s.bewaard.map((b) => b.bestandGid), ['att-2'])
-  const m = s.gemaild[0] as MailBericht & { bijlagen: { naam: string }[] }
-  assertEquals(m.bijlagen.map((b) => b.naam), ['Koffiescherm.png'])
+  assertEquals(s.gerenderd.map((r) => r.bytes), [22])
 })
 
-Deno.test('torenscherm: twee designs geven twee knoppen, met hun naam', async () => {
+Deno.test('torenscherm: twee designs, twee afbeeldingen', async () => {
   const s = setup({
     torenscherm: true,
     bestanden: { 'sub-1': [bestand({ gid: 'att-1', naam: 'Ochtend.jpg' }), bestand({ gid: 'att-2', naam: 'Middag.gif', createdAt: '2026-10-28T09:55:00Z' })] },
   })
   await s.oplever(taak(), ECHT)
-
-  const m = s.gemaild[0]
-  assertStringIncludes(m.html, 'Bekijk Ochtend op het torenscherm')
-  assertStringIncludes(m.html, 'Bekijk Middag op het torenscherm')
-  assertEquals(s.bewaard.map((b) => b.meta.mime), ['image/jpeg', 'image/gif'])
+  const m = s.gemaild[0] as MetBijlagen
+  assertEquals(m.bijlagen.filter((b) => b.inline).map((b) => b.inline), ['torenscherm-1@designaanvraag', 'torenscherm-2@designaanvraag'])
+  assertStringIncludes(m.html, 'alt="Ochtend op het torenscherm"')
+  assertStringIncludes(m.html, 'alt="Middag op het torenscherm"')
 })
 
-Deno.test('torenscherm: alleen het design, zonder tekst, mag ook', async () => {
-  const s = setup({ torenscherm: true, subtaken: [subtaak({ html: '<body></body>' })] })
+Deno.test('torenscherm: lukt de foto niet, dan gaat de mail toch, met het bestand als bijlage en de reden in de reactie', async () => {
+  const s = setup({ torenscherm: 'fout' })
   assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
+  const m = s.gemaild[0] as MetBijlagen
+  assertEquals(m.bijlagen.map((b) => b.naam), ['torenscherm.png'])
+  assert(!m.html.includes('torenscherm bij de ingang'))
+  assertStringIncludes(s.comments.at(-1)!, 'torenscherm.png kon niet op de foto van het torenscherm (het is geen jpg, png of gif)')
 })
 
-Deno.test('torenscherm: bij Green Village (nog geen foto) gaat het design als bijlage mee, zoals vroeger', async () => {
+Deno.test('torenscherm: Green Village heeft (nog) geen foto, dus de mail zoals vroeger', async () => {
   const s = setup({ torenscherm: true, aanvraag: { ...aanvraag, locatie: 'green_village' } as AanvraagDetail })
   await s.oplever(taak(), ECHT)
-
-  assertEquals(s.bewaard.length, 0)
-  const m = s.gemaild[0] as MailBericht & { bijlagen: { naam: string }[] }
-  assertEquals(m.bijlagen.map((b) => b.naam), ['torenscherm.png'])
-  assert(!m.html.includes('op het torenscherm'))
-})
-
-Deno.test('torenscherm: zonder ingestelde opslag gaat het design als bijlage mee', async () => {
-  const s = setup()
-  await s.oplever(taak(), ECHT)
-  const m = s.gemaild[0] as MailBericht & { bijlagen: { naam: string }[] }
-  assertEquals(m.bijlagen.map((b) => b.naam), ['torenscherm.png'])
-})
-
-Deno.test('torenscherm: groter dan de bucket aankan: niets verstuurd, met wat je dan doet', async () => {
-  const s = setup({ torenscherm: true, bestanden: { 'sub-1': [bestand({ naam: 'Torenscherm.mp4', bytes: 80 * 1024 * 1024 })] } })
-  const uitkomst = await s.oplever(taak(), ECHT)
-
-  assertMatch(uitkomst, /niet verstuurd/)
-  assertEquals(s.gemaild.length, 0)
-  assertEquals(s.downloads, [])
-  assertStringIncludes(s.comments[0], 'Torenscherm.mp4 is 80 MB')
-  assertStringIncludes(s.comments[0], 'kleinere export')
-})
-
-Deno.test('torenscherm: lukt het opslaan niet, dan gaat er niets uit, met de reden', async () => {
-  const s = setup({ torenscherm: 'fout' })
-  const uitkomst = await s.oplever(taak(), ECHT)
-
-  assertMatch(uitkomst, /niet verstuurd/)
-  assertEquals(s.gemaild.length, 0)
-  assertStringIncludes(s.comments[0], 'De torenscherm-preview van torenscherm.png kon niet gemaakt worden: Payload too large')
-  assertEquals(s.rijen[0].status, 'mislukt')
-})
-
-Deno.test('torenscherm: een interne aanvraag heeft geen event in meta.json', async () => {
-  const s = setup({ torenscherm: true, aanvraag: { ...aanvraag, soort: 'intern', event: '', event_datum: null } as AanvraagDetail })
-  await s.oplever(taak(), ECHT)
-  assertEquals(s.bewaard[0].meta.event, '')
-  assertEquals(s.bewaard[0].meta.eventDatum, null)
+  assertEquals(s.gerenderd.length, 0)
+  assertEquals((s.gemaild[0] as MetBijlagen).bijlagen.map((b) => b.naam), ['torenscherm.png'])
 })
