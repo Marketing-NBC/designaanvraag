@@ -1,18 +1,24 @@
 import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import type { AanvraagDetail, Db, LedkolomPreviewRow, OpleveringRow } from '../_shared/db.ts'
 import type { PreviewBouwer } from '../_shared/github.ts'
+import type { TorenschermOpslag } from '../_shared/torenscherm.ts'
 import { MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
 import {
   LEDKOLOM_VASTGELOPEN_MIN, isLedkolomAanvraag, previewMisluktReden, previewUrl, verslagWachtOpPreview, vindReleaseLinks, zonderReleaseLinks,
 } from '../_shared/shared/ledkolom-preview.ts'
+import type { PreviewLink } from '../_shared/shared/ledkolom-preview.ts'
 import { themaVoor } from '../_shared/shared/mail.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
+import type { AsanaBestand } from '../_shared/shared/oplevering.ts'
 import {
   OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
   verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 import { metAkkoord } from '../_shared/shared/akkoord.ts'
+import {
+  isTorenschermAanvraag, mediaType, nieuweSleutel, ontwerpPad, previewNaam, teGrootVoorPreview, torenschermBestanden, torenschermLink,
+} from '../_shared/shared/torenscherm-preview.ts'
 
 /**
  * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
@@ -35,6 +41,11 @@ import { metAkkoord } from '../_shared/shared/akkoord.ts'
  * naar de 3D-preview (zie shared/ledkolom-preview.ts). Al bij de proef start het maken daarvan. Staat de preview bij
  * "Verstuur nu" nog niet online, dan wacht de mail: de function ledkolom-preview roept deze functie
  * opnieuw aan (met `naPreview`) zodra de 3D-repo laat weten dat hij klaar is.
+ *
+ * Bij een torenscherm gaat het design (jpg, png, gif of mp4 uit de subtaak) niet als bijlage mee,
+ * maar komt het als preview op de foto van het torenscherm (zie shared/torenscherm-preview.ts). De
+ * aanvrager krijgt een knop naar die pagina. Dezelfde bijlage geeft bij de proef en bij "Verstuur nu"
+ * dezelfde link.
  */
 
 export interface OpleverDeps {
@@ -47,6 +58,8 @@ export interface OpleverDeps {
   cfg: AsanaFieldsConfig
   /** Start de build van de 3D-previews; null als die koppeling (nog) niet is ingesteld. */
   previewBouwer?: PreviewBouwer | null
+  /** Waar de torenscherm-previews komen; null: het design gaat als bijlage mee, zoals vroeger. */
+  torenscherm?: TorenschermOpslag | null
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
@@ -123,6 +136,36 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       }
     }
     return rijen
+  }
+
+  /**
+   * De preview van één torenscherm-design. Bestaat hij al (de proef maakte hem), dan dezelfde link;
+   * anders gaat het bestand uit Asana in de bucket.
+   */
+  async function torenschermPreview(aanvraag: AanvraagDetail, b: AsanaBestand): Promise<PreviewLink> {
+    const opslag = deps.torenscherm!
+    const naam = previewNaam(b.naam)
+    try {
+      const bestaand = await opslag.bestaand(b.gid)
+      if (bestaand) return torenschermLink(bestaand.naam, bestaand.sleutel)
+      const { bytes } = await asana.downloadBestand(b.gid)
+      const teGroot = teGrootVoorPreview(b.naam, bytes.length)
+      if (teGroot) throw new Weigering(teGroot)
+      const sleutel = nieuweSleutel()
+      const mime = mediaType(b.naam)!
+      const rij = await opslag.bewaar({
+        aanvraagId: aanvraag.id, bestandGid: b.gid, bestandsnaam: b.naam, naam, sleutel, bytes,
+        meta: {
+          bestand: ontwerpPad(sleutel, b.naam).split('/')[1], mime, origineel: b.naam, naam,
+          locatie: aanvraag.locatie, event: aanvraag.soort === 'intern' ? '' : aanvraag.event, eventDatum: aanvraag.soort === 'intern' ? null : aanvraag.event_datum,
+        },
+      })
+      log('info', 'torenscherm-preview gemaakt', { aanvraag: aanvraag.id, bestand: b.naam, sleutel: rij.sleutel })
+      return torenschermLink(rij.naam, rij.sleutel)
+    } catch (e) {
+      if (e instanceof Weigering) throw e
+      throw new Weigering(`De torenscherm-preview van ${b.naam} kon niet gemaakt worden: ${fout(e)}`)
+    }
   }
 
   async function zetVeld(taakGid: string, optie: 'verstuurd' | 'proef_verstuurd' | 'mislukt'): Promise<void> {
@@ -228,13 +271,22 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       // Bij een LED-kolom wordt een release-link uit de beschrijving een 3D-preview. De link zelf
       // gaat niet mee: de aanvrager krijgt een knop naar de preview, geen pagina op GitHub.
       const bronnen = isLedkolomAanvraag(aanvraag.aanvraag_types) ? vindReleaseLinks(subtaak.html) : []
-      const keuze = verdeelBijlagen(await asana.listBestanden(subtaak.gid))
+      // Bij een torenscherm wordt het design een preview op de foto, en gaat het niet als bijlage mee.
+      const alleBestanden = await asana.listBestanden(subtaak.gid)
+      const torenBestanden = deps.torenscherm && isTorenschermAanvraag(aanvraag.aanvraag_types, aanvraag.locatie)
+        ? torenschermBestanden(alleBestanden, aanvraag.aanvraag_types)
+        : []
+      const keuze = verdeelBijlagen(alleBestanden.filter((b) => !torenBestanden.includes(b)))
       const berichtHtml = beschrijvingAlsMailHtml(bronnen.length ? zonderReleaseLinks(subtaak.html) : subtaak.html, themaVoor(aanvraag.locatie))
-      if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length && !bronnen.length) {
+      if (!berichtHtml && !keuze.bestanden.length && !keuze.links.length && !bronnen.length && !torenBestanden.length) {
         throw new Weigering('De subtaak Oplevering is nog leeg. Zet de tekst voor de aanvrager in de beschrijving en de bestanden als bijlage.')
       }
       const teGroot = teGrootMelding(keuze)
       if (teGroot) throw new Weigering(teGroot)
+      for (const b of torenBestanden) {
+        const groot = teGrootVoorPreview(b.naam, b.bytes ?? 0)
+        if (groot) throw new Weigering(groot)
+      }
 
       const builds = bronnen.length ? await previewsKlaarzetten(aanvraag, bronnen, naPreview) : []
       const wachtOpPreview = builds.some((b) => b.status !== 'klaar')
@@ -287,6 +339,9 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         return 'oplevermail wacht op 3D-preview'
       }
 
+      const torenschermen: PreviewLink[] = []
+      for (const b of torenBestanden) torenschermen.push(await torenschermPreview(aanvraag, b))
+
       const bijlagen: MailBijlage[] = []
       for (const b of keuze.bestanden) {
         const { bytes, mime } = await asana.downloadBestand(b.gid)
@@ -319,6 +374,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
         previews,
         previewsOnderweg: wachtOpPreview,
+        torenschermen,
         proef: proef ? { echteOntvangers: aan } : null,
       })
       try {
@@ -331,7 +387,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       if (proef) {
         log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
         try {
-          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview }))
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenschermen }))
         } catch (e) {
           log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
         }
@@ -357,7 +413,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
         }
       }
-      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews })))
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenschermen })))
       await zetVeld(taak.gid, 'verstuurd')
       await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
       await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))

@@ -49,7 +49,7 @@ Elke werkdag: GitHub Actions → Supabase → herinnering om akkoord te geven
 
 | Map | Wat |
 |---|---|
-| `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
+| `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages, en de preview van het torenscherm (`web/torenscherm/`) |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
 | `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, `ledkolom-preview` en `akkoord-geven` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
@@ -356,6 +356,50 @@ deur uit, namens wie op de knop drukte. Herkennen en weghalen van de links staat
 
 Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een release-link op *Mislukt*, met de melding
 dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er niets van.
+
+### Preview van het torenscherm
+
+Bij een aanvraag met een **torenscherm** (NBC) krijgt de aanvrager geen losse jpg of gif meer, maar
+een knop **Bekijk op het torenscherm**. Die opent een pagina met het design op de foto van het
+torenscherm bij de ingang, in perspectief, zoals gasten het zien als ze aankomen. Een gif of mp4
+beweegt daar gewoon. Onder de foto staat het design plat, met een knop om het bestand te downloaden.
+Werkt op telefoon en computer, zonder inloggen.
+
+**Wat je doet:** niets anders dan anders. Zet het design (jpg, png, gif, webp of mp4) als bijlage bij
+de subtaak **Oplevering** en zet Oplevermail op *Stuur proef naar mij*. Een gif apart maken voor de
+mail hoeft niet meer.
+
+- **Welke bestanden.** Gaat de aanvraag alleen over het torenscherm, dan wordt elk beeld en elke video
+  in de subtaak een preview. Zijn er meer designs gevraagd (ook een koffiescherm, een ledkolom, ...),
+  dan alleen de bestanden met **toren** in de naam (`EY_Torenscherm.mp4`). Al het andere, en elke pdf
+  of zip, gaat als bijlage mee zoals altijd.
+- **Niet als bijlage.** Een bestand dat een preview wordt, gaat niet meer als bijlage mee; het telt dus
+  ook niet mee voor de 20 MB. Wel geldt voor de preview zelf een grens van **50 MB** per bestand.
+  Daarboven gaat de mail op *Mislukt*, met de vraag om een kleinere export.
+- **Proef en echt.** De proefmail heeft dezelfde knop, en dezelfde link als de echte mail daarna. In
+  de reactie bij de taak staat de link ook, onder *Op het torenscherm*.
+- **Een volgende versie.** Een nieuw bestand in de nieuwe subtaak Oplevering is een nieuwe link. De
+  link van de vorige versie blijft werken.
+- **Green Village** heeft (nog) geen foto; daar gaat het design als bijlage mee zoals vroeger. Een foto
+  erbij zetten: zie hieronder.
+
+**Hoe het loopt.** De function `asana-webhook` zet het bestand uit Asana in de openbare bucket
+`torenscherm-previews`, als `<sleutel>/ontwerp.<ext>` met een `meta.json` ernaast (event, datum,
+bestandsnaam), en een rij in de tabel `torenscherm_previews`. De sleutel is 24 willekeurige
+hextekens: de link is net als bij de ledkolom niet te raden, maar wie hem heeft, kan hem doorsturen.
+De bucket is niet op te sommen. De pagina staat op
+`https://marketing-nbc.github.io/designaanvraag/torenscherm/?p=<sleutel>` (`web/torenscherm/` en
+`web/src/torenscherm/`) en zet het design met een CSS-`matrix3d` op de hoeken van het scherm; de
+browser rekent dat zelf uit, ook voor een video. Keuzes en teksten staan in
+`shared/torenscherm-preview.ts`.
+
+**De foto.** `web/src/assets/torenscherm/nbc-torenscherm.jpg`, met in `web/src/torenscherm/locaties.ts`
+de vier hoeken van het lichtgevende deel van het scherm, in pixels van de foto. Vervang je de foto,
+meet die hoeken dan opnieuw. Voor een andere locatie: foto en hoeken in `locaties.ts`, en de locatie
+in `TORENSCHERM_LOCATIES` in `shared/torenscherm-preview.ts`.
+
+**Eenmalig instellen:** niets. De eerstvolgende **Supabase deploy** maakt de tabel en de bucket, en
+**Deploy naar GitHub Pages** zet de pagina online.
 
 ## Akkoord en herinneringen
 
