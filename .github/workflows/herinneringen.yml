@@ -64,6 +64,10 @@ jobs:
         if: steps.tijd.outputs.door != 'false'
         with:
           node-version: 22
+          cache: npm
+      # Alleen wat shared/ nodig heeft (zod, via shared/bijlagen.ts); zonder dit crasht het script meteen.
+      - run: npm ci --workspace shared --no-audit --no-fund
+        if: steps.tijd.outputs.door != 'false'
       - name: Herinneringen versturen
         if: steps.tijd.outputs.door != 'false'
         env:
