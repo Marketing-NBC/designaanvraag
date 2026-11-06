@@ -148,13 +148,13 @@ describe('in de opleveringsmail', () => {
     afzenderNaam: null, aanvrager: 'Britt', akkoord: true, bijlagen: [], links: [],
   }
 
-  it('staat de preview bovenaan in plaats van het gifje, even groot als een gifje', () => {
+  it('staat de preview bovenaan in plaats van het gifje, over de volle breedte en zonder tekst eronder', () => {
     const html = renderOpleveringMail({ ...basis, torenscherm: [{ cid: 'torenscherm-1', breedte: 1120, hoogte: 747, alt: 'Op het scherm' }] }).html
-    // Binnen 480 × 360, net als de gifjes: de klassieke Outlook rekent met width en height.
-    expect(html).toContain('<img src="cid:torenscherm-1" width="480" height="320" alt="Op het scherm"')
-    expect(html).toContain('width:480px;max-width:100%;height:auto;')
+    // 600 px, net als de kop; de klassieke Outlook rekent met width en height.
+    expect(html).toContain('<tr><td style="padding:0;font-size:0;line-height:0;"><img src="cid:torenscherm-1" width="600" height="400" alt="Op het scherm"')
+    expect(html).toContain('width:600px;max-width:100%;height:auto;')
     expect(html).not.toContain('1120')
-    expect(html).toContain('Zo komt je design op het torenscherm bij de ingang te staan.')
+    expect(html).not.toContain('Zo komt je design')
     expect(html).not.toContain('<!--mailgif:')
     expect(html.indexOf('cid:torenscherm-1')).toBeLessThan(html.indexOf('Hierbij.'))
   })

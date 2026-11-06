@@ -362,8 +362,8 @@ dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er
 
 Bij een aanvraag met een **torenscherm** staat bovenaan de opleveringsmail geen gifje, maar een foto
 van het torenscherm bij de ingang van NBC, met het opgeleverde design erop. Zo ziet de aanvrager
-meteen hoe het er buiten uitziet. Hij staat even groot in de mail als een gifje: hooguit 480 × 360 px
-(de foto wordt 480 × 320).
+meteen hoe het er buiten uitziet. Hij staat over de volle breedte van de mail, direct onder de kop
+(600 × 400 px), zonder tekst eronder.
 
 **Wat je doet:** niets bijzonders. Zet het design zoals altijd als bijlage (JPEG of PNG van
 **2112 × 1152 px**) bij de subtaak **Oplevering**. Het bestand gaat gewoon mee als bijlage; de

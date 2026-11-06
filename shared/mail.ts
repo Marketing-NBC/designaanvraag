@@ -261,26 +261,26 @@ export function gifRegel(gif: MailGif): string {
     + `</td></tr>\n`
 }
 
+/** Zo breed is een mail: de kop, de inhoud en een plaatje over de volle breedte. */
+export const MAIL_BREEDTE = 600
+
 /**
- * Een plaatje bovenaan in plaats van het gifje: de torenscherm-preview. Even groot als een gifje
- * (hooguit MAX_GIF_BREEDTE × MAX_GIF_HOOGTE, zie maatInMail), zodat elke mail bovenaan dezelfde maat
- * heeft. Het bestand zelf is groter, zodat het op een scherm met veel pixels scherp blijft; de
- * klassieke Outlook rekent met `width` en `height`, dus die moeten de maat in de mail zijn.
+ * Een plaatje bovenaan in plaats van het gifje: de torenscherm-preview. Over de volle breedte van de
+ * mail, van rand tot rand, direct onder de kop. Het bestand zelf is breder, zodat het op een scherm
+ * met veel pixels scherp blijft; de klassieke Outlook rekent met `width` en `height`, dus die moeten
+ * de maat in de mail zijn. Op een telefoon krimpt het mee (`max-width`).
  *
  * Het plaatje zit als bijlage in de mail zelf (`cid:`), zodat de klassieke Outlook het meteen laat
  * zien in plaats van eerst te vragen of hij afbeeldingen mag downloaden.
  */
-export function beeldRegel(beelden: { cid: string; breedte: number; hoogte: number; alt: string }[], onderschrift = ''): string {
+export function beeldRegel(beelden: { cid: string; breedte: number; hoogte: number; alt: string }[]): string {
   if (!beelden.length) return ''
   const img = beelden.map((b, i) => {
-    const { breedte, hoogte } = maatInMail(b.breedte, b.hoogte)
-    return `<img src="cid:${escapeHtml(b.cid)}" width="${breedte}" height="${hoogte}" alt="${escapeHtml(b.alt)}" `
-      + `style="display:block;border:0;outline:none;width:${breedte}px;max-width:100%;height:auto;${i ? 'margin-top:8px;' : ''}${LETTER}font-size:15px;color:#596165;">`
+    const hoogte = Math.round((MAIL_BREEDTE * b.hoogte) / b.breedte)
+    return `<img src="cid:${escapeHtml(b.cid)}" width="${MAIL_BREEDTE}" height="${hoogte}" alt="${escapeHtml(b.alt)}" `
+      + `style="display:block;border:0;outline:none;width:${MAIL_BREEDTE}px;max-width:100%;height:auto;${i ? 'margin-top:4px;' : ''}${LETTER}font-size:15px;color:#596165;">`
   })
-  const tekst = onderschrift
-    ? `<p style="margin:8px 0 0;${LETTER}font-size:13px;line-height:18px;color:#596165;">${escapeHtml(onderschrift)}</p>`
-    : ''
-  return `<tr><td align="center" style="padding:24px 24px 0;">${img.join('')}${tekst}</td></tr>\n`
+  return `<tr><td style="padding:0;font-size:0;line-height:0;">${img.join('')}</td></tr>\n`
 }
 
 /**
