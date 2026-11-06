@@ -2,6 +2,7 @@ import { asanaFields, createAsanaTaskClient } from '../_shared/asana.ts'
 import { createDb, createWebhookStore } from '../_shared/db.ts'
 import { mailClientUit, readEnv, webhookToken } from '../_shared/env.ts'
 import { createPreviewBouwer } from '../_shared/github.ts'
+import { createTorenschermMaker } from '../_shared/torenscherm.ts'
 import { createRoutineClient } from '../_shared/routine.ts'
 import { createHandler } from './handler.ts'
 import { createOplever } from './oplevering.ts'
@@ -54,6 +55,7 @@ const asana = createAsanaTaskClient(env.asanaPat)
 const oplever = createOplever({
   asana, db, mail: mailClientUit(env), cfg: asanaFields,
   previewBouwer: env.ledkolomGithubToken ? createPreviewBouwer(env.ledkolomGithubToken) : null,
+  torenscherm: createTorenschermMaker(env.supabaseUrl, env.supabaseSecretKey),
 })
 
 declare const EdgeRuntime: { waitUntil(werk: Promise<unknown>): void } | undefined

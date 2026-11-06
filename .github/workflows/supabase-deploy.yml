@@ -33,8 +33,8 @@ jobs:
       - name: deno check + test
         working-directory: supabase/functions
         run: |
-          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts ledkolom-preview/index.ts akkoord-geven/index.ts
-          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/ ledkolom-preview/ akkoord-geven/
+          deno check submit-aanvraag/index.ts aanvraag-status/index.ts asana-webhook/index.ts aanvraag-zoeken/index.ts aanvulling-toevoegen/index.ts bijlage-uploadlink/index.ts ledkolom-preview/index.ts akkoord-geven/index.ts torenscherm-preview/index.ts
+          deno test --allow-env --allow-net=none _shared/ submit-aanvraag/ aanvraag-status/ asana-webhook/ aanvraag-zoeken/ aanvulling-toevoegen/ bijlage-uploadlink/ ledkolom-preview/ akkoord-geven/ torenscherm-preview/
 
   deploy:
     name: Migraties, functions en secrets
@@ -108,6 +108,6 @@ jobs:
           {
             echo "### Supabase deploy gelukt"
             echo
-            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`, \`…/aanvraag-status\`, \`…/asana-webhook\`, \`…/ledkolom-preview\` en \`…/akkoord-geven\`"
+            echo "- Functions: \`https://${PROJECT_ID}.supabase.co/functions/v1/submit-aanvraag\`, \`…/aanvraag-status\`, \`…/asana-webhook\`, \`…/ledkolom-preview\`, \`…/akkoord-geven\` en \`…/torenscherm-preview\`"
             echo "- Migraties: \`$(ls supabase/migrations | tr '\n' ' ')\`"
           } >> "$GITHUB_STEP_SUMMARY"

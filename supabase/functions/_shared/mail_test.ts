@@ -91,6 +91,20 @@ Deno.test('kleine bijlagen en een antwoordadres gaan in één keer mee', async (
   ])
 })
 
+Deno.test('een plaatje in de mail zelf gaat mee als inline-bijlage met zijn Content-ID', async () => {
+  const { calls, fetch } = fakeFetch()
+  await createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    html: '<img src="cid:torenscherm-1">',
+    bijlagen: [{ naam: 'Torenscherm-preview.jpg', mime: 'image/jpeg', bytes: new Uint8Array([1, 2, 3]), inline: 'torenscherm-1' }],
+  })
+  const body = JSON.parse(String(calls[1].init.body))
+  assertEquals(body.message.attachments, [{
+    '@odata.type': '#microsoft.graph.fileAttachment', name: 'Torenscherm-preview.jpg', contentType: 'image/jpeg', contentBytes: 'AQID',
+    isInline: true, contentId: 'torenscherm-1',
+  }])
+})
+
 Deno.test('grote bijlagen: concept, upload in stukken, dan versturen', async () => {
   const calls: { url: string; init: RequestInit }[] = []
   const fetch = ((input: string | URL | Request, init: RequestInit = {}) => {

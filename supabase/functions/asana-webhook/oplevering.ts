@@ -13,6 +13,10 @@ import {
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 import { metAkkoord } from '../_shared/shared/akkoord.ts'
+import type { TorenschermUitslag } from '../_shared/shared/oplevering.ts'
+import { SCHERM_FOTOS, TORENSCHERM_BREEDTE, TORENSCHERM_HOOGTE, heeftTorenschermPreview, kiesTorenschermOntwerpen } from '../_shared/shared/torenscherm-preview.ts'
+import type { TorenschermPreview } from '../_shared/shared/torenscherm-preview.ts'
+import type { TorenschermMaker } from '../_shared/torenscherm.ts'
 
 /**
  * Het veld Oplevermail: de aanvrager een mail sturen dat het ontwerp klaar is.
@@ -35,6 +39,10 @@ import { metAkkoord } from '../_shared/shared/akkoord.ts'
  * naar de 3D-preview (zie shared/ledkolom-preview.ts). Al bij de proef start het maken daarvan. Staat de preview bij
  * "Verstuur nu" nog niet online, dan wacht de mail: de function ledkolom-preview roept deze functie
  * opnieuw aan (met `naPreview`) zodra de 3D-repo laat weten dat hij klaar is.
+ *
+ * Bij een torenscherm staat bovenaan de mail geen gifje, maar het design op de foto van het
+ * torenscherm (zie shared/torenscherm-preview.ts). Lukt dat niet, dan gaat de mail gewoon met een
+ * gifje, en staat de reden in het verslag.
  */
 
 export interface OpleverDeps {
@@ -47,6 +55,8 @@ export interface OpleverDeps {
   cfg: AsanaFieldsConfig
   /** Start de build van de 3D-previews; null als die koppeling (nog) niet is ingesteld. */
   previewBouwer?: PreviewBouwer | null
+  /** Zet een torenscherm-design op de foto van het torenscherm; zonder dit krijgt de mail een gifje. */
+  torenscherm?: TorenschermMaker | null
   now?: () => Date
   log?: (level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) => void
 }
@@ -123,6 +133,47 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       }
     }
     return rijen
+  }
+
+  /**
+   * De torenscherm-preview(s) voor bovenaan de mail, uit de bijlagen die toch al meegaan. Gooit
+   * nooit: wat misgaat, wordt een noot in het verslag, en dan krijgt de mail een gifje.
+   */
+  async function torenschermPreviews(aanvraag: AanvraagDetail, bijlagen: MailBijlage[]): Promise<{
+    previews: TorenschermPreview[]; inline: MailBijlage[]; uitslag: TorenschermUitslag | null
+  }> {
+    const geen = { previews: [], inline: [], uitslag: null }
+    if (!deps.torenscherm || !heeftTorenschermPreview(aanvraag.aanvraag_types, aanvraag.locatie)) return geen
+    const info = SCHERM_FOTOS[aanvraag.locatie]!
+    const ontwerpen = kiesTorenschermOntwerpen(bijlagen)
+    if (!ontwerpen.length) {
+      return {
+        ...geen,
+        uitslag: {
+          aantal: 0,
+          noot: `Er zat geen JPEG of PNG van ${TORENSCHERM_BREEDTE} × ${TORENSCHERM_HOOGTE} px bij de bijlagen, dus bovenaan de mail staat een gifje `
+            + 'in plaats van het design op het torenscherm. Zet "toren" in de bestandsnaam als het design wel klopt maar een andere maat heeft.',
+        },
+      }
+    }
+    const previews: TorenschermPreview[] = []
+    const inline: MailBijlage[] = []
+    const mislukt: string[] = []
+    for (const o of ontwerpen) {
+      try {
+        const bytes = await deps.torenscherm.maak(o.bytes, aanvraag.locatie)
+        const cid = `torenscherm-${previews.length + 1}`
+        previews.push({ cid, breedte: info.breedte, hoogte: info.hoogte, alt: info.alt })
+        inline.push({ naam: `Torenscherm-preview${ontwerpen.length > 1 ? ` ${previews.length}` : ''}.jpg`, mime: 'image/jpeg', bytes, inline: cid })
+      } catch (e) {
+        log('warn', 'torenscherm-preview mislukt', { aanvraag: aanvraag.id, bestand: o.naam, error: fout(e) })
+        mislukt.push(`${o.naam} (${fout(e)})`)
+      }
+    }
+    const noot = mislukt.length
+      ? `De preview op het torenscherm lukte niet voor ${mislukt.join(', ')}${previews.length ? '' : ', dus bovenaan de mail staat een gifje'}.`
+      : null
+    return { previews, inline, uitslag: { aantal: previews.length, noot } }
   }
 
   async function zetVeld(taakGid: string, optie: 'verstuurd' | 'proef_verstuurd' | 'mislukt'): Promise<void> {
@@ -295,6 +346,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       // De grootte uit Asana is een opgave; wat we echt binnenkregen telt.
       const echtTeGroot = teGrootMelding({ ...keuze, totaalBytes: bijlagen.reduce((n, b) => n + b.bytes.length, 0) })
       if (echtTeGroot) throw new Weigering(echtTeGroot)
+      const toren = await torenschermPreviews(aanvraag, bijlagen)
 
       // Een proef gaat naar wie drukte. Weten we dat niet, dan naar het marketingpostvak: dan kijkt
       // in elk geval iemand van het team mee voordat het echt de deur uit gaat.
@@ -319,10 +371,11 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         links: keuze.links.map((l) => ({ naam: l.naam, url: l.viewUrl ?? '' })),
         previews,
         previewsOnderweg: wachtOpPreview,
+        torenscherm: toren.previews,
         proef: proef ? { echteOntvangers: aan } : null,
       })
       try {
-        await deps.mail.verstuur({ ...bericht, bijlagen })
+        await deps.mail.verstuur({ ...bericht, bijlagen: [...bijlagen, ...toren.inline] })
       } catch (e) {
         throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
       }
@@ -331,7 +384,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
       if (proef) {
         log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
         try {
-          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview }))
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenscherm: toren.uitslag }))
         } catch (e) {
           log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
         }
@@ -357,7 +410,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
         }
       }
-      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews })))
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenscherm: toren.uitslag })))
       await zetVeld(taak.gid, 'verstuurd')
       await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
       await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))

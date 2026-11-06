@@ -51,7 +51,7 @@ Elke werkdag: GitHub Actions → Supabase → herinnering om akkoord te geven
 |---|---|
 | `web/` | Het formulier (Vite + React + TypeScript), gehost op GitHub Pages |
 | `shared/` | Zod-schema's en aanvraagtypes, gedeeld door frontend, edge function en worker |
-| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, `ledkolom-preview` en `akkoord-geven` |
+| `supabase/` | Migraties en de edge functions `submit-aanvraag`, `aanvraag-status`, `aanvraag-zoeken`, `aanvulling-toevoegen`, `bijlage-uploadlink`, `asana-webhook`, `ledkolom-preview`, `akkoord-geven` en `torenscherm-preview` |
 | `worker/` | Huisstijl-extractie (`worker/ROUTINE.md`) en menuschermen (`worker/MENU-ROUTINE.md`); allebei een Claude Code Routine |
 | `docs/` | Handleidingen: de [gids voor projecten](docs/gids-projecten/) en de [gids voor Marketing](docs/gids-marketing/) |
 | `scripts/` | `asana-velden.mjs` (welke custom fields er horen te zijn), `asana-setup.mjs` (Asana-project aanmaken), `asana-fields.mjs` (velden en kolommen aanvullen en uitlezen), `asana-webhook.mjs` (webhook koppelen), `weekmail.mjs` (weekoverzicht op maandag), `herinneringen.mjs` (herinnering om akkoord te geven, elke werkdag), `sync-shared.mjs` (schema's kopiëren naar de function) |
@@ -279,7 +279,8 @@ eventueel een nieuwe deadline. Dat komt binnen als gewone aanvulling, dus de taa
 **Feedback**, zoals hieronder beschreven.
 
 **Een testmail.** Actions → **Testmail versturen**: vul je adres in en kies de mail (oplevering,
-oplevering van een oudere aanvraag, herinnering of bevestiging) en de locatie. Je krijgt hem met
+oplevering van een oudere aanvraag, herinnering of bevestiging) en de locatie. De oplevering voor NBC
+heeft bovenaan de torenscherm-preview, met een voorbeelddesign (`scripts/testmail/`). Je krijgt hem met
 verzonnen gegevens; de knoppen wijzen naar een aanvraag die niet bestaat, dus een test kan nooit
 akkoord geven op een echte aanvraag. Het adres wordt in de log van de workflow gemaskeerd.
 
@@ -356,6 +357,37 @@ deur uit, namens wie op de knop drukte. Herkennen en weghalen van de links staat
 
 Zonder `LEDKOLOM_GITHUB_TOKEN` gaat een oplevering met een release-link op *Mislukt*, met de melding
 dat de koppeling nog niet is ingesteld. Een oplevering zonder zo'n link merkt er niets van.
+
+### Torenscherm-preview
+
+Bij een aanvraag met een **torenscherm** staat bovenaan de opleveringsmail geen gifje, maar een foto
+van het torenscherm bij de ingang van NBC, met het opgeleverde design erop. Zo ziet de aanvrager
+meteen hoe het er buiten uitziet.
+
+**Wat je doet:** niets bijzonders. Zet het design zoals altijd als bijlage (JPEG of PNG van
+**2112 × 1152 px**) bij de subtaak **Oplevering**. Het bestand gaat gewoon mee als bijlage; de
+preview komt er bovenaan bij. In de proefmail zie je hem al.
+
+- Welke bijlage het wordt, gaat op de **maat**: alles met de verhouding van 2112 × 1152 (2 % marge,
+  zodat een 16:9-koffiescherm in dezelfde oplevering niet meedoet). Heeft het design een andere maat,
+  zet dan **"toren"** in de bestandsnaam; dan mag hij tot 15 % afwijken.
+- Meer torenscherm-designs in één oplevering: dan staan ze onder elkaar, hooguit drie.
+- Het verslag in Asana zegt of de preview erin staat. Zo niet, dan staat er waarom (geen bijlage van
+  de goede maat, of het bestand was niet te lezen) en krijgt de mail een gifje. De mail gaat altijd.
+- Alleen voor **NBC**: van het torenscherm van Green Village is er nog geen foto. Hoe je er een
+  toevoegt, of de foto van NBC vervangt, staat in `web/public/torenscherm/README.md`.
+
+**Hoe het loopt.** De opleverflow pakt het design uit de bijlagen die toch al gedownload worden, en
+vraagt de function `torenscherm-preview` om het in perspectief op de foto te zetten (de foto staat op
+GitHub Pages, in `web/public/torenscherm/`). Dat is een eigen function, omdat het rekenwerk zo'n
+seconde kost en een function maar 2 seconden mag rekenen: zo kan het de mail zelf nooit laten
+vastlopen. De preview gaat als plaatje ín de mail mee (een inline-bijlage van zo'n 200 KB), zodat
+Outlook hem meteen laat zien in plaats van eerst te vragen of hij plaatjes mag downloaden. De code
+staat in `shared/torenscherm-preview.ts` (keuze en perspectief) en `shared/torenscherm-render.ts`
+(JPEG en PNG lezen en schrijven).
+
+Er hoeft niets ingesteld te worden: de sleutel tussen de twee functions wordt afgeleid van
+`SUPABASE_SECRET_KEY`. **Supabase deploy** zet de nieuwe function online.
 
 ## Akkoord en herinneringen
 

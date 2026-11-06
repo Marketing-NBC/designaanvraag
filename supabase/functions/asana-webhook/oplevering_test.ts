@@ -95,6 +95,10 @@ function setup(opts: {
   now?: Date
   /** 'fout': de claimtabel is er niet (migratie nog niet gedraaid). */
   claims?: 'fout'
+  /** De inhoud van een bestand bij het downloaden, per gid; standaard nullen. */
+  inhoud?: Record<string, Uint8Array>
+  /** De torenscherm-preview: 'ok' maakt een nep-JPEG, 'fout' weigert. Standaard niet ingesteld. */
+  torenscherm?: 'ok' | 'fout'
 } = {}) {
   const comments: string[] = []
   const velden: Record<string, unknown>[] = []
@@ -119,7 +123,7 @@ function setup(opts: {
     downloadBestand: (gid: string) => {
       downloads.push(gid)
       const b = Object.values(bestanden).flat().find((x) => x.gid === gid)
-      return Promise.resolve({ bytes: new Uint8Array(b?.bytes ?? 10), mime: 'image/png' })
+      return Promise.resolve({ bytes: opts.inhoud?.[gid] ?? new Uint8Array(b?.bytes ?? 10), mime: 'image/png' })
     },
     gebruiker: () => opts.gebruiker === 'fout'
       ? Promise.reject(new Error('403'))
@@ -183,10 +187,21 @@ function setup(opts: {
     },
   }
 
+  const torenschermGevraagd: string[] = []
+  const torenscherm = opts.torenscherm === undefined ? null : {
+    maak: (ontwerp: Uint8Array, locatie: string) => {
+      torenschermGevraagd.push(`${locatie}:${ontwerp.length}`)
+      return opts.torenscherm === 'fout' ? Promise.reject(new Error('De JPEG is niet te lezen')) : Promise.resolve(new Uint8Array([0xff, 0xd8, 1, 2]))
+    },
+  }
+
   const oplever = createOplever({
-    asana, db, mail, cfg, previewBouwer, now: () => opts.now ?? NU, log: () => {},
+    asana, db, mail, cfg, previewBouwer, torenscherm, now: () => opts.now ?? NU, log: () => {},
   })
-  return { oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart, claims, geclaimd }
+  return {
+    oplever, comments, velden, afgerond, gemaild, rijen, downloads, gemaakt, bijgewerkt, previews, gestopt, gestart: () => gestart, claims, geclaimd,
+    torenschermGevraagd,
+  }
 }
 
 // ── Echt versturen ────────────────────────────────────────────────────
@@ -653,4 +668,76 @@ Deno.test('een melding van de 3D-repo claimt de knop niet', async () => {
   const s = setup()
   await s.oplever(taak(), { proef: false, door: null, naPreview: true })
   assertEquals(s.geclaimd, [])
+})
+
+// ── Torenscherm-preview ───────────────────────────────────────────────
+
+/** Het begin van een PNG met deze maat: meer leest de keuze niet. */
+function pngKop(breedte: number, hoogte: number): Uint8Array {
+  const b = new Uint8Array(64)
+  b.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52])
+  new DataView(b.buffer).setUint32(16, breedte)
+  new DataView(b.buffer).setUint32(20, hoogte)
+  return b
+}
+
+const TOREN_BESTANDEN = {
+  'sub-1': [bestand({ gid: 'toren', naam: 'Zorgcongres - Torenscherm.jpg' }), bestand({ gid: 'pdf', naam: 'drukwerk.pdf' })],
+}
+const TOREN_INHOUD = { toren: pngKop(2112, 1152), pdf: new TextEncoder().encode('%PDF-1.7') }
+
+Deno.test('torenscherm: bovenaan het design op het scherm in plaats van een gifje, als plaatje in de mail', async () => {
+  const s = setup({ torenscherm: 'ok', bestanden: TOREN_BESTANDEN, inhoud: TOREN_INHOUD })
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
+  assertEquals(s.torenschermGevraagd, ['nbc:64'], 'alleen het torenscherm-design, niet de pdf')
+  const m = s.gemaild[0]
+  assertStringIncludes(m.html, 'src="cid:torenscherm-1"')
+  assertStringIncludes(m.html, 'Zo komt je design op het torenscherm bij de ingang te staan.')
+  assert(!m.html.includes('<!--mailgif:'), 'geen gifje')
+  // Het design zelf gaat gewoon mee als bijlage; de preview zit in de mail zelf.
+  assertEquals(m.bijlagen?.map((b) => [b.naam, b.inline ?? null]), [
+    ['Zorgcongres - Torenscherm.jpg', null], ['drukwerk.pdf', null], ['Torenscherm-preview.jpg', 'torenscherm-1'],
+  ])
+  assert(!m.html.includes('Torenscherm-preview.jpg'), 'de preview staat niet bij de bijlagen in de tekst')
+  assertStringIncludes(s.comments.at(-1)!, 'Bovenaan de mail staat het design op de foto van het torenscherm.')
+})
+
+Deno.test('torenscherm: ook in de proef, met een regel in het verslag', async () => {
+  const s = setup({ torenscherm: 'ok', bestanden: TOREN_BESTANDEN, inhoud: TOREN_INHOUD })
+  await s.oplever(taak(), PROEF)
+  assertStringIncludes(s.gemaild[0].html, 'cid:torenscherm-1')
+  assertStringIncludes(s.comments[0], 'Bovenaan de mail staat het design op de foto van het torenscherm.')
+})
+
+Deno.test('torenscherm: zonder bijlage van de goede maat een gifje, en het verslag zegt waarom', async () => {
+  const s = setup({ torenscherm: 'ok', bestanden: { 'sub-1': [bestand({ gid: 'koffie', naam: 'koffiescherm.png' })] }, inhoud: { koffie: pngKop(1920, 1080) } })
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.torenschermGevraagd, [])
+  assertStringIncludes(s.gemaild[0].html, '<!--mailgif:oplevering-->')
+  assertStringIncludes(s.comments[0], 'geen JPEG of PNG van 2112 × 1152 px')
+})
+
+Deno.test('torenscherm: "toren" in de naam mag een iets andere maat hebben', async () => {
+  const s = setup({ torenscherm: 'ok', bestanden: { 'sub-1': [bestand({ gid: 'toren', naam: 'torenscherm-v2.png' })] }, inhoud: { toren: pngKop(1920, 1080) } })
+  await s.oplever(taak(), PROEF)
+  assertEquals(s.torenschermGevraagd.length, 1)
+})
+
+Deno.test('torenscherm: lukt de preview niet, dan gaat de mail toch, met een gifje en de reden', async () => {
+  const s = setup({ torenscherm: 'fout', bestanden: TOREN_BESTANDEN, inhoud: TOREN_INHOUD })
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
+  const m = s.gemaild[0]
+  assertStringIncludes(m.html, '<!--mailgif:oplevering-->')
+  assertEquals(m.bijlagen?.filter((b) => b.inline).length, 0)
+  assertStringIncludes(s.comments.at(-1)!, 'De preview op het torenscherm lukte niet voor Zorgcongres - Torenscherm.jpg (De JPEG is niet te lezen)')
+})
+
+Deno.test('torenscherm: niet bij een aanvraag zonder torenscherm, of bij Green Village', async () => {
+  for (const a of [{ ...aanvraag, aanvraag_types: ['koffiescherm'] }, { ...aanvraag, locatie: 'green_village' }]) {
+    const s = setup({ torenscherm: 'ok', aanvraag: a as AanvraagDetail, bestanden: TOREN_BESTANDEN, inhoud: TOREN_INHOUD })
+    await s.oplever(taak(), PROEF)
+    assertEquals(s.torenschermGevraagd, [])
+    assertStringIncludes(s.gemaild[0].html, '<!--mailgif:oplevering-->')
+    assert(!/Bovenaan|gifje/.test(s.comments[0]), s.comments[0])
+  }
 })

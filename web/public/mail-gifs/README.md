@@ -15,6 +15,10 @@ van die mail:
 
 NBC en Green Village gebruiken dezelfde gifjes.
 
+Een opleveringsmail van een **torenscherm** bij NBC krijgt geen gifje: daar staat het design op de foto
+van het torenscherm (zie *Torenscherm-preview* in de README van de repository). Lukt die preview niet,
+dan komt er toch een gifje uit `oplevering`.
+
 ## Een gifje toevoegen
 
 1. Zoek een gifje, bijvoorbeeld op [tenor.com](https://tenor.com) of [giphy.com](https://giphy.com),

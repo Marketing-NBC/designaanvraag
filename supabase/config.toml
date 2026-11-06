@@ -57,6 +57,15 @@ verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/ledkolom-preview/index.ts"
 
+# Zet een torenscherm-design op de foto van het torenscherm, voor bovenaan de opleveringsmail. Alleen
+# asana-webhook en ledkolom-preview roepen hem aan, met een sleutel die van SB_SECRET_KEY is afgeleid.
+# Een eigen function zodat het rekenwerk zijn eigen tijd heeft (zie _shared/torenscherm.ts).
+[functions.torenscherm-preview]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/torenscherm-preview/index.ts"
+
 # Akkoord geven op een oplevering, vanuit de knop in de opleveringsmail en de herinneringen. Leest
 # wat er klaarstaat (GET) en legt het akkoord vast (POST). Eigen uurlimiet per IP.
 [functions.akkoord-geven]
