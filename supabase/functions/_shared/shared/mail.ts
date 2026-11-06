@@ -262,14 +262,21 @@ export function gifRegel(gif: MailGif): string {
 }
 
 /**
- * Een plaatje over de volle breedte bovenaan, in plaats van het gifje: de torenscherm-preview. Het
- * plaatje zit als bijlage in de mail zelf (`cid:`), zodat de klassieke Outlook het meteen laat zien
- * in plaats van eerst te vragen of hij afbeeldingen mag downloaden.
+ * Een plaatje bovenaan in plaats van het gifje: de torenscherm-preview. Even groot als een gifje
+ * (hooguit MAX_GIF_BREEDTE × MAX_GIF_HOOGTE, zie maatInMail), zodat elke mail bovenaan dezelfde maat
+ * heeft. Het bestand zelf is groter, zodat het op een scherm met veel pixels scherp blijft; de
+ * klassieke Outlook rekent met `width` en `height`, dus die moeten de maat in de mail zijn.
+ *
+ * Het plaatje zit als bijlage in de mail zelf (`cid:`), zodat de klassieke Outlook het meteen laat
+ * zien in plaats van eerst te vragen of hij afbeeldingen mag downloaden.
  */
 export function beeldRegel(beelden: { cid: string; breedte: number; hoogte: number; alt: string }[], onderschrift = ''): string {
   if (!beelden.length) return ''
-  const img = beelden.map((b, i) => `<img src="cid:${escapeHtml(b.cid)}" width="${b.breedte}" height="${b.hoogte}" alt="${escapeHtml(b.alt)}" `
-    + `style="display:block;border:0;outline:none;width:100%;max-width:${b.breedte}px;height:auto;${i ? 'margin-top:8px;' : ''}${LETTER}font-size:15px;color:#596165;">`)
+  const img = beelden.map((b, i) => {
+    const { breedte, hoogte } = maatInMail(b.breedte, b.hoogte)
+    return `<img src="cid:${escapeHtml(b.cid)}" width="${breedte}" height="${hoogte}" alt="${escapeHtml(b.alt)}" `
+      + `style="display:block;border:0;outline:none;width:${breedte}px;max-width:100%;height:auto;${i ? 'margin-top:8px;' : ''}${LETTER}font-size:15px;color:#596165;">`
+  })
   const tekst = onderschrift
     ? `<p style="margin:8px 0 0;${LETTER}font-size:13px;line-height:18px;color:#596165;">${escapeHtml(onderschrift)}</p>`
     : ''

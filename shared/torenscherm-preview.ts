@@ -291,20 +291,14 @@ export function zetOpScherm(foto: Pixels, ontwerp: Pixels, hoeken: Hoeken): Pixe
   return { breedte: foto.breedte, hoogte: foto.hoogte, data: uit }
 }
 
-/** De preview zoals hij in de mail komt: als bijlage in de mail zelf, met een verwijzing in de HTML. */
+/**
+ * De preview zoals hij in de mail komt: als bijlage in de mail zelf, met een verwijzing in de HTML.
+ * Breedte en hoogte zijn die van het bestand; in de mail staat hij even groot als een gifje.
+ */
 export interface TorenschermPreview {
   /** De Content-ID waarmee de HTML naar de bijlage verwijst (`cid:…`). */
   cid: string
   breedte: number
   hoogte: number
   alt: string
-}
-
-/** Zo breed staat de preview in de mail: de volle breedte van de inhoud (600 min twee keer 24). */
-export const PREVIEW_BREEDTE_IN_MAIL = 552
-
-/** De maat in de mail, met dezelfde verhouding als de foto. */
-export function previewMaatInMail(breedte: number, hoogte: number): { breedte: number; hoogte: number } {
-  const schaal = Math.min(1, PREVIEW_BREEDTE_IN_MAIL / breedte)
-  return { breedte: Math.round(breedte * schaal), hoogte: Math.round(hoogte * schaal) }
 }
