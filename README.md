@@ -389,7 +389,7 @@ zeggen dat. Op het akkoordscherm kies je je naam uit de lijst; is dat niet de aa
 scherm wie wel akkoord kan geven. De function `akkoord-geven` controleert het ook.
 
 **De herinnering.** De workflow **Herinneringen akkoord** (`scripts/herinneringen.mjs`) draait elke
-werkdag (maandag tot en met vrijdag) om 9:00. Per aanvraag kijkt hij naar de laatst verstuurde
+werkdag (maandag tot en met vrijdag) om 9:00 en om 12:00. Per aanvraag kijkt hij naar de laatst verstuurde
 oplevering, en stuurt een herinnering als:
 
 - er nog geen akkoord op staat;
@@ -397,7 +397,11 @@ oplevering, en stuurt een herinnering als:
   verstuurd is, niet als iemand alleen op de knop klikte;
 - Marketing de taak niet zelf naar **Afgerond** sleepte;
 - hij niet vandaag pas verstuurd is (de eerste herinnering komt de werkdag erna);
-- er vandaag nog geen herinnering voor uit is.
+- er vandaag nog geen herinnering voor uit is;
+- in de ronde van 9:00: het niet de eerste herinnering is van een oplevering die na 15:00 verstuurd
+  is. Die eerste komt om 12:00, zodat er na een late oplevering een ochtend zit om ernaar te kijken.
+  Ook na het weekend: vrijdag om 16:00 verstuurd wordt maandag om 12:00. De ronde van 12:00 stuurt
+  verder alles wat vandaag nog geen herinnering kreeg, dus ook wat de ronde van 9:00 miste.
 
 De herinnering gaat naar iedereen die de opleveringsmail kreeg (de aanvrager en de adressen uit
 "Ook mailen naar"; die staan in `opleveringen.ontvangers`). Er is geen maximum:

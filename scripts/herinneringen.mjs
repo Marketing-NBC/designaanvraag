@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * De herinnering om akkoord te geven: elke werkdag om 9:00 via .github/workflows/herinneringen.yml.
+ * De herinnering om akkoord te geven: elke werkdag om 9:00 en 12:00 via .github/workflows/herinneringen.yml.
+ * Om 12:00 krijgen opleveringen die na 15:00 verstuurd zijn hun eerste herinnering
+ * (en wat de ronde van 9:00 eventueel miste); de regels staan in herinneringVandaag in shared/akkoord.ts.
  *
  *   SUPABASE_URL=... SUPABASE_SECRET_KEY=... MS_TENANT_ID=... MS_CLIENT_ID=... MS_CLIENT_SECRET=... \
  *     node --experimental-strip-types scripts/herinneringen.mjs
@@ -11,6 +13,7 @@
  *   --aan <adres>      Alles naar dit adres in plaats van naar de collega's. Om te testen. Telt
  *                      niet als herinnering: er wordt niets bijgewerkt.
  *   --datum <JJJJ-MM-DD>  Doen alsof het die dag is.
+ *   --ronde <ochtend|middag>  Welke ronde. Zonder deze optie: ochtend voor 12:00 Nederlandse tijd, anders middag.
  *
  * Wie krijgt er een? Per aanvraag de laatst verstuurde oplevering, als daar nog geen akkoord of
  * feedback op is, de herinneringen niet gestopt zijn (Afgerond in Asana, of een nieuwere versie) en
@@ -19,7 +22,7 @@
  * een adres heeft in de tabel collegas. De regels staan in shared/akkoord.ts.
  */
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
-import { herinneringVandaag, isWerkdag, renderHerinneringMail, waaroverTekst } from '../shared/akkoord.ts'
+import { herinneringVandaag, isWerkdag, renderHerinneringMail, uurInNl, waaroverTekst } from '../shared/akkoord.ts'
 import { MELDING_AFZENDER, MELDING_ONTVANGERS } from '../shared/contact.ts'
 import { createGraphMail } from '../shared/mail.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
@@ -33,6 +36,7 @@ const args = Object.fromEntries(
 const proef = args.proef === 'true'
 const testAdres = args.aan && args.aan !== 'true' ? String(args.aan).trim() : null
 const vandaag = /^\d{4}-\d{2}-\d{2}$/.test(String(args.datum ?? '')) ? String(args.datum) : vandaagInNl()
+const ronde = args.ronde === 'ochtend' || args.ronde === 'middag' ? args.ronde : uurInNl(new Date()) < 12 ? 'ochtend' : 'middag'
 
 const regels = []
 const zeg = (s) => {
@@ -57,7 +61,7 @@ if (!proef && (!ms.tenantId || !ms.clientId || !ms.clientSecret)) {
   fail('MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET zijn nodig om te mailen. Zonder die drie kan alleen --proef.')
 }
 
-zeg(`### Herinneringen ${vandaag}`)
+zeg(`### Herinneringen ${vandaag}, ${ronde === 'ochtend' ? 'ronde van 9:00' : 'ronde van 12:00'}`)
 zeg('')
 if (!isWerkdag(vandaag)) {
   zeg('Geen werkdag; er gaan vandaag geen herinneringen uit.')
@@ -84,8 +88,8 @@ try {
 // Per aanvraag alleen de nieuwste: een akkoord gaat altijd over de laatste versie.
 const perAanvraag = new Map()
 for (const o of open) if (!perAanvraag.has(o.aanvraag_id)) perAanvraag.set(o.aanvraag_id, o)
-const vandaagAan = [...perAanvraag.values()].filter((o) => herinneringVandaag(o, vandaag))
-zeg(`${perAanvraag.size} oplevering(en) wachten op akkoord; ${vandaagAan.length} krijgen vandaag een herinnering.`)
+const vandaagAan = [...perAanvraag.values()].filter((o) => herinneringVandaag(o, vandaag, ronde))
+zeg(`${perAanvraag.size} oplevering(en) wachten op akkoord; ${vandaagAan.length} krijgen nu een herinnering.`)
 if (!vandaagAan.length) {
   samenvatting()
   process.exit(0)
