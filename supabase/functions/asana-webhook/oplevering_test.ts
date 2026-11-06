@@ -692,7 +692,7 @@ Deno.test('torenscherm: bovenaan het design op het scherm in plaats van een gifj
   assertEquals(s.torenschermGevraagd, ['nbc:64'], 'alleen het torenscherm-design, niet de pdf')
   const m = s.gemaild[0]
   assertStringIncludes(m.html, 'src="cid:torenscherm-1"')
-  assertStringIncludes(m.html, 'Zo komt je design op het torenscherm bij de ingang te staan.')
+  assertStringIncludes(m.html, 'width="600" height="400"')
   assert(!m.html.includes('<!--mailgif:'), 'geen gifje')
   // Het design zelf gaat gewoon mee als bijlage; de preview zit in de mail zelf.
   assertEquals(m.bijlagen?.map((b) => [b.naam, b.inline ?? null]), [

@@ -356,10 +356,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
 
   const kop = nieuweVersie ? `Versie ${m.versie} staat klaar` : 'Je design staat klaar'
   const toren = m.torenscherm ?? []
-  const bovenaan = beeldRegel(
-    toren,
-    toren.length > 1 ? 'Zo komen je designs op het torenscherm bij de ingang te staan.' : 'Zo komt je design op het torenscherm bij de ingang te staan.',
-  )
+  const bovenaan = beeldRegel(toren)
   return {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
