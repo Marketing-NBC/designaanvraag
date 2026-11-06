@@ -154,7 +154,7 @@ export function renderNieuweAanvraagMail(m: NieuweAanvraagMail): MailBericht {
       types: describeRequestTypes(a.aanvraag_types, a.anders_tekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema),
+    html: mailOpmaak(`Nieuwe ${intern ? 'interne aanvraag' : 'designaanvraag'} van ${a.naam}`, delen.join('\n'), undefined, thema, 'nieuwe-aanvraag'),
   }
 }
 
@@ -258,6 +258,6 @@ export function renderAanvullingMail(m: AanvullingMail): MailBericht {
       types: describeRequestTypes(a.types, m.andersTekst),
       omschrijving: a.omschrijving,
     }),
-    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema),
+    html: mailOpmaak(`Aanvulling van ${m.naam}`, delen.join('\n'), undefined, thema, 'aanvulling'),
   }
 }

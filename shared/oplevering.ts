@@ -353,7 +353,7 @@ export function renderOpleveringMail(m: OpleveringMail): MailBericht {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
     onderwerp: `${m.proef ? '[PROEF] ' : ''}${nieuweVersie ? `Versie ${m.versie} klaar` : 'Klaar'}: ${waarover(m)}`.slice(0, 250),
-    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.', thema),
+    html: mailOpmaak(kop, delen.join('\n'), 'Verstuurd door het marketingteam via het designaanvraag-formulier.', thema, 'oplevering'),
   }
 }
 

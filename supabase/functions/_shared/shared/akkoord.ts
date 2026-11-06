@@ -154,7 +154,7 @@ export function renderHerinneringMail(m: HerinneringMail): MailBericht {
     aan: m.aan,
     antwoordAan: m.antwoordAan,
     onderwerp: `Herinnering: wacht op je akkoord - ${waaroverTekst(m)}`.slice(0, 250),
-    html: mailOpmaak('Wacht op je akkoord', delen.join('\n'), 'Herinnering van het designaanvraag-formulier.', thema),
+    html: mailOpmaak('Wacht op je akkoord', delen.join('\n'), 'Herinnering van het designaanvraag-formulier.', thema, 'herinnering'),
   }
 }
 
@@ -182,7 +182,7 @@ export function renderAkkoordMelding(m: AkkoordMelding): MailBericht {
   return {
     aan: [m.aan],
     onderwerp: `Akkoord: ${waaroverTekst(m)}`.slice(0, 250),
-    html: mailOpmaak(`Akkoord van ${m.door}`, delen.join('\n'), undefined, thema),
+    html: mailOpmaak(`Akkoord van ${m.door}`, delen.join('\n'), undefined, thema, 'akkoord'),
   }
 }
 

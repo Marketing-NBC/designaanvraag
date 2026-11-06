@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
+      - 'scripts/mail-gifs.mjs'
       - 'shared/**'
       - 'package.json'
       - 'package-lock.json'
@@ -56,6 +57,13 @@ jobs:
           [ -n "$key" ] || { echo "::error::Geen publishable/anon key gevonden"; exit 1; }
           echo "VITE_SUPABASE_URL=https://${PROJECT_ID}.supabase.co" >> "$GITHUB_ENV"
           echo "VITE_SUPABASE_PUBLISHABLE_KEY=${key}" >> "$GITHUB_ENV"
+      # De gifjes bovenaan de mails: te grote kleiner maken en de lijst gifs.json schrijven, die de
+      # mails bij het versturen ophalen. Zie shared/mail-gifs.ts. Zo komt een gifje dat in een map
+      # van web/public/mail-gifs/ wordt gezet vanzelf in de mails.
+      - name: Gifjes voor de mails
+        run: |
+          sudo apt-get install -y -qq gifsicle >/dev/null
+          node --experimental-strip-types --no-warnings scripts/mail-gifs.mjs --klein --schrijf
       - name: Build
         run: npm run build
         env:

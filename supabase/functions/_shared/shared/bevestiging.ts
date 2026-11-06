@@ -68,6 +68,6 @@ export function renderBevestigingMail(m: BevestigingMail): MailBericht {
     aan: [m.aan],
     antwoordAan: [m.antwoordAan],
     onderwerp: `Ontvangen: ${waarover(a)}`.slice(0, 250),
-    html: mailOpmaak('Je aanvraag is binnen', delen.join('\n'), 'Je krijgt deze mail omdat je een aanvraag deed via het designaanvraag-formulier.', thema),
+    html: mailOpmaak('Je aanvraag is binnen', delen.join('\n'), 'Je krijgt deze mail omdat je een aanvraag deed via het designaanvraag-formulier.', thema, 'bevestiging'),
   }
 }

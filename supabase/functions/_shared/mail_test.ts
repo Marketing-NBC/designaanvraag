@@ -138,3 +138,24 @@ Deno.test('base64 in stukken geeft hetzelfde als in één keer', () => {
   const bytes = new Uint8Array(100_000).map((_, i) => i % 256)
   assertEquals(naarBase64(bytes), btoa(String.fromCharCode(...bytes)))
 })
+
+Deno.test('het gifje bovenaan komt uit de lijst van Pages, en de plek verdwijnt', async () => {
+  const { calls, fetch } = fakeFetch()
+  const metPlek = { ...bericht, html: '<p>Hallo</p>\n<!--mailgif:akkoord-->\n<p>Doei</p>' }
+  const lijst = { akkoord: [{ bestand: 'akkoord/yes.gif', breedte: 480, hoogte: 270 }] }
+  await createGraphMail({ ...cfg, gifs: { lijst: () => Promise.resolve(lijst), basis: 'https://voorbeeld.nl/mail-gifs/' } }, fetch).verstuur(metPlek)
+  const html = JSON.parse(String(calls[1].init.body)).message.body.content as string
+  assertMatch(html, /<img src="https:\/\/voorbeeld\.nl\/mail-gifs\/akkoord\/yes\.gif" width="480" height="270"/)
+  assertEquals(html.includes('mailgif'), false)
+})
+
+Deno.test('kan de lijst niet worden opgehaald, dan gaat de mail zonder gifje', async () => {
+  const { calls, fetch } = fakeFetch()
+  const metPlek = { ...bericht, html: '<p>Hallo</p>\n<!--mailgif:akkoord-->\n' }
+  // Zonder eigen gifs vraagt de mail de lijst op Pages; de nep-fetch geeft daar 202 zonder JSON.
+  await createGraphMail(cfg, fetch).verstuur(metPlek)
+  assertEquals(calls.some((c) => c.url.endsWith('/mail-gifs/gifs.json')), true)
+  const verstuurd = calls.find((c) => c.url.endsWith('/sendMail'))!
+  const html = JSON.parse(String(verstuurd.init.body)).message.body.content as string
+  assertEquals(html, '<p>Hallo</p>\n')
+})

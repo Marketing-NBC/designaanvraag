@@ -587,6 +587,16 @@ donkerdere tint, omdat witte tekst op de hoofdtint (600) net geen 4,5:1 haalt. D
 `shared/mail.ts`. De opmaak is gebouwd voor de klassieke Outlook, die mail met Word rendert: ruimte
 zit op tabelcellen en niet op links of divs, en elke cel noemt zelf het lettertype.
 
+**Het gifje bovenaan.** Elke mail heeft onder de kop een gifje, willekeurig gekozen uit de map van
+die mail in `web/public/mail-gifs/` (bevestiging, oplevering, herinnering, nieuwe-aanvraag,
+aanvulling, akkoord, weekoverzicht; één set voor NBC en Green Village). Een gifje toevoegen is het
+bestand in de juiste map zetten, ook via de website van GitHub: zie
+[`web/public/mail-gifs/README.md`](web/public/mail-gifs/README.md). De gifjes zitten niet ín de mail:
+ze staan op GitHub Pages en de mail verwijst ernaar, dus de mail wordt er niet groter van. Bij de
+deploy naar Pages maakt `scripts/mail-gifs.mjs` te grote gifjes kleiner en schrijft de lijst
+`gifs.json`, die de mail bij het versturen ophaalt (`shared/mail-gifs.ts`). Een lege map, of een lijst
+die niet te halen is, betekent een mail zonder gifje.
+
 **Bij een nieuwe aanvraag of een aanvulling.** Onderwerp `Nieuwe aanvraag: EY - 11 december - Torenscherm`
 of `Aanvulling: …`, met `[SPOED]` ervoor als het een spoedje is. In de mail: de taaknaam, aanvrager,
 event, eventdatum, deadline, locatie, spoed, wat er gevraagd is, de wensen of de tekst van de

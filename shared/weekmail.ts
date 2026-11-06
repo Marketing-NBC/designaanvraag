@@ -256,6 +256,7 @@ export function renderWeekmail(o: Weekoverzicht, locatie: Locatie, projectUrl: s
       delen.join('\n'),
       'Elke maandagochtend automatisch verstuurd vanuit het designaanvraag-formulier.',
       thema,
+      'weekoverzicht',
     ),
   }
 }
