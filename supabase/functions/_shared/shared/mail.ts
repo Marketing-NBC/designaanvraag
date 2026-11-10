@@ -44,6 +44,19 @@ export interface MailClient {
   verstuur(bericht: MailBericht): Promise<void>
 }
 
+/** Hoe lang de kopie van een verstuurde mail in Verzonden items blijft staan (zie ruimVerzondenOp). */
+export const VERZONDEN_BEWAREN_DAGEN = 30
+
+export interface GraphMailClient extends MailClient {
+  /**
+   * Elke mail gaat als concept, dus na het versturen staat er een kopie in Verzonden items. Dat is
+   * handig om terug te kijken, maar het postvak mag niet vollopen. Dit verwijdert de kopieën van voor
+   * `ouderDan` definitief (niet naar Verwijderde items, anders loopt dat vol). Alleen Verzonden
+   * items van het afzenderpostvak; daar mailt alleen deze app uit. Geeft het aantal terug.
+   */
+  ruimVerzondenOp(ouderDan: Date, max?: number): Promise<number>
+}
+
 /**
  * Microsoft gaf geen uitsluitsel of de mail verstuurd is, en de app kon het niet nakijken. Dat kan
  * alleen zonder het recht Mail.ReadWrite (zie "Mail instellen" in de README): dan gaat de mail in
@@ -129,7 +142,7 @@ const NAKIJKEN_ELKE_MS = 5_000
 /** Zonder Mail.ReadWrite valt er niets na te kijken; dan wachten we zo lang op een antwoord. */
 const SENDMAIL_TIMEOUT_MS = 90_000
 
-export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): MailClient {
+export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): GraphMailClient {
   const wacht = cfg.wacht ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
   // Een token is een uur geldig. Een edge function blijft vaak even warm, dus bewaren scheelt een
   // rondje naar Microsoft per melding; vijf minuten marge zodat hij niet halverwege verloopt.
@@ -340,6 +353,22 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
         throw new Error(`Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
       }
       await verstuurInEenKeer(m)
+    },
+
+    async ruimVerzondenOp(ouderDan, max = 500) {
+      const filter = encodeURIComponent(`sentDateTime lt ${ouderDan.toISOString()}`)
+      let weg = 0
+      while (weg < max) {
+        // Steeds de eerste stapel opnieuw opvragen: wat we verwijderen, valt er vanzelf uit.
+        const r = await graph(`/mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`, 'GET', undefined, 'Verzonden items opvragen')
+        const ids = ((r.value ?? []) as { id?: unknown }[]).map((m) => String(m.id ?? '')).filter(Boolean)
+        if (!ids.length) break
+        for (const id of ids.slice(0, max - weg)) {
+          await graph(`/messages/${id}/permanentDelete`, 'POST', undefined, 'Oude mail verwijderen')
+          weg++
+        }
+      }
+      return weg
     },
   }
 }

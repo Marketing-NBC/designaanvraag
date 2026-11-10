@@ -692,8 +692,10 @@ organisatie. Zolang dit niet is ingesteld, gaat er geen mail uit en werkt de res
      Zonder `Mail.ReadWrite` gaat de mail in één keer (`sendMail`): dat werkt, behalve bij grote
      bijlagen, maar als Microsoft dan niet antwoordt, weet de app niet of hij verstuurd is.
    - Doordat elke mail een concept is, staat er na het versturen een kopie in **Verzonden items** van
-     het afzenderpostvak. Wil je dat dat niet volloopt, stel dan in Exchange een bewaarbeleid in dat
-     Verzonden items na bijvoorbeeld 90 dagen opruimt.
+     het afzenderpostvak. Zo kun je terugkijken wat er de deur uit ging. De workflow
+     **Herinneringen akkoord** ruimt die elke werkdag op: kopieën van meer dan 30 dagen oud gaan
+     definitief weg (`scripts/verzonden-opruimen.mjs`). Daarvoor hoeft er in Exchange niets
+     ingesteld te worden; het recht `Mail.ReadWrite` is genoeg.
    - Dat recht mag namens élk postvak in de organisatie mailen. Beperk het daarom in Exchange tot
      `designaanvraag@nbcevents.nl`. Maak een **mail-enabled security group**
      `designaanvraag-app@nbcevents.nl` met het postvak als enig lid, en dan in Exchange Online

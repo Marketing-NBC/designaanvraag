@@ -251,6 +251,42 @@ Deno.test('zonder recht op concepten zegt de fout bij grote bijlagen welk recht 
   assertMatch((e as Error).message, /Mail\.ReadWrite/)
 })
 
+// ── Verzonden items opruimen ───────────────────────────────────────────
+
+Deno.test('oude kopieën in Verzonden items gaan definitief weg, stapel voor stapel', async () => {
+  let stapel = 0
+  const { paden, fetch } = fakeFetch({
+    overig: (url) => url.includes('/mailFolders/sentitems/messages')
+      ? Response.json({ value: stapel++ === 0 ? [{ id: 'm1' }, { id: 'm2' }] : [] })
+      : new Response(null, { status: 204 }),
+  })
+  const weg = await createGraphMail(cfg, fetch).ruimVerzondenOp(new Date('2026-10-11T00:00:00Z'))
+  assertEquals(weg, 2)
+  const filter = encodeURIComponent('sentDateTime lt 2026-10-11T00:00:00.000Z')
+  assertEquals(paden(), [
+    `GET /mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`,
+    'POST /messages/m1/permanentDelete',
+    'POST /messages/m2/permanentDelete',
+    `GET /mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`,
+  ])
+})
+
+Deno.test('opruimen stopt bij het maximum', async () => {
+  const { paden, fetch } = fakeFetch({
+    overig: (url) => url.includes('/mailFolders/') ? Response.json({ value: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] }) : new Response(null, { status: 204 }),
+  })
+  assertEquals(await createGraphMail(cfg, fetch).ruimVerzondenOp(new Date(), 2), 2)
+  assertEquals(paden().filter((p) => p.endsWith('/permanentDelete')).length, 2)
+})
+
+Deno.test('mislukt het verwijderen, dan komt de reden terug', async () => {
+  const { fetch } = fakeFetch({
+    overig: (url) => url.includes('/mailFolders/') ? Response.json({ value: [{ id: 'a' }] }) : weigering(403),
+  })
+  const e = await assertRejects(() => createGraphMail(cfg, fetch).ruimVerzondenOp(new Date()))
+  assertEquals((e as Error).message, 'Oude mail verwijderen mislukt (403: ErrorAccessDenied: Access is denied.)')
+})
+
 // ── Overig ─────────────────────────────────────────────────────────────
 
 Deno.test('base64 in stukken geeft hetzelfde als in één keer', () => {
