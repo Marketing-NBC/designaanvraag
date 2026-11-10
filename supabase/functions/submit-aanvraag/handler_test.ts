@@ -160,7 +160,8 @@ function payload(overrides: Record<string, unknown> = {}) {
   return {
     aanvraag: validAanvraag,
     client_request_id: crypto.randomUUID(),
-    started_at: new Date(Date.now() - 60_000).toISOString(),
+    // Ruim voor elke klok in deze tests (ook de vaste van setup), dus nooit "te snel ingevuld".
+    started_at: '2026-01-01T00:00:00Z',
     website_confirm: '',
     ...overrides,
   }
@@ -178,7 +179,9 @@ function setup(over: Partial<Deps> = {}) {
   const db = fakeDb()
   const asana = fakeAsana()
   const routine = fakeRoutine()
-  const handler = createHandler({ env, db, asana, routine, storage: null, log: () => {}, ...over })
+  // Een vaste dag, ruim voor het event van 20 november: anders wordt de aanvraag vanzelf een spoedje
+  // zodra de echte datum daar dichtbij komt, en falen de tests op onderwerpen en titels.
+  const handler = createHandler({ env, db, asana, routine, storage: null, now: () => new Date('2026-09-14T10:00:00Z'), log: () => {}, ...over })
   return { db, asana, routine, handler }
 }
 
