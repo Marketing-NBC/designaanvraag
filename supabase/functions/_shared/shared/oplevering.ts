@@ -392,16 +392,9 @@ function torenschermZinnen(t: TorenschermUitslag | null | undefined): string[] {
   return uit
 }
 
-/**
- * Microsoft bevestigde het versturen niet op tijd (zie MailOnbevestigd in mail.ts). De mail is dan
- * vrijwel altijd wel aangekomen; we zetten hem niet op Mislukt, maar zeggen het er wel bij.
- */
-const ONBEVESTIGD = 'Let op: Microsoft bevestigde het versturen niet op tijd. Meestal is de mail dan gewoon aangekomen, '
-
 /** De reactie in Asana na een proefmail: waar hij heen ging en wie de echte krijgt. */
 export function verslagProef(v: {
   naar: string; aan: string[]; bijlagen: string[]; links: string[]; previews?: PreviewLink[]; previewsOnderweg?: boolean; torenscherm?: TorenschermUitslag | null
-  onbevestigd?: boolean
 }): string {
   const previews = v.previews ?? []
   const delen = [`Proefmail gestuurd naar ${escapeAsana(v.naar)}. De echte mail gaat naar ${escapeAsana(opsomming(v.aan))}`]
@@ -410,7 +403,6 @@ export function verslagProef(v: {
   if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
   if (v.previewsOnderweg) delen.push('De 3D-preview wordt nog gemaakt; als hij online staat, komt de link hier als reactie. De echte mail wacht daar vanzelf op.')
   delen.push(...torenschermZinnen(v.torenscherm))
-  if (v.onbevestigd) delen.push(`${ONBEVESTIGD}maar kijk even in je inbox. Staat hij er over een paar minuten nog niet, zet Oplevermail dan opnieuw op Stuur proef naar mij.`)
   delen.push('Klopt alles, zet Oplevermail dan op Verstuur nu.')
   return `<body>${delen.join(' ')}</body>`
 }
@@ -418,7 +410,6 @@ export function verslagProef(v: {
 /** De reactie in Asana na een geslaagde mail: wie, wat en welke versie. */
 export function verslagVerstuurd(v: {
   versie: number; aan: string[]; bijlagen: string[]; links: string[]; datum: string; previews?: PreviewLink[]; torenscherm?: TorenschermUitslag | null
-  onbevestigd?: boolean
 }): string {
   const previews = v.previews ?? []
   const delen = [`Opleveringsmail${v.versie > 1 ? ` (versie ${v.versie})` : ''} verstuurd op ${escapeAsana(formatDateShortNl(v.datum))} aan ${escapeAsana(opsomming(v.aan))}.`]
@@ -427,15 +418,26 @@ export function verslagVerstuurd(v: {
   if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
   if (!v.bijlagen.length && !v.links.length && !previews.length) delen.push('Zonder bijlagen.')
   delen.push(...torenschermZinnen(v.torenscherm))
-  if (v.onbevestigd) {
-    delen.push(`${ONBEVESTIGD}dus verstuur hem niet zomaar opnieuw. Twijfel je, vraag dan na of hij binnen is. Is hij echt niet aangekomen, `
-      + 'zet de tekst en bestanden dan in de nieuwe subtaak Oplevering en verstuur hem nog een keer.')
-  }
   return `<body>${delen.join(' ')}</body>`
 }
 
 /**
- * De reactie in Asana als er niets verstuurd is. Met een vermelding, zodat het in je Asana-inbox
+ * De reactie in Asana als Microsoft geen uitsluitsel gaf en de app het niet kon nakijken (zie
+ * MailOnbevestigd in mail.ts). Dat gebeurt vrijwel alleen zonder het recht Mail.ReadWrite. Niet Mislukt
+ * (misschien kwam hij aan) en niet Verstuurd (misschien niet): eerlijk zeggen dat het onbekend is.
+ */
+export function verslagOnbevestigd(reden: string, vermeldGid: string | null, proef = false): string {
+  const vermelding = vermeldGid ? `<a data-asana-gid="${escapeAsana(vermeldGid)}"/> ` : ''
+  const wat = proef ? 'proefmail' : 'opleveringsmail'
+  const nagaan = proef
+    ? 'Kijk in je inbox. Staat hij er niet, zet Oplevermail dan opnieuw op Stuur proef naar mij.'
+    : 'Vraag na of de ontvangers hem hebben. Zo niet, zet Oplevermail dan opnieuw op Verstuur nu; zo wel, zet het veld zelf op Verstuurd.'
+  return `<body>${vermelding}Het is <strong>niet zeker</strong> of de ${wat} verstuurd is: ${escapeAsana(reden)}. `
+    + `Daarom staat Oplevermail nog op Bezig, en niet op Mislukt of Verstuurd. ${nagaan}</body>`
+}
+
+/**
+ * De reactie in Asana als er zeker niets verstuurd is. Met een vermelding, zodat het in je Asana-inbox
  * landt; je zit misschien al op de volgende taak te wachten tot hij verstuurd is.
  */
 export function verslagMislukt(reden: string, vermeldGid: string | null, proef = false): string {

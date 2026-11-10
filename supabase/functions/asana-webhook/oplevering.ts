@@ -9,7 +9,7 @@ import { MailOnbevestigd, themaVoor } from '../_shared/shared/mail.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
 import {
   OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
-  verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
+  verdeelBijlagen, verslagMislukt, verslagOnbevestigd, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam,
 } from '../_shared/shared/oplevering.ts'
 import { vandaagInNl } from '../_shared/shared/spoed.ts'
 import { metAkkoord } from '../_shared/shared/akkoord.ts'
@@ -32,7 +32,9 @@ import type { TorenschermMaker } from '../_shared/torenscherm.ts'
  * "Verstuur nu" verstuurt hem echt. Daarna een verslag als reactie, het veld op Verstuurd, de
  * subtaak afgevinkt en hernoemd naar zijn versie, een nieuwe lege subtaak Oplevering voor een
  * volgende versie, en de taak naar Klaar. Lukt het niet, dan wordt er niets half verstuurd: het
- * veld gaat op Mislukt en de reden staat in een reactie.
+ * veld gaat op Mislukt en de reden staat in een reactie. Op Mislukt gaat hij alleen als zeker is dat
+ * er niets verstuurd is: blijft het antwoord van Microsoft uit, dan kijkt de mailcode eerst na of
+ * hij toch de deur uit ging, en zolang staat het veld op Bezig.
  *
  * Bij een LED-kolom staat in de beschrijving van de subtaak een link naar een release in de 3D-repo
  * (de video is te groot voor Asana). Die link gaat niet mee in de mail; de aanvrager krijgt een knop
@@ -199,6 +201,26 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
     }
     await zetVeld(taak.gid, 'mislukt')
     return `${opties.proef ? 'proefmail' : 'oplevermail'} niet verstuurd: ${reden}`
+  }
+
+  /**
+   * Microsoft gaf geen uitsluitsel en nakijken kon niet (zie MailOnbevestigd). Het veld blijft op
+   * Bezig, met een reactie die zegt hoe je het nagaat. De rij gaat op mislukt, met de reden: zo mag
+   * een nieuwe druk op de knop meteen, en telt hij niet als verstuurde versie.
+   */
+  async function onbevestigd(taak: AsanaTask, reden: string, opties: OpleverOpties, rij: OpleveringRow | null): Promise<string> {
+    log('warn', 'versturen niet bevestigd door Microsoft', { gid: taak.gid, proef: opties.proef, error: reden })
+    if (rij) {
+      await db.updateOplevering(rij.id, { status: 'mislukt', fout: `Niet zeker of verstuurd: ${reden}` }).catch((e) => {
+        log('warn', 'oplevering bijwerken mislukt', { id: rij.id, error: fout(e) })
+      })
+    }
+    try {
+      await asana.addComment(taak.gid, verslagOnbevestigd(reden, opties.door ?? taak.assignee, opties.proef))
+    } catch (e) {
+      log('error', 'reactie bij onbevestigde oplevering plaatsen mislukt', { gid: taak.gid, error: fout(e) })
+    }
+    return `${opties.proef ? 'proefmail' : 'oplevermail'} niet bevestigd: ${reden}`
   }
 
   /**
@@ -374,24 +396,23 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         torenscherm: toren.previews,
         proef: proef ? { echteOntvangers: aan } : null,
       })
-      // Kwam het antwoord van Microsoft te laat, dan is de mail vrijwel altijd toch verstuurd. Dan
-      // niet op Mislukt: daarop drukt iemand opnieuw, en krijgt de aanvrager hem twee keer.
-      let onbevestigd = false
+      // verstuur() komt pas terug als de mail echt verstuurd is, en gooit een gewone fout alleen als
+      // hij zeker niet verstuurd is (blijft het antwoord van Microsoft uit, dan kijkt hij eerst na).
+      // Tot dan blijft het veld op Bezig.
       try {
         await deps.mail.verstuur({ ...bericht, bijlagen: [...bijlagen, ...toren.inline] })
       } catch (e) {
-        if (!(e instanceof MailOnbevestigd || (e instanceof Error && e.name === 'MailOnbevestigd'))) {
-          throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
+        if (e instanceof MailOnbevestigd || (e instanceof Error && e.name === 'MailOnbevestigd')) {
+          return onbevestigd(taak, fout(e), { proef, door }, rij)
         }
-        onbevestigd = true
-        log('warn', 'versturen niet bevestigd door Microsoft; behandeld als verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, proef, error: fout(e) })
+        throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
       }
 
       const linkNamen = keuze.links.map((l) => l.naam)
       if (proef) {
         log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
         try {
-          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenscherm: toren.uitslag, onbevestigd }))
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenscherm: toren.uitslag }))
         } catch (e) {
           log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
         }
@@ -417,7 +438,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
         }
       }
-      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenscherm: toren.uitslag, onbevestigd })))
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenscherm: toren.uitslag })))
       await zetVeld(taak.gid, 'verstuurd')
       await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
       await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))

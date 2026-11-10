@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   beschrijvingAlsMailHtml, feedbackUrl, isOpleverSubtaak, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding,
-  uniekeAdressen, verdeelBijlagen, verslagMislukt, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam, type AsanaBestand,
+  uniekeAdressen, verdeelBijlagen, verslagMislukt, verslagOnbevestigd, verslagProef, verslagVerstuurd, verstuurdeSubtaakNaam, type AsanaBestand,
   type OpleveringMail, type Subtaak,
 } from './oplevering'
 
@@ -204,6 +204,15 @@ describe('het verslag in Asana', () => {
         + 'Zet Oplevermail daarna opnieuw op Verstuur nu (of eerst op Stuur proef naar mij).</body>',
     )
     expect(verslagMislukt('x', null, true)).toMatch(/^<body>De proefmail is <strong>niet<\/strong> verstuurd/)
+  })
+
+  it('weet Microsoft niet of hij weg is: niet zeker, veld blijft op Bezig, en hoe je het nagaat', () => {
+    expect(verslagOnbevestigd('Geen <antwoord>', 'devi')).toBe(
+      '<body><a data-asana-gid="devi"/> Het is <strong>niet zeker</strong> of de opleveringsmail verstuurd is: Geen &lt;antwoord&gt;. '
+        + 'Daarom staat Oplevermail nog op Bezig, en niet op Mislukt of Verstuurd. '
+        + 'Vraag na of de ontvangers hem hebben. Zo niet, zet Oplevermail dan opnieuw op Verstuur nu; zo wel, zet het veld zelf op Verstuurd.</body>',
+    )
+    expect(verslagOnbevestigd('x', null, true)).toMatch(/proefmail verstuurd is: x\. .*Kijk in je inbox/)
   })
 
   it('na een proef: waarheen, en wie de echte krijgt', () => {
