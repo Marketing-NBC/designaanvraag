@@ -1,5 +1,5 @@
 import { assertEquals, assertMatch, assertRejects } from 'jsr:@std/assert@1'
-import { MAIL_IN_EEN_KEER_BYTES, createGraphMail, naarBase64 } from './shared/mail.ts'
+import { MAIL_IN_EEN_KEER_BYTES, MailOnbevestigd, createGraphMail, naarBase64 } from './shared/mail.ts'
 
 const cfg = { tenantId: 'tenant-1', clientId: 'app-1', clientSecret: 'geheim', afzender: 'designaanvraag@nbcevents.nl' }
 
@@ -60,6 +60,24 @@ Deno.test('een weigering van Graph komt met code en uitleg terug', async () => {
   })
   const e = await assertRejects(() => createGraphMail(cfg, fetch).verstuur(bericht))
   assertEquals((e as Error).message, 'Mail versturen mislukt (403: ErrorAccessDenied: Access is denied.)')
+})
+
+/** Wat AbortSignal.timeout geeft als een verzoek te lang duurt. */
+const timeout = () => Promise.reject(new DOMException('Signal timed out.', 'TimeoutError'))
+
+Deno.test('antwoordt Graph te laat op het versturen, dan is dat MailOnbevestigd en niet "Signal timed out"', async () => {
+  const f = ((input: string | URL | Request) => String(input).includes('login.')
+    ? Promise.resolve(Response.json({ access_token: 'tok-1', expires_in: 3600 }))
+    : timeout()) as typeof fetch
+  const e = await assertRejects(() => createGraphMail(cfg, f).verstuur(bericht), MailOnbevestigd)
+  assertMatch((e as Error).message, /waarschijnlijk wel verstuurd/)
+})
+
+Deno.test('een timeout bij het inloggen is een gewone fout: dan is er zeker niets verstuurd', async () => {
+  const f = (() => timeout()) as typeof fetch
+  const e = await assertRejects(() => createGraphMail(cfg, f).verstuur(bericht))
+  assertEquals(e instanceof MailOnbevestigd, false)
+  assertEquals((e as Error).message, 'Inloggen bij Microsoft mislukt (Microsoft gaf binnen 10 seconden geen antwoord)')
 })
 
 Deno.test('na een 401 wordt er de volgende keer een nieuw token gehaald', async () => {
@@ -137,6 +155,23 @@ Deno.test('grote bijlagen: concept, upload in stukken, dan versturen', async () 
   const ranges = puts.map((c) => (c.init.headers as Record<string, string>)['Content-Range'])
   assertEquals(ranges[1], `bytes ${320 * 1024 * 9}-${groot.length - 1}/${groot.length}`)
   assertEquals((puts[0].init.headers as Record<string, string>).Authorization, undefined, 'het uploadadres is zelf de sleutel')
+})
+
+Deno.test('grote bijlagen: antwoordt /send te laat, dan blijft het concept staan', async () => {
+  const calls: string[] = []
+  const fetch = ((input: string | URL | Request, init: RequestInit = {}) => {
+    const url = String(input)
+    calls.push(`${init.method} ${url}`)
+    if (url.includes('login.')) return Promise.resolve(Response.json({ access_token: 'tok-1', expires_in: 3600 }))
+    if (url.endsWith('/messages')) return Promise.resolve(Response.json({ id: 'concept-1' }, { status: 201 }))
+    if (url.endsWith('/send')) return timeout()
+    return Promise.resolve(new Response(null, { status: 202 }))
+  }) as typeof globalThis.fetch
+  await assertRejects(() => createGraphMail(cfg, fetch).verstuur({
+    ...bericht,
+    bijlagen: [{ naam: 'a.png', mime: 'image/png', bytes: new Uint8Array(MAIL_IN_EEN_KEER_BYTES - 10) }, { naam: 'b.png', mime: 'image/png', bytes: new Uint8Array(100) }],
+  }), MailOnbevestigd)
+  assertEquals(calls.some((c) => c.startsWith('DELETE')), false, 'een mail die misschien onderweg is, niet weggooien')
 })
 
 Deno.test('zonder recht op concepten zegt de fout welk recht er mist', async () => {

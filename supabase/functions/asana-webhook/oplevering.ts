@@ -5,7 +5,7 @@ import { MELDING_ONTVANGERS } from '../_shared/shared/contact.ts'
 import {
   LEDKOLOM_VASTGELOPEN_MIN, isLedkolomAanvraag, previewMisluktReden, previewUrl, verslagWachtOpPreview, vindReleaseLinks, zonderReleaseLinks,
 } from '../_shared/shared/ledkolom-preview.ts'
-import { themaVoor } from '../_shared/shared/mail.ts'
+import { MailOnbevestigd, themaVoor } from '../_shared/shared/mail.ts'
 import type { MailBijlage, MailClient } from '../_shared/shared/mail.ts'
 import {
   OPLEVER_SUBTAAK, beschrijvingAlsMailHtml, leesOntvangers, openOpleverSubtaak, renderOpleveringMail, teGrootMelding, uniekeAdressen,
@@ -374,17 +374,24 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
         torenscherm: toren.previews,
         proef: proef ? { echteOntvangers: aan } : null,
       })
+      // Kwam het antwoord van Microsoft te laat, dan is de mail vrijwel altijd toch verstuurd. Dan
+      // niet op Mislukt: daarop drukt iemand opnieuw, en krijgt de aanvrager hem twee keer.
+      let onbevestigd = false
       try {
         await deps.mail.verstuur({ ...bericht, bijlagen: [...bijlagen, ...toren.inline] })
       } catch (e) {
-        throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
+        if (!(e instanceof MailOnbevestigd || (e instanceof Error && e.name === 'MailOnbevestigd'))) {
+          throw new Weigering(`Microsoft weigerde de ${proef ? 'proefmail' : 'mail'}: ${fout(e)}`)
+        }
+        onbevestigd = true
+        log('warn', 'versturen niet bevestigd door Microsoft; behandeld als verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, proef, error: fout(e) })
       }
 
       const linkNamen = keuze.links.map((l) => l.naam)
       if (proef) {
         log('info', 'proefmail oplevering verstuurd', { gid: taak.gid, aanvraag: aanvraag.id, naar: proefNaar })
         try {
-          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenscherm: toren.uitslag }))
+          await asana.addComment(taak.gid, verslagProef({ naar: proefNaar, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, previews, previewsOnderweg: wachtOpPreview, torenscherm: toren.uitslag, onbevestigd }))
         } catch (e) {
           log('warn', 'verslag van proefmail plaatsen mislukt', { gid: taak.gid, error: fout(e) })
         }
@@ -410,7 +417,7 @@ export function createOplever(deps: OpleverDeps): (taak: AsanaTask, opties: Ople
           log('warn', `${wat} na oplevering mislukt`, { gid: taak.gid, error: fout(e) })
         }
       }
-      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenscherm: toren.uitslag })))
+      await nazorg('verslag plaatsen', () => asana.addComment(taak.gid, verslagVerstuurd({ versie, aan, bijlagen: bijlagen.map((b) => b.naam), links: linkNamen, datum, previews, torenscherm: toren.uitslag, onbevestigd })))
       await zetVeld(taak.gid, 'verstuurd')
       await nazorg('subtaak afvinken', () => asana.werkTaakBij(subtaak.gid, { naam: verstuurdeSubtaakNaam(versie, datum), completed: true }))
       await nazorg('nieuwe subtaak maken', () => asana.maakSubtaak(taak.gid, OPLEVER_SUBTAAK, taak.assignee))

@@ -43,6 +43,33 @@ export interface MailClient {
   verstuur(bericht: MailBericht): Promise<void>
 }
 
+/**
+ * Microsoft gaf op het versturen zelf niet op tijd antwoord. Graph neemt een mail aan en verstuurt
+ * hem, ook als het antwoord daarop te laat terugkomt: de mail is dan vrijwel altijd wél de deur uit.
+ * Daarom is dit geen gewone fout. Wie hem vangt, behandelt de mail als verstuurd (met een noot),
+ * en niet als mislukt: anders drukt iemand opnieuw en krijgt de ontvanger hem twee keer.
+ *
+ * Alleen het laatste verzoek (sendMail, of /send bij een concept) kan dit geven. Een timeout bij het
+ * inloggen of bij een bijlage van een concept is een gewone fout: dan is er nog niets verstuurd.
+ */
+export class MailOnbevestigd extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MailOnbevestigd'
+  }
+}
+
+/** Is dit een fout van een verzoek dat te lang duurde (AbortSignal.timeout)? */
+function isTimeout(e: unknown): boolean {
+  const naam = (e as { name?: unknown } | null)?.name
+  return naam === 'TimeoutError' || naam === 'AbortError'
+}
+
+/** Een leesbare zin in plaats van "Signal timed out." */
+function timeoutFout(wat: string, ms: number): Error {
+  return new Error(`${wat} mislukt (Microsoft gaf binnen ${Math.round(ms / 1000)} seconden geen antwoord)`)
+}
+
 export interface GraphMailConfig {
   tenantId: string
   clientId: string
@@ -65,6 +92,11 @@ export interface GifBron {
 type Fetch = typeof fetch
 
 const TIMEOUT_MS = 10_000
+/**
+ * Hoe lang we wachten op het versturen zelf. Graph doet daar soms lang over, vooral met bijlagen,
+ * en het werk loopt toch op de achtergrond; liever even wachten dan een onzekere afloop.
+ */
+const VERSTUUR_TIMEOUT_MS = 60_000
 
 export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): MailClient {
   // Een token is een uur geldig. Een edge function blijft vaak even warm, dus bewaren scheelt een
@@ -83,6 +115,8 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
         scope: 'https://graph.microsoft.com/.default',
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
+    }).catch((e) => {
+      throw isTimeout(e) ? timeoutFout('Inloggen bij Microsoft', TIMEOUT_MS) : e
     })
     const body = (await res.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; error?: string; error_description?: string }
     if (!res.ok || !body.access_token) {
@@ -98,13 +132,24 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
   const postvak = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(cfg.afzender)}`
   const gifs: GifBron = cfg.gifs ?? { lijst: gifLijstVan(MAIL_GIF_BASIS, doFetch), basis: MAIL_GIF_BASIS }
 
-  /** Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. */
-  async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS): Promise<Record<string, unknown>> {
+  /**
+   * Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. Bij
+   * `verstuurt` is dit het verzoek dat de mail echt verstuurt: een timeout is dan MailOnbevestigd.
+   */
+  async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS, verstuurt = false): Promise<Record<string, unknown>> {
+    // Eerst het token: een timeout bij het inloggen betekent dat er zeker niets verstuurd is.
+    const auth = await haalToken()
     const res = await doFetch(`${postvak}${pad}`, {
       method,
-      headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeout),
+    }).catch((e) => {
+      if (!isTimeout(e)) throw e
+      if (verstuurt) {
+        throw new MailOnbevestigd(`Microsoft bevestigde het versturen niet binnen ${Math.round(timeout / 1000)} seconden; de mail is waarschijnlijk wel verstuurd`)
+      }
+      throw timeoutFout(wat, timeout)
     })
     if (!res.ok) {
       const fout = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
@@ -173,10 +218,11 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
           if (!res.ok) throw new Error(`Upload van "${b.naam}" mislukt (${res.status})`)
         }
       }
-      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', 30_000)
+      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', VERSTUUR_TIMEOUT_MS, true)
     } catch (e) {
-      // Een half concept hoort niet in het postvak te blijven hangen.
-      await graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').catch(() => {})
+      // Een half concept hoort niet in het postvak te blijven hangen. Maar is hij misschien al
+      // onderweg, dan blijft hij staan: weggooien zou een mail die nog verstuurd wordt kunnen raken.
+      if (!(e instanceof MailOnbevestigd)) await graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').catch(() => {})
       throw e
     }
   }
@@ -192,7 +238,7 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
         message: { ...bericht(m), ...(bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}) },
         // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
         saveToSentItems: false,
-      }, 'Mail versturen', bijlagen.length ? 30_000 : TIMEOUT_MS)
+      }, 'Mail versturen', VERSTUUR_TIMEOUT_MS, true)
     },
   }
 }

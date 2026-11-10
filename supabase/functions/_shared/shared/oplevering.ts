@@ -392,9 +392,16 @@ function torenschermZinnen(t: TorenschermUitslag | null | undefined): string[] {
   return uit
 }
 
+/**
+ * Microsoft bevestigde het versturen niet op tijd (zie MailOnbevestigd in mail.ts). De mail is dan
+ * vrijwel altijd wel aangekomen; we zetten hem niet op Mislukt, maar zeggen het er wel bij.
+ */
+const ONBEVESTIGD = 'Let op: Microsoft bevestigde het versturen niet op tijd. Meestal is de mail dan gewoon aangekomen, '
+
 /** De reactie in Asana na een proefmail: waar hij heen ging en wie de echte krijgt. */
 export function verslagProef(v: {
   naar: string; aan: string[]; bijlagen: string[]; links: string[]; previews?: PreviewLink[]; previewsOnderweg?: boolean; torenscherm?: TorenschermUitslag | null
+  onbevestigd?: boolean
 }): string {
   const previews = v.previews ?? []
   const delen = [`Proefmail gestuurd naar ${escapeAsana(v.naar)}. De echte mail gaat naar ${escapeAsana(opsomming(v.aan))}`]
@@ -403,6 +410,7 @@ export function verslagProef(v: {
   if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
   if (v.previewsOnderweg) delen.push('De 3D-preview wordt nog gemaakt; als hij online staat, komt de link hier als reactie. De echte mail wacht daar vanzelf op.')
   delen.push(...torenschermZinnen(v.torenscherm))
+  if (v.onbevestigd) delen.push(`${ONBEVESTIGD}maar kijk even in je inbox. Staat hij er over een paar minuten nog niet, zet Oplevermail dan opnieuw op Stuur proef naar mij.`)
   delen.push('Klopt alles, zet Oplevermail dan op Verstuur nu.')
   return `<body>${delen.join(' ')}</body>`
 }
@@ -410,6 +418,7 @@ export function verslagProef(v: {
 /** De reactie in Asana na een geslaagde mail: wie, wat en welke versie. */
 export function verslagVerstuurd(v: {
   versie: number; aan: string[]; bijlagen: string[]; links: string[]; datum: string; previews?: PreviewLink[]; torenscherm?: TorenschermUitslag | null
+  onbevestigd?: boolean
 }): string {
   const previews = v.previews ?? []
   const delen = [`Opleveringsmail${v.versie > 1 ? ` (versie ${v.versie})` : ''} verstuurd op ${escapeAsana(formatDateShortNl(v.datum))} aan ${escapeAsana(opsomming(v.aan))}.`]
@@ -418,6 +427,10 @@ export function verslagVerstuurd(v: {
   if (previews.length) delen.push(`3D-preview: ${previews.map(asanaLink).join(', ')}.`)
   if (!v.bijlagen.length && !v.links.length && !previews.length) delen.push('Zonder bijlagen.')
   delen.push(...torenschermZinnen(v.torenscherm))
+  if (v.onbevestigd) {
+    delen.push(`${ONBEVESTIGD}dus verstuur hem niet zomaar opnieuw. Twijfel je, vraag dan na of hij binnen is. Is hij echt niet aangekomen, `
+      + 'zet de tekst en bestanden dan in de nieuwe subtaak Oplevering en verstuur hem nog een keer.')
+  }
   return `<body>${delen.join(' ')}</body>`
 }
 

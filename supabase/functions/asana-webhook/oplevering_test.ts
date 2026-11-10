@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertMatch, assertStringIncludes } from 'jsr:@std/assert@1'
 import type { AsanaFieldsConfig, AsanaTask, AsanaTaskClient } from '../_shared/asana.ts'
 import type { AanvraagDetail, LedkolomPreviewRow, OpleveringRow } from '../_shared/db.ts'
-import type { MailBericht } from '../_shared/shared/mail.ts'
+import { MailOnbevestigd, type MailBericht } from '../_shared/shared/mail.ts'
 import type { AsanaBestand, Subtaak } from '../_shared/shared/oplevering.ts'
 import { createOplever, type OpleverDeps } from './oplevering.ts'
 
@@ -86,6 +86,8 @@ function setup(opts: {
   eerder?: OpleveringRow | null
   verstuurd?: number
   mailFout?: string
+  /** Microsoft antwoordt te laat op het versturen; de mail is wel aangekomen. */
+  mailOnbevestigd?: boolean
   zonderMail?: boolean
   gebruiker?: { naam: string | null; email: string | null } | 'fout'
   /** Bestaande 3D-previews van de aanvraag. */
@@ -183,6 +185,7 @@ function setup(opts: {
     verstuur: (b: MailBericht) => {
       if (opts.mailFout) return Promise.reject(new Error(opts.mailFout))
       gemaild.push(b)
+      if (opts.mailOnbevestigd) return Promise.reject(new MailOnbevestigd('Microsoft bevestigde het versturen niet binnen 60 seconden'))
       return Promise.resolve()
     },
   }
@@ -362,6 +365,18 @@ Deno.test('een weigering van Microsoft wordt Mislukt, en de taak blijft staan', 
   assertEquals(s.afgerond, [])
   assertEquals(s.bijgewerkt, [])
   assertEquals(s.rijen[0].status, 'mislukt')
+})
+
+Deno.test('antwoordt Microsoft te laat, dan telt de mail als verstuurd, met een waarschuwing', async () => {
+  const s = setup({ mailOnbevestigd: true })
+  assertEquals(await s.oplever(taak(), ECHT), 'oplevermail verstuurd (versie 1)')
+  assertMatch(s.comments[0], /Opleveringsmail verstuurd op 28 oktober 2026/)
+  assertMatch(s.comments[0], /Microsoft bevestigde het versturen niet op tijd/)
+  assertMatch(s.comments[0], /verstuur hem niet zomaar opnieuw/)
+  assert(!s.comments[0].includes('niet</strong> verstuurd'))
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-verstuurd' }])
+  assertEquals(s.rijen[0].status, 'verstuurd')
+  assertEquals(s.afgerond, ['t1:sec-klaar'])
 })
 
 Deno.test('zonder ingestelde mail of zonder aanvraag blijft het niet stil', async () => {
@@ -740,4 +755,14 @@ Deno.test('torenscherm: niet bij een aanvraag zonder torenscherm, of bij Green V
     assertStringIncludes(s.gemaild[0].html, '<!--mailgif:oplevering-->')
     assert(!/Bovenaan|gifje/.test(s.comments[0]), s.comments[0])
   }
+})
+
+Deno.test('een proef waarop Microsoft te laat antwoordt, staat op Proef verstuurd, niet op Mislukt', async () => {
+  const s = setup({ mailOnbevestigd: true })
+  assertEquals(await s.oplever(taak(), PROEF), 'proefmail verstuurd')
+  assertEquals(s.velden, [{ 'veld-oplever': 'opt-proef-verstuurd' }])
+  assertMatch(s.comments[0], /Proefmail gestuurd naar devi@nbcevents\.nl/)
+  assertMatch(s.comments[0], /Microsoft bevestigde het versturen niet op tijd/)
+  assertMatch(s.comments[0], /kijk even in je inbox/)
+  assertEquals(s.rijen, [])
 })
