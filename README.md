@@ -251,6 +251,14 @@ opnieuw op Verstuur nu. Redenen zijn bijvoorbeeld: de subtaak is leeg, er is gee
 geen open subtaak Oplevering, bijvoorbeeld een taak van voor deze functie, dan maakt de knop hem aan
 en vraagt hij je die te vullen.
 
+**Mislukt betekent echt: niet verstuurd.** Zolang Microsoft het versturen niet bevestigd heeft,
+staat het veld op **Bezig**. Blijft dat antwoord uit (Microsoft is soms traag), dan kijkt de app bij
+het concept in het postvak na of de mail toch de deur uit ging. Is hij weg, dan gaat alles verder
+alsof er niets aan de hand was. Is het na een halve minuut nog steeds een concept, dan is hij zeker
+niet verstuurd: dan pas **Mislukt**. Kan zelfs dat nakijken niet (alleen zonder het recht
+`Mail.ReadWrite`, zie **Mail instellen**), dan blijft het veld op Bezig en zegt een reactie dat het
+onbekend is, en hoe je het nagaat.
+
 **De ontvangers.** De aanvrager staat er automatisch op, als zijn of haar adres bij de collega staat: Supabase → Table editor → `collegas` → kolom `email`. Dat adres is niet publiek; alleen de functions
 lezen het. Staat er geen adres, dan gaan alleen de adressen uit "Ook mailen naar" mee. Is dat ook
 leeg, dan gaat er niets uit. Antwoordt iemand toch op de mail, dan komt dat bij het marketingpostvak
@@ -676,11 +684,18 @@ organisatie. Zolang dit niet is ingesteld, gaat er geen mail uit en werkt de res
 4. **Recht om te mailen, alleen vanuit dit postvak.** Zo is het bij NBC ingericht:
    - Entra → App registrations → de app → API permissions → Microsoft Graph → **Application
      permissions** → `Mail.Send`, en dan *Grant admin consent*. Niet *Delegated*: dan mag de app niets.
-   - Voor de **opleveringsmail met bijlagen boven de 2,5 MB** ook `Mail.ReadWrite` (Application). Graph
-     neemt maar 4 MB per verzoek aan; grotere bijlagen gaan via een concept dat in stukken wordt
-     gevuld, en daarvoor moet de app een concept kunnen maken. De beperking hieronder geldt ook voor
-     dit recht. Zonder `Mail.ReadWrite` werkt alles, behalve een oplevering met grote bijlagen: die
-     springt op Mislukt met een reden die dit recht noemt.
+   - Ook `Mail.ReadWrite` (Application). Elke mail gaat eerst als concept in het postvak en wordt dan
+     verstuurd. Blijft het antwoord van Microsoft op het versturen uit, dan kijkt de app bij dat
+     concept na of de mail toch weg is; zo staat er nooit Mislukt bij een mail die wel aankwam (en
+     andersom). Ook bijlagen boven de 2,5 MB hebben het nodig: Graph neemt maar 4 MB per verzoek
+     aan, dus die gaan in stukken in het concept. De beperking hieronder geldt ook voor dit recht.
+     Zonder `Mail.ReadWrite` gaat de mail in één keer (`sendMail`): dat werkt, behalve bij grote
+     bijlagen, maar als Microsoft dan niet antwoordt, weet de app niet of hij verstuurd is.
+   - Doordat elke mail een concept is, staat er na het versturen een kopie in **Verzonden items** van
+     het afzenderpostvak. Zo kun je terugkijken wat er de deur uit ging. De workflow
+     **Herinneringen akkoord** ruimt die elke werkdag op: kopieën van meer dan 30 dagen oud gaan
+     definitief weg (`scripts/verzonden-opruimen.mjs`). Daarvoor hoeft er in Exchange niets
+     ingesteld te worden; het recht `Mail.ReadWrite` is genoeg.
    - Dat recht mag namens élk postvak in de organisatie mailen. Beperk het daarom in Exchange tot
      `designaanvraag@nbcevents.nl`. Maak een **mail-enabled security group**
      `designaanvraag-app@nbcevents.nl` met het postvak als enig lid, en dan in Exchange Online

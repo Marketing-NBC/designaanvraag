@@ -1,5 +1,6 @@
 /**
- * Mail versturen via Microsoft 365 (Microsoft Graph, `sendMail`). Gedeeld door de edge functions
+ * Mail versturen via Microsoft 365 (Microsoft Graph: een concept en dan versturen, of zonder het
+ * recht daarop in één keer met `sendMail`; zie createGraphMail). Gedeeld door de edge functions
  * (de meldingen) en scripts/weekmail.mjs (het weekoverzicht). Dependency-vrij: alleen `fetch`, zodat
  * zowel Deno als Node hem zonder pakketten kan laden.
  *
@@ -43,6 +44,69 @@ export interface MailClient {
   verstuur(bericht: MailBericht): Promise<void>
 }
 
+/** Hoe lang de kopie van een verstuurde mail in Verzonden items blijft staan (zie ruimVerzondenOp). */
+export const VERZONDEN_BEWAREN_DAGEN = 30
+
+export interface GraphMailClient extends MailClient {
+  /**
+   * Elke mail gaat als concept, dus na het versturen staat er een kopie in Verzonden items. Dat is
+   * handig om terug te kijken, maar het postvak mag niet vollopen. Dit verwijdert de kopieën van voor
+   * `ouderDan` definitief (niet naar Verwijderde items, anders loopt dat vol). Alleen Verzonden
+   * items van het afzenderpostvak; daar mailt alleen deze app uit. Geeft het aantal terug.
+   */
+  ruimVerzondenOp(ouderDan: Date, max?: number): Promise<number>
+}
+
+/**
+ * Microsoft gaf geen uitsluitsel of de mail verstuurd is, en de app kon het niet nakijken. Dat kan
+ * alleen zonder het recht Mail.ReadWrite (zie "Mail instellen" in de README): dan gaat de mail in
+ * één keer via sendMail, en blijft er niets over om na te kijken. Met dat recht weet verstuur() het
+ * altijd: hij komt terug als de mail verstuurd is, en gooit alleen als hij zeker níet verstuurd is.
+ *
+ * Wie dit vangt, zet de mail dus niet op Mislukt (misschien kwam hij gewoon aan) en ook niet op
+ * Verstuurd, maar zegt eerlijk dat het onbekend is.
+ */
+export class MailOnbevestigd extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MailOnbevestigd'
+  }
+}
+
+/** Een antwoord van Graph dat geen succes was, met de HTTP-status. */
+class GraphFout extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
+/** Inloggen mislukte: dan is er zeker nog niets verstuurd. */
+class InlogFout extends Error {}
+
+/**
+ * Weten we na deze fout zeker dat het verzoek niets deed? Bij een weigering (4xx) of als het inloggen
+ * al misging wel. Bij een timeout, een verbroken verbinding of een storing bij Microsoft (5xx) niet:
+ * dan kan het verzoek best zijn aangekomen en uitgevoerd.
+ */
+function zekerNietsGedaan(e: unknown): boolean {
+  return e instanceof InlogFout || (e instanceof GraphFout && e.status >= 400 && e.status < 500)
+}
+
+/** Is dit een fout van een verzoek dat te lang duurde (AbortSignal.timeout)? */
+function isTimeout(e: unknown): boolean {
+  const naam = (e as { name?: unknown } | null)?.name
+  return naam === 'TimeoutError' || naam === 'AbortError'
+}
+
+/** Een leesbare zin in plaats van "Signal timed out." */
+function timeoutFout(wat: string, ms: number): Error {
+  return new Error(`${wat} mislukt (Microsoft gaf binnen ${Math.round(ms / 1000)} seconden geen antwoord)`)
+}
+
+const tekst = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
 export interface GraphMailConfig {
   tenantId: string
   clientId: string
@@ -54,6 +118,8 @@ export interface GraphMailConfig {
    * Pages; de testmail geeft hier de gifjes van zijn eigen branch.
    */
   gifs?: GifBron
+  /** Wachten tussen het nakijken door; de tests geven hier een die niet echt wacht. */
+  wacht?: (ms: number) => Promise<void>
 }
 
 /** De gifjes voor de mail: de lijst, en waar de bestanden online staan. */
@@ -65,11 +131,24 @@ export interface GifBron {
 type Fetch = typeof fetch
 
 const TIMEOUT_MS = 10_000
+/** Op het versturen zelf (en een concept met bijlagen) wachten we langer: Graph doet daar soms even over. */
+const VERSTUUR_TIMEOUT_MS = 30_000
+/**
+ * Bleef het antwoord op het versturen uit, dan kijken we zo vaak, zo ver uit elkaar, of het concept
+ * verstuurd is. Is het na een halve minuut nog steeds een concept, dan kwam het versturen nooit aan.
+ */
+const NAKIJKEN_KEER = 6
+const NAKIJKEN_ELKE_MS = 5_000
+/** Zonder Mail.ReadWrite valt er niets na te kijken; dan wachten we zo lang op een antwoord. */
+const SENDMAIL_TIMEOUT_MS = 90_000
 
-export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): MailClient {
+export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): GraphMailClient {
+  const wacht = cfg.wacht ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
   // Een token is een uur geldig. Een edge function blijft vaak even warm, dus bewaren scheelt een
   // rondje naar Microsoft per melding; vijf minuten marge zodat hij niet halverwege verloopt.
   let token: { waarde: string; geldigTot: number } | null = null
+  // Geen recht om concepten te maken (Mail.ReadWrite): dan in één keer via sendMail.
+  let zonderConcepten = false
 
   async function haalToken(): Promise<string> {
     if (token && token.geldigTot > Date.now()) return token.waarde
@@ -83,13 +162,15 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
         scope: 'https://graph.microsoft.com/.default',
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
+    }).catch((e) => {
+      throw new InlogFout(isTimeout(e) ? timeoutFout('Inloggen bij Microsoft', TIMEOUT_MS).message : `Inloggen bij Microsoft mislukt (${tekst(e)})`)
     })
     const body = (await res.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; error?: string; error_description?: string }
     if (!res.ok || !body.access_token) {
       // De eerste regel van error_description is de leesbare uitleg ("AADSTS7000215: Invalid client
       // secret provided"); de rest is een trace-id en tijdstempel.
       const uitleg = body.error_description?.split('\n')[0] ?? body.error ?? 'onbekende fout'
-      throw new Error(`Inloggen bij Microsoft mislukt (${res.status}: ${uitleg})`)
+      throw new InlogFout(`Inloggen bij Microsoft mislukt (${res.status}: ${uitleg})`)
     }
     token = { waarde: body.access_token, geldigTot: Date.now() + ((body.expires_in ?? 3600) - 300) * 1000 }
     return token.waarde
@@ -100,17 +181,22 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
 
   /** Eén verzoek aan Graph met JSON. Gooit bij een fout, met de code en uitleg van Microsoft. */
   async function graph(pad: string, method: string, body: unknown, wat: string, timeout = TIMEOUT_MS): Promise<Record<string, unknown>> {
+    const auth = await haalToken()
     const res = await doFetch(`${postvak}${pad}`, {
       method,
-      headers: { Authorization: `Bearer ${await haalToken()}`, 'Content-Type': 'application/json' },
+      // Een vaste id: na het versturen verhuist het concept naar Verzonden items, en met een gewone
+      // id zouden we hem daar niet meer terugvinden om na te kijken.
+      headers: { Authorization: `Bearer ${auth}`, 'Content-Type': 'application/json', Prefer: 'IdType="ImmutableId"' },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(timeout),
+    }).catch((e) => {
+      throw isTimeout(e) ? timeoutFout(wat, timeout) : new Error(`${wat} mislukt (${tekst(e)})`)
     })
     if (!res.ok) {
       const fout = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } }
       if (res.status === 401) token = null
       const uitleg = [fout.error?.code, fout.error?.message].filter(Boolean).join(': ') || 'onbekende fout'
-      throw new Error(`${wat} mislukt (${res.status}: ${uitleg})`)
+      throw new GraphFout(`${wat} mislukt (${res.status}: ${uitleg})`, res.status)
     }
     return (await res.json().catch(() => ({}))) as Record<string, unknown>
   }
@@ -133,51 +219,117 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     ...(b.inline ? { isInline: true, contentId: b.inline } : {}),
   })
 
+  /** Geen recht om een concept te maken. */
+  class GeenConceptRecht extends Error {}
+
+  const opruimen = (concept: string) => graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').then(() => {}, () => {})
+
   /**
-   * Grote bijlagen kunnen niet in één verzoek. Dan eerst een concept, de bestanden er in stukken
-   * aan, en daarna versturen. Daarvoor heeft de app naast Mail.Send ook Mail.ReadWrite nodig; zie
-   * "Mail instellen" in de README.
+   * Na een onzekere afloop van het versturen: is het concept nog een concept? Verstuurd is het dat
+   * niet meer (het staat dan in Verzonden items, met dezelfde vaste id).
    */
-  async function verstuurInStappen(m: MailBericht): Promise<void> {
+  async function nakijken(concept: string): Promise<'verstuurd' | 'niet verstuurd' | 'onbekend'> {
+    let laatste: 'concept' | 'onbekend' = 'onbekend'
+    for (let i = 0; i < NAKIJKEN_KEER; i++) {
+      await wacht(NAKIJKEN_ELKE_MS)
+      try {
+        const r = await graph(`/messages/${concept}?$select=isDraft`, 'GET', undefined, 'Nakijken')
+        if (r.isDraft === false) return 'verstuurd'
+        laatste = r.isDraft === true ? 'concept' : 'onbekend'
+      } catch {
+        // Weg (404) of geen antwoord: dat zegt niets zeker. Nog een keer.
+        laatste = 'onbekend'
+      }
+    }
+    return laatste === 'concept' ? 'niet verstuurd' : 'onbekend'
+  }
+
+  /**
+   * De gewone weg: eerst een concept (met de bijlagen), dan versturen. Dat kost een verzoek meer dan
+   * sendMail, maar blijft het antwoord op het versturen uit, dan is het concept er nog om na te kijken
+   * of hij weg is. Zo komt deze functie alleen terug als de mail verstuurd is, en gooit hij alleen als
+   * hij zeker niet verstuurd is (of, heel zelden, MailOnbevestigd als zelfs nakijken niets oplevert).
+   * Daarvoor heeft de app naast Mail.Send ook Mail.ReadWrite nodig; zie "Mail instellen" in de README.
+   */
+  async function verstuurViaConcept(m: MailBericht, inEenKeer: boolean): Promise<void> {
+    const bijlagen = m.bijlagen ?? []
     let concept: string
     try {
-      concept = String((await graph('/messages', 'POST', bericht(m), 'Concept aanmaken')).id ?? '')
+      concept = String((await graph('/messages', 'POST', {
+        ...bericht(m),
+        ...(inEenKeer && bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}),
+      }, 'Concept aanmaken', bijlagen.length ? VERSTUUR_TIMEOUT_MS : TIMEOUT_MS)).id ?? '')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e)
-      if (/\(403/.test(msg)) {
-        throw new Error(`${msg}. Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
-      }
+      if (e instanceof GraphFout && e.status === 403) throw new GeenConceptRecht(e.message)
       throw e
     }
     if (!concept) throw new Error('Concept aanmaken mislukt (geen id van Microsoft)')
+
+    // Tot en met de bijlagen is er niets verstuurd: gaat er iets mis, dan het concept weg en klaar.
     try {
-      for (const b of m.bijlagen ?? []) {
-        if (b.bytes.length < MAIL_IN_EEN_KEER_BYTES) {
-          await graph(`/messages/${concept}/attachments`, 'POST', bijlageJson(b), `Bijlage "${b.naam}"`)
-          continue
-        }
-        const sessie = await graph(`/messages/${concept}/attachments/createUploadSession`, 'POST', {
-          AttachmentItem: { attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime },
-        }, `Upload van "${b.naam}" starten`)
-        const uploadUrl = String(sessie.uploadUrl ?? '')
-        if (!uploadUrl) throw new Error(`Upload van "${b.naam}" starten mislukt (geen uploadadres)`)
-        for (let van = 0; van < b.bytes.length; van += UPLOAD_STUK_BYTES) {
-          const stuk = b.bytes.subarray(van, Math.min(van + UPLOAD_STUK_BYTES, b.bytes.length))
-          // Het uploadadres is zelf de sleutel; een Authorization-header hoort er juist niet bij.
-          const res = await doFetch(uploadUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/octet-stream', 'Content-Range': `bytes ${van}-${van + stuk.length - 1}/${b.bytes.length}` },
-            body: stuk as Uint8Array<ArrayBuffer>,
-            signal: AbortSignal.timeout(60_000),
-          })
-          if (!res.ok) throw new Error(`Upload van "${b.naam}" mislukt (${res.status})`)
+      if (!inEenKeer) {
+        for (const b of bijlagen) {
+          if (b.bytes.length < MAIL_IN_EEN_KEER_BYTES) {
+            await graph(`/messages/${concept}/attachments`, 'POST', bijlageJson(b), `Bijlage "${b.naam}"`, VERSTUUR_TIMEOUT_MS)
+            continue
+          }
+          const sessie = await graph(`/messages/${concept}/attachments/createUploadSession`, 'POST', {
+            AttachmentItem: { attachmentType: 'file', name: b.naam, size: b.bytes.length, contentType: b.mime },
+          }, `Upload van "${b.naam}" starten`)
+          const uploadUrl = String(sessie.uploadUrl ?? '')
+          if (!uploadUrl) throw new Error(`Upload van "${b.naam}" starten mislukt (geen uploadadres)`)
+          for (let van = 0; van < b.bytes.length; van += UPLOAD_STUK_BYTES) {
+            const stuk = b.bytes.subarray(van, Math.min(van + UPLOAD_STUK_BYTES, b.bytes.length))
+            // Het uploadadres is zelf de sleutel; een Authorization-header hoort er juist niet bij.
+            const res = await doFetch(uploadUrl, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/octet-stream', 'Content-Range': `bytes ${van}-${van + stuk.length - 1}/${b.bytes.length}` },
+              body: stuk as Uint8Array<ArrayBuffer>,
+              signal: AbortSignal.timeout(60_000),
+            }).catch((e) => {
+              throw isTimeout(e) ? timeoutFout(`Upload van "${b.naam}"`, 60_000) : e
+            })
+            if (!res.ok) throw new Error(`Upload van "${b.naam}" mislukt (${res.status})`)
+          }
         }
       }
-      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', 30_000)
     } catch (e) {
-      // Een half concept hoort niet in het postvak te blijven hangen.
-      await graph(`/messages/${concept}`, 'DELETE', undefined, 'Concept opruimen').catch(() => {})
+      await opruimen(concept)
       throw e
+    }
+
+    try {
+      await graph(`/messages/${concept}/send`, 'POST', undefined, 'Mail versturen', VERSTUUR_TIMEOUT_MS)
+    } catch (e) {
+      if (zekerNietsGedaan(e)) {
+        await opruimen(concept)
+        throw e
+      }
+      // Geen antwoord, of een storing: misschien is hij toch verstuurd. Het concept weet het.
+      const uitslag = await nakijken(concept)
+      if (uitslag === 'verstuurd') return
+      if (uitslag === 'niet verstuurd') {
+        await opruimen(concept)
+        throw new Error(`${tekst(e)}; nagekeken: de mail is niet verstuurd`)
+      }
+      // Niet weggooien: een mail die misschien nog onderweg is, laten we met rust.
+      throw new MailOnbevestigd(`${tekst(e)}, en ook nakijken gaf geen uitsluitsel of de mail verstuurd is`)
+    }
+  }
+
+  /** Zonder Mail.ReadWrite: in één keer, zonder concept, en dus zonder iets om na te kijken. */
+  async function verstuurInEenKeer(m: MailBericht): Promise<void> {
+    const bijlagen = m.bijlagen ?? []
+    try {
+      await graph('/sendMail', 'POST', {
+        message: { ...bericht(m), ...(bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}) },
+        // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
+        saveToSentItems: false,
+      }, 'Mail versturen', SENDMAIL_TIMEOUT_MS)
+    } catch (e) {
+      if (zekerNietsGedaan(e)) throw e
+      throw new MailOnbevestigd(`${tekst(e)}. Of de mail toch verstuurd is, kan de app zonder het recht Mail.ReadWrite niet nakijken; `
+        + 'zie "Mail instellen" in de README')
     }
   }
 
@@ -185,14 +337,38 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): M
     async verstuur(m) {
       if (!m.aan.length) throw new Error('Geen ontvanger opgegeven')
       if (heeftGifPlek(m.html)) m = { ...m, html: vulGifIn(m.html, await gifs.lijst(), gifs.basis) }
-      const bijlagen = m.bijlagen ?? []
-      const totaal = bijlagen.reduce((n, b) => n + b.bytes.length, 0)
-      if (totaal > MAIL_IN_EEN_KEER_BYTES) return verstuurInStappen(m)
-      await graph('/sendMail', 'POST', {
-        message: { ...bericht(m), ...(bijlagen.length ? { attachments: bijlagen.map(bijlageJson) } : {}) },
-        // Geen kopie in Verzonden items: daar kijkt niemand, en zo loopt dat postvak niet vol.
-        saveToSentItems: false,
-      }, 'Mail versturen', bijlagen.length ? 30_000 : TIMEOUT_MS)
+      const totaal = (m.bijlagen ?? []).reduce((n, b) => n + b.bytes.length, 0)
+      const inEenKeer = totaal <= MAIL_IN_EEN_KEER_BYTES
+      if (!zonderConcepten) {
+        try {
+          return await verstuurViaConcept(m, inEenKeer)
+        } catch (e) {
+          if (!(e instanceof GeenConceptRecht)) throw e
+          zonderConcepten = true
+          if (!inEenKeer) {
+            throw new Error(`${e.message}. Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
+          }
+        }
+      } else if (!inEenKeer) {
+        throw new Error(`Voor bijlagen boven de ${Math.round(MAIL_IN_EEN_KEER_BYTES / 1_000_000)} MB heeft de app het recht Mail.ReadWrite nodig; zie "Mail instellen" in de README.`)
+      }
+      await verstuurInEenKeer(m)
+    },
+
+    async ruimVerzondenOp(ouderDan, max = 500) {
+      const filter = encodeURIComponent(`sentDateTime lt ${ouderDan.toISOString()}`)
+      let weg = 0
+      while (weg < max) {
+        // Steeds de eerste stapel opnieuw opvragen: wat we verwijderen, valt er vanzelf uit.
+        const r = await graph(`/mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`, 'GET', undefined, 'Verzonden items opvragen')
+        const ids = ((r.value ?? []) as { id?: unknown }[]).map((m) => String(m.id ?? '')).filter(Boolean)
+        if (!ids.length) break
+        for (const id of ids.slice(0, max - weg)) {
+          await graph(`/messages/${id}/permanentDelete`, 'POST', undefined, 'Oude mail verwijderen')
+          weg++
+        }
+      }
+      return weg
     },
   }
 }

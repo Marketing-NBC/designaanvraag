@@ -24,7 +24,7 @@
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { herinneringVandaag, isWerkdag, renderHerinneringMail, uurInNl, waaroverTekst } from '../shared/akkoord.ts'
 import { MELDING_AFZENDER, MELDING_ONTVANGERS } from '../shared/contact.ts'
-import { createGraphMail } from '../shared/mail.ts'
+import { MailOnbevestigd, createGraphMail } from '../shared/mail.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
 
 const args = Object.fromEntries(
@@ -109,6 +109,8 @@ if (proef) mkdirSync('herinneringen-proef', { recursive: true })
 
 let verstuurd = 0
 let mislukt = 0
+let nietZeker = 0
+let bijhoudenMislukt = 0
 for (const o of vandaagAan) {
   const a = aanvragen.get(o.aanvraag_id)
   if (!a || a.vervallen_op) continue
@@ -148,10 +150,29 @@ for (const o of vandaagAan) {
     zeg(`- (proef) ${bericht.onderwerp} → ${echt.join(', ')}`)
     continue
   }
+  // verstuur() komt pas terug als de mail echt verstuurd is, en gooit een gewone fout alleen als hij
+  // zeker niet verstuurd is. Zelden weet Microsoft het niet en kan de app het niet nakijken
+  // (MailOnbevestigd): dan telt hij wel, zodat de ronde van 12:00 hem niet nog een keer stuurt. Een
+  // gemiste herinnering is niet erg (de volgende werkdag komt er weer een); twee op een dag wel.
+  let onzeker = null
   try {
     await mail.verstuur(bericht)
-    verstuurd++
-    zeg(`- ${bericht.onderwerp} → ${testAdres ?? echt.join(', ')}${testAdres ? ' (testadres)' : ` (herinnering ${nummer})`}`)
+  } catch (e) {
+    if (!(e instanceof MailOnbevestigd)) {
+      mislukt++
+      zeg(`- ❌ ${waaroverTekst(waarover)}: ${e.message}`)
+      continue
+    }
+    onzeker = e.message
+  }
+  try {
+    if (onzeker) {
+      nietZeker++
+      zeg(`- ⚠️ ${bericht.onderwerp} → ${testAdres ?? echt.join(', ')}: niet zeker of verstuurd (${onzeker}); telt als verstuurd.`)
+    } else {
+      verstuurd++
+      zeg(`- ${bericht.onderwerp} → ${testAdres ?? echt.join(', ')}${testAdres ? ' (testadres)' : ` (herinnering ${nummer})`}`)
+    }
     // Een testrun telt niet: anders slaat de echte run van morgen er een over.
     if (!testAdres) {
       await rest(`opleveringen?id=eq.${o.id}`, {
@@ -161,12 +182,13 @@ for (const o of vandaagAan) {
       })
     }
   } catch (e) {
-    mislukt++
-    zeg(`- ❌ ${waaroverTekst(waarover)}: ${e.message}`)
+    // De mail is weg; alleen het bijhouden lukte niet. Niet als mislukte mail tellen.
+    bijhoudenMislukt++
+    zeg(`- ⚠️ ${waaroverTekst(waarover)}: verstuurd, maar bijhouden in Supabase mislukt (${e.message}); de volgende ronde stuurt hem mogelijk nog een keer.`)
   }
 }
 
 zeg('')
-zeg(proef ? 'Proef: niets verstuurd en niets bijgewerkt.' : `${verstuurd} herinnering(en) verstuurd${mislukt ? `, ${mislukt} mislukt` : ''}.`)
+zeg(proef ? 'Proef: niets verstuurd en niets bijgewerkt.' : `${verstuurd} herinnering(en) verstuurd${nietZeker ? `, ${nietZeker} niet zeker` : ''}${mislukt ? `, ${mislukt} mislukt` : ''}.`)
 samenvatting()
-if (mislukt) process.exit(1)
+if (mislukt || bijhoudenMislukt) process.exit(1)

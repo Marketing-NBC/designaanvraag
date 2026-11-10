@@ -422,7 +422,22 @@ export function verslagVerstuurd(v: {
 }
 
 /**
- * De reactie in Asana als er niets verstuurd is. Met een vermelding, zodat het in je Asana-inbox
+ * De reactie in Asana als Microsoft geen uitsluitsel gaf en de app het niet kon nakijken (zie
+ * MailOnbevestigd in mail.ts). Dat gebeurt vrijwel alleen zonder het recht Mail.ReadWrite. Niet Mislukt
+ * (misschien kwam hij aan) en niet Verstuurd (misschien niet): eerlijk zeggen dat het onbekend is.
+ */
+export function verslagOnbevestigd(reden: string, vermeldGid: string | null, proef = false): string {
+  const vermelding = vermeldGid ? `<a data-asana-gid="${escapeAsana(vermeldGid)}"/> ` : ''
+  const wat = proef ? 'proefmail' : 'opleveringsmail'
+  const nagaan = proef
+    ? 'Kijk in je inbox. Staat hij er niet, zet Oplevermail dan opnieuw op Stuur proef naar mij.'
+    : 'Vraag na of de ontvangers hem hebben. Zo niet, zet Oplevermail dan opnieuw op Verstuur nu; zo wel, zet het veld zelf op Verstuurd.'
+  return `<body>${vermelding}Het is <strong>niet zeker</strong> of de ${wat} verstuurd is: ${escapeAsana(reden)}. `
+    + `Daarom staat Oplevermail nog op Bezig, en niet op Mislukt of Verstuurd. ${nagaan}</body>`
+}
+
+/**
+ * De reactie in Asana als er zeker niets verstuurd is. Met een vermelding, zodat het in je Asana-inbox
  * landt; je zit misschien al op de volgende taak te wachten tot hij verstuurd is.
  */
 export function verslagMislukt(reden: string, vermeldGid: string | null, proef = false): string {

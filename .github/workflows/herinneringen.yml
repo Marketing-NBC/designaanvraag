@@ -3,6 +3,8 @@ name: Herinneringen akkoord
 # Elke werkdag om 9:00 een herinnering aan wie een oplevering kreeg en nog geen akkoord of feedback
 # gaf: de aanvrager en de gekoppelde collega's. Om 12:00 nog een ronde: een oplevering die na 15:00
 # verstuurd is, krijgt dan pas zijn eerste herinnering. Zie scripts/herinneringen.mjs en shared/akkoord.ts.
+# Daarna worden de kopieën in Verzonden items van meer dan 30 dagen oud opgeruimd
+# (scripts/verzonden-opruimen.mjs), zodat het afzenderpostvak niet volloopt.
 # Vereist secrets SUPABASE_PROJECT_ID, SUPABASE_SECRET_KEY, MS_TENANT_ID, MS_CLIENT_ID en MS_CLIENT_SECRET.
 
 on:
@@ -81,6 +83,10 @@ jobs:
           [ "$PROEF" = "true" ] && args+=(--proef)
           [ -n "$RONDE" ] && [ "$RONDE" != "automatisch" ] && args+=(--ronde "$RONDE")
           node --experimental-strip-types --no-warnings scripts/herinneringen.mjs "${args[@]}"
+      # Ook als de herinneringen mislukten: opruimen staat daar los van.
+      - name: Verzonden items opruimen
+        if: ${{ !cancelled() && steps.tijd.outputs.door != 'false' && !inputs.proef }}
+        run: node --experimental-strip-types --no-warnings scripts/verzonden-opruimen.mjs
       - name: Proefmails bewaren
         if: inputs.proef
         uses: actions/upload-artifact@v4

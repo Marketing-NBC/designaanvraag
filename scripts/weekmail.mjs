@@ -18,7 +18,7 @@
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import fields from '../shared/asana-fields.json' with { type: 'json' }
 import { MELDING_AFZENDER } from '../shared/contact.ts'
-import { createGraphMail } from '../shared/mail.ts'
+import { MailOnbevestigd, createGraphMail } from '../shared/mail.ts'
 import { LOCATIE_KEYS, locatieLabel } from '../shared/request-types.ts'
 import { vandaagInNl } from '../shared/spoed.ts'
 import { maakWeekoverzicht, nietsTeMelden, renderWeekmail, taakUitAsana } from '../shared/weekmail.ts'
@@ -102,8 +102,11 @@ for (const locatie of LOCATIE_KEYS) {
     await mail.verstuur({ ...bericht, aan })
     regels.push(`- ✅ ${regel}`)
   } catch (e) {
+    // Gewone fout: zeker niet verstuurd. MailOnbevestigd: misschien wel; niet opnieuw draaien zonder
+    // eerst te vragen of hij binnenkwam.
     mislukt++
-    regels.push(`- ❌ ${regel}: ${e instanceof Error ? e.message : String(e)}`)
+    const zeker = e instanceof MailOnbevestigd ? '⚠️' : '❌'
+    regels.push(`- ${zeker} ${regel}: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
