@@ -141,6 +141,8 @@ const NAKIJKEN_KEER = 6
 const NAKIJKEN_ELKE_MS = 5_000
 /** Zonder Mail.ReadWrite valt er niets na te kijken; dan wachten we zo lang op een antwoord. */
 const SENDMAIL_TIMEOUT_MS = 90_000
+/** Opruimen van Verzonden items draait op de achtergrond; daar mag Microsoft rustig de tijd voor nemen. */
+const OPRUIM_TIMEOUT_MS = 45_000
 
 export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): GraphMailClient {
   const wacht = cfg.wacht ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
@@ -360,11 +362,13 @@ export function createGraphMail(cfg: GraphMailConfig, doFetch: Fetch = fetch): G
       let weg = 0
       while (weg < max) {
         // Steeds de eerste stapel opnieuw opvragen: wat we verwijderen, valt er vanzelf uit.
-        const r = await graph(`/mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`, 'GET', undefined, 'Verzonden items opvragen')
+        // Opvragen wijzigt niets, dus bij een trage Microsoft mag het één keer opnieuw.
+        const opvragen = () => graph(`/mailFolders/sentitems/messages?$filter=${filter}&$select=id&$top=50`, 'GET', undefined, 'Verzonden items opvragen', OPRUIM_TIMEOUT_MS)
+        const r = await opvragen().catch((e) => (isTimeout(e) || String(e?.message).includes('geen antwoord') ? opvragen() : Promise.reject(e)))
         const ids = ((r.value ?? []) as { id?: unknown }[]).map((m) => String(m.id ?? '')).filter(Boolean)
         if (!ids.length) break
         for (const id of ids.slice(0, max - weg)) {
-          await graph(`/messages/${id}/permanentDelete`, 'POST', undefined, 'Oude mail verwijderen')
+          await graph(`/messages/${id}/permanentDelete`, 'POST', undefined, 'Oude mail verwijderen', OPRUIM_TIMEOUT_MS)
           weg++
         }
       }

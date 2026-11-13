@@ -84,8 +84,11 @@ jobs:
           [ -n "$RONDE" ] && [ "$RONDE" != "automatisch" ] && args+=(--ronde "$RONDE")
           node --experimental-strip-types --no-warnings scripts/herinneringen.mjs "${args[@]}"
       # Ook als de herinneringen mislukten: opruimen staat daar los van.
+      # Opruimen is onderhoud: lukt het niet (bijvoorbeeld een trage Microsoft), dan geeft het een
+      # waarschuwing en probeert de volgende werkdag het opnieuw, zonder de hele run rood te maken.
       - name: Verzonden items opruimen
         if: ${{ !cancelled() && steps.tijd.outputs.door != 'false' && !inputs.proef }}
+        continue-on-error: true
         run: node --experimental-strip-types --no-warnings scripts/verzonden-opruimen.mjs
       - name: Proefmails bewaren
         if: inputs.proef
